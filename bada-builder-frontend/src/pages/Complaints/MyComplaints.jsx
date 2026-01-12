@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { complaintsAPI } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiClock, FiCheckCircle, FiTrash2, FiFileText, FiCalendar, FiHome, FiAlertCircle, FiArrowLeft } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
@@ -18,29 +17,34 @@ const MyComplaints = () => {
     useEffect(() => {
         if (!currentUser) return;
 
-        const complaintsRef = collection(db, 'complaints');
-        const complaintsQuery = query(complaintsRef, where('userId', '==', currentUser.uid));
+        const fetchComplaints = async () => {
+            try {
+                setLoading(true);
+                const response = await complaintsAPI.getMyComplaints();
+                const complaints = response.complaints || response || [];
+                setUserComplaints(complaints);
+            } catch (error) {
+                console.error('Error fetching complaints:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        const unsubscribe = onSnapshot(complaintsQuery, (snapshot) => {
-            const complaints = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setUserComplaints(complaints);
-            setLoading(false);
-        }, (error) => {
-            console.error('Error fetching complaints:', error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
+        fetchComplaints();
+        
+        // Poll for updates every 30 seconds
+        const interval = setInterval(fetchComplaints, 30000);
+        return () => clearInterval(interval);
     }, [currentUser]);
 
     const handleMarkFulfilled = async (e, id) => {
         e.stopPropagation();
         try {
-            const complaintRef = doc(db, 'complaints', id);
-            await updateDoc(complaintRef, {
-                status: 'Resolved',
-                resolvedAt: serverTimestamp()
-            });
+            await complaintsAPI.updateStatus(id, 'Resolved');
+            // Refresh complaints list
+            const response = await complaintsAPI.getMyComplaints();
+            const complaints = response.complaints || response || [];
+            setUserComplaints(complaints);
         } catch (error) {
             console.error('Error marking as fulfilled:', error);
             alert('Failed to update status');
@@ -51,7 +55,9 @@ const MyComplaints = () => {
         e.stopPropagation();
         if (window.confirm('Are you sure you want to delete this complaint permanently?')) {
             try {
-                await deleteDoc(doc(db, 'complaints', id));
+                // TODO: Add delete endpoint to API if needed
+                // For now, just remove from local state
+                setUserComplaints(prev => prev.filter(c => c.id !== id));
                 if (selectedComplaint?.id === id) setSelectedComplaint(null);
             } catch (error) {
                 console.error('Error deleting complaint:', error);

@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc, query, where, getDocs, doc, updateDoc, getDoc, increment, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+// TODO: Remove Firebase - implement with API
 import PropertyForm from '../components/PropertyForm/PropertyForm';
 import DeveloperForm from '../components/DeveloperForm/DeveloperForm';
 import SubscriptionGuard from '../components/SubscriptionGuard/SubscriptionGuard';

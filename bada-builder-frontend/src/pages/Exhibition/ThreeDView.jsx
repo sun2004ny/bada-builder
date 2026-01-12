@@ -3,8 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Text } from '@react-three/drei';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
-import { db } from '../../firebase';
-import { collection, doc, setDoc, onSnapshot, updateDoc, writeBatch, getDocs, query, where, collectionGroup, addDoc, increment } from 'firebase/firestore';
+// TODO: Remove Firebase - implement with API
 import { useAuth } from '../../context/AuthContext';
 import './LiveGrouping.css';
 

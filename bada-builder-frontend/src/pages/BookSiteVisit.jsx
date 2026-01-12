@@ -2,8 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { bookingsAPI } from '../services/api';
 import emailjs from '@emailjs/browser';
 import './BookSiteVisit.css';
 
@@ -401,9 +400,9 @@ const BookSiteVisit = () => {
         };
 
         try {
-          // Save booking with payment details to Firebase
-          const docRef = await addDoc(collection(db, 'bookings'), paymentData);
-          paymentData.booking_id = docRef.id;
+          // Save booking with payment details to backend API
+          const response = await bookingsAPI.verifyPayment(paymentData);
+          paymentData.booking_id = response.booking?.id || response.id;
           paymentData.property_location = property?.location || 'N/A';
 
           // Send email notification
@@ -507,7 +506,7 @@ const BookSiteVisit = () => {
     const bookingData = {
       property_id: property?.id || 'unknown',
       property_title: property?.title || 'Unknown Property',
-      user_id: currentUser.uid,
+      user_id: currentUser.id || currentUser.uid,
       user_email: currentUser.email,
       visit_date: formData.date,
       visit_time: formData.time,
@@ -534,12 +533,12 @@ const BookSiteVisit = () => {
       // For postvisit, save booking directly
       setLoading(true);
       try {
-        // Save booking to Firestore
+        // Save booking to backend API
         bookingData.payment_status = 'pending';
-        const docRef = await addDoc(collection(db, 'bookings'), bookingData);
+        const response = await bookingsAPI.create(bookingData);
 
         // Add booking ID to data
-        bookingData.booking_id = docRef.id;
+        bookingData.booking_id = response.booking?.id || response.id;
         bookingData.property_location = property?.location || 'N/A';
 
         // Send notifications in background (non-blocking)

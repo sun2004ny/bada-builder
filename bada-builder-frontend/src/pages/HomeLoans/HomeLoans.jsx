@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+// TODO: Remove Firebase - implement with API
 import { useAuth } from '../../context/AuthContext';
 import './HomeLoans.css';
 

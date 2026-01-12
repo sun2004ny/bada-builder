@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiUser, FiMail, FiPhone, FiHash, FiBriefcase, FiHome, FiUsers, FiCalendar, FiUpload, FiTrash2, FiEdit3, FiTrendingUp, FiMessageSquare, FiX, FiAlertCircle } from 'react-icons/fi';
-import { doc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+// TODO: Remove Firebase - implement with API
 import { motion, AnimatePresence } from 'framer-motion';
 import ChatList from '../components/ChatList/ChatList';
 import ChatBox from '../components/ChatBox/ChatBox';

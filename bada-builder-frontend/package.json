@@ -16,7 +16,6 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.2",
     "@tailwindcss/vite": "^4.1.7",
-    "firebase": "^11.8.1",
     "framer-motion": "^12.23.26",
     "katex": "^0.16.22",
     "nodemailer": "^7.0.11",

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import './RecommendedProjects.css';
 import { Link } from 'react-router-dom';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { propertiesAPI, liveGroupingAPI } from '../../services/api';
 import PropertyCard from '../PropertyCard/PropertyCard';
 
 const RecommendedProjects = () => {
@@ -19,61 +18,23 @@ const RecommendedProjects = () => {
     const fetchFeaturedProperties = async () => {
       try {
         setLoading(true);
-        const propertiesRef = collection(db, 'properties');
 
-        // Fetch one Individual property
-        const individualQuery = query(
-          propertiesRef,
-          where('user_type', '==', 'individual'),
-          where('status', '==', 'active'),
-          orderBy('created_at', 'desc'),
-          limit(1)
-        );
-
-        // Fetch one Developer property
-        const developerQuery = query(
-          propertiesRef,
-          where('user_type', '==', 'developer'),
-          where('status', '==', 'active'),
-          orderBy('created_at', 'desc'),
-          limit(1)
-        );
-
-        // Fetch one Live Grouping property (assumed: has live_group_id or is_live_grouping)
-        const liveGroupingQuery = query(
-          propertiesRef,
-          where('is_live_grouping', '==', true),
-          where('status', '==', 'active'),
-          orderBy('created_at', 'desc'),
-          limit(1)
-        );
-
-        // Fetch one Bada Builder property (assumed: posted by admin or is_bada_builder)
-        const badaBuilderQuery = query(
-          propertiesRef,
-          where('is_bada_builder', '==', true),
-          where('status', '==', 'active'),
-          orderBy('created_at', 'desc'),
-          limit(1)
-        );
-
-        // Execute all queries in parallel
-        const [individualSnap, developerSnap, liveGroupingSnap, badaBuilderSnap] = await Promise.all([
-          getDocs(individualQuery),
-          getDocs(developerQuery),
-          getDocs(liveGroupingQuery).catch(() => ({ empty: true, docs: [] })), // Fallback if field doesn't exist
-          getDocs(badaBuilderQuery).catch(() => ({ empty: true, docs: [] }))   // Fallback if field doesn't exist
+        // Fetch properties from API in parallel
+        const [individualRes, developerRes, liveGroupingRes] = await Promise.all([
+          propertiesAPI.getAll({ user_type: 'individual', status: 'active' }).catch(() => ({ properties: [] })),
+          propertiesAPI.getAll({ user_type: 'developer', status: 'active' }).catch(() => ({ properties: [] })),
+          liveGroupingAPI.getAll().catch(() => ({ properties: [] }))
         ]);
 
+        const individualProperties = individualRes.properties || individualRes || [];
+        const developerProperties = developerRes.properties || developerRes || [];
+        const liveGroupingProperties = liveGroupingRes.properties || liveGroupingRes || [];
+
         const results = {
-          individual: !individualSnap.empty ? { id: individualSnap.docs[0].id, ...individualSnap.docs[0].data() } : null,
-          developer: !developerSnap.empty ? { id: developerSnap.docs[0].id, ...developerSnap.docs[0].data() } : null,
-          liveGrouping: !liveGroupingSnap.empty && liveGroupingSnap.docs.length > 0
-            ? { id: liveGroupingSnap.docs[0].id, ...liveGroupingSnap.docs[0].data() }
-            : null,
-          badaBuilder: !badaBuilderSnap.empty && badaBuilderSnap.docs.length > 0
-            ? { id: badaBuilderSnap.docs[0].id, ...badaBuilderSnap.docs[0].data() }
-            : null
+          individual: individualProperties.length > 0 ? individualProperties[0] : null,
+          developer: developerProperties.length > 0 ? developerProperties[0] : null,
+          liveGrouping: liveGroupingProperties.length > 0 ? liveGroupingProperties[0] : null,
+          badaBuilder: null // TODO: Add badaBuilder filter to API if needed
         };
 
         setFeaturedProperties(results);

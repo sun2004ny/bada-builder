@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { propertiesAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './PropertyDetails.css';
 import { FiPhone, FiCheckCircle, FiInfo, FiMap, FiHome, FiMaximize2, FiBriefcase, FiUser, FiX, FiMessageSquare, FiPlay, FiPause } from 'react-icons/fi';
@@ -51,10 +50,11 @@ const PropertyDetails = () => {
         setLoading(false);
       } else if (id) {
         try {
-          const docRef = doc(db, 'properties', id);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setProperty({ id: docSnap.id, ...docSnap.data() });
+          const propertyData = await propertiesAPI.getById(id);
+          if (propertyData.property) {
+            setProperty({ id: propertyData.property.id, ...propertyData.property });
+          } else if (propertyData.id) {
+            setProperty(propertyData);
           }
         } catch (error) {
           console.error("Error fetching property:", error);

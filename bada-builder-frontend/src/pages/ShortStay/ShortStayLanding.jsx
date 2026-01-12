@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../firebase';
+// TODO: Implement short stay listings API endpoint
+// import { shortStayAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import './ShortStayLanding.css';
 
@@ -32,15 +32,9 @@ const ShortStayLanding = () => {
 
   const fetchListings = async () => {
     try {
-      const q = query(
-        collection(db, 'short_stay_listings'),
-        where('status', '==', 'approved')
-      );
-      const querySnapshot = await getDocs(q);
-      const listingsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      // TODO: Implement with shortStayAPI.getAll({ status: 'approved' })
+      // For now, using empty array - will fall back to sample data
+      const listingsData = [];
       
       // If no data in Firestore, use fallback sample data
       if (listingsData.length === 0) {

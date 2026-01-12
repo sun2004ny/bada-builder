@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+// TODO: Remove Firebase - implement with API
 import { formatDate } from '../utils/dateFormatter';
 import { FaChartLine, FaRupeeSign, FaCalendarAlt, FaArrowRight, FaBuilding } from 'react-icons/fa';
 import './MyInvestments.css';

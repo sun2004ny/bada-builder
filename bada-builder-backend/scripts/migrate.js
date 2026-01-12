@@ -9,9 +9,20 @@ const createTables = async () => {
   try {
     await client.query('BEGIN');
 
+    // Drop tables in reverse order of dependencies if they exist
+    await client.query('DROP TABLE IF EXISTS property_payments CASCADE');
+    await client.query('DROP TABLE IF EXISTS installments CASCADE');
+    await client.query('DROP TABLE IF EXISTS payment_plans CASCADE');
+    await client.query('DROP TABLE IF EXISTS complaints CASCADE');
+    await client.query('DROP TABLE IF EXISTS live_grouping_properties CASCADE');
+    await client.query('DROP TABLE IF EXISTS bookings CASCADE');
+    await client.query('DROP TABLE IF EXISTS properties CASCADE');
+    await client.query('DROP TABLE IF EXISTS leads CASCADE');
+    await client.query('DROP TABLE IF EXISTS users CASCADE');
+
     // Users table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
@@ -31,7 +42,7 @@ const createTables = async () => {
 
     // Properties table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS properties (
+      CREATE TABLE properties (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         type VARCHAR(50) NOT NULL,
@@ -59,7 +70,7 @@ const createTables = async () => {
 
     // Leads table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS leads (
+      CREATE TABLE leads (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         requirement_type VARCHAR(50) NOT NULL,
@@ -71,7 +82,7 @@ const createTables = async () => {
 
     // Bookings table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS bookings (
+      CREATE TABLE bookings (
         id SERIAL PRIMARY KEY,
         property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
         property_title VARCHAR(255) NOT NULL,
@@ -99,7 +110,7 @@ const createTables = async () => {
 
     // Live grouping properties table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS live_grouping_properties (
+      CREATE TABLE live_grouping_properties (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         developer VARCHAR(255) NOT NULL,
@@ -132,7 +143,7 @@ const createTables = async () => {
 
     // Complaints table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS complaints (
+      CREATE TABLE complaints (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         name VARCHAR(255) NOT NULL,
@@ -152,7 +163,7 @@ const createTables = async () => {
 
     // Payment plans table (for 100 months system)
     await client.query(`
-      CREATE TABLE IF NOT EXISTS payment_plans (
+      CREATE TABLE payment_plans (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
@@ -171,7 +182,7 @@ const createTables = async () => {
 
     // Installments table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS installments (
+      CREATE TABLE installments (
         id SERIAL PRIMARY KEY,
         plan_id INTEGER REFERENCES payment_plans(id) ON DELETE CASCADE,
         month_number INTEGER NOT NULL,
@@ -188,7 +199,7 @@ const createTables = async () => {
 
     // Property payments table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS property_payments (
+      CREATE TABLE property_payments (
         id SERIAL PRIMARY KEY,
         plan_id INTEGER REFERENCES payment_plans(id) ON DELETE CASCADE,
         installment_id INTEGER REFERENCES installments(id) ON DELETE SET NULL,

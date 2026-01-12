@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../firebase';
+// TODO: Implement rental properties API endpoint
+// import { rentalPropertiesAPI } from '../../services/api';
 import { Link } from 'react-router-dom';
 import './LongLiveBrowse.css';
 
@@ -16,19 +16,9 @@ const LongLiveBrowse = () => {
   const fetchRentalProperties = async () => {
     setLoading(true);
     try {
-      let q;
-      if (filter === 'all') {
-        q = query(
-          collection(db, 'rentalProperties'),
-          where('status', '==', 'active')
-        );
-      } else {
-        q = query(
-          collection(db, 'rentalProperties'),
-          where('status', '==', 'active'),
-          where('rentalType', '==', filter)
-        );
-      }
+      // TODO: Implement with rentalPropertiesAPI.getAll({ status: 'active', rentalType: filter })
+      // For now, using empty array
+      const properties = [];
 
       const querySnapshot = await getDocs(q);
       const propertiesData = querySnapshot.docs.map(doc => ({

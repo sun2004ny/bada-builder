@@ -19,6 +19,19 @@ import pool from './config/database.js';
 
 dotenv.config();
 
+// Validate required environment variables
+if (!process.env.JWT_SECRET) {
+    console.error('❌ ERROR: JWT_SECRET is not set in environment variables!');
+    console.error('Please add JWT_SECRET to your .env file.');
+    process.exit(1);
+}
+
+if (!process.env.DATABASE_URL) {
+    console.error('❌ ERROR: DATABASE_URL is not set in environment variables!');
+    console.error('Please add DATABASE_URL to your .env file.');
+    process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 

@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { doc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+// TODO: Remove Firebase - implement with API
 import SubscriptionService from '../services/subscriptionService';
 import './SubscriptionPlans.css';
 

@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { bookingsAPI } from '../services/api';
 import { formatDate } from '../utils/dateFormatter';
 import './MyBookings.css';
 
@@ -32,30 +31,15 @@ const MyBookings = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching bookings for user:', currentUser.uid);
+      console.log('🔍 Fetching bookings for user:', currentUser.id || currentUser.uid);
       
-      const bookingsRef = collection(db, 'bookings');
-      
-      // Fetch ALL bookings (including past ones for stats)
-      const q = query(
-        bookingsRef,
-        where('user_id', '==', currentUser.uid)
-      );
-
-      const querySnapshot = await getDocs(q);
-      console.log('📊 Found bookings:', querySnapshot.size);
+      // Fetch bookings from API
+      const response = await bookingsAPI.getMyBookings();
+      const allBookings = response.bookings || response || [];
+      console.log('📊 Found bookings:', allBookings.length);
       
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Set to start of day for comparison
-      
-      const allBookings = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('📄 Booking data:', data);
-        return {
-          id: doc.id,
-          ...data
-        };
-      });
 
       // Filter to show only active bookings (today and future)
       const activeBookings = allBookings.filter(booking => {

@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
-import ViewToggle from '../../components/ViewToggle/ViewToggle';
-import PropertyCard from '../../components/PropertyCard/PropertyCard';
-import useViewPreference from '../../hooks/useViewPreference';
-import { filterAndMarkExpiredProperties } from '../../utils/propertyExpiry';
-import './Exhibition.css';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { propertiesAPI } from "../../services/api";
+import ViewToggle from "../../components/ViewToggle/ViewToggle";
+import PropertyCard from "../../components/PropertyCard/PropertyCard";
+import useViewPreference from "../../hooks/useViewPreference";
+import { filterAndMarkExpiredProperties } from "../../utils/propertyExpiry";
+import "./Exhibition.css";
 
 const ByDeveloper = () => {
   const [projects, setProjects] = useState([]);
@@ -21,52 +20,43 @@ const ByDeveloper = () => {
         setLoading(true);
         setError(null);
 
-        // Use real-time listener for immediate updates
-        const propertiesRef = collection(db, 'properties');
-        const q = query(propertiesRef, where('user_type', '==', 'developer'));
-
-        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-          const projectsData = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            // Filter active properties on client side
-            if (data.status === 'active') {
-              projectsData.push({
-                id: doc.id,
-                ...data
-              });
-            }
-          });
-
-          // Filter out expired properties and mark them as expired
-          const activeProjects = await filterAndMarkExpiredProperties(projectsData);
-
-          // Sort by created_at on client side
-          activeProjects.sort((a, b) => {
-            const dateA = new Date(a.created_at || 0);
-            const dateB = new Date(b.created_at || 0);
-            return dateB - dateA;
-          });
-
-          setProjects(activeProjects);
-          setLoading(false);
-        }, (error) => {
-          console.error('Error fetching developer projects:', error);
-          setError(`Failed to load projects: ${error.message}`);
-          setLoading(false);
+        // Fetch projects from API
+        const response = await propertiesAPI.getAll({
+          user_type: "developer",
+          status: "active",
         });
 
-        // Cleanup subscription on unmount
-        return () => unsubscribe();
+        const projectsData = response.properties || response || [];
 
+        // Filter expired projects
+        const activeProjects = await filterAndMarkExpiredProperties(
+          projectsData
+        );
+
+        // Sort by created_at (latest first)
+        activeProjects.sort((a, b) => {
+          const dateA = new Date(a.created_at || 0);
+          const dateB = new Date(b.created_at || 0);
+          return dateB - dateA;
+        });
+
+        setProjects(activeProjects);
       } catch (error) {
-        console.error('Error setting up projects listener:', error);
+        console.error("Error fetching developer projects:", error);
         setError(`Failed to load projects: ${error.message}`);
+      } finally {
         setLoading(false);
       }
     };
 
+    // Initial fetch
     fetchProjects();
+
+    // Poll every 30 seconds
+    const interval = setInterval(fetchProjects, 30000);
+
+    // Cleanup on unmount
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -109,7 +99,13 @@ const ByDeveloper = () => {
 
         {/* View Toggle */}
         {!loading && !error && projects.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: "20px",
+            }}
+          >
             <ViewToggle view={view} onViewChange={setView} />
           </div>
         )}
@@ -145,7 +141,11 @@ const ByDeveloper = () => {
 
         {/* Projects Grid */}
         {!loading && !error && (
-          <div className={`properties-grid ${view === 'list' ? 'list-view' : 'grid-view'}`}>
+          <div
+            className={`properties-grid ${
+              view === "list" ? "list-view" : "grid-view"
+            }`}
+          >
             {projects.map((project, index) => (
               <motion.div
                 key={project.id}
@@ -158,9 +158,9 @@ const ByDeveloper = () => {
                     ...project,
                     image: project.image_url,
                     area: project.area || project.size,
-                    status: project.status || 'Active',
-                    badge: 'Developer',
-                    owner: project.company_name || 'Developer'
+                    status: project.status || "Active",
+                    badge: "Developer",
+                    owner: project.company_name || "Developer",
                   }}
                   viewType={view}
                   source="developer"

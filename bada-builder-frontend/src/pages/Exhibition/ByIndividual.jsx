@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
-import ViewToggle from '../../components/ViewToggle/ViewToggle';
-import PropertyCard from '../../components/PropertyCard/PropertyCard';
-import useViewPreference from '../../hooks/useViewPreference';
-import { filterAndMarkExpiredProperties } from '../../utils/propertyExpiry';
-import './Exhibition.css';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { propertiesAPI } from "../../services/api";
+import ViewToggle from "../../components/ViewToggle/ViewToggle";
+import PropertyCard from "../../components/PropertyCard/PropertyCard";
+import useViewPreference from "../../hooks/useViewPreference";
+import { filterAndMarkExpiredProperties } from "../../utils/propertyExpiry";
+import "./Exhibition.css";
 
 const ByIndividual = () => {
   const [properties, setProperties] = useState([]);
@@ -21,70 +20,63 @@ const ByIndividual = () => {
         setLoading(true);
         setError(null);
 
-        // Use real-time listener for immediate updates
-        const propertiesRef = collection(db, 'properties');
-        const q = query(propertiesRef, where('user_type', '==', 'individual'));
-
-        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-          const propertiesData = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            // Filter active properties on client side
-            if (data.status === 'active') {
-              propertiesData.push({
-                id: doc.id,
-                ...data
-              });
-            }
-          });
-          
-          // Filter out expired properties and mark them as expired
-          const activeProperties = await filterAndMarkExpiredProperties(propertiesData);
-          
-          // Sort by created_at on client side
-          activeProperties.sort((a, b) => {
-            const dateA = new Date(a.created_at || 0);
-            const dateB = new Date(b.created_at || 0);
-            return dateB - dateA;
-          });
-          
-          setProperties(activeProperties);
-          setLoading(false);
-        }, (error) => {
-          console.error('Error fetching individual properties:', error);
-          setError(`Failed to load properties: ${error.message}`);
-          setLoading(false);
+        // Fetch properties from API
+        const response = await propertiesAPI.getAll({
+          user_type: "individual",
+          status: "active",
         });
 
-        // Cleanup subscription on unmount
-        return () => unsubscribe();
+        const propertiesData = response.properties || response || [];
 
+        // Filter expired properties
+        const activeProperties = await filterAndMarkExpiredProperties(
+          propertiesData
+        );
+
+        // Sort by created_at (latest first)
+        activeProperties.sort((a, b) => {
+          const dateA = new Date(a.created_at || 0);
+          const dateB = new Date(b.created_at || 0);
+          return dateB - dateA;
+        });
+
+        setProperties(activeProperties);
       } catch (error) {
-        console.error('Error setting up properties listener:', error);
+        console.error("Error fetching individual properties:", error);
         setError(`Failed to load properties: ${error.message}`);
+      } finally {
         setLoading(false);
       }
     };
 
+    // Initial fetch
     fetchProperties();
+
+    // Poll every 30 seconds
+    const interval = setInterval(fetchProperties, 30000);
+
+    // Cleanup
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="exhibition-page">
       <div className="exhibition-container">
         {/* Header */}
-        <motion.div 
+        <motion.div
           className="exhibition-header"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
           <h1>Properties by Individual Owners</h1>
-          <p>Direct listings from property owners - No middleman, better deals</p>
+          <p>
+            Direct listings from property owners - No middleman, better deals
+          </p>
         </motion.div>
 
         {/* Navigation Tabs */}
-        <motion.div 
+        <motion.div
           className="exhibition-tabs"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -109,14 +101,20 @@ const ByIndividual = () => {
 
         {/* View Toggle */}
         {!loading && !error && properties.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: "20px",
+            }}
+          >
             <ViewToggle view={view} onViewChange={setView} />
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
-          <motion.div 
+          <motion.div
             className="loading-state"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -128,13 +126,13 @@ const ByIndividual = () => {
 
         {/* Error State */}
         {error && (
-          <motion.div 
+          <motion.div
             className="error-state"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
             <h3>⚠️ {error}</h3>
-            <button 
+            <button
               className="retry-btn"
               onClick={() => window.location.reload()}
             >
@@ -145,7 +143,11 @@ const ByIndividual = () => {
 
         {/* Properties Grid */}
         {!loading && !error && (
-          <div className={`properties-grid ${view === 'list' ? 'list-view' : 'grid-view'}`}>
+          <div
+            className={`properties-grid ${
+              view === "list" ? "list-view" : "grid-view"
+            }`}
+          >
             {properties.map((property, index) => (
               <motion.div
                 key={property.id}
@@ -153,13 +155,13 @@ const ByIndividual = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <PropertyCard 
+                <PropertyCard
                   property={{
                     ...property,
                     image: property.image_url,
                     area: property.area || property.size,
-                    status: property.status || 'Available',
-                    badge: 'Individual'
+                    status: property.status || "Available",
+                    badge: "Individual",
                   }}
                   viewType={view}
                   source="individual"
@@ -171,7 +173,7 @@ const ByIndividual = () => {
 
         {/* Empty State if no properties */}
         {!loading && !error && properties.length === 0 && (
-          <motion.div 
+          <motion.div
             className="empty-state"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

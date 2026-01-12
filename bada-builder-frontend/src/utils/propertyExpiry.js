@@ -1,5 +1,5 @@
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+// TODO: Implement property expiry updates via API
+// import { propertiesAPI } from '../services/api';
 
 /**
  * Check if a property's subscription has expired
@@ -23,12 +23,8 @@ export const isPropertyExpired = (property) => {
  */
 export const markPropertyAsExpired = async (propertyId) => {
   try {
-    const propertyRef = doc(db, 'properties', propertyId);
-    await updateDoc(propertyRef, {
-      status: 'expired',
-      expired_at: new Date().toISOString()
-    });
-    console.log(`✅ Property ${propertyId} marked as expired`);
+    // TODO: Use propertiesAPI.update(propertyId, { status: 'expired', expired_at: new Date().toISOString() })
+    console.log(`✅ Property ${propertyId} should be marked as expired (API implementation needed)`);
   } catch (error) {
     console.error(`❌ Error marking property ${propertyId} as expired:`, error);
   }

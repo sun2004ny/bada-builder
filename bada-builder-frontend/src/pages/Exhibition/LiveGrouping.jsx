@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { liveGroupingAPI } from '../../services/api';
 import ViewToggle from '../../components/ViewToggle/ViewToggle';
 import PropertyCard from '../../components/PropertyCard/PropertyCard';
 import useViewPreference from '../../hooks/useViewPreference';
@@ -44,41 +43,44 @@ const LiveGrouping = () => {
 
   const fetchLiveGroups = async () => {
     try {
-      // Load from LocalStorage (Admin Posted)
-      const storedGroups = JSON.parse(localStorage.getItem('liveGroupingProperties') || '[]');
+      setLoading(true);
+      // Fetch from API
+      const response = await liveGroupingAPI.getAll();
+      const groupsData = response.properties || response || [];
+      
+      // Process groups for display
+      const processedGroups = groupsData.map(group => {
+        // Parse numeric inputs safely
+        const storedPrice = Number(group.original_price || group.pricePerSqFt);
+        const validPrice = !isNaN(storedPrice) && storedPrice > 0 ? storedPrice : 4500;
 
-      if (storedGroups.length > 0) {
-        // Ensure robust structure for display
-        const processedGroups = storedGroups.map(group => {
-          // Parse numeric inputs safely
-          const storedPrice = Number(group.pricePerSqFt);
-          const validPrice = !isNaN(storedPrice) && storedPrice > 0 ? storedPrice : 4500;
+        // Calculate group price based on discount
+        const discountStr = group.discount || '10%';
+        const discountVal = parseInt(discountStr.replace(/[^0-9]/g, '')) || 10;
+        const groupPrice = Math.round(validPrice * (1 - (discountVal / 100)));
 
-          // Calculate group price based on discount
-          const discountStr = group.discount || '10%';
-          const discountVal = parseInt(discountStr.replace(/[^0-9]/g, '')) || 10;
-          const groupPrice = Math.round(validPrice * (1 - (discountVal / 100)));
-
-          return {
-            ...group,
-            // Add defaults if missing to prevent crashes
-            units: group.units || [
-              { name: "Standard Unit", area: 1200 },
-              { name: "Premium Unit", area: 1500 }
-            ],
-            benefits: group.benefits && group.benefits.length > 0 ? group.benefits : ["Group Discount", "Premium Location", "Verified Builder"],
-            filledSlots: parseInt(group.filledSlots) || 0,
-            totalSlots: parseInt(group.totalSlots) || 20,
-            minBuyers: parseInt(group.minBuyers) || 5,
-            pricePerSqFt: validPrice,
-            groupPricePerSqFt: groupPrice,
-            status: group.status || 'active',
-            image: (group.images && group.images.length > 0) ? group.images[0] : (group.imageUrl || '/placeholder-property.jpg'),
-            type: group.type || group.category || '3 BHK Apartment',
-            developer: group.developer || 'Verified Builder',
-            location: group.location || 'Vadodara'
-          };
-        });
+        return {
+          ...group,
+          // Add defaults if missing to prevent crashes
+          units: group.units || [
+            { name: "Standard Unit", area: 1200 },
+            { name: "Premium Unit", area: 1500 }
+          ],
+          benefits: group.benefits && group.benefits.length > 0 ? group.benefits : ["Group Discount", "Premium Location", "Verified Builder"],
+          filledSlots: parseInt(group.filled_slots || group.filledSlots) || 0,
+          totalSlots: parseInt(group.total_slots || group.totalSlots) || 20,
+          minBuyers: parseInt(group.min_buyers || group.minBuyers) || 5,
+          pricePerSqFt: validPrice,
+          groupPricePerSqFt: groupPrice,
+          status: group.status || 'active',
+          image: (group.images && group.images.length > 0) ? group.images[0] : (group.image || '/placeholder-property.jpg'),
+          type: group.type || group.category || '3 BHK Apartment',
+          developer: group.developer || 'Verified Builder',
+          location: group.location || 'Vadodara'
+        };
+      });
+      
+      if (processedGroups.length > 0) {
         setLiveGroups(processedGroups);
       } else {
         setLiveGroups(fallbackGroups);

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { addDoc, collection, serverTimestamp, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage, auth } from '../../firebase';
+import { complaintsAPI } from '../../services/api';
 import { FaClipboardList, FaClock, FaCheckCircle, FaMapMarkerAlt, FaCalendarAlt } from 'react-icons/fa';
 import { compressImage } from '../../utils/imageCompressor';
 import './RegisterComplaint.css';
@@ -84,32 +82,20 @@ const RegisterComplaint = () => {
   const fetchComplaints = async () => {
     setLoadingComplaints(true);
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        alert('Please login to view your complaints');
-        return;
-      }
-
-      // Fetch ongoing complaints (Submitted, Under Review, In Progress)
-      const ongoingQuery = query(
-        collection(db, 'complaints'),
-        where('phone', '==', formData.phone || user.phoneNumber),
-        where('status', 'in', ['Submitted', 'Under Review', 'In Progress']),
-        orderBy('createdAt', 'desc')
+      // Fetch complaints from API
+      const response = await complaintsAPI.getMyComplaints();
+      const allComplaints = response.complaints || response || [];
+      
+      // Filter ongoing complaints (Submitted, Under Review, In Progress)
+      const ongoing = allComplaints.filter(complaint => 
+        ['Submitted', 'Under Review', 'In Progress'].includes(complaint.status)
       );
-      const ongoingSnapshot = await getDocs(ongoingQuery);
-      const ongoing = ongoingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setOngoingComplaints(ongoing);
 
-      // Fetch fulfilled complaints (Resolved, Rejected)
-      const fulfilledQuery = query(
-        collection(db, 'complaints'),
-        where('phone', '==', formData.phone || user.phoneNumber),
-        where('status', 'in', ['Resolved', 'Rejected']),
-        orderBy('createdAt', 'desc')
+      // Filter fulfilled complaints (Resolved, Rejected)
+      const fulfilled = allComplaints.filter(complaint => 
+        ['Resolved', 'Rejected'].includes(complaint.status)
       );
-      const fulfilledSnapshot = await getDocs(fulfilledQuery);
-      const fulfilled = fulfilledSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setFulfilledComplaints(fulfilled);
     } catch (error) {
       console.error('Error fetching complaints:', error);
@@ -199,32 +185,21 @@ const RegisterComplaint = () => {
     setLoading(true);
 
     try {
-      // Upload media files
-      const mediaUrls = await uploadMediaFiles();
-
-      // Generate complaint ID
-      const timestamp = Date.now();
-      const generatedId = `CMP${timestamp}`;
-
-      // Save to Firestore
-      await addDoc(collection(db, 'complaints'), {
-        complaintId: generatedId,
-        category: formData.category,
-        title: formData.title,
-        description: formData.description,
-        address: formData.address,
-        pincode: formData.pincode,
-        latitude: formData.latitude || null,
-        longitude: formData.longitude || null,
-        fullName: formData.fullName,
+      // Save to backend API (backend will handle media upload)
+      const complaintData = {
+        complaint_type: formData.category,
+        name: formData.fullName,
+        email: formData.email || '',
         phone: formData.phone,
-        email: formData.email || null,
-        mediaUrls: mediaUrls,
-        status: 'Submitted',
-        userId: auth.currentUser?.uid || null,
-        createdAt: serverTimestamp(),
-        submittedDate: new Date().toISOString()
-      });
+        location: `${formData.address}, ${formData.pincode}`,
+        description: `${formData.title}\n\n${formData.description}`
+      };
+      
+      // Send complaint with media files (backend will handle upload)
+      const response = await complaintsAPI.create(complaintData, mediaFiles);
+      
+      // Generate complaint ID from response or timestamp
+      const generatedId = response.complaint?.id || response.id || response.complaintId || `CMP${Date.now()}`;
 
       setComplaintId(generatedId);
       setStep(5); // Success screen

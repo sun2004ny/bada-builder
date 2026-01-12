@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+// TODO: Implement with liveGroupingAPI.getById()
+import { liveGroupingAPI } from '../../services/api';
 import { calculateTokenAmount, formatCurrency, calculateTotalPrice, calculateSavings, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
 import './LiveGroupingDetails.css';
 
@@ -18,11 +18,10 @@ const LiveGroupingDetails = () => {
 
   const fetchProperty = async () => {
     try {
-      const docRef = doc(db, 'live_grouping_properties', id);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        setProperty({ id: docSnap.id, ...docSnap.data() });
+      // TODO: Use liveGroupingAPI.getById(id)
+      const response = await liveGroupingAPI.getById(id);
+      if (response.property || response.id) {
+        setProperty(response.property || response);
       } else {
         // If not found in database, check fallback data
         const fallbackProperty = fallbackData[id];

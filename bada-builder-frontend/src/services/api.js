@@ -371,6 +371,13 @@ export const complaintsAPI = {
   getById: async (id) => {
     return apiRequest(`/complaints/${id}`);
   },
+
+  updateStatus: async (id, status) => {
+    return apiRequest(`/complaints/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
 };
 
 export default {
