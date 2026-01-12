@@ -1,0 +1,30 @@
+/* Basic body styles for consistency, if not already defined globally */
+body {
+    font-family: 'Inter', sans-serif; /* Ensure 'Inter' font is available or choose a suitable fallback */
+    background-color: #f9fafb; /* Equivalent to Tailwind's bg-gray-50 */
+    color: #374151; /* Equivalent to Tailwind's text-gray-800 */
+}
+
+/* Custom scrollbar for the risk matrix table */
+.overflow-x-auto::-webkit-scrollbar {
+    height: 8px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #a0aec0; /* A shade of gray-400 for better aesthetics */
+    border-radius: 10px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #718096; /* A darker shade on hover */
+}
+
+/* You might need to add this if you're using a global index.css or similar */
+/* @tailwind base; */
+/* @tailwind components; */
+/* @tailwind utilities; */

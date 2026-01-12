@@ -1,0 +1,82 @@
+/* Preloader Overlay */
+.preloader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    /* Or theme background color */
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.preloader-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Content Container */
+.preloader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+/* Icon Container */
+.preloader-icon {
+    font-size: 4rem;
+    /* Adjust size as needed */
+    color: #58335e;
+    /* Theme color */
+    animation: pulse 1s infinite ease-in-out;
+}
+
+/* Text Styling */
+.preloader-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d1b30;
+    /* Darker shade of theme color */
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    animation: fadeIn 0.5s ease-out;
+    margin: 0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.9);
+        opacity: 0.7;
+    }
+}

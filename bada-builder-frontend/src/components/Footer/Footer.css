@@ -1,0 +1,94 @@
+/* Footer.css */
+.social-icon {
+  color: #9ca3af;
+  /* Tailwind's gray-400 */
+  font-size: 1.125rem;
+  /* text-lg */
+  transition: color 0.3s ease;
+}
+
+.social-icon:hover {
+  color: #ffffff;
+}
+
+.footer-link {
+  display: block;
+  transition: color 0.2s ease;
+  color: #9ca3af;
+  /* gray-400 */
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  color: #ffffff;
+}
+
+.footer-logo-link {
+  display: block;
+  height: 100%;
+}
+
+.footer-logo-image {
+  height: 50%;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Mobile Footer Optimizations */
+@media (max-width: 768px) {
+  .custom-footer {
+    padding-top: 3rem !important;
+    padding-bottom: 2rem !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+
+  .footer-grid {
+    gap: 2.5rem !important;
+  }
+
+  .footer-section-title {
+    font-size: 1.1rem !important;
+    margin-bottom: 1.25rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.025em;
+    position: relative;
+    display: inline-block;
+  }
+
+  .footer-section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 20px;
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+  }
+
+  .footer-link-list {
+    gap: 0.75rem !important;
+  }
+
+  .footer-link {
+    font-size: 0.95rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .footer-calculator-group {
+    margin-bottom: 1.5rem !important;
+  }
+
+  .footer-calculator-title {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.75rem !important;
+    opacity: 0.8;
+  }
+
+  .footer-bottom {
+    margin-top: 3rem !important;
+    padding-top: 1.5rem !important;
+    font-size: 0.85rem !important;
+  }
+}

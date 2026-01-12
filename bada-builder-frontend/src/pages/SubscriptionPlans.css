@@ -1,0 +1,302 @@
+.subscription-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  padding: 80px 20px 60px;
+}
+
+.subscription-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.subscription-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.subscription-header h1 {
+  font-size: 42px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.subscription-header p {
+  font-size: 18px;
+  color: #666;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.plan-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+  position: relative;
+  border: 2px solid transparent;
+}
+
+.plan-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.plan-card.popular {
+  border-color: #58335e;
+  transform: scale(1.05);
+}
+
+.plan-card.best-value {
+  border-color: #16a34a;
+}
+
+.badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #58335e 0%, #6d4575 100%);
+  color: white;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.badge.best {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+}
+
+.plan-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.plan-header h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.price {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+.currency {
+  font-size: 24px;
+  font-weight: 600;
+  color: #58335e;
+  margin-top: 8px;
+}
+
+.amount {
+  font-size: 48px;
+  font-weight: 700;
+  color: #58335e;
+  line-height: 1;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 30px 0;
+}
+
+.features-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  color: #555;
+  font-size: 15px;
+}
+
+.check-icon {
+  width: 20px;
+  height: 20px;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.select-button {
+  width: 100%;
+  background: linear-gradient(135deg, #58335e 0%, #6d4575 100%);
+  color: white;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.select-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(88, 51, 94, 0.3);
+}
+
+.select-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.subscription-note {
+  text-align: center;
+  padding: 20px;
+  background: #fff3cd;
+  border-radius: 8px;
+  margin-top: 40px;
+}
+
+.subscription-note p {
+  color: #856404;
+  margin: 0;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .subscription-page {
+    padding: 80px 0 40px;
+    width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .subscription-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 1rem;
+  }
+
+  .subscription-header h1 {
+    font-size: 32px;
+  }
+
+  .subscription-header p {
+    font-size: 16px;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .plan-card {
+    padding: 30px 20px;
+    border-radius: 12px;
+  }
+
+  .plan-card.popular {
+    transform: scale(1);
+  }
+
+  .amount {
+    font-size: 40px;
+  }
+
+  .features-list li {
+    font-size: 14px;
+  }
+}
+
+/* Payment Loading Styles */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+/* Payment Gateway Loading State */
+.select-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.select-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Payment Processing State */
+.plan-card .select-button:disabled {
+  background: #ccc;
+  color: #666;
+}
+
+.plan-card.popular .select-button:disabled,
+.plan-card.best-value .select-button:disabled {
+  background: #ccc;
+  color: #666;
+}

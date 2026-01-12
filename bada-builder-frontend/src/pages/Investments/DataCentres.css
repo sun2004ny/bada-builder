@@ -1,0 +1,375 @@
+.data-centres-page {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+}
+
+.dc-hero {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.dc-hero-content h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.dc-hero-content p {
+  font-size: 1.3rem;
+  opacity: 0.9;
+  margin-bottom: 3rem;
+}
+
+.dc-stats {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 0.5rem;
+}
+
+.why-invest-section, .dc-projects-section {
+  max-width: 1200px;
+  margin: 4rem auto;
+  padding: 0 2rem;
+}
+
+.why-invest-section h2, .dc-projects-section h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #1e293b;
+  margin-bottom: 3rem;
+  font-weight: 700;
+}
+
+.benefits-grid-dc {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.benefit-card-dc {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.benefit-card-dc:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #6366f1;
+}
+
+.benefit-icon-dc {
+  font-size: 3rem;
+  color: #6366f1;
+  margin-bottom: 1rem;
+}
+
+.benefit-card-dc h3 {
+  font-size: 1.3rem;
+  color: #1e293b;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.benefit-card-dc p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.dc-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 2rem;
+}
+
+.dc-project-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+  border: 2px solid #e2e8f0;
+}
+
+.dc-project-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border-color: #6366f1;
+}
+
+.dc-card-image {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+}
+
+.dc-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dc-card-badges {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.status-badge, .tier-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.status-live {
+  background: rgba(34, 197, 94, 0.95);
+  color: white;
+}
+
+.status-funded {
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+}
+
+.status-coming {
+  background: rgba(251, 191, 36, 0.95);
+  color: #78350f;
+}
+
+.tier-badge {
+  background: rgba(99, 102, 241, 0.95);
+  color: white;
+}
+
+.dc-card-content {
+  padding: 1.5rem;
+}
+
+.dc-card-content h3 {
+  font-size: 1.4rem;
+  color: #1e293b;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.dc-location {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dc-specs {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.spec-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.spec-item:last-child {
+  margin-bottom: 0;
+}
+
+.spec-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.spec-value {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.dc-financials {
+  background: #f1f5f9;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.financial-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.financial-row:last-child {
+  margin-bottom: 0;
+}
+
+.financial-row .label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.financial-row .value {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.financial-row.highlight {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin: 0.5rem -0.5rem;
+  font-weight: 700;
+}
+
+.financial-row.highlight .label,
+.financial-row.highlight .value {
+  color: white;
+}
+
+.risk-low {
+  color: #22c55e;
+}
+
+.risk-medium {
+  color: #f59e0b;
+}
+
+.risk-high {
+  color: #ef4444;
+}
+
+.funding-progress {
+  margin-bottom: 1.5rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 50px;
+  transition: width 0.3s;
+}
+
+.view-details-btn-dc {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.view-details-btn-dc:hover {
+  background: linear-gradient(135deg, #334155, #475569);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(30, 41, 59, 0.3);
+}
+
+.legal-disclaimer {
+  max-width: 1200px;
+  margin: 4rem auto 2rem;
+  padding: 2rem;
+  background: #fef3c7;
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.legal-disclaimer h3 {
+  color: #92400e;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.legal-disclaimer p {
+  color: #78350f;
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .dc-hero-content h1 {
+    font-size: 2rem;
+  }
+
+  .dc-hero-content p {
+    font-size: 1.1rem;
+  }
+
+  .dc-stats {
+    gap: 1.5rem;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .dc-projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .why-invest-section h2, .dc-projects-section h2 {
+    font-size: 2rem;
+  }
+}

@@ -1,0 +1,225 @@
+/* Search Bar Styles */
+
+/* Compact Search Bar (for Header) */
+.search-bar-compact {
+  width: 100%;
+  max-width: 500px;
+}
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 50px;
+  padding: 4px 4px 4px 16px;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-input-wrapper:focus-within {
+  border-color: #58335e;
+  box-shadow: 0 4px 12px rgba(88, 51, 94, 0.2);
+}
+
+.search-icon {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.search-input-compact {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: transparent;
+}
+
+.search-input-compact::placeholder {
+  color: #9ca3af;
+}
+
+.search-btn-compact {
+  background: linear-gradient(135deg, #58335e 0%, #6d4575 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.search-btn-compact:hover {
+  background: linear-gradient(135deg, #6d4575 0%, #7d5585 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(88, 51, 94, 0.3);
+}
+
+/* Full Search Bar (for Pages) */
+.search-bar-full {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-bar-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 12px;
+  background: white;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s;
+}
+
+.search-bar-container:focus-within {
+  border-color: #58335e;
+  box-shadow: 0 12px 32px rgba(88, 51, 94, 0.2);
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.search-field:focus-within {
+  background: white;
+  border-color: #58335e;
+}
+
+.field-icon {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.search-input,
+.search-select {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #1a1a1a;
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-select {
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.search-select option {
+  color: #1a1a1a;
+}
+
+.search-btn-full {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #58335e 0%, #6d4575 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.search-btn-full:hover {
+  background: linear-gradient(135deg, #6d4575 0%, #7d5585 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(88, 51, 94, 0.3);
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .search-bar-container {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .search-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .search-btn-full {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-bar-compact {
+    max-width: 100%;
+  }
+
+  .search-input-compact {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  .search-btn-compact {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+
+  .search-bar-container {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .search-field {
+    padding: 10px 14px;
+  }
+
+  .search-input,
+  .search-select {
+    font-size: 14px;
+  }
+
+  .search-btn-full {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-input-wrapper {
+    padding: 3px 3px 3px 12px;
+  }
+
+  .search-btn-compact {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+}

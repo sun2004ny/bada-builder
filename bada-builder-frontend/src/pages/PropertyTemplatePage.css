@@ -1,0 +1,30 @@
+
+  .main-heading {
+    font-size: 28px;
+  }
+
+  .sub-heading {
+    font-size: 14px;
+  }
+
+  .user-type-badge-section {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .selected-user-badge,
+  .change-type-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-heading {
+    font-size: 24px;
+  }
+
+  .badge-text {
+    font-size: 14px;
+  }
+}

@@ -1,0 +1,308 @@
+/* src/pages/MyInvestments.css */
+.my-investments-page {
+    background-color: #f9fafb;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+}
+
+.my-investments-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.page-header p {
+    color: #6b7280;
+    font-size: 1.1rem;
+}
+
+.stats-bar {
+    display: grid;
+    grid-template-cols: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-label {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #58335e;
+}
+
+.category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.filter-btn {
+    padding: 0.625rem 1.25rem;
+    border-radius: 9999px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #4b5563;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.filter-btn:hover {
+    border-color: #58335e;
+    color: #58335e;
+    background: #fdf2ff;
+}
+
+.filter-btn.active {
+    background: #58335e;
+    color: white;
+    border-color: #58335e;
+    box-shadow: 0 4px 6px -1px rgba(88, 51, 94, 0.2);
+}
+
+.loading-state,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #58335e;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+}
+
+.empty-state p {
+    color: #6b7280;
+    margin-bottom: 2rem;
+    max-width: 400px;
+}
+
+.explore-btn {
+    background-color: #58335e;
+    color: white;
+    padding: 0.875rem 2rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-shadow: 0 10px 15px -3px rgba(88, 51, 94, 0.3);
+}
+
+.explore-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(88, 51, 94, 0.4);
+    opacity: 0.95;
+}
+
+.investments-list {
+    display: grid;
+    grid-template-cols: 1fr;
+    gap: 1.5rem;
+}
+
+.investment-card {
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #f3f4f6;
+    display: flex;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.investment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.investment-image {
+    width: 250px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.investment-image img {
+    width: 100%;
+    height: 100%;
+    object-cover: cover;
+}
+
+.status-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: white;
+    color: #059669;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.investment-details {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.investment-header {
+    margin-bottom: 1.5rem;
+}
+
+.investment-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.type-category {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.category-tag {
+    color: #58335e;
+    font-weight: 600;
+}
+
+.investment-metrics {
+    display: grid;
+    grid-template-cols: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #fdf2ff;
+    border-radius: 1rem;
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #9333ea;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metric-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.investment-footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.invested-on {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+.view-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #58335e;
+    font-weight: 700;
+    font-size: 0.875rem;
+    transition: gap 0.2s;
+}
+
+.view-btn:hover {
+    gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .investment-card {
+        flex-direction: column;
+    }
+
+    .investment-image {
+        width: 100%;
+        height: 200px;
+    }
+
+    .investment-metrics {
+        grid-template-cols: 1fr 1fr;
+    }
+}

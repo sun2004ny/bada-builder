@@ -1,0 +1,35 @@
+/* PropertyTemplateEditor.css */
+
+.template-editor-container {
+    /* Container styles can be mostly inherited from parent or handled by Tailwind classes in JSX */
+}
+
+/* Custom placeholder color for inputs to look decent on light mode */
+::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+}
+
+/* Ensure inputs have visible placeholders */
+input::placeholder,
+textarea::placeholder {
+    color: #9ca3af;
+}
+
+/* Focus styles for inputs */
+input:focus,
+textarea:focus,
+select:focus {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Hide scrollbar for textarea but keep function */
+textarea {
+    resize: none;
+}
+
+/* Override for select dropdowns to have light background */
+select option {
+    background-color: #ffffff;
+    color: #1f2937;
+}

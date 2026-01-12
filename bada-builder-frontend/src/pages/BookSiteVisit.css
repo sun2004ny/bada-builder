@@ -1,0 +1,1585 @@
+/* src/pages/BookSiteVisit.css */
+
+.book-visit-container {
+  /* Mobile-first: stack sections vertically */
+  display: block;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.ui-bg {
+  border: 3px solid #474545;
+  background-color: #080918;
+}
+
+.form-section {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.form-section h2 {
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 2.5rem;
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1c4e9;
+}
+
+.form-section form label {
+  display: block;
+  margin-bottom: 1rem;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.form-section form input,
+.form-section form textarea {
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #232323;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.visit-duration {
+  margin: 1.5rem 0;
+}
+
+.duration-box {
+  background-color: #242424;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  font-weight: bold;
+  border: 1px solid #d1c4e9;
+  color: #9e4efb;
+}
+
+.payment-method {
+  margin: 1.5rem 0;
+}
+
+.payment-method label {
+  margin-right: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.payment-method input[type="radio"] {
+  margin-right: 0.3rem;
+}
+
+.gpay-section {
+  margin: 1rem 0;
+  text-align: center;
+  background: #383838;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.qr-code {
+  width: 160px;
+  height: 160px;
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.form-actions button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button[type='submit'] {
+  background-color: #4caf50;
+  color: white;
+}
+
+button[type='submit']:hover {
+  background-color: #43a047;
+}
+
+button:not([type='submit']):not(.cancel-btn) {
+  background-color: #eee;
+  color: #333;
+}
+
+button:not([type='submit']):not(.cancel-btn):hover {
+  background-color: #ddd;
+}
+
+/* Cancel Button Styling */
+.cancel-btn {
+  background-color: #dc2626 !important;
+  color: white !important;
+}
+
+.cancel-btn:hover {
+  background-color: #b91c1c !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.info-section {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 8px;
+  line-height: 1.6;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  font-size: 1rem;
+  color: #ffffff;
+  box-sizing: border-box;
+  margin-top: 0.75rem;
+}
+
+.info-section h3 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  color: #b53ffe;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1c4e9;
+}
+
+/* People Details Section */
+.people-details {
+  background: #1a1a2e;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+  border: 2px solid #d1c4e9;
+}
+
+.people-details h4 {
+  color: #9e4efb;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.people-details label {
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.additional-person {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-section form select {
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #232323;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.form-section form select:focus,
+.form-section form input:focus,
+.form-section form textarea:focus {
+  outline: none;
+  border-color: #9e4efb;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.1);
+}
+
+/* Mobile-friendly base adjustments */
+.form-section form input,
+.form-section form select,
+.form-section form textarea {
+  font-size: 1rem;
+  min-height: 44px; /* touch-friendly */
+  padding: 0.75rem;
+  box-sizing: border-box;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.form-actions button {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+}
+
+/* Ensure address input leaves space for maps button on small screens */
+.address-input-with-maps {
+  padding-right: 3.5rem !important;
+  width: 100%;
+}
+
+/* Date & Time stacked layout for small screens */
+.date-time-section label {
+  display: block;
+  width: 100%;
+}
+
+.time-select,
+.enhanced-date-input {
+  width: 100%;
+}
+
+/* Enhanced Date & Time Section */
+.date-time-section {
+  background: #1a1a2e;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+  border: 2px solid #d1c4e9;
+}
+
+.date-time-section h4 {
+  color: #9e4efb;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.enhanced-date-input {
+  background-color: #2a2a3e !important;
+  border: 2px solid #444 !important;
+  color: #ffffff !important;
+  padding: 0.8rem !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease;
+}
+
+.enhanced-date-input:focus {
+  border-color: #9e4efb !important;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2) !important;
+  background-color: #323248 !important;
+}
+
+.time-select {
+  background-color: #2a2a3e !important;
+  border: 2px solid #444 !important;
+  color: #ffffff !important;
+  padding: 0.8rem !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease;
+}
+
+.time-select:focus {
+  border-color: #9e4efb !important;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2) !important;
+  background-color: #323248 !important;
+}
+
+.date-help, .time-help, .address-help {
+  display: block;
+  color: #b0b0b0;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Enhanced Pickup Section */
+.pickup-section {
+  background: #1a1a2e;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+  border: 2px solid #d1c4e9;
+}
+
+.pickup-section h4 {
+  color: #9e4efb;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Address Input with Maps Button */
+.address-input-container {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.address-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.address-input-with-maps {
+  background-color: #2a2a3e !important;
+  border: 2px solid #444 !important;
+  color: #ffffff !important;
+  padding: 0.8rem 3.5rem 0.8rem 0.8rem !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.address-input-with-maps:focus {
+  border-color: #9e4efb !important;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2) !important;
+  background-color: #323248 !important;
+}
+
+.address-input-with-maps::placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+.maps-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #9e4efb;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  z-index: 2;
+}
+
+.maps-button:hover {
+  background-color: #8a3eeb;
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 2px 8px rgba(158, 78, 251, 0.4);
+}
+
+.maps-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.google-places-input {
+  background-color: #2a2a3e !important;
+  border: 2px solid #444 !important;
+  color: #ffffff !important;
+  padding: 0.8rem !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.google-places-input:focus {
+  border-color: #9e4efb !important;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2) !important;
+  background-color: #323248 !important;
+}
+
+.google-places-input::placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+/* Google Places Autocomplete Dropdown Styling */
+.pac-container {
+  background-color: #2a2a3e !important;
+  border: 1px solid #444 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  margin-top: 2px !important;
+}
+
+.pac-item {
+  background-color: #2a2a3e !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #444 !important;
+  padding: 12px 16px !important;
+  cursor: pointer !important;
+}
+
+.pac-item:hover {
+  background-color: #3a3a4e !important;
+}
+
+.pac-item-selected {
+  background-color: #9e4efb !important;
+  color: #ffffff !important;
+}
+
+.pac-matched {
+  color: #9e4efb !important;
+  font-weight: 600 !important;
+}
+
+/* Enhanced form styling */
+.form-section form input[type="date"]::-webkit-calendar-picker-indicator {
+  background-color: #9e4efb;
+  border-radius: 3px;
+  cursor: pointer;
+  filter: invert(1);
+}
+
+.form-section form input[type="date"]::-webkit-inner-spin-button,
+.form-section form input[type="date"]::-webkit-clear-button {
+  display: none;
+}
+
+/* Loading state for Google Maps */
+.google-places-input.loading {
+  background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 2v2a6 6 0 0 1 6 6h2a8 8 0 0 0-8-8z' fill='%239e4efb'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Address Method Selection */
+.address-method-selection {
+  margin-bottom: 1.5rem;
+}
+
+.method-label {
+  color: #b0b0b0;
+  font-size: 0.9rem;
+  margin-bottom: 0.8rem;
+  font-weight: 500;
+}
+
+.method-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.method-btn {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: 2px solid #444;
+  background-color: #2a2a3e;
+  color: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.method-btn:hover {
+  border-color: #9e4efb;
+  background-color: #323248;
+}
+
+.method-btn.active {
+  border-color: #9e4efb;
+  background-color: #9e4efb;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2);
+}
+
+/* Manual Address Input */
+.manual-address-input {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* Maps Address Input */
+.maps-address-input {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.selected-address-display label {
+  color: #ffffff;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.address-display-box {
+  background-color: #2a2a3e;
+  border: 2px solid #444;
+  color: #ffffff;
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  font-style: italic;
+  color: #b0b0b0;
+}
+
+.address-display-box:not(:empty) {
+  color: #ffffff;
+  font-style: normal;
+}
+
+.open-map-btn {
+  background-color: #9e4efb;
+  color: #ffffff;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.open-map-btn:hover {
+  background-color: #8a3eeb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(158, 78, 251, 0.3);
+}
+
+/* Google Maps Modal */
+.map-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.map-modal-content {
+  background-color: #1a1a2e;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #d1c4e9;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.map-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #444;
+}
+
+.map-modal-header h3 {
+  color: #9e4efb;
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.map-modal-close {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.map-modal-close:hover {
+  background-color: #444;
+}
+
+.pin-instructions {
+  padding: 1rem 1.5rem;
+  background-color: #232338;
+  border-bottom: 1px solid #444;
+}
+
+.instruction-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.6rem;
+  color: #b0b0b0;
+  font-size: 0.85rem;
+}
+
+.instruction-item:last-child {
+  margin-bottom: 0;
+}
+
+.instruction-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
+
+/* Map Controls */
+.map-controls {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #444;
+  background-color: #232338;
+}
+
+.location-options {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.current-location-btn {
+  background-color: #4caf50;
+  color: #ffffff;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.current-location-btn:hover:not(:disabled) {
+  background-color: #43a047;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.current-location-btn:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.location-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.search-location {
+  flex: 1;
+  min-width: 250px;
+}
+
+.map-search-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 2px solid #444;
+  border-radius: 8px;
+  background-color: #2a2a3e;
+  color: #ffffff;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.map-search-input:focus {
+  outline: none;
+  border-color: #9e4efb;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2);
+  background-color: #323248;
+}
+
+.map-search-input::placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+.location-help {
+  padding: 0.8rem 1rem;
+  background-color: #1a1a2e;
+  border-radius: 6px;
+  border-left: 3px solid #4caf50;
+  margin-top: 0.5rem;
+}
+
+.location-help small {
+  color: #b0b0b0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.location-help strong {
+  color: #4caf50;
+}
+
+.quick-locations {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background-color: #232338;
+  border-radius: 6px;
+}
+
+.quick-locations-label {
+  color: #9e4efb;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.quick-location-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.quick-location-btn {
+  background-color: #444;
+  color: #ffffff;
+  border: 1px solid #666;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-location-btn:hover {
+  background-color: #9e4efb;
+  border-color: #9e4efb;
+  transform: translateY(-1px);
+}
+
+/* Enhanced location pinning styles */
+.location-success-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  background-color: #2a4a2a;
+  border-radius: 6px;
+  border-left: 4px solid #4caf50;
+}
+
+.location-success-header .success-icon {
+  font-size: 1.2rem;
+  animation: pulse 2s infinite;
+}
+
+.location-success-header strong {
+  color: #4caf50;
+  font-size: 1rem;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.selected-address {
+  margin-bottom: 0.8rem;
+}
+
+.selected-address strong {
+  color: #9e4efb;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.selected-address p {
+  color: #ffffff;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.pin-actions {
+  margin-top: 1rem;
+  padding: 0.6rem;
+  background-color: #232338;
+  border-radius: 4px;
+  border: 1px solid #444;
+}
+
+.pin-actions small {
+  color: #b0b0b0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.map-container {
+  flex: 1;
+  min-height: 400px;
+  max-height: 450px;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-overlay-tooltip {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(158, 78, 251, 0.9);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.map-container:hover .map-overlay-tooltip {
+  opacity: 1;
+}
+
+.tooltip-text {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.google-map {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  max-height: 450px;
+  border-radius: 0;
+  cursor: crosshair;
+}
+
+.google-map:hover {
+  cursor: crosshair;
+}
+
+.map-modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #444;
+  flex-shrink: 0;
+  background-color: #1a1a2e;
+}
+
+.selected-location-info {
+  margin-bottom: 1rem;
+  color: #ffffff;
+}
+
+.selected-location-info strong {
+  color: #9e4efb;
+}
+
+.selected-location-info p {
+  margin: 0.5rem 0 0 0;
+  color: #b0b0b0;
+  font-size: 0.9rem;
+}
+
+.coordinates-info {
+  display: block;
+  color: #888;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  font-family: monospace;
+}
+
+.location-instructions {
+  color: #b0b0b0;
+}
+
+.location-instructions p {
+  margin-bottom: 0.8rem;
+  color: #9e4efb;
+  font-weight: 500;
+}
+
+.location-instructions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.location-instructions li {
+  padding: 0.4rem 0;
+  color: #b0b0b0;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.map-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.confirm-location-btn {
+  background-color: #4caf50;
+  color: #ffffff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.confirm-location-btn:hover:not(:disabled) {
+  background-color: #43a047;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.confirm-location-btn:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancel-location-btn {
+  background-color: #666;
+  color: #ffffff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.cancel-location-btn:hover {
+  background-color: #777;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .book-visit-container {
+    flex-direction: column;
+  }
+  
+  .people-details,
+  .date-time-section,
+  .pickup-section {
+    padding: 1rem;
+  }
+  
+  .date-time-section h4,
+  .pickup-section h4 {
+    font-size: 1rem;
+  }
+
+  .method-buttons {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .method-btn {
+    padding: 1rem;
+    font-size: 0.95rem;
+  }
+
+  /* Mobile address input adjustments */
+  .address-input-with-maps {
+    padding: 1rem 4rem 1rem 1rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  .maps-button {
+    width: 40px;
+    height: 40px;
+    right: 6px;
+    font-size: 1.1rem;
+  }
+
+  .map-modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .map-modal-header {
+    padding: 1rem;
+  }
+
+  .map-modal-footer {
+    padding: 1rem;
+  }
+
+  .location-options {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+
+  .current-location-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .search-location {
+    min-width: auto;
+  }
+
+  .map-container {
+    min-height: 300px;
+    max-height: 350px;
+  }
+
+  .google-map {
+    min-height: 300px;
+    max-height: 350px;
+  }
+
+  .map-modal-content {
+    max-height: 90vh;
+  }
+
+  .map-modal-actions {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .confirm-location-btn,
+  .cancel-location-btn {
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .location-instructions li {
+    font-size: 0.8rem;
+  }
+}
+
+/* Authentication loading spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Suppress Google Maps error popups */
+.gm-err-container,
+.gm-err-content,
+.gm-err-icon,
+.gm-err-title,
+.gm-err-message,
+.dismissButton {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide Google Maps authentication error dialogs */
+[role="dialog"][aria-labelledby*="gm"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide any error overlays */
+.gm-style .gm-err-container {
+  display: none !important;
+}
+
+/* Ensure map modal has proper z-index */
+.map-modal-overlay {
+  z-index: 999999 !important;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Authentication loading state */
+.auth-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+}
+
+.auth-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #9e4efb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.auth-loading-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: center;
+}
+/* Property Information Section */
+.property-info-section {
+  background: #1a1a2e;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  border: 2px solid #d1c4e9;
+}
+
+.property-info-section h3 {
+  color: #9e4efb;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selected-property {
+  background: rgba(158, 78, 251, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #9e4efb;
+}
+
+.selected-property h4 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.selected-property p {
+  color: #b0b0b0;
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.property-location {
+  color: #4ade80 !important;
+}
+
+.property-type {
+  color: #60a5fa !important;
+}
+
+.property-price {
+  color: #fbbf24 !important;
+  font-weight: 600;
+}
+
+.generic-booking {
+  background: rgba(75, 85, 99, 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #6b7280;
+}
+
+.generic-booking h4 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.generic-booking p {
+  color: #d1d5db;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .property-info-section {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .property-info-section h3 {
+    font-size: 1.1rem;
+  }
+  
+  .selected-property h4,
+  .generic-booking h4 {
+    font-size: 1rem;
+  }
+}
+/* Razorpay Payment Styles */
+.razorpay-section {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #58335e;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(88, 51, 94, 0.2);
+}
+
+.payment-info h4 {
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.payment-details {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.amount-breakdown {
+  margin-bottom: 1rem;
+}
+
+.amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.amount-row:last-child {
+  border-bottom: none;
+}
+
+.amount-row.total {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid #58335e;
+  font-size: 1.1rem;
+}
+
+.amount {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.payment-note {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.payment-note p {
+  color: #d1d5db;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Payment Button Styles */
+.pay-button {
+  background: linear-gradient(135deg, #58335e 0%, #6d4575 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.pay-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d4575 0%, #7e5686 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(88, 51, 94, 0.4);
+}
+
+.pay-button:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.payment-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Form Actions Update */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.form-actions button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.form-actions button:not(.pay-button):not(.cancel-btn) {
+  background: #3b82f6;
+  color: white;
+}
+
+.form-actions button:not(.pay-button):not(.cancel-btn):hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .razorpay-section {
+    margin: 1rem 0;
+    padding: 1rem;
+  }
+  
+  .payment-info h4 {
+    font-size: 1rem;
+  }
+  
+  .amount-row {
+    font-size: 0.9rem;
+  }
+  
+  .pay-button {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+/* Desktop/layout for larger screens (restore original desktop look) */
+@media (min-width: 769px) {
+  .book-visit-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+  }
+
+  .form-section {
+    flex: 1 1 60%;
+    padding: 2rem;
+  }
+
+  .info-section {
+    flex: 1 1 35%;
+    padding: 2rem;
+    margin-top: 0;
+  }
+
+  .form-actions {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .form-actions button {
+    width: auto;
+    min-width: 160px;
+  }
+
+  .map-container, .google-map {
+    min-height: 400px;
+    max-height: 450px;
+  }
+}
+/* =============================================== */
+/* |      True Full-Screen Mobile Override       | */
+/* =============================================== */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .book-visit-container {
+    width: 100vw;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #080918;
+    gap: 0;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .book-visit-container > .form-section,
+  .book-visit-container > .info-section,
+  .book-visit-container > .property-info-section {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 1.5rem 1rem;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    border-bottom: 1px solid #232323;
+  }
+
+  .book-visit-container > .info-section {
+    border-bottom: none;
+  }
+
+  .form-section,
+  .people-details,
+  .date-time-section,
+  .pickup-section,
+  .razorpay-section,
+  .property-info-section {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .form-section form input,
+  .form-section form textarea,
+  .form-section form select,
+  .address-input-with-maps,
+  .google-places-input,
+  .map-search-input {
+    width: 100%;
+    border-radius: 4px !important;
+  }
+
+  .form-actions {
+    padding: 0;
+    margin-top: 1.5rem;
+  }
+  
+  .form-actions button,
+  .pay-button {
+    border-radius: 4px;
+    width: 100%;
+  }
+}
+
+  

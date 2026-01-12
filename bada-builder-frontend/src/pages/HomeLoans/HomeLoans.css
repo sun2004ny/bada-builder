@@ -1,0 +1,643 @@
+/* Home Loans Page */
+.home-loans-page {
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.container-loans {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Hero Section */
+.hero-section-loans {
+  background: linear-gradient(135deg, #58335e 0%, #7a4d8a 100%);
+  color: white;
+  padding: 100px 20px;
+  text-align: center;
+}
+
+.hero-content-loans {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-section-loans h1 {
+  font-size: 56px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.hero-subtitle-loans {
+  font-size: 22px;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+/* Section Titles */
+.section-title-loans {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.section-subtitle-loans {
+  font-size: 18px;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 50px;
+  font-weight: 500;
+}
+
+/* Banks Section */
+.banks-section {
+  padding: 80px 20px;
+  background: white;
+}
+
+.banks-table-wrapper {
+  overflow-x: auto;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.banks-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.banks-table thead {
+  background: linear-gradient(135deg, #58335e 0%, #7a4d8a 100%);
+  color: white;
+}
+
+.banks-table th {
+  padding: 20px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.banks-table td {
+  padding: 24px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 16px;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.banks-table tbody tr {
+  transition: all 0.3s;
+}
+
+.banks-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.banks-table tbody tr.best-rate {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.bank-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bank-logo {
+  font-size: 28px;
+}
+
+.best-badge {
+  background: #10b981;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rate-cell {
+  color: #58335e;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.apply-btn-table {
+  background: linear-gradient(135deg, #58335e 0%, #7a4d8a 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 15px;
+}
+
+.apply-btn-table:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(88, 51, 94, 0.4);
+}
+
+/* EMI Calculator */
+.emi-calculator-section {
+  padding: 80px 20px;
+  background: #f9fafb;
+}
+
+.calculator-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.calculator-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.input-group-loans {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-group-loans label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.input-with-display {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.range-input {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #e5e7eb;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #58335e;
+  cursor: pointer;
+}
+
+.range-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #58335e;
+  cursor: pointer;
+  border: none;
+}
+
+.number-input {
+  width: 120px;
+  padding: 10px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.input-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #58335e;
+}
+
+.calculator-results {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  justify-content: center;
+}
+
+.result-card {
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  padding: 24px;
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.result-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.result-value.primary {
+  color: #58335e;
+  font-size: 36px;
+}
+
+/* Eligibility Section */
+.eligibility-section {
+  padding: 80px 20px;
+  background: white;
+}
+
+.eligibility-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.eligibility-card {
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  padding: 32px 24px;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s;
+}
+
+.eligibility-card:hover {
+  border-color: #58335e;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(88, 51, 94, 0.15);
+}
+
+.eligibility-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.eligibility-card h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.eligibility-card p {
+  font-size: 15px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.eligibility-cta {
+  text-align: center;
+}
+
+.check-eligibility-btn {
+  background: linear-gradient(135deg, #58335e 0%, #7a4d8a 100%);
+  color: white;
+  border: none;
+  padding: 16px 48px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(88, 51, 94, 0.3);
+}
+
+.check-eligibility-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(88, 51, 94, 0.4);
+}
+
+/* Documents Section */
+.documents-section {
+  padding: 80px 20px;
+  background: #f9fafb;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.documents-column {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.documents-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #58335e;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.documents-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.documents-list li {
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 16px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.documents-list li:last-child {
+  border-bottom: none;
+}
+
+/* Process Section */
+.process-section {
+  padding: 80px 20px;
+  background: white;
+}
+
+.process-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 24px;
+}
+
+.process-step {
+  text-align: center;
+  padding: 32px 20px;
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s;
+}
+
+.process-step:hover {
+  border-color: #58335e;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(88, 51, 94, 0.15);
+}
+
+.step-number {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #58335e 0%, #7a4d8a 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 auto 20px;
+}
+
+.process-step h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.process-step p {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* CTA Section */
+.cta-section-loans {
+  padding: 80px 20px;
+  background: linear-gradient(135deg, #58335e 0%, #7a4d8a 100%);
+  color: white;
+  text-align: center;
+}
+
+.cta-section-loans h2 {
+  font-size: 42px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.cta-section-loans p {
+  font-size: 20px;
+  margin-bottom: 40px;
+  opacity: 0.95;
+}
+
+.cta-buttons-loans {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cta-btn-loans {
+  padding: 16px 40px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+.cta-btn-loans.primary {
+  background: white;
+  color: #58335e;
+}
+
+.cta-btn-loans.secondary {
+  background: transparent;
+  color: white;
+  border: 3px solid white;
+}
+
+.cta-btn-loans:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal */
+.modal-overlay-loans {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content-loans {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #1a1a1a;
+}
+
+.modal-content-loans h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+}
+
+.form-group-loans {
+  margin-bottom: 20px;
+}
+
+.form-group-loans label {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.form-group-loans input,
+.form-group-loans select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.form-group-loans input:focus,
+.form-group-loans select:focus {
+  outline: none;
+  border-color: #58335e;
+  box-shadow: 0 0 0 3px rgba(88, 51, 94, 0.1);
+}
+
+.submit-btn-loans {
+  width: 100%;
+  background: linear-gradient(135deg, #58335e 0%, #7a4d8a 100%);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+}
+
+.submit-btn-loans:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(88, 51, 94, 0.4);
+}
+
+.loading-state-loans {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 18px;
+  color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hero-section-loans h1 {
+    font-size: 36px;
+  }
+
+  .hero-subtitle-loans {
+    font-size: 18px;
+  }
+
+  .section-title-loans {
+    font-size: 28px;
+  }
+
+  .calculator-grid {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .process-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .banks-table {
+    font-size: 14px;
+  }
+
+  .banks-table th,
+  .banks-table td {
+    padding: 12px 10px;
+  }
+
+  .cta-section-loans h2 {
+    font-size: 32px;
+  }
+
+  .cta-buttons-loans {
+    flex-direction: column;
+  }
+
+  .cta-btn-loans {
+    width: 100%;
+  }
+}

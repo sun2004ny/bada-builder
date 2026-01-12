@@ -1,0 +1,207 @@
+
+    /* Container */
+    .lam-container {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 2rem;
+        font-family: 'Inter', sans-serif;
+        background-color: #f9fbff;
+        color: #2c3e50;
+        line-height: 1.6;
+    }
+
+    /* Main heading */
+    .lam-container h1 {
+        font-size: 2.5rem;
+        text-align: center;
+        color: #0d47a1;
+        margin-bottom: 1.5rem;
+        border-bottom: 4px solid #4a90e2;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Section titles */
+    .lam-container h2 {
+        font-size: 1.8rem;
+        color: #1565c0;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        border-left: 5px solid #4a90e2;
+        padding-left: 1rem;
+    }
+
+    /* Subsection titles */
+    .lam-container h3 {
+        font-size: 1.3rem;
+        color: #1976d2;
+        margin-bottom: 0.5rem;
+    }
+
+    /* General paragraph */
+    .lam-container p {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        padding-bottom: 3rem;
+    }
+
+    /* Card layout */
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+        padding-bottom: 3rem;
+    }
+
+    .card {
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .card h3 {
+        color: #1e88e5;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 3rem;
+    }
+
+    .card p {
+        font-size: 1rem;
+        color: #444;
+    }
+
+    /* Workflow section container for columns */
+    .workflow-grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjust min-width as needed */
+        gap: 2rem; /* Space between workflow sections */
+        margin-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    .workflow-section {
+        padding: 1.5rem;
+        background-color: #e3f2fd; /* Lighter blue background for distinction */
+        border-left: 5px solid #2196f3; /* Stronger blue border */
+        border-radius: 12px; /* Slightly more rounded corners */
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); /* More prominent shadow */
+        transition: all 0.3s ease-in-out; /* Smooth transition for hover effects */
+        height: 100%; /* Ensure sections take full height in the grid */
+        display: flex; /* Use flex to align content within each section */
+        flex-direction: column;
+    }
+
+    .workflow-section:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .workflow-section h3 {
+        color: #0d47a1; /* Darker blue for workflow section titles */
+        margin-bottom: 0.8rem; /* Increased margin */
+        font-size: 1.4rem; /* Slightly larger font */
+        border-bottom: 2px dashed #90caf9; /* Dashed underline */
+        padding-bottom: 0.5rem;
+        padding-bottom: 3rem;
+    }
+
+    .workflow-section p {
+        margin-bottom: 1rem; /* Increased margin */
+        font-weight: 500;
+        color: #333;
+    }
+
+    .workflow-list {
+        list-style-type: none; /* Remove default bullet points */
+        padding-left: 0; /* Remove default padding */
+        margin: 0.5rem 0 0 0;
+        flex-grow: 1; /* Allow the list to grow and fill available space */
+    }
+
+    .workflow-list li {
+        position: relative; /* For pseudo-element positioning */
+        margin-bottom: 0.8rem; /* Increased margin */
+        font-size: 1.05rem; /* Slightly larger font */
+        color: #333;
+        padding-left: 2rem; /* Space for the custom icon */
+        line-height: 1.4;
+    }
+
+    .workflow-list li::before {
+        content: '✔'; /* Unicode checkmark icon */
+        color: #4caf50; /* Green color for the checkmark */
+        font-size: 1.2rem;
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: bold;
+    }
+
+    /* Responsive layout */
+    @media screen and (max-width: 768px) { /* Adjusted breakpoint for workflow grid */
+        .workflow-grid-container {
+            grid-template-columns: 1fr; /* Stack workflow sections on smaller screens */
+        }
+    }
+
+    @media screen and (max-width: 600px) {
+        .lam-container {
+            padding: 1rem;
+        }
+
+        .card {
+            padding: 1rem;
+        }
+
+        .card-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .lam-container h1 {
+            font-size: 2rem;
+        }
+
+        .lam-container h2 {
+            font-size: 1.5rem;
+        }
+
+        .lam-container h3 {
+            font-size: 1.2rem;
+        }
+
+        .workflow-section {
+            padding: 1rem;
+        }
+
+        .workflow-section h3 {
+            font-size: 1.2rem;
+        }
+
+        .workflow-list li {
+            font-size: 0.95rem;
+            padding-left: 1.8rem;
+        }
+
+        .workflow-list li::before {
+            font-size: 1rem;
+        }
+    }
+
+    section img {
+        max-width: 100%; /* Ensures the image is responsive and doesn't overflow */
+        height: auto; /* Maintains aspect ratio */
+        display: block; /* Removes extra space below the image */
+        border-radius: 4px; /* Slightly rounded corners for the image */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Soft shadow for the image */
+    }

@@ -1,0 +1,1080 @@
+{
+  "info": {
+    "name": "Bada Builder API",
+    "description": "Complete API collection for Bada Builder real estate platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "property_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"John Doe\",\n  \"phone\": \"9876543210\",\n  \"userType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "    pm.collectionVariables.set(\"user_id\", jsonData.user.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"phone\": \"9876543211\",\n  \"userType\": \"developer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Upload Profile Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/users/profile-photo",
+              "host": ["{{base_url}}"],
+              "path": ["users", "profile-photo"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/stats",
+              "host": ["{{base_url}}"],
+              "path": ["users", "stats"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Properties",
+      "item": [
+        {
+          "name": "Get All Properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/properties?type=Flat&location=Mumbai&status=active&limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["properties"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "Flat"
+                },
+                {
+                  "key": "location",
+                  "value": "Mumbai"
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Property by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/properties/1",
+              "host": ["{{base_url}}"],
+              "path": ["properties", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Property (Individual)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"property_id\", jsonData.property.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Beautiful 3BHK Flat in Andheri",
+                  "type": "text"
+                },
+                {
+                  "key": "type",
+                  "value": "Flat",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Andheri West, Mumbai",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1.2 Crores",
+                  "type": "text"
+                },
+                {
+                  "key": "bhk",
+                  "value": "3BHK",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Spacious 3BHK flat with modern amenities, located in prime Andheri West. Close to metro station and shopping malls.",
+                  "type": "text"
+                },
+                {
+                  "key": "facilities",
+                  "value": "Parking",
+                  "type": "text"
+                },
+                {
+                  "key": "facilities",
+                  "value": "Lift",
+                  "type": "text"
+                },
+                {
+                  "key": "facilities",
+                  "value": "Power Backup",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/properties",
+              "host": ["{{base_url}}"],
+              "path": ["properties"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Property (Developer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Luxury Apartments by ABC Developers",
+                  "type": "text"
+                },
+                {
+                  "key": "type",
+                  "value": "Flat",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Powai, Mumbai",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "2.5 Crores",
+                  "type": "text"
+                },
+                {
+                  "key": "bhk",
+                  "value": "2BHK",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Premium 2BHK apartments in a gated community with world-class amenities.",
+                  "type": "text"
+                },
+                {
+                  "key": "company_name",
+                  "value": "ABC Developers Pvt Ltd",
+                  "type": "text"
+                },
+                {
+                  "key": "project_name",
+                  "value": "ABC Luxuria",
+                  "type": "text"
+                },
+                {
+                  "key": "total_units",
+                  "value": "200",
+                  "type": "text"
+                },
+                {
+                  "key": "completion_date",
+                  "value": "2025-12-31",
+                  "type": "text"
+                },
+                {
+                  "key": "rera_number",
+                  "value": "P52100001234",
+                  "type": "text"
+                },
+                {
+                  "key": "facilities",
+                  "value": "Swimming Pool",
+                  "type": "text"
+                },
+                {
+                  "key": "facilities",
+                  "value": "Gym",
+                  "type": "text"
+                },
+                {
+                  "key": "facilities",
+                  "value": "Clubhouse",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/properties",
+              "host": ["{{base_url}}"],
+              "path": ["properties"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Property",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Updated: Beautiful 3BHK Flat in Andheri",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1.3 Crores",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Updated description with more details about the property.",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/properties/{{property_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["properties", "{{property_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Property",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/properties/{{property_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["properties", "{{property_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Properties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/properties/user/my-properties",
+              "host": ["{{base_url}}"],
+              "path": ["properties", "user", "my-properties"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Leads",
+      "item": [
+        {
+          "name": "Create Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rajesh Kumar\",\n  \"requirement_type\": \"Flat\",\n  \"location\": \"Mumbai\",\n  \"phone\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/leads",
+              "host": ["{{base_url}}"],
+              "path": ["leads"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/leads?limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["leads"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"booking_id\", jsonData.booking.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": 1,\n  \"visit_date\": \"2024-12-25\",\n  \"visit_time\": \"10:00 AM\",\n  \"number_of_people\": 2,\n  \"person1_name\": \"Rajesh Kumar\",\n  \"person2_name\": \"Priya Kumar\",\n  \"pickup_address\": \"123 Main Street, Andheri, Mumbai\",\n  \"payment_method\": \"postvisit\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Booking with Pre-visit Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"property_id\": 1,\n  \"visit_date\": \"2024-12-25\",\n  \"visit_time\": \"2:00 PM\",\n  \"number_of_people\": 3,\n  \"person1_name\": \"Amit Sharma\",\n  \"person2_name\": \"Anita Sharma\",\n  \"person3_name\": \"Arjun Sharma\",\n  \"pickup_address\": \"456 Park Avenue, Bandra, Mumbai\",\n  \"payment_method\": \"razorpay_previsit\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"razorpay_order_id\": \"order_ABC123\",\n  \"razorpay_payment_id\": \"pay_XYZ789\",\n  \"razorpay_signature\": \"signature_hash_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/verify-payment",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "verify-payment"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/my-bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "my-bookings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Get Subscription Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/plans",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "plans"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Subscription Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": \"6_months\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/subscriptions/create-order",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "create-order"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Subscription Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"order_ABC123\",\n  \"razorpay_payment_id\": \"pay_XYZ789\",\n  \"razorpay_signature\": \"signature_hash_here\",\n  \"plan_id\": \"6_months\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/subscriptions/verify-payment",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "verify-payment"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/status",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Live Grouping",
+      "item": [
+        {
+          "name": "Get All Live Grouping Properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/live-grouping",
+              "host": ["{{base_url}}"],
+              "path": ["live-grouping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Live Grouping Property by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/live-grouping/1",
+              "host": ["{{base_url}}"],
+              "path": ["live-grouping", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Live Grouping Property",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Premium 3BHK Apartments - Group Buy",
+                  "type": "text"
+                },
+                {
+                  "key": "developer",
+                  "value": "XYZ Developers",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Powai, Mumbai",
+                  "type": "text"
+                },
+                {
+                  "key": "originalPrice",
+                  "value": "2.5 Crores",
+                  "type": "text"
+                },
+                {
+                  "key": "groupPrice",
+                  "value": "2.2 Crores",
+                  "type": "text"
+                },
+                {
+                  "key": "discount",
+                  "value": "12%",
+                  "type": "text"
+                },
+                {
+                  "key": "savings",
+                  "value": "30 Lakhs",
+                  "type": "text"
+                },
+                {
+                  "key": "type",
+                  "value": "Flat",
+                  "type": "text"
+                },
+                {
+                  "key": "totalSlots",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "minBuyers",
+                  "value": "20",
+                  "type": "text"
+                },
+                {
+                  "key": "benefits",
+                  "value": "Free Parking",
+                  "type": "text"
+                },
+                {
+                  "key": "benefits",
+                  "value": "Clubhouse Access",
+                  "type": "text"
+                },
+                {
+                  "key": "area",
+                  "value": "1500 sqft",
+                  "type": "text"
+                },
+                {
+                  "key": "possession",
+                  "value": "2026-06-30",
+                  "type": "text"
+                },
+                {
+                  "key": "reraNumber",
+                  "value": "P52100001234",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Premium apartments with world-class amenities in a prime location.",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/live-grouping",
+              "host": ["{{base_url}}"],
+              "path": ["live-grouping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Join Live Grouping",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/live-grouping/1/join",
+              "host": ["{{base_url}}"],
+              "path": ["live-grouping", "1", "join"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Complaints",
+      "item": [
+        {
+          "name": "Create Complaint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Ramesh Patel",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "ramesh.patel@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "9876543210",
+                  "type": "text"
+                },
+                {
+                  "key": "complaint_type",
+                  "value": "Water Supply Issue",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Andheri West, Mumbai",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "No water supply for the past 3 days. Please resolve this issue urgently.",
+                  "type": "text"
+                },
+                {
+                  "key": "media",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/complaints",
+              "host": ["{{base_url}}"],
+              "path": ["complaints"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Complaints",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/complaints/my-complaints",
+              "host": ["{{base_url}}"],
+              "path": ["complaints", "my-complaints"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Complaint by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/complaints/1",
+              "host": ["{{base_url}}"],
+              "path": ["complaints", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Complaint Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"In Progress\",\n  \"admin_notes\": \"Work in progress. Expected completion by end of week.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/complaints/1/status",
+              "host": ["{{base_url}}"],
+              "path": ["complaints", "1", "status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
