@@ -162,15 +162,9 @@ const SubscriptionPlans = () => {
           setPaymentLoading(false);
           // alert(`Successfully subscribed to ${plan.duration} plan! Payment ID: ${response.razorpay_payment_id}`); // Removed blocking alert
 
-          // Redirect to property posting selection page
+          // Redirect to post property page
           setTimeout(() => {
-            navigate('/property-posting-selection', {
-              state: {
-                userType: userRole,
-                subscriptionVerified: true,
-                message: 'Subscription activated successfully!'
-              }
-            });
+            navigate('/post-property');
           }, 500);
 
         } catch (error) {

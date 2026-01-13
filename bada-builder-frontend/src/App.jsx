@@ -52,8 +52,6 @@ import MyInvestments from './pages/MyInvestments';
 import MyProperties from './pages/MyProperties';
 import MyBookings from './pages/MyBookings';
 import About from './pages/About';
-import Dashboard from './pages/Dashboard';
-import PropertyPostingSelection from './components/PropertyPostingSelection/PropertyPostingSelection';
 import LAM from './pages/Report Data/LAM';
 import MarketInvestmentAnalysis from './pages/Report Data/MarketInvestmentAnalysis';
 import RealEstateFinancialModelling from './pages/Report Data/RealEstateFinancialModelling';
@@ -153,8 +151,6 @@ function AppContent() {
           <Route path="/subscription-plans" element={<SubscriptionPlans />} />
           <Route path="/developer-plan" element={<DeveloperPlan />} />
           <Route path="/individual-plan" element={<IndividualPlan />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/property-posting-selection" element={<PropertyPostingSelection />} />
           <Route path="/post-property" element={<PostProperty />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/my-complaints" element={<MyComplaints />} />
