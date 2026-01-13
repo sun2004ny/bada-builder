@@ -2,42 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// TODO: Remove Firebase - implement with API
+import { subscriptionsAPI } from '../services/api';
 import './SubscriptionPlans.css';
 
 /* ---------- BASE PLANS (Individual) ---------- */
 const individualPlans = [
   {
-    id: '1month',
+    id: '1_month',
     duration: '1 Month',
-    price: 100,
-    features: ['Post 1 property', 'Featured listing for 1 month', 'Email support']
+    price: 500,
+    features: ['Post unlimited properties', 'Featured listing for 1 month', 'Email support']
   },
   {
-    id: '3months',
+    id: '6_months',
     duration: '6 Months',
-    price: 400,
-    features: ['Post 1 property', 'Featured listing for 6 month', 'Email support'],
+    price: 2500,
+    features: ['Post unlimited properties', 'Featured listing for 6 months', 'Email support', 'Save ₹500'],
     popular: true
   },
   {
-    id: '6months',
-    duration: '1 Year',
-    price: 700,
-    features: ['Post 1 property', 'Featured listing for 1 year', 'Email support']
+    id: '12_months',
+    duration: '12 Months',
+    price: 4500,
+    features: ['Post unlimited properties', 'Featured listing for 12 months', 'Email support', 'Save ₹1500']
   }
 ];
 
 /* ---------- DEVELOPER / BUILDER PLAN (ONLY ONE PLAN) ---------- */
 const developerPlan = [
   {
-    id: '12months',
-    duration: '12 month',
-    price: 20000,
+    id: '12_months',
+    duration: '12 Months',
+    price: 4500,
     features: [
-      'Post 20 property',
-      'Featured listing for 1 year',
-      'Email support'
+      'Post unlimited properties',
+      'Featured listing for 12 months',
+      'Priority email support',
+      'Developer dashboard access'
     ],
     bestValue: true
   }
