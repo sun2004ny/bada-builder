@@ -1,0 +1,237 @@
+.property-posting-selection-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.selection-container {
+  max-width: 1000px;
+  width: 100%;
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+.selection-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 12px 24px;
+  border-radius: 50px;
+  border: 2px solid #86efac;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.success-icon {
+  font-size: 1.2em;
+}
+
+.selection-header h1 {
+  font-size: 2.5rem;
+  color: #1f2937;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.selection-header p {
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.user-type-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+}
+
+.posting-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.posting-option-card {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.posting-option-card:hover {
+  border-color: #58335e;
+  box-shadow: 0 10px 30px rgba(88, 51, 94, 0.1);
+}
+
+.posting-option-card.selected {
+  border-color: #58335e;
+  background: linear-gradient(135deg, #58335e 0%, #6d4c7d 100%);
+  color: white;
+  transform: scale(1.02);
+}
+
+.posting-option-card.selected .option-features li {
+  color: #e5e7eb;
+}
+
+.posting-option-card.selected .select-option-btn {
+  background: white;
+  color: #58335e;
+  border-color: white;
+}
+
+.option-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.posting-option-card h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: inherit;
+}
+
+.posting-option-card p {
+  font-size: 1rem;
+  margin-bottom: 20px;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.option-features {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.option-features li {
+  padding: 8px 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+}
+
+.select-option-btn {
+  background: #58335e;
+  color: white;
+  border: 2px solid #58335e;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.select-option-btn:hover:not(:disabled) {
+  background: #6d4c7d;
+  border-color: #6d4c7d;
+  transform: translateY(-2px);
+}
+
+.select-option-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.selection-note {
+  text-align: center;
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #58335e;
+  margin-bottom: 30px;
+}
+
+.selection-note p {
+  margin: 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.back-button-container {
+  text-align: center;
+}
+
+.back-btn {
+  background: transparent;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.back-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .selection-container {
+    padding: 20px;
+    margin: 10px;
+  }
+
+  .selection-header h1 {
+    font-size: 2rem;
+  }
+
+  .posting-options {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .posting-option-card {
+    padding: 20px;
+  }
+
+  .option-icon {
+    font-size: 2.5rem;
+  }
+}
+
+/* Animation for selection */
+.posting-option-card.selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  pointer-events: none;
+}

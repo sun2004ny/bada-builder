@@ -116,12 +116,13 @@ const PostProperty = () => {
   // Get userType from navigation state or location state
   const locationState = location.state || window.history.state?.usr;
   const [userType, setUserType] = useState(locationState?.userType || null);
-  const [selectedPropertyFlow, setSelectedPropertyFlow] = useState(null);
+  const [selectedPropertyFlow, setSelectedPropertyFlow] = useState(locationState?.selectedFlow || null);
   const [existingProperties, setExistingProperties] = useState([]);
   const [fetchingProperties, setFetchingProperties] = useState(false);
   const [editingProperty, setEditingProperty] = useState(null);
-  const [subscriptionVerified, setSubscriptionVerified] = useState(false);
+  const [subscriptionVerified, setSubscriptionVerified] = useState(locationState?.subscriptionVerified || false);
   const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(locationState?.message || null);
   const [developerCredits, setDeveloperCredits] = useState(null); // Add developer credits state
   const [timerRefresh, setTimerRefresh] = useState(0); // For refreshing timers
   const [showDisclaimer, setShowDisclaimer] = useState(false);
@@ -158,6 +159,16 @@ const PostProperty = () => {
 
   const [projectImages, setProjectImages] = useState([]);
   const [brochureFile, setBrochureFile] = useState(null);
+
+  useEffect(() => {
+    // Clear success message after 5 seconds
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   useEffect(() => {
     console.log('🔍 Checking authentication...');
@@ -772,6 +783,32 @@ const PostProperty = () => {
       >
         <h1>{editingProperty ? 'Edit Property' : 'Post Your Property'}</h1>
         <p className="subtitle">{editingProperty ? 'Modify the details of your property' : 'Fill in the details to list your property'}</p>
+
+        {/* Success Message from Subscription */}
+        {successMessage && (
+          <motion.div
+            className="success-message-banner"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              padding: '15px 25px',
+              borderRadius: '12px',
+              margin: '20px 0',
+              textAlign: 'center',
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px'
+            }}
+          >
+            <span style={{ fontSize: '1.2em' }}>✅</span>
+            <span style={{ fontWeight: '600' }}>{successMessage}</span>
+          </motion.div>
+        )}
 
         {/* Step 1: User Type Selection */}
         {!userType && (

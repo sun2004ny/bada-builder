@@ -95,9 +95,9 @@ const DeveloperPlan = () => {
 
             setPaymentLoading(false);
             
-            // Redirect to post property page
+            // Redirect to property posting selection page
             setTimeout(() => {
-              navigate('/post-property', { 
+              navigate('/property-posting-selection', { 
                 state: { 
                   userType: 'developer',
                   subscriptionVerified: true,

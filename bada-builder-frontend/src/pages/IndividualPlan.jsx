@@ -107,9 +107,9 @@ const IndividualPlan = () => {
 
             setPaymentLoading(false);
             
-            // Redirect back to the original page
+            // Redirect to property posting selection page
             setTimeout(() => {
-              navigate(returnTo, {
+              navigate('/property-posting-selection', {
                 state: {
                   userType: userType,
                   subscriptionVerified: true,
