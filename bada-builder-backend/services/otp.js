@@ -1,15 +1,12 @@
 import pool from '../config/database.js';
-import { sendEmail } from './email-brevo.js'; // Using Brevo instead of Gmail
+import { sendEmail } from './email.js';
 
 // Generate 6-digit OTP
 export const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-/**
- * Store OTP in database with 5-minute expiration
- * IMPORTANT: Only call this AFTER email is successfully sent
- */
+// Store OTP in database with 5-minute expiration
 export const storeOTP = async (email, otp) => {
   try {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
@@ -23,7 +20,7 @@ export const storeOTP = async (email, otp) => {
       [email, otp, expiresAt]
     );
 
-    console.log(`✅ OTP stored for ${email}, expires at ${expiresAt.toISOString()}`);
+    console.log(`✅ OTP stored for ${email}, expires at ${expiresAt}`);
     return { success: true };
   } catch (error) {
     console.error('❌ Error storing OTP:', error);
@@ -31,9 +28,7 @@ export const storeOTP = async (email, otp) => {
   }
 };
 
-/**
- * Verify OTP
- */
+// Verify OTP
 export const verifyOTP = async (email, otp) => {
   try {
     const result = await pool.query(
@@ -56,10 +51,7 @@ export const verifyOTP = async (email, otp) => {
   }
 };
 
-/**
- * Send OTP Email
- * Returns { success: boolean, error?: string }
- */
+// Send OTP email
 export const sendOTPEmail = async (email, otp, name = '') => {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
@@ -104,49 +96,7 @@ export const sendOTPEmail = async (email, otp, name = '') => {
   return sendEmail(email, 'Verify Your Email - Bada Builder', html, text);
 };
 
-/**
- * Send OTP with proper error handling
- * This is the main function to use - it handles email sending AND OTP storage
- * OTP is only saved if email is successfully sent
- */
-export const sendOTPWithStorage = async (email, name = '') => {
-  try {
-    // Step 1: Generate OTP
-    const otp = generateOTP();
-    console.log(`📧 Attempting to send OTP to ${email}`);
-
-    // Step 2: Try to send email FIRST
-    const emailResult = await sendOTPEmail(email, otp, name);
-
-    // Step 3: Only store OTP if email was sent successfully
-    if (emailResult.success) {
-      await storeOTP(email, otp);
-      return {
-        success: true,
-        message: 'OTP sent successfully to your email'
-      };
-    } else {
-      // Email failed - don't store OTP
-      console.error('❌ Email failed, OTP not stored');
-      return {
-        success: false,
-        message: 'Failed to send OTP email. Please try again.',
-        error: emailResult.error
-      };
-    }
-  } catch (error) {
-    console.error('❌ Error in sendOTPWithStorage:', error);
-    return {
-      success: false,
-      message: 'Failed to send OTP. Please try again later.',
-      error: error.message
-    };
-  }
-};
-
-/**
- * Clean up expired OTPs (can be run periodically)
- */
+// Clean up expired OTPs (can be run periodically)
 export const cleanupExpiredOTPs = async () => {
   try {
     const result = await pool.query('DELETE FROM email_otps WHERE expires_at < NOW()');

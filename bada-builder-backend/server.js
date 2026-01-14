@@ -36,43 +36,14 @@ if (!process.env.DATABASE_URL) {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ============================================
-// IMPORTANT: Trust Proxy for Render/Heroku
-// ============================================
-app.set('trust proxy', 1);
-
-// ============================================
-// CORS Configuration for Production
-// ============================================
-const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://bada-builder-nine.vercel.app',
-    'https://bada-builder.vercel.app',
-    process.env.FRONTEND_URL
-].filter(Boolean);
-
-app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
-            callback(null, true);
-        } else {
-            console.log('❌ CORS blocked origin:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
 // Middleware
-app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+app.use(helmet());
+app.use(cors({
+   origin:"https://bada-builder-nine.vercel.app",
+    credentials: true,
 }));
+
+app.set("trust proxy", 1);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -80,10 +51,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
+    max: 100, // limit each IP to 100 requests per windowMs
     message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
 });
 
 app.use('/api/', limiter);
