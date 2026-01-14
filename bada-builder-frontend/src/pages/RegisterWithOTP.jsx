@@ -237,7 +237,7 @@ const RegisterWithOTP = () => {
             />
             {errors.email && <p className="error">{errors.email}</p>}
 
-            <label>Phone (Optional)</label>
+            <label>Phone *</label>
             <input
               name="phone"
               type="tel"
@@ -247,7 +247,7 @@ const RegisterWithOTP = () => {
               placeholder="Enter your phone number"
             />
 
-            <label>User Type</label>
+            {/* <label>User Type</label>
             <select
               name="userType"
               value={formData.userType}
@@ -256,7 +256,7 @@ const RegisterWithOTP = () => {
             >
               <option value="individual">Individual</option>
               <option value="developer">Developer</option>
-            </select>
+            </select> */}
 
             <label>Password *</label>
             <div className="password-wrapper">
