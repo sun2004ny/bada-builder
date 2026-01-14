@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// TODO: Remove Firebase - implement with API
+import { propertiesAPI, authAPI } from '../services/api';
 import PropertyForm from '../components/PropertyForm/PropertyForm';
 import DeveloperForm from '../components/DeveloperForm/DeveloperForm';
 import SubscriptionGuard from '../components/SubscriptionGuard/SubscriptionGuard';
-import SubscriptionService from '../services/subscriptionService';
 import { formatDate } from '../utils/dateFormatter';
 import PropertyTemplateEditor from '../components/PropertyTemplateEditor/PropertyTemplateEditor';
 import { compressImage } from '../utils/imageCompressor';
@@ -116,11 +115,15 @@ const PostProperty = () => {
   // Get userType from navigation state or location state
   const locationState = location.state || window.history.state?.usr;
   const [userType, setUserType] = useState(locationState?.userType || null);
-  const [selectedPropertyFlow, setSelectedPropertyFlow] = useState(null);
+  const [selectedPropertyFlow, setSelectedPropertyFlow] = useState(
+    locationState?.selectedPropertyFlow || null // Initialize from navigation state
+  );
   const [existingProperties, setExistingProperties] = useState([]);
   const [fetchingProperties, setFetchingProperties] = useState(false);
   const [editingProperty, setEditingProperty] = useState(null);
-  const [subscriptionVerified, setSubscriptionVerified] = useState(false);
+  const [subscriptionVerified, setSubscriptionVerified] = useState(
+    locationState?.subscriptionVerified || false // Initialize from navigation state
+  );
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const [developerCredits, setDeveloperCredits] = useState(null); // Add developer credits state
   const [timerRefresh, setTimerRefresh] = useState(0); // For refreshing timers
@@ -174,46 +177,37 @@ const PostProperty = () => {
     // Note: Subscription check is now handled only when user clicks "Create New Property"
   }, [isAuthenticated, navigate, currentUser]);
 
-  // Effect to fetch developer credits
+  // Effect to fetch developer credits from backend
   useEffect(() => {
-    if (userType === 'developer' && currentUser?.uid) {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-
-      // Use onSnapshot for real-time updates
-      const unsubscribe = onSnapshot && typeof onSnapshot === 'function' ? onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          setDeveloperCredits(userData.property_credits || 0);
-        }
-      }) : null;
-
-      // Fallback if onSnapshot is not imported (though it should be added to imports)
-      if (!unsubscribe) {
-        getDoc(userDocRef).then((docSnap) => {
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
-            setDeveloperCredits(userData.property_credits || 0);
+    const fetchUserProfile = async () => {
+      if (userType === 'developer' && currentUser?.id) {
+        try {
+          const response = await authAPI.getCurrentUser();
+          // For developers, we assume they have credits if subscribed
+          // Backend doesn't track individual credits yet, so we set a default
+          if (response.user.is_subscribed) {
+            setDeveloperCredits(20); // Default to 20 credits for subscribed developers
+          } else {
+            setDeveloperCredits(0);
           }
-        });
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          setDeveloperCredits(0);
+        }
       }
+    };
 
-      return () => {
-        if (unsubscribe) unsubscribe();
-      };
-    }
+    fetchUserProfile();
   }, [userType, currentUser]);
 
-  // Effect to fetch existing properties
+  // Effect to fetch existing properties from backend
   useEffect(() => {
     const fetchExistingProperties = async () => {
-      if (selectedPropertyFlow === 'existing' && currentUser?.uid) {
+      if (selectedPropertyFlow === 'existing' && currentUser?.id) {
         setFetchingProperties(true);
         try {
-          const propertiesRef = collection(db, 'properties');
-          const q = query(propertiesRef, where('user_id', '==', currentUser.uid));
-          const querySnapshot = await getDocs(q);
-          const propertiesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setExistingProperties(propertiesData);
+          const response = await propertiesAPI.getMyProperties();
+          setExistingProperties(response.properties || []);
         } catch (error) {
           console.error("Error fetching existing properties:", error);
           alert("Failed to fetch your properties. Please try again.");
@@ -422,8 +416,9 @@ const PostProperty = () => {
         propertyData.rera_number = '';
       }
 
-      const propertyRef = doc(db, 'properties', editingProperty.id);
-      await updateDoc(propertyRef, propertyData);
+      // Update property via backend API
+      const images = imageFile ? [imageFile] : [];
+      const response = await propertiesAPI.update(editingProperty.id, propertyData, images);
 
       alert(`Property updated successfully! You can view it in the ${userType === 'developer' ? 'Developer' : 'Individual'} Exhibition.`);
       setLoading(false);
@@ -436,11 +431,8 @@ const PostProperty = () => {
       setImagePreview('');
 
       // Re-fetch properties to show updated list
-      const propertiesRef = collection(db, 'properties');
-      const q = query(propertiesRef, where('user_id', '==', currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      const updatedPropertiesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setExistingProperties(updatedPropertiesData);
+      const updatedResponse = await propertiesAPI.getMyProperties();
+      setExistingProperties(updatedResponse.properties || []);
 
       // Navigate to exhibition page after a delay
       setTimeout(() => {
@@ -658,21 +650,10 @@ const PostProperty = () => {
         price: userType === 'developer' ? `₹${activeData.basePrice} - ₹${activeData.maxPrice}` : (activeData.price || ''),
         description: activeData.description || '',
         facilities: activeData.facilities ? (Array.isArray(activeData.facilities) ? activeData.facilities : activeData.facilities.split(',').map(f => f.trim()).filter(f => f)) : [],
-        image_url: imageUrl,
-        user_id: currentUser.uid || '',
+        // Note: image_url and images will be handled by backend from uploaded files
         user_type: userType || 'individual',
-        created_at: new Date().toISOString(),
         status: 'active'
       };
-
-      // Subscription logic...
-      try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists() && userDoc.data().subscription_expiry) {
-          propertyData.subscription_expiry = userDoc.data().subscription_expiry;
-        }
-      } catch (e) { console.error(e); }
 
       if (showBhkType && formData.bhk) propertyData.bhk = formData.bhk;
 
@@ -718,20 +699,22 @@ const PostProperty = () => {
         if (activeData.contactPhone) propertyData.contact_phone = activeData.contactPhone;
       }
 
-      console.log('💾 Saving to Firestore...', propertyData);
-      const docRef = await addDoc(collection(db, 'properties'), propertyData);
-      const propertyId = docRef.id;
-
-      // ... Credits/Subscription deduction (Reuse existing logic block if possible or copy) ...
-      if (userType === 'developer') {
-        const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, { property_credits: increment(-1) });
-      } else if (userType === 'individual' && currentUser?.uid) {
-        await SubscriptionService.markSubscriptionUsed(currentUser.uid, propertyId);
-      }
+      console.log('💾 Saving to database via API...', propertyData);
+      
+      // Prepare files for upload
+      const imagesToUpload = [];
+      if (compressedCoverFile) imagesToUpload.push(compressedCoverFile);
+      imagesToUpload.push(...compressedExtraFiles);
+      
+      // Call backend API to create property
+      const response = await propertiesAPI.create(propertyData, imagesToUpload);
+      console.log('✅ Property created successfully:', response.property);
 
       setLoading(false);
       setShowDisclaimer(false);
+      
+      alert('Property posted successfully!');
+      
       setTimeout(() => {
         navigate(userType === 'developer' ? '/exhibition/developer' : '/exhibition/individual');
       }, 500);
@@ -755,7 +738,12 @@ const PostProperty = () => {
       }
       if (developerCredits <= 0) {
         alert('You do not have enough credits to post a property. Please purchase a developer subscription plan.');
-        navigate('/developer-plan');
+        navigate('/developer-plan', {
+          state: {
+            returnTo: '/post-property',
+            userType: 'developer'
+          }
+        });
         return;
       }
     }
@@ -866,8 +854,8 @@ const PostProperty = () => {
         {/* Step 2.5: Sub-selection for New Property (Form vs Template) */}
         {userType && selectedPropertyFlow === 'new_selection' && (
           <div className="property-flow-selection">
-            {/* Wrap in SubscriptionGuard for Individuals */}
-            {userType === 'individual' ? (
+            {/* Wrap in SubscriptionGuard for Individuals ONLY if not already verified */}
+            {userType === 'individual' && !subscriptionVerified ? (
               <SubscriptionGuard
                 userType="individual"
                 action="post a property"
@@ -901,7 +889,12 @@ const PostProperty = () => {
               <button
                 type="button"
                 className="change-type-btn"
-                onClick={() => { setUserType(null); setSelectedPropertyFlow(null); setEditingProperty(null); }}
+                onClick={() => { 
+                  setUserType(null); 
+                  setSelectedPropertyFlow(null); 
+                  setEditingProperty(null); 
+                  setSubscriptionVerified(false); // Reset subscription flag
+                }}
               >
                 Change User Type
               </button>
@@ -927,128 +920,90 @@ const PostProperty = () => {
           </div>
         ) : (userType && selectedPropertyFlow === 'new') || (editingProperty && selectedPropertyFlow === 'existing') ? (
           <>
-            {/* For Individual users creating new properties, enforce subscription */}
-            {userType === 'individual' && selectedPropertyFlow === 'new' && !editingProperty ? (
-              <SubscriptionGuard
-                userType={userType}
-                action="post a property"
-                onSubscriptionVerified={handleSubscriptionVerified}
+            {/* No SubscriptionGuard here - already checked at new_selection flow */}
+            <div className="selected-type-badge">
+              <span>
+                {userType === 'individual' ? '👤 Individual Owner' : '🏢 Developer'}
+              </span>
+              <button
+                type="button"
+                className="change-type-btn"
+                onClick={() => { 
+                  setUserType(null); 
+                  setSelectedPropertyFlow(null); 
+                  setEditingProperty(null); 
+                  setSubscriptionVerified(false); // Reset subscription flag
+                }}
               >
-                <div className="selected-type-badge">
-                  <span>👤 Individual Owner</span>
-                  <button
-                    type="button"
-                    className="change-type-btn"
-                    onClick={() => { setUserType(null); setSelectedPropertyFlow(null); setEditingProperty(null); }}
-                  >
-                    Change User Type
-                  </button>
-                </div>
-                <div className="selected-flow-badge">
-                  <span>✨ Create New Property</span>
-                  <button
-                    type="button"
-                    className="change-type-btn"
-                    onClick={() => { setSelectedPropertyFlow('new_selection'); setEditingProperty(null); }}
-                  >
-                    Change Method
-                  </button>
-                </div>
-                <p className="subtitle">Fill in the details to list your property</p>
-                <PropertyForm
-                  formData={formData}
-                  handleChange={handleChange}
-                  handleImageChange={handleImageChange}
-                  imagePreview={imagePreview}
-                  handleSubmit={handleSubmit}
-                  loading={loading}
-                  userType={userType}
-                  showBhkType={showBhkType}
-                  editingProperty={editingProperty}
-                />
-              </SubscriptionGuard>
-            ) : (
-              <>
-                <div className="selected-type-badge">
-                  <span>
-                    {userType === 'individual' ? '👤 Individual Owner' : '🏢 Developer'}
-                  </span>
-                  <button
-                    type="button"
-                    className="change-type-btn"
-                    onClick={() => { setUserType(null); setSelectedPropertyFlow(null); setEditingProperty(null); }}
-                  >
-                    Change User Type
-                  </button>
-                </div>
-                <div className="selected-flow-badge">
-                  <span>
-                    {selectedPropertyFlow === 'new' ? '✨ Create New Property' : '📝 Editing Existing Property'}
-                  </span>
-                  <button
-                    type="button"
-                    className="change-type-btn"
-                    onClick={() => {
-                      if (selectedPropertyFlow === 'new') setSelectedPropertyFlow('new_selection');
-                      else setSelectedPropertyFlow(null);
-                      setEditingProperty(null);
-                    }}
-                  >
-                    Change {selectedPropertyFlow === 'new' ? 'Method' : 'Flow'}
-                  </button>
-                </div>
-                <p className="subtitle">Fill in the details to list your property</p>
+                Change User Type
+              </button>
+            </div>
+            <div className="selected-flow-badge">
+              <span>
+                {selectedPropertyFlow === 'new' ? '✨ Create New Property' : '📝 Editing Existing Property'}
+              </span>
+              <button
+                type="button"
+                className="change-type-btn"
+                onClick={() => {
+                  if (selectedPropertyFlow === 'new') setSelectedPropertyFlow('new_selection');
+                  else setSelectedPropertyFlow(null);
+                  setEditingProperty(null);
+                }}
+              >
+                Change {selectedPropertyFlow === 'new' ? 'Method' : 'Flow'}
+              </button>
+            </div>
+            <p className="subtitle">Fill in the details to list your property</p>
 
-                {/* Developer Credit Display */}
-                {userType === 'developer' && developerCredits !== null && (
-                  <div style={{
-                    background: developerCredits > 0 ? '#f0fdf4' : '#fef2f2',
-                    border: `1px solid ${developerCredits > 0 ? '#86efac' : '#fecaca'}`,
-                    color: developerCredits > 0 ? '#166534' : '#991b1b',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    marginBottom: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                  }}>
-                    <span style={{ fontSize: '1.2em' }}>🏢</span>
-                    {developerCredits > 0 ? (
-                      <span>You have <strong>{developerCredits}</strong> out of <strong>20</strong> properties remaining</span>
-                    ) : (
-                      <span>You have reached your posting limit. <a href="#" style={{ textDecoration: 'underline', color: 'inherit', fontWeight: 'bold' }} onClick={(e) => { e.preventDefault(); navigate('/developer-plan'); }}>Purchase plan to continue</a></span>
-                    )}
-                  </div>
-                )}
-
-                {userType === 'developer' ? (
-                  <DeveloperForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    projectImages={projectImages}
-                    setProjectImages={setProjectImages}
-                    brochureFile={brochureFile}
-                    setBrochureFile={setBrochureFile}
-                    handleChange={handleChange}
-                    handleSubmit={handleSubmit}
-                    loading={loading}
-                    disabled={developerCredits !== null && developerCredits <= 0}
-                  />
+            {/* Developer Credit Display */}
+            {userType === 'developer' && developerCredits !== null && (
+              <div style={{
+                background: developerCredits > 0 ? '#f0fdf4' : '#fef2f2',
+                border: `1px solid ${developerCredits > 0 ? '#86efac' : '#fecaca'}`,
+                color: developerCredits > 0 ? '#166534' : '#991b1b',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <span style={{ fontSize: '1.2em' }}>🏢</span>
+                {developerCredits > 0 ? (
+                  <span>You have <strong>{developerCredits}</strong> out of <strong>20</strong> properties remaining</span>
                 ) : (
-                  <PropertyForm
-                    formData={formData}
-                    handleChange={handleChange}
-                    handleImageChange={handleImageChange}
-                    imagePreview={imagePreview}
-                    handleSubmit={handleSubmit}
-                    loading={loading}
-                    userType={userType}
-                    showBhkType={showBhkType}
-                    editingProperty={editingProperty}
-                    disabled={userType === 'developer' && developerCredits !== null && developerCredits <= 0}
-                  />
+                  <span>You have reached your posting limit. <a href="#" style={{ textDecoration: 'underline', color: 'inherit', fontWeight: 'bold' }} onClick={(e) => { e.preventDefault(); navigate('/developer-plan'); }}>Purchase plan to continue</a></span>
                 )}
-              </>
+              </div>
+            )}
+
+            {userType === 'developer' ? (
+              <DeveloperForm
+                formData={formData}
+                setFormData={setFormData}
+                projectImages={projectImages}
+                setProjectImages={setProjectImages}
+                brochureFile={brochureFile}
+                setBrochureFile={setBrochureFile}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                loading={loading}
+                disabled={developerCredits !== null && developerCredits <= 0}
+              />
+            ) : (
+              <PropertyForm
+                formData={formData}
+                handleChange={handleChange}
+                handleImageChange={handleImageChange}
+                imagePreview={imagePreview}
+                handleSubmit={handleSubmit}
+                loading={loading}
+                userType={userType}
+                showBhkType={showBhkType}
+                editingProperty={editingProperty}
+                disabled={userType === 'developer' && developerCredits !== null && developerCredits <= 0}
+              />
             )}
 
             {/* Loading Overlay */}

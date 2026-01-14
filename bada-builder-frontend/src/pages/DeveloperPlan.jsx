@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// TODO: Remove Firebase - implement with API
+import { subscriptionsAPI } from '../services/api';
 import './SubscriptionPlans.css';
 
 /* ---------- DEVELOPER / BUILDER PLAN (ONLY ONE PLAN) ---------- */
 const developerPlan = [
   {
-    id: '12months',
-    duration: '12 month',
+    id: '12_months',
+    duration: '12 Months',
     price: 20000,
     features: [
-      'Post 20 property',
+      'Post 20 properties',
       'Featured listing for 1 year',
-      'Email support'
+      'Priority support',
+      'RERA verification assistance',
+      'Project showcase'
     ],
     bestValue: true
   }
@@ -58,12 +60,6 @@ const DeveloperPlan = () => {
     loadRazorpay();
   }, []);
 
-  const calculateExpiryDate = (months) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() + months);
-    return date.toISOString();
-  };
-
   // Razorpay payment handler (reusing exact logic from SubscriptionPlans)
   const handleRazorpayPayment = async (plan) => {
     if (!window.Razorpay) {
@@ -71,106 +67,89 @@ const DeveloperPlan = () => {
       return false;
     }
 
-    const amount = plan.price;
-    const currency = 'INR';
-    const months = 12; // Developer plan is always 12 months
+    try {
+      // Step 1: Create Razorpay order on backend
+      console.log('📝 Creating Razorpay order for plan:', plan.id);
+      const orderResponse = await subscriptionsAPI.createOrder(plan.id);
+      console.log('✅ Order created:', orderResponse);
 
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: amount * 100, // Amount in paise
-      currency: currency,
-      name: 'Bada Builder',
-      description: `Developer/Builder Subscription Plan - ${plan.duration}`,
-      image: '/logo.png',
-      order_id: '',
-      handler: async function (response) {
-        console.log('✅ Payment successful:', response);
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: orderResponse.amount * 100, // Amount in paise
+        currency: orderResponse.currency,
+        name: 'Bada Builder',
+        description: `Developer/Builder Subscription Plan - ${plan.duration}`,
+        order_id: orderResponse.orderId, // Use order ID from backend
+        handler: async function (response) {
+          console.log('✅ Payment successful:', response);
 
-        // Calculate expiry date
-        const expiryDate = calculateExpiryDate(months);
+          try {
+            // Verify payment with backend API
+            const result = await subscriptionsAPI.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan_id: plan.id
+            });
 
-        // Prepare payment data
-        const paymentData = {
-          payment_id: response.razorpay_payment_id,
-          amount: amount,
+            console.log('✅ Subscription activated successfully:', result);
+
+            // Show success and redirect
+            setPaymentLoading(false);
+
+            // Redirect directly to Form/Template selection (skip "Create New / Edit Existing")
+            setTimeout(() => {
+              navigate('/post-property', {
+                state: {
+                  userType: 'developer',
+                  selectedPropertyFlow: 'new_selection', // Skip "Create New / Edit Existing" screen
+                  subscriptionVerified: true,
+                  developerCreditsRefresh: true // Trigger credits refresh
+                },
+                replace: true // Replace history to prevent back button issues
+              });
+            }, 500);
+
+          } catch (error) {
+            console.error('Error saving payment/subscription:', error);
+            alert('Payment successful but subscription activation failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
+            setPaymentLoading(false);
+          }
+        },
+        prefill: {
+          name: userProfile?.name || currentUser?.displayName || '',
+          email: userProfile?.email || currentUser?.email || '',
+          contact: userProfile?.phone || currentUser?.phoneNumber || ''
+        },
+        notes: {
+          plan_id: plan.id,
           plan_name: plan.duration,
-          user_id: currentUser.uid,
-          payment_status: 'success',
-          created_at: new Date().toISOString(),
-          razorpay_order_id: response.razorpay_order_id || '',
-          razorpay_signature: response.razorpay_signature || '',
-          payment_currency: currency,
-          payment_timestamp: new Date().toISOString(),
-          user_role: userRole
-        };
-
-        // Prepare subscription data
-        const subscriptionData = {
-          active_plan: plan.id,
-          plan_start_date: new Date().toISOString(),
-          plan_status: 'active',
-          is_subscribed: true,
-          subscription_expiry: expiryDate,
-          subscription_plan: plan.id,
-          subscription_price: plan.price,
-          subscribed_at: new Date().toISOString(),
-          user_type: userRole,
-          property_credits: 20, // Set 20 credits for developer plan
-          total_credits_purchased: 20 // Reset/Set total credits (simplified logic)
-        };
-
-        try {
-          // Store payment details in database
-          await addDoc(collection(db, 'payments'), paymentData);
-          console.log('✅ Payment data stored successfully');
-
-          // Update user subscription in Firestore
-          await updateDoc(doc(db, 'users', currentUser.uid), subscriptionData);
-          console.log('✅ Subscription activated successfully');
-
-          // Show success and redirect
-          setPaymentLoading(false);
-          // alert(`Successfully subscribed to Developer ${plan.duration} plan! Payment ID: ${response.razorpay_payment_id}`); // Removed blocking alert
-
-          // Redirect to post property page
-          setTimeout(() => {
-            navigate('/post-property', { state: { userType: 'developer' } });
-          }, 500); // reduced delay for smoother transition
-
-        } catch (error) {
-          console.error('Error saving payment/subscription:', error);
-          alert('Payment successful but subscription activation failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
-          setPaymentLoading(false);
+          plan_price: plan.price,
+          user_id: currentUser?.id || '',
+          user_role: userRole,
+          subscription_type: 'developer_property_listing'
+        },
+        theme: {
+          color: '#58335e'
+        },
+        modal: {
+          ondismiss: function () {
+            console.log('Payment cancelled by user');
+            setPaymentLoading(false);
+            setSelectedPlan(null);
+          }
         }
-      },
-      prefill: {
-        name: userProfile?.name || currentUser?.displayName || '',
-        email: userProfile?.email || currentUser?.email || '',
-        contact: userProfile?.phone || currentUser?.phoneNumber || ''
-      },
-      notes: {
-        plan_id: plan.id,
-        plan_name: plan.duration,
-        plan_price: plan.price,
-        user_id: currentUser.uid,
-        user_role: userRole,
-        subscription_type: 'developer_property_listing'
-      },
-      theme: {
-        color: '#58335e'
-      },
-      modal: {
-        ondismiss: function () {
-          console.log('Payment cancelled by user');
-          setPaymentLoading(false);
-          setSelectedPlan(null);
-        }
-      }
-    };
+      };
 
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
-    return true;
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      return true;
+
+    } catch (error) {
+      console.error('❌ Error creating order:', error);
+      alert('Failed to initiate payment. Please try again.');
+      return false;
+    }
   };
 
   const handleSelectPlan = async (plan) => {

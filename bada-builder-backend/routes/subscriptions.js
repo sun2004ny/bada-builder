@@ -8,33 +8,46 @@ const router = express.Router();
 
 // Get subscription plans
 router.get('/plans', (req, res) => {
-  const plans = [
+  const individualPlans = [
     {
       id: '1_month',
       name: '1 Month',
       duration: 1,
-      price: 500,
-      description: 'Post properties for 1 month',
+      price: 100,
+      description: 'Post 1 property for 1 month',
     },
     {
       id: '6_months',
       name: '6 Months',
       duration: 6,
-      price: 2500,
-      description: 'Post properties for 6 months',
-      savings: 'Save ₹500',
+      price: 400,
+      description: 'Post 1 property for 6 months',
     },
     {
       id: '12_months',
       name: '12 Months',
       duration: 12,
-      price: 4500,
-      description: 'Post properties for 12 months',
-      savings: 'Save ₹1500',
+      price: 700,
+      description: 'Post 1 property for 12 months',
     },
   ];
 
-  res.json({ plans });
+  const developerPlans = [
+    {
+      id: '12_months',
+      name: '12 Months',
+      duration: 12,
+      price: 20000,
+      properties: 20,
+      description: 'Post 20 properties for 12 months',
+    },
+  ];
+
+  res.json({ 
+    individualPlans,
+    developerPlans,
+    plans: individualPlans // For backward compatibility
+  });
 });
 
 // Create subscription order
@@ -42,19 +55,49 @@ router.post('/create-order', authenticate, async (req, res) => {
   try {
     const { plan_id } = req.body;
 
-    const plans = {
-      '1_month': { duration: 1, price: 500 },
-      '6_months': { duration: 6, price: 2500 },
-      '12_months': { duration: 12, price: 4500 },
-    };
+    console.log('📝 Create order request:', { plan_id, userId: req.user.id });
+
+    // Get user type to determine pricing
+    const userResult = await pool.query(
+      'SELECT user_type FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.error('❌ User not found:', req.user.id);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userType = userResult.rows[0]?.user_type || 'individual';
+    console.log('👤 User type:', userType);
+
+    // Define plans based on user type
+    let plans;
+    if (userType === 'developer' || userType === 'builder') {
+      // Developer/Builder plans
+      plans = {
+        '12_months': { duration: 12, price: 20000, properties: 20 },
+      };
+    } else {
+      // Individual plans
+      plans = {
+        '1_month': { duration: 1, price: 100, properties: 1 },
+        '6_months': { duration: 6, price: 400, properties: 1 },
+        '12_months': { duration: 12, price: 700, properties: 1 },
+      };
+    }
 
     const plan = plans[plan_id];
     if (!plan) {
-      return res.status(400).json({ error: 'Invalid plan' });
+      console.error('❌ Invalid plan:', plan_id, 'for user type:', userType);
+      return res.status(400).json({ error: 'Invalid plan for your user type' });
     }
+
+    console.log('💰 Plan details:', plan);
 
     // Create Razorpay order
     const order = await createOrder(plan.price, 'INR', `subscription_${req.user.id}_${Date.now()}`);
+    console.log('✅ Razorpay order created:', order.id);
 
     res.json({
       orderId: order.id,
@@ -64,8 +107,8 @@ router.post('/create-order', authenticate, async (req, res) => {
       duration: plan.duration,
     });
   } catch (error) {
-    console.error('Create subscription order error:', error);
-    res.status(500).json({ error: 'Failed to create subscription order' });
+    console.error('❌ Create subscription order error:', error);
+    res.status(500).json({ error: 'Failed to create subscription order', details: error.message });
   }
 });
 
@@ -81,42 +124,72 @@ router.post('/verify-payment', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Payment verification failed' });
     }
 
-    const plans = {
-      '1_month': { duration: 1, price: 500 },
-      '6_months': { duration: 6, price: 2500 },
-      '12_months': { duration: 12, price: 4500 },
-    };
+    // Get user type to determine pricing
+    const userResult = await pool.query(
+      'SELECT user_type, subscription_expiry FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    const userType = userResult.rows[0]?.user_type || 'individual';
+    const currentExpiry = userResult.rows[0]?.subscription_expiry;
+
+    // Define plans based on user type
+    let plans;
+    if (userType === 'developer' || userType === 'builder') {
+      // Developer/Builder plans
+      plans = {
+        '12_months': { duration: 12, price: 20000, properties: 20 },
+      };
+    } else {
+      // Individual plans
+      plans = {
+        '1_month': { duration: 1, price: 100, properties: 1 },
+        '6_months': { duration: 6, price: 400, properties: 1 },
+        '12_months': { duration: 12, price: 700, properties: 1 },
+      };
+    }
 
     const plan = plans[plan_id];
     if (!plan) {
-      return res.status(400).json({ error: 'Invalid plan' });
+      return res.status(400).json({ error: 'Invalid plan for your user type' });
     }
 
     // Calculate expiry date
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + plan.duration);
 
-    // Get current user subscription
-    const userResult = await pool.query(
-      'SELECT subscription_expiry FROM users WHERE id = $1',
-      [req.user.id]
-    );
-
     let newExpiryDate = expiryDate;
 
     // If user already has an active subscription, extend from current expiry
-    if (userResult.rows[0].subscription_expiry) {
-      const currentExpiry = new Date(userResult.rows[0].subscription_expiry);
-      if (currentExpiry > new Date()) {
+    if (currentExpiry) {
+      const currentExpiryDate = new Date(currentExpiry);
+      if (currentExpiryDate > new Date()) {
         // Extend from current expiry
-        newExpiryDate = new Date(currentExpiry);
+        newExpiryDate = new Date(currentExpiryDate);
         newExpiryDate.setMonth(newExpiryDate.getMonth() + plan.duration);
       }
     }
 
-    // Update user subscription
-    const result = await pool.query(
-      `UPDATE users SET
+    // Update user subscription and developer credits
+    let updateQuery;
+    let updateParams;
+
+    if (userType === 'developer' || userType === 'builder') {
+      // For developers, also update property credits
+      updateQuery = `UPDATE users SET
+        is_subscribed = TRUE,
+        subscription_expiry = $1,
+        subscription_plan = $2,
+        subscription_price = $3,
+        developer_properties_remaining = COALESCE(developer_properties_remaining, 0) + $4,
+        subscribed_at = COALESCE(subscribed_at, CURRENT_TIMESTAMP),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
+      RETURNING *`;
+      updateParams = [newExpiryDate, plan_id, plan.price, plan.properties, req.user.id];
+    } else {
+      // For individuals, just update subscription
+      updateQuery = `UPDATE users SET
         is_subscribed = TRUE,
         subscription_expiry = $1,
         subscription_plan = $2,
@@ -124,10 +197,11 @@ router.post('/verify-payment', authenticate, async (req, res) => {
         subscribed_at = COALESCE(subscribed_at, CURRENT_TIMESTAMP),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $4
-      RETURNING *`,
-      [newExpiryDate, plan_id, plan.price, req.user.id]
-    );
+      RETURNING *`;
+      updateParams = [newExpiryDate, plan_id, plan.price, req.user.id];
+    }
 
+    const result = await pool.query(updateQuery, updateParams);
     const user = result.rows[0];
 
     // Send confirmation email
@@ -144,6 +218,7 @@ router.post('/verify-payment', authenticate, async (req, res) => {
         expiry: user.subscription_expiry,
         plan: user.subscription_plan,
         price: user.subscription_price,
+        developerCredits: user.developer_properties_remaining || 0,
       },
     });
   } catch (error) {

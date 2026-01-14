@@ -1,0 +1,30 @@
+✅ PAYMENT REDIRECT CONFIRMATION
+
+Question: Does redirect to Form/Template selection happen ONLY after successful payment?
+
+Answer: YES ✅
+
+Proof:
+------
+
+1. Redirect code is inside try {} block
+2. Redirect happens AFTER subscriptionsAPI.verifyPayment() succeeds
+3. If verification fails, code goes to catch {} block - NO redirect
+4. User stays on payment page if anything fails
+
+Flow:
+-----
+Payment Success → Backend Verifies → Database Updated → ✅ REDIRECT to Form/Template Selection
+
+Payment Fails → ❌ NO REDIRECT → User stays on payment page → Error shown
+
+Destination After Successful Payment:
+-------------------------------------
+/post-property with selectedPropertyFlow: 'new_selection'
+
+This shows:
+- 📝 Create Using Form
+- 📋 Create Using Template
+
+NO payment screen appears again ✅
+User can directly post property ✅
