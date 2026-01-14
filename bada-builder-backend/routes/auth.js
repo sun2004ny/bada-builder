@@ -210,7 +210,10 @@ router.get('/me', authenticate, async(req, res) => {
 // Update profile
 router.put('/profile', authenticate, async(req, res) => {
     try {
-        const { name, phone, userType } = req.body;
+        const { name, phone, userType, profile_photo } = req.body;
+        
+        console.log('📝 Profile update request:', { name, phone, userType, profile_photo: profile_photo ? 'provided' : 'not provided' });
+        
         const updates = [];
         const values = [];
         let paramCount = 1;
@@ -227,13 +230,20 @@ router.put('/profile', authenticate, async(req, res) => {
             updates.push(`user_type = $${paramCount++}`);
             values.push(userType);
         }
+        if (profile_photo !== undefined) {
+            updates.push(`profile_photo = $${paramCount++}`);
+            values.push(profile_photo);
+        }
 
         if (updates.length === 0) {
+            console.log('❌ No fields to update');
             return res.status(400).json({ error: 'No fields to update' });
         }
 
         updates.push(`updated_at = CURRENT_TIMESTAMP`);
         values.push(req.user.id);
+
+        console.log('💾 Updating user with:', { updates, values });
 
         const result = await pool.query(
             `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount} 
@@ -242,9 +252,10 @@ router.put('/profile', authenticate, async(req, res) => {
             values
         );
 
+        console.log('✅ Profile updated successfully');
         res.json({ user: result.rows[0] });
     } catch (error) {
-        console.error('Update profile error:', error);
+        console.error('❌ Update profile error:', error);
         res.status(500).json({ error: 'Failed to update profile' });
     }
 });

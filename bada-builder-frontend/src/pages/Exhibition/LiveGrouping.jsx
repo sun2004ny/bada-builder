@@ -141,13 +141,13 @@ const LiveGrouping = () => {
     },
     {
       id: 3,
-      title: "Royal Heights Premium",
+      title: "Royal Heights Premium  villa",
       developer: "Kalpataru Developers",
       location: "Akota, Vadodara",
       pricePerSqFt: 3429, // Regular price per sq ft
       groupPricePerSqFt: 3000, // Group discounted price per sq ft
       discount: "12% OFF",
-      image: "/placeholder-property.jpg",
+      image: "https://www.freepik.com/free-ai-image/luxurious-villa-with-modern-architectural-design_266554207.htm#fromView=keyword&page=1&position=1&uuid=e6f3e18d-bdbd-41f0-b432-4cadc16e41ee&query=Villa",
       type: "Luxury Penthouse",
       units: [
         { name: "Penthouse 3 BHK", area: 3000 },

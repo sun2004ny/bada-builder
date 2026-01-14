@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 import { FiUser, FiMail, FiPhone, FiHash, FiBriefcase, FiHome, FiUsers, FiCalendar, FiUpload, FiTrash2, FiEdit3, FiTrendingUp, FiMessageSquare, FiX, FiAlertCircle } from 'react-icons/fi';
-// TODO: Remove Firebase - implement with API
 import { motion, AnimatePresence } from 'framer-motion';
 import ChatList from '../components/ChatList/ChatList';
 import ChatBox from '../components/ChatBox/ChatBox';
@@ -68,63 +68,9 @@ const ProfilePage = () => {
   }, [userProfile]);
 
   useEffect(() => {
-    if (!currentUser?.uid) return;
-    setLoadingActivity(true);
-
-    const propertiesQuery = query(collection(db, 'properties'), where('user_id', '==', currentUser.uid));
-    const bookingsQuery = query(collection(db, 'bookings'), where('user_id', '==', currentUser.uid));
-    const liveGroupQuery = query(collection(db, 'liveGroupInteractions'), where('userId', '==', currentUser.uid));
-    const investmentsQuery = query(collection(db, 'investments'), where('user_id', '==', currentUser.uid));
-    const shortStayQuery = query(collection(db, 'short_stay_bookings'), where('guestId', '==', currentUser.uid));
-    const complaintsQuery = query(collection(db, 'complaints'), where('userId', '==', currentUser.uid));
-
-    const unsubscribeProperties = onSnapshot(propertiesQuery, (snapshot) => {
-      setActivityCounts(prev => ({ ...prev, propertiesUploaded: snapshot.size }));
-      setLoadingActivity(false);
-    });
-
-    const unsubscribeBookings = onSnapshot(bookingsQuery, (snapshot) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const activeBookings = snapshot.docs.filter(doc => {
-        const data = doc.data();
-        if (data.visit_date) {
-          const visitDate = new Date(data.visit_date);
-          visitDate.setHours(0, 0, 0, 0);
-          return visitDate >= today;
-        }
-        return true;
-      });
-      setActivityCounts(prev => ({ ...prev, bookedSiteVisits: activeBookings.length }));
-    });
-
-    const unsubscribeLiveGroups = onSnapshot(liveGroupQuery, (snapshot) => {
-      setActivityCounts(prev => ({ ...prev, joinedLiveGroups: snapshot.size }));
-    });
-
-    const unsubscribeInvestments = onSnapshot(investmentsQuery, (snapshot) => {
-      setActivityCounts(prev => ({ ...prev, investments: snapshot.size }));
-    });
-
-    const unsubscribeShortStay = onSnapshot(shortStayQuery, (snapshot) => {
-      setActivityCounts(prev => ({ ...prev, shortStayBookings: snapshot.size }));
-    });
-
-    const unsubscribeComplaints = onSnapshot(complaintsQuery, (snapshot) => {
-      const ongoingCount = snapshot.docs.filter(doc =>
-        ['Submitted', 'Under Review', 'In Progress'].includes(doc.data().status)
-      ).length;
-      setActivityCounts(prev => ({ ...prev, myComplaints: ongoingCount }));
-    });
-
-    return () => {
-      unsubscribeProperties();
-      unsubscribeBookings();
-      unsubscribeLiveGroups();
-      unsubscribeInvestments();
-      unsubscribeShortStay();
-      unsubscribeComplaints();
-    };
+    // TODO: Implement activity tracking with API
+    // For now, set loading to false
+    setLoadingActivity(false);
   }, [currentUser]);
 
   useEffect(() => {
@@ -136,8 +82,8 @@ const ProfilePage = () => {
     name: userProfile?.name || 'User',
     email: currentUser?.email || '',
     phone: userProfile?.phone || '',
-    userId: currentUser?.uid?.substring(0, 8).toUpperCase() || '',
-    userType: userProfile?.userType || '',
+    userId: currentUser?.id?.toString().substring(0, 8).toUpperCase() || '',
+    userType: userProfile?.user_type || '',
     profilePhoto: profilePhoto
   };
 
@@ -209,7 +155,10 @@ const ProfilePage = () => {
     try {
       setUploading(true);
       const photoURL = await uploadToCloudinary(file);
-      await updateDoc(doc(db, 'users', currentUser.uid), { profilePhoto: photoURL });
+      
+      // Update profile photo via API
+      await authAPI.updateProfile({ profile_photo: photoURL });
+      
       setProfilePhoto(photoURL);
       await refreshProfile();
       setUploadSuccess(true);
@@ -226,7 +175,10 @@ const ProfilePage = () => {
     if (!currentUser) return;
     try {
       setUploading(true);
-      await updateDoc(doc(db, 'users', currentUser.uid), { profilePhoto: null });
+      
+      // Remove profile photo via API
+      await authAPI.updateProfile({ profile_photo: null });
+      
       setProfilePhoto(null);
       await refreshProfile();
     } catch (error) {
@@ -336,7 +288,7 @@ const ProfilePage = () => {
           {selectedChat && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="chat-modal-overlay" onClick={() => setSelectedChat(null)}>
               <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="chat-modal-container" onClick={(e) => e.stopPropagation()}>
-                <ChatBox chatId={selectedChat.chatId} chatData={selectedChat} onClose={() => setSelectedChat(null)} isOwner={selectedChat.ownerId === currentUser.uid} />
+                <ChatBox chatId={selectedChat.chatId} chatData={selectedChat} onClose={() => setSelectedChat(null)} isOwner={selectedChat.ownerId === currentUser?.id} />
               </motion.div>
             </motion.div>
           )}

@@ -170,36 +170,17 @@ router.post('/verify-payment', authenticate, async (req, res) => {
       }
     }
 
-    // Update user subscription and developer credits
-    let updateQuery;
-    let updateParams;
-
-    if (userType === 'developer' || userType === 'builder') {
-      // For developers, also update property credits
-      updateQuery = `UPDATE users SET
-        is_subscribed = TRUE,
-        subscription_expiry = $1,
-        subscription_plan = $2,
-        subscription_price = $3,
-        developer_properties_remaining = COALESCE(developer_properties_remaining, 0) + $4,
-        subscribed_at = COALESCE(subscribed_at, CURRENT_TIMESTAMP),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5
-      RETURNING *`;
-      updateParams = [newExpiryDate, plan_id, plan.price, plan.properties, req.user.id];
-    } else {
-      // For individuals, just update subscription
-      updateQuery = `UPDATE users SET
-        is_subscribed = TRUE,
-        subscription_expiry = $1,
-        subscription_plan = $2,
-        subscription_price = $3,
-        subscribed_at = COALESCE(subscribed_at, CURRENT_TIMESTAMP),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $4
-      RETURNING *`;
-      updateParams = [newExpiryDate, plan_id, plan.price, req.user.id];
-    }
+    // Update user subscription (same for both individual and developer)
+    const updateQuery = `UPDATE users SET
+      is_subscribed = TRUE,
+      subscription_expiry = $1,
+      subscription_plan = $2,
+      subscription_price = $3,
+      subscribed_at = COALESCE(subscribed_at, CURRENT_TIMESTAMP),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $4
+    RETURNING *`;
+    const updateParams = [newExpiryDate, plan_id, plan.price, req.user.id];
 
     const result = await pool.query(updateQuery, updateParams);
     const user = result.rows[0];
@@ -218,7 +199,6 @@ router.post('/verify-payment', authenticate, async (req, res) => {
         expiry: user.subscription_expiry,
         plan: user.subscription_plan,
         price: user.subscription_price,
-        developerCredits: user.developer_properties_remaining || 0,
       },
     });
   } catch (error) {
