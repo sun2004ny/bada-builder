@@ -10,7 +10,7 @@ const router = express.Router();
 // Get all properties (public, with optional filters)
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { type, location, minPrice, maxPrice, userType, status = 'active', limit = 50, offset = 0 } = req.query;
+    const { type, location, minPrice, maxPrice, userType, user_type, status = 'active', limit = 50, offset = 0 } = req.query;
 
     let query = 'SELECT * FROM properties WHERE status = $1';
     const params = [status];
@@ -24,9 +24,12 @@ router.get('/', optionalAuth, async (req, res) => {
       query += ` AND location ILIKE $${paramCount++}`;
       params.push(`%${location}%`);
     }
-    if (userType) {
+
+    // Support both camelCase and snake_case for user type
+    const targetUserType = userType || user_type;
+    if (targetUserType) {
       query += ` AND user_type = $${paramCount++}`;
-      params.push(userType);
+      params.push(targetUserType);
     }
 
     query += ` ORDER BY created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;
@@ -77,7 +80,7 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
     }
 
     const user = userResult.rows[0];
-    const isSubscribed = user.is_subscribed && 
+    const isSubscribed = user.is_subscribed &&
       (user.subscription_expiry === null || new Date(user.subscription_expiry) > new Date());
 
     if (!isSubscribed) {
@@ -97,12 +100,15 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       total_units,
       completion_date,
       rera_number,
+      // Allow overriding user_type from body if provided, else fall back to user's type
+      user_type
     } = req.body;
 
     // Upload images
     let imageUrl = null;
     let images = [];
 
+    // Check if files were uploaded via multer
     if (req.files && req.files.length > 0) {
       if (req.files.length === 1) {
         imageUrl = await uploadImage(req.files[0].buffer, 'properties');
@@ -110,6 +116,29 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       } else {
         const buffers = req.files.map(file => file.buffer);
         images = await uploadMultipleImages(buffers, 'properties');
+        imageUrl = images[0];
+      }
+    } else {
+      // If no files, check body for pre-uploaded URLs (from frontend Cloudinary upload)
+      if (req.body.image_url) imageUrl = req.body.image_url;
+      if (req.body.images) {
+        // handle both array directly or stringified array or single string
+        if (Array.isArray(req.body.images)) {
+          images = req.body.images;
+        } else if (typeof req.body.images === 'string') {
+          // Try to parse if it's a JSON string, otherwise treat as single URL
+          try {
+            const parsed = JSON.parse(req.body.images);
+            if (Array.isArray(parsed)) images = parsed;
+            else images = [req.body.images];
+          } catch (e) {
+            images = [req.body.images];
+          }
+        }
+      }
+
+      // Ensure we have at least one image url set if images array exists
+      if (!imageUrl && images && images.length > 0) {
         imageUrl = images[0];
       }
     }
@@ -135,7 +164,7 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
         imageUrl,
         images,
         req.user.id,
-        req.user.user_type,
+        user_type || req.user.user_type, // Prefer body user_type, fallback to auth user_type
         company_name || null,
         project_name || null,
         total_units || null,

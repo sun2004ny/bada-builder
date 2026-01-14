@@ -43,7 +43,7 @@ router.get('/plans', (req, res) => {
     },
   ];
 
-  res.json({ 
+  res.json({
     individualPlans,
     developerPlans,
     plans: individualPlans // For backward compatibility
@@ -74,9 +74,11 @@ router.post('/create-order', authenticate, async (req, res) => {
     // Define plans based on user type
     let plans;
     if (userType === 'developer' || userType === 'builder') {
-      // Developer/Builder plans
+      // Developer/Builder can access BOTH their plans AND individual plans
       plans = {
-        '12_months': { duration: 12, price: 20000, properties: 20 },
+        '12_months': { duration: 12, price: 20000, properties: 20 }, // Priority to Dev Plan
+        '1_month': { duration: 1, price: 100, properties: 1 },
+        '6_months': { duration: 6, price: 400, properties: 1 },
       };
     } else {
       // Individual plans
@@ -136,9 +138,11 @@ router.post('/verify-payment', authenticate, async (req, res) => {
     // Define plans based on user type
     let plans;
     if (userType === 'developer' || userType === 'builder') {
-      // Developer/Builder plans
+      // Developer/Builder can access BOTH their plans AND individual plans
       plans = {
-        '12_months': { duration: 12, price: 20000, properties: 20 },
+        '12_months': { duration: 12, price: 20000, properties: 20 }, // Priority to Dev Plan
+        '1_month': { duration: 1, price: 100, properties: 1 },
+        '6_months': { duration: 6, price: 400, properties: 1 },
       };
     } else {
       // Individual plans
