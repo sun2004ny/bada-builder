@@ -14,6 +14,7 @@ import RecommendedProjects from './components/RecommendedProjects/RecommendedPro
 
 import Projects from './pages/Projects';
 import Login from './pages/Login';
+import RegisterWithOTP from './pages/RegisterWithOTP';
 import Connect from './pages/Connect';
 import SearchResults from './pages/SearchResults';
 import ProjectDetails from './pages/ProjectDetails';
@@ -206,6 +207,7 @@ function AppContent() {
           {/* <Route path="/calculator" element={<Calculator />} /> */}
 
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<RegisterWithOTP />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/book-visit" element={<BookSiteVisit />} />
           <Route path="/property-details/:id" element={<PropertyDetails />} />

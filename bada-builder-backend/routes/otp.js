@@ -1,0 +1,216 @@
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import bcrypt from 'bcryptjs';
+import pool from '../config/database.js';
+import { generateOTP, storeOTP, verifyOTP, sendOTPEmail } from '../services/otp.js';
+
+const router = express.Router();
+
+// Step 1: Send OTP for registration
+router.post(
+  '/send-otp',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('name').trim().notEmpty(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { email, name } = req.body;
+
+      // Check if user already exists
+      const existingUser = await pool.query(
+        'SELECT id, is_verified FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (existingUser.rows.length > 0) {
+        if (existingUser.rows[0].is_verified) {
+          return res.status(400).json({ 
+            error: 'User already exists with this email and is verified. Please login.' 
+          });
+        }
+        // If user exists but not verified, allow resending OTP
+      }
+
+      // Generate OTP
+      const otp = generateOTP();
+
+      // Store OTP in database
+      await storeOTP(email, otp);
+
+      // Send OTP email
+      await sendOTPEmail(email, otp, name);
+
+      console.log(`📧 OTP sent to ${email}`);
+
+      res.json({
+        success: true,
+        message: 'OTP sent successfully to your email',
+        email: email,
+      });
+    } catch (error) {
+      console.error('❌ Send OTP error:', error);
+      res.status(500).json({
+        error: 'Failed to send OTP',
+        ...(process.env.NODE_ENV === 'development' && { details: error.message }),
+      });
+    }
+  }
+);
+
+// Step 2: Verify OTP and Register User
+router.post(
+  '/verify-and-register',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('otp').isLength({ min: 6, max: 6 }),
+    body('password').isLength({ min: 6 }),
+    body('name').trim().notEmpty(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { email, otp, password, name, phone, userType } = req.body;
+
+      // Verify OTP
+      const otpVerification = await verifyOTP(email, otp);
+
+      if (!otpVerification.valid) {
+        return res.status(400).json({ error: otpVerification.message });
+      }
+
+      // Check if user already exists and is verified
+      const existingUser = await pool.query(
+        'SELECT id, is_verified FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (existingUser.rows.length > 0 && existingUser.rows[0].is_verified) {
+        return res.status(400).json({ 
+          error: 'User already exists and is verified. Please login.' 
+        });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      let user;
+
+      if (existingUser.rows.length > 0) {
+        // Update existing unverified user
+        const result = await pool.query(
+          `UPDATE users 
+           SET password = $1, name = $2, phone = $3, user_type = $4, 
+               is_verified = TRUE, updated_at = CURRENT_TIMESTAMP
+           WHERE email = $5
+           RETURNING id, email, name, phone, user_type, profile_photo, 
+                     is_subscribed, subscription_expiry, subscription_plan, 
+                     is_verified, created_at`,
+          [hashedPassword, name, phone || null, userType || 'individual', email]
+        );
+        user = result.rows[0];
+      } else {
+        // Create new user
+        const result = await pool.query(
+          `INSERT INTO users (email, password, name, phone, user_type, is_verified, created_at, updated_at) 
+           VALUES ($1, $2, $3, $4, $5, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
+           RETURNING id, email, name, phone, user_type, profile_photo, 
+                     is_subscribed, subscription_expiry, subscription_plan, 
+                     is_verified, created_at`,
+          [email, hashedPassword, name, phone || null, userType || 'individual']
+        );
+        user = result.rows[0];
+      }
+
+      console.log('✅ User registered and verified:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        is_verified: user.is_verified,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Email verified and registration successful! Please login.',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+          userType: user.user_type,
+          isVerified: user.is_verified,
+          createdAt: user.created_at,
+        },
+      });
+    } catch (error) {
+      console.error('❌ Verify and register error:', error);
+      res.status(500).json({
+        error: 'Registration failed',
+        ...(process.env.NODE_ENV === 'development' && { details: error.message }),
+      });
+    }
+  }
+);
+
+// Resend OTP
+router.post(
+  '/resend-otp',
+  [body('email').isEmail().normalizeEmail()],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { email } = req.body;
+
+      // Check if user exists
+      const existingUser = await pool.query(
+        'SELECT name, is_verified FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (existingUser.rows.length > 0 && existingUser.rows[0].is_verified) {
+        return res.status(400).json({ 
+          error: 'Email already verified. Please login.' 
+        });
+      }
+
+      const name = existingUser.rows.length > 0 ? existingUser.rows[0].name : '';
+
+      // Generate new OTP
+      const otp = generateOTP();
+
+      // Store OTP
+      await storeOTP(email, otp);
+
+      // Send OTP email
+      await sendOTPEmail(email, otp, name);
+
+      console.log(`📧 OTP resent to ${email}`);
+
+      res.json({
+        success: true,
+        message: 'OTP resent successfully',
+      });
+    } catch (error) {
+      console.error('❌ Resend OTP error:', error);
+      res.status(500).json({
+        error: 'Failed to resend OTP',
+        ...(process.env.NODE_ENV === 'development' && { details: error.message }),
+      });
+    }
+  }
+);
+
+export default router;

@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 
 // Import routes
 import authRoutes from './routes/auth.js';
+import otpRoutes from './routes/otp.js';
 import userRoutes from './routes/users.js';
 import propertyRoutes from './routes/properties.js';
 import leadRoutes from './routes/leads.js';
@@ -66,6 +67,7 @@ app.get('/health', async(req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/otp', otpRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/leads', leadRoutes);
