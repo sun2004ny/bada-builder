@@ -39,7 +39,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
+   origin:"https://bada-builder-nine.vercel.app",
     credentials: true,
 }));
 
