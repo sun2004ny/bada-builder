@@ -1,5 +1,7 @@
 import pool from '../config/database.js';
-import { sendEmail } from './email.js';
+import { sendEmail } from './email-resend.js'; // Using Resend - Simple and Reliable
+
+console.log('🔍 OTP Service loaded - using Resend email service');
 
 // Generate 6-digit OTP
 export const generateOTP = () => {

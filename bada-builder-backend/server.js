@@ -34,7 +34,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // Default to 5001 if not set
 
 // Middleware
 app.use(helmet());
