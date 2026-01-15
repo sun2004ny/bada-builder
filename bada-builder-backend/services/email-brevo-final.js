@@ -28,24 +28,32 @@ console.log('   App Name:', process.env.APP_NAME || 'Bada Builder');
 const transporter = nodemailer.createTransport({
   host: process.env.BREVO_SMTP_SERVER,
   port: parseInt(process.env.BREVO_SMTP_PORT),
-  secure: false, // Use TLS
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.BREVO_SMTP_LOGIN,
     pass: process.env.BREVO_SMTP_PASSWORD,
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    ciphers: 'SSLv3'
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
+  connectionTimeout: 30000, // 30 seconds
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
+  pool: true, // Use connection pooling
+  maxConnections: 5,
+  maxMessages: 100,
+  requireTLS: true,
+  logger: false,
+  debug: false
 });
 
-// Verify SMTP connection on startup
+// Verify SMTP connection on startup (non-blocking)
 transporter.verify(function (error, success) {
   if (error) {
     console.error('❌ Brevo SMTP Connection Error:', error.message);
     console.error('Please check your Brevo credentials in .env file');
+    console.log('⚠️  Email service will retry on first send attempt');
   } else {
     console.log('✅ Brevo SMTP Server is ready to send emails');
   }
@@ -58,31 +66,32 @@ transporter.verify(function (error, success) {
  * @param {string} name - Recipient name (optional)
  * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
-export const sendOtpEmail = async (to, otp, name = '') => {
-  try {
-    console.log(`📧 Sending OTP to ${to} via Brevo SMTP...`);
+export const sendOtpEmail = async (to, otp, name = '', retries = 3) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`📧 Sending OTP to ${to} via Brevo SMTP... (Attempt ${attempt}/${retries})`);
 
-    // Validate inputs
-    if (!to || !otp) {
-      throw new Error('Missing required parameters: to and otp');
-    }
+      // Validate inputs
+      if (!to || !otp) {
+        throw new Error('Missing required parameters: to and otp');
+      }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      throw new Error('Invalid email address format');
-    }
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(to)) {
+        throw new Error('Invalid email address format');
+      }
 
-    // Validate OTP format (6 digits)
-    if (!/^\d{6}$/.test(otp)) {
-      throw new Error('OTP must be a 6-digit number');
-    }
+      // Validate OTP format (6 digits)
+      if (!/^\d{6}$/.test(otp)) {
+        throw new Error('OTP must be a 6-digit number');
+      }
 
-    const appName = process.env.APP_NAME || 'Bada Builder';
-    const fromEmail = process.env.BREVO_EMAIL;
+      const appName = process.env.APP_NAME || 'Bada Builder';
+      const fromEmail = process.env.BREVO_EMAIL;
 
-    // Email HTML template
-    const html = `
+      // Email HTML template
+      const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #2563eb; margin: 0;">${appName}</h1>
@@ -120,43 +129,57 @@ export const sendOtpEmail = async (to, otp, name = '') => {
       </div>
     `;
 
-    // Plain text version
-    const text = `Your ${appName} verification OTP is: ${otp}. This OTP will expire in 5 minutes.`;
+      // Plain text version
+      const text = `Your ${appName} verification OTP is: ${otp}. This OTP will expire in 5 minutes.`;
 
-    // Send email
-    const info = await transporter.sendMail({
-      from: `"${appName}" <${fromEmail}>`,
-      to: to,
-      subject: `Verify Your Email - ${appName}`,
-      text: text,
-      html: html,
-    });
+      // Send email
+      const info = await transporter.sendMail({
+        from: `"${appName}" <${fromEmail}>`,
+        to: to,
+        subject: `Verify Your Email - ${appName}`,
+        text: text,
+        html: html,
+      });
 
-    console.log('✅ OTP email sent successfully:', {
-      to,
-      messageId: info.messageId,
-      response: info.response
-    });
+      console.log('✅ OTP email sent successfully:', {
+        to,
+        messageId: info.messageId,
+        response: info.response
+      });
 
-    return {
-      success: true,
-      messageId: info.messageId
-    };
+      return {
+        success: true,
+        messageId: info.messageId
+      };
 
-  } catch (error) {
-    console.error('❌ Failed to send OTP email:', {
-      to,
-      error: error.message,
-      code: error.code,
-      command: error.command
-    });
+    } catch (error) {
+      console.error(`❌ Failed to send OTP email (Attempt ${attempt}/${retries}):`, {
+        to,
+        error: error.message,
+        code: error.code,
+        command: error.command
+      });
 
-    return {
-      success: false,
-      error: error.message,
-      code: error.code
-    };
+      // If this was the last attempt, return error
+      if (attempt === retries) {
+        return {
+          success: false,
+          error: error.message,
+          code: error.code
+        };
+      }
+
+      // Wait before retrying (exponential backoff)
+      const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+      console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
   }
+
+  return {
+    success: false,
+    error: 'Failed after all retry attempts'
+  };
 };
 
 /**
