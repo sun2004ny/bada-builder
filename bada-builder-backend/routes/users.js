@@ -51,10 +51,20 @@ router.get('/stats', authenticate, async (req, res) => {
       [userId]
     );
 
+    // Get complaints count
+    const complaintsResult = await pool.query(
+      'SELECT COUNT(*) as count FROM complaints WHERE user_id = $1',
+      [userId]
+    );
+
     res.json({
-      properties: parseInt(propertiesResult.rows[0].count),
-      bookings: parseInt(bookingsResult.rows[0].count),
-      liveGroupings: parseInt(groupingResult.rows[0].count),
+      properties: parseInt(propertiesResult.rows[0].count) || 0,
+      bookings: parseInt(bookingsResult.rows[0].count) || 0,
+      liveGroupings: parseInt(groupingResult.rows[0].count) || 0,
+      complaints: parseInt(complaintsResult.rows[0].count) || 0,
+      // Placeholders for non-Postgres data
+      investments: 0,
+      shortStayBookings: 0,
     });
   } catch (error) {
     console.error('Get stats error:', error);

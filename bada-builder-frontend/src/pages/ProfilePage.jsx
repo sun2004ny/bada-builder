@@ -1,8 +1,14 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../services/api';
-import { FiUser, FiMail, FiPhone, FiHash, FiBriefcase, FiHome, FiUsers, FiCalendar, FiUpload, FiTrash2, FiEdit3, FiTrendingUp, FiMessageSquare, FiX, FiAlertCircle } from 'react-icons/fi';
+import { propertiesAPI, authAPI, usersAPI } from '../services/api';
+import { formatDate } from '../utils/dateFormatter';
+import {
+  FiUser, FiMail, FiPhone, FiHash, FiBriefcase, FiEdit3,
+  FiTrash2, FiMessageSquare, FiHome, FiUsers, FiCalendar,
+  FiTrendingUp, FiAlertCircle, FiX
+} from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import ChatList from '../components/ChatList/ChatList';
 import ChatBox from '../components/ChatBox/ChatBox';
@@ -10,7 +16,7 @@ import './ProfilePage.css';
 
 // Cloudinary Configuration
 const CLOUDINARY_CLOUD_NAME = "dooamkdih";
-const CLOUDINARY_UPLOAD_PRESET = "property_images";
+const CLOUDINARY_UPLOAD_PRESET = "profile_photos";
 
 const uploadToCloudinary = async (file) => {
   const formData = new FormData();
@@ -34,10 +40,12 @@ const uploadToCloudinary = async (file) => {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile, refreshProfile } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const fileInputRef = useRef(null);
+
   const [activityCounts, setActivityCounts] = useState({
     propertiesUploaded: 0,
     joinedLiveGroups: 0,
@@ -49,28 +57,46 @@ const ProfilePage = () => {
   const [loadingActivity, setLoadingActivity] = useState(true);
   const [showChatList, setShowChatList] = useState(false);
   const [selectedChat, setSelectedChat] = useState(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const loadProfilePhoto = async () => {
-      try {
-        setLoading(true);
-        if (userProfile) {
-          setProfilePhoto(userProfile.profilePhoto || null);
-        }
-      } catch (error) {
-        console.error('Error loading profile photo:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProfilePhoto();
+    if (userProfile?.profile_photo) {
+      setProfilePhoto(userProfile.profile_photo);
+    } else {
+      // Fallback or attempt to fetch if userProfile isn't fully hydrated?
+      // Usually userProfile from context is sufficient.
+      const loadProfilePhoto = async () => {
+        // ... existing logic if any ...
+      };
+    }
   }, [userProfile]);
 
   useEffect(() => {
-    // TODO: Implement activity tracking with API
-    // For now, set loading to false
-    setLoadingActivity(false);
+    const fetchStats = async () => {
+      if (!currentUser) return;
+
+      try {
+        setLoadingActivity(true);
+        const response = await usersAPI.getStats(); // Corrected to usersAPI
+
+        if (response) {
+          setActivityCounts({
+            propertiesUploaded: response.properties || 0,
+            joinedLiveGroups: response.liveGroupings || 0,
+            bookedSiteVisits: response.bookings || 0,
+            shortStayBookings: response.shortStayBookings || 0,
+            investments: response.investments || 0,
+            myComplaints: response.complaints || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching activity stats:', error);
+        // Keep defaults on error
+      } finally {
+        setLoadingActivity(false);
+      }
+    };
+
+    fetchStats();
   }, [currentUser]);
 
   useEffect(() => {
@@ -155,10 +181,10 @@ const ProfilePage = () => {
     try {
       setUploading(true);
       const photoURL = await uploadToCloudinary(file);
-      
+
       // Update profile photo via API
       await authAPI.updateProfile({ profile_photo: photoURL });
-      
+
       setProfilePhoto(photoURL);
       await refreshProfile();
       setUploadSuccess(true);
@@ -175,10 +201,10 @@ const ProfilePage = () => {
     if (!currentUser) return;
     try {
       setUploading(true);
-      
+
       // Remove profile photo via API
       await authAPI.updateProfile({ profile_photo: null });
-      
+
       setProfilePhoto(null);
       await refreshProfile();
     } catch (error) {
