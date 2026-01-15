@@ -2,7 +2,7 @@ import express from 'express';
 import pool from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
 import { createOrder, verifyPayment } from '../services/razorpay.js';
-import { sendSubscriptionConfirmation } from '../services/email.js';
+import { sendEmail } from '../utils/sendEmail.js';
 
 const router = express.Router();
 
@@ -190,10 +190,17 @@ router.post('/verify-payment', authenticate, async (req, res) => {
     const user = result.rows[0];
 
     // Send confirmation email
-    sendSubscriptionConfirmation(user.email, {
-      plan: plan_id,
-      price: plan.price,
-      expiry: newExpiryDate,
+    sendEmail({
+      to: user.email,
+      subject: `Subscription Activated - ${process.env.APP_NAME || 'Bada Builder'}`,
+      htmlContent: `
+        <h2>Subscription Activated!</h2>
+        <p>Your subscription has been activated successfully.</p>
+        <p><strong>Plan:</strong> ${plan_id}</p>
+        <p><strong>Price:</strong> ₹${plan.price}</p>
+        <p><strong>Valid Until:</strong> ${newExpiryDate.toLocaleDateString()}</p>
+      `,
+      textContent: `Subscription activated! Plan: ${plan_id}, Price: ₹${plan.price}, Valid until: ${newExpiryDate.toLocaleDateString()}`
     }).catch(err => console.error('Subscription email failed:', err));
 
     res.json({

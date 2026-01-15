@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import pool from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
-import { sendWelcomeEmail } from '../services/email.js';
+import { sendWelcomeEmail } from '../utils/sendEmail.js';
 
 const router = express.Router();
 

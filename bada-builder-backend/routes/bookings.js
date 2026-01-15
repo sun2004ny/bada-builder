@@ -3,7 +3,7 @@ import { body, validationResult } from 'express-validator';
 import pool from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
 import { createOrder, verifyPayment } from '../services/razorpay.js';
-import { sendSiteVisitConfirmation } from '../services/email.js';
+import { sendEmail } from '../utils/sendEmail.js';
 
 const router = express.Router();
 
@@ -99,7 +99,17 @@ router.post(
         }
       } else {
         // Send confirmation email
-        sendSiteVisitConfirmation(userEmail, booking).catch(err => 
+        sendEmail({
+          to: userEmail,
+          subject: `Site Visit Booking Confirmed - ${process.env.APP_NAME || 'Bada Builder'}`,
+          htmlContent: `
+            <h2>Site Visit Confirmed!</h2>
+            <p>Your site visit has been booked successfully.</p>
+            <p><strong>Date:</strong> ${new Date(booking.visit_date).toLocaleDateString()}</p>
+            <p><strong>Time:</strong> ${booking.visit_time}</p>
+          `,
+          textContent: `Site visit confirmed! Date: ${new Date(booking.visit_date).toLocaleDateString()}, Time: ${booking.visit_time}`
+        }).catch(err => 
           console.error('Confirmation email failed:', err)
         );
 
@@ -146,7 +156,18 @@ router.post('/verify-payment', authenticate, async (req, res) => {
     const booking = result.rows[0];
 
     // Send confirmation email
-    sendSiteVisitConfirmation(booking.user_email, booking).catch(err =>
+    sendEmail({
+      to: booking.user_email,
+      subject: `Site Visit Booking Confirmed - ${process.env.APP_NAME || 'Bada Builder'}`,
+      htmlContent: `
+        <h2>Site Visit Confirmed!</h2>
+        <p>Your site visit has been booked and payment confirmed.</p>
+        <p><strong>Date:</strong> ${new Date(booking.visit_date).toLocaleDateString()}</p>
+        <p><strong>Time:</strong> ${booking.visit_time}</p>
+        <p><strong>Amount Paid:</strong> ₹300</p>
+      `,
+      textContent: `Site visit confirmed! Date: ${new Date(booking.visit_date).toLocaleDateString()}, Time: ${booking.visit_time}, Amount: ₹300`
+    }).catch(err =>
       console.error('Confirmation email failed:', err)
     );
 
