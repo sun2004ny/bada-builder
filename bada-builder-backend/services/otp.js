@@ -1,7 +1,7 @@
 import pool from '../config/database.js';
-import { sendOtpEmail } from './email-brevo-final.js';
+import { sendOtpEmail } from '../utils/sendEmail.js';
 
-console.log('🔍 OTP Service loaded - using Brevo SMTP');
+console.log('🔍 OTP Service loaded - using Brevo API (HTTPS)');
 
 /**
  * Generate a random 6-digit OTP
