@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 // Import routes
 import authRoutes from './routes/auth.js';
 import otpRoutes from './routes/otp.js';
+import forgotPasswordRoutes from './routes/forgotPassword.js';
 import userRoutes from './routes/users.js';
 import propertyRoutes from './routes/properties.js';
 import leadRoutes from './routes/leads.js';
@@ -56,7 +57,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Health check
-app.get('/health', async(req, res) => {
+app.get('/health', async (req, res) => {
     try {
         await pool.query('SELECT 1');
         res.json({ status: 'ok', database: 'database connected successfully', timestamp: new Date().toISOString() });
@@ -68,6 +69,7 @@ app.get('/health', async(req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/forgot-password', forgotPasswordRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/leads', leadRoutes);
@@ -98,13 +100,13 @@ app.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', async() => {
+process.on('SIGTERM', async () => {
     console.log('SIGTERM signal received: closing HTTP server');
     await pool.end();
     process.exit(0);
 });
 
-process.on('SIGINT', async() => {
+process.on('SIGINT', async () => {
     console.log('SIGINT signal received: closing HTTP server');
     await pool.end();
     process.exit(0);

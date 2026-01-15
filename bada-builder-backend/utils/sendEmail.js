@@ -280,9 +280,71 @@ export const sendWelcomeEmail = async (to, name = '') => {
   });
 };
 
+
+
+/**
+ * Send Forgot Password OTP email
+ * @param {string} to - Recipient email
+ * @param {string} otp - 6-digit OTP code
+ * @param {string} [name] - Recipient name
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
+ */
+export const sendForgotPasswordOtpEmail = async (to, otp, name = '') => {
+  const appName = process.env.APP_NAME || 'Bada Builder';
+
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #2563eb; margin: 0;">${appName}</h1>
+      </div>
+      
+      <h2 style="color: #333;">Reset Your Password</h2>
+      
+      <p style="color: #555; font-size: 16px;">
+        ${name ? `Hello ${name},` : 'Hello,'}
+      </p>
+      
+      <p style="color: #555; font-size: 16px;">
+        We received a request to reset your password. Use the OTP below to proceed with resetting your password:
+      </p>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
+        <h1 style="color: #dc2626; font-size: 36px; letter-spacing: 8px; margin: 0;">
+          ${otp}
+        </h1>
+      </div>
+      
+      <p style="color: #555; font-size: 14px;">
+        <strong>This OTP will expire in 5 minutes.</strong>
+      </p>
+      
+      <p style="color: #555; font-size: 14px;">
+        If you didn't request a password reset, please ignore this email. Your account is safe.
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+      
+      <p style="color: #999; font-size: 12px; text-align: center;">
+        © 2026 ${appName}. All rights reserved.
+      </p>
+    </div>
+  `;
+
+  const textContent = `Your ${appName} password reset OTP is: ${otp}. This OTP will expire in 5 minutes.`;
+
+  return sendEmail({
+    to,
+    subject: `Password Reset OTP - ${appName}`,
+    htmlContent,
+    textContent,
+    recipientName: name
+  });
+};
+
 export default {
   sendEmail,
   sendOtpEmail,
   sendPasswordResetEmail,
-  sendWelcomeEmail
+  sendWelcomeEmail,
+  sendForgotPasswordOtpEmail
 };

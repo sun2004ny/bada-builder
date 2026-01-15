@@ -1,5 +1,5 @@
 import pool from '../config/database.js';
-import { sendOtpEmail } from '../utils/sendEmail.js';
+import { sendOtpEmail, sendForgotPasswordOtpEmail } from '../utils/sendEmail.js';
 
 console.log('🔍 OTP Service loaded - using Brevo API (HTTPS)');
 
@@ -104,6 +104,48 @@ export const sendOTPWithStorage = async (email, name = '') => {
     }
   } catch (error) {
     console.error('❌ Error in sendOTPWithStorage:', error);
+    return {
+      success: false,
+      message: 'Failed to send OTP. Please try again later.',
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Send Forgot Password OTP
+ * Only sends if user exists (logic should be handled in controller, but here we just send)
+ * @param {string} email - User email
+ * @param {string} name - User name (optional)
+ * @returns {Promise<{success: boolean, message: string, error?: string}>}
+ */
+export const sendForgotPasswordOTP = async (email, name = '') => {
+  try {
+    // Step 1: Generate OTP
+    const otp = generateOTP();
+    console.log(`📧 Attempting to send Password Reset OTP to ${email}`);
+
+    // Step 2: Try to send email FIRST via Brevo
+    const emailResult = await sendForgotPasswordOtpEmail(email, otp, name);
+
+    // Step 3: Only store OTP if email was sent successfully
+    if (emailResult.success) {
+      await storeOTP(email, otp);
+      return {
+        success: true,
+        message: 'Password reset OTP sent successfully to your email'
+      };
+    } else {
+      // Email failed - don't store OTP
+      console.error('❌ Email failed, OTP not stored');
+      return {
+        success: false,
+        message: 'Failed to send OTP email. Please try again.',
+        error: emailResult.error
+      };
+    }
+  } catch (error) {
+    console.error('❌ Error in sendForgotPasswordOTP:', error);
     return {
       success: false,
       message: 'Failed to send OTP. Please try again later.',

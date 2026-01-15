@@ -13,21 +13,21 @@ const Login = () => {
   const returnTo = location.state?.returnTo;
   const property = location.state?.property;
   const message = location.state?.message;
-  
+
   // For registration, always redirect to home page, not back to login
   const getRedirectPath = (isRegistration = false) => {
     if (isRegistration) {
       return "/"; // Always go to home after registration
     }
-    
+
     // If coming from BookSiteVisit, redirect back with property data
     if (returnTo && returnTo.includes('/book-visit')) {
-      return { 
-        path: '/book-visit', 
-        state: { property } 
+      return {
+        path: '/book-visit',
+        state: { property }
       };
     }
-    
+
     return from === "/login" ? "/" : from; // Don't redirect back to login page
   };
 
@@ -106,18 +106,18 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(email, password);
-      
+
       // Refresh profile in context
       await refreshProfile();
-      
+
       // Navigate immediately after auth success
       const redirectInfo = getRedirectPath(false);
-      
+
       if (typeof redirectInfo === 'object' && redirectInfo.path) {
         // Special redirect with state (like BookSiteVisit with property data)
-        navigate(redirectInfo.path, { 
-          state: redirectInfo.state, 
-          replace: true 
+        navigate(redirectInfo.path, {
+          state: redirectInfo.state,
+          replace: true
         });
       } else {
         // Normal redirect
@@ -141,10 +141,10 @@ const Login = () => {
   // ------------------ SUBMIT ------------------
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    
+
     // Prevent submission if already loading
     if (loading) return;
-    
+
     if (!validate()) return;
 
     loginUser(formData.email, formData.password);
@@ -235,17 +235,25 @@ const Login = () => {
           </div>
           {errors.password && <p className="error">{errors.password}</p>}
 
+          <div className="forgot-password-link" style={{ textAlign: "right", marginTop: "5px" }}>
+            <span
+              onClick={() => navigate('/forgot-password')}
+              style={{ color: "#2563eb", cursor: "pointer", fontSize: "14px", fontWeight: "500" }}
+            >
+              Forgot Password?
+            </span>
+          </div>
+
           {errors.submit && (
-            <p className={`error submit-error ${
-              errors.submit.includes('successful') ? 'success-login' : 
-              errors.submit.includes('reset') ? 'info-message' : ''
-            }`}>
+            <p className={`error submit-error ${errors.submit.includes('successful') ? 'success-login' :
+                errors.submit.includes('reset') ? 'info-message' : ''
+              }`}>
               {errors.submit}
             </p>
           )}
 
-          <button 
-            className="submit-btn" 
+          <button
+            className="submit-btn"
             disabled={loading}
           >
             {loading ? <span className="spinner"></span> : "Login"}
@@ -254,8 +262,8 @@ const Login = () => {
 
         <p className="toggle-text">
           Don't have an account?{" "}
-          <span 
-            onClick={() => navigate('/register')} 
+          <span
+            onClick={() => navigate('/register')}
             className="toggle-link"
           >
             Register with OTP
