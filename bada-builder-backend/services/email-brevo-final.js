@@ -27,15 +27,11 @@ console.log('   App Name:', process.env.APP_NAME || 'Bada Builder');
 // Create Brevo SMTP transporter
 const transporter = nodemailer.createTransport({
   host: process.env.BREVO_SMTP_SERVER,
-  port: parseInt(process.env.BREVO_SMTP_PORT),
-  secure: false, // Use STARTTLS
+  port: 465, // Use SSL port instead of 587
+  secure: true, // Use SSL
   auth: {
     user: process.env.BREVO_SMTP_LOGIN,
     pass: process.env.BREVO_SMTP_PASSWORD,
-  },
-  tls: {
-    rejectUnauthorized: false,
-    ciphers: 'SSLv3'
   },
   connectionTimeout: 30000, // 30 seconds
   greetingTimeout: 30000,
@@ -43,7 +39,6 @@ const transporter = nodemailer.createTransport({
   pool: true, // Use connection pooling
   maxConnections: 5,
   maxMessages: 100,
-  requireTLS: true,
   logger: false,
   debug: false
 });
