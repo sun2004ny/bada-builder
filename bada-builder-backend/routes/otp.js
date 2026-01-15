@@ -2,81 +2,94 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import pool from '../config/database.js';
-import { generateOTP, storeOTP, verifyOTP, sendOTPEmail } from '../services/otp.js';
+import { sendOTPWithStorage, verifyOTP } from '../services/otp.js';
 
 const router = express.Router();
 
-// Step 1: Send OTP for registration
+/**
+ * Send OTP for registration
+ * POST /api/otp/send-otp
+ */
 router.post(
   '/send-otp',
   [
-    body('email').isEmail().normalizeEmail(),
-    body('name').trim().notEmpty(),
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('name').trim().notEmpty().withMessage('Name is required'),
   ],
   async (req, res) => {
     try {
+      // Validate input
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ 
+          error: 'Validation failed',
+          details: errors.array() 
+        });
       }
 
       const { email, name } = req.body;
 
-      // Check if user already exists
+      // Check if user already exists and is verified
       const existingUser = await pool.query(
         'SELECT id, is_verified FROM users WHERE email = $1',
         [email]
       );
 
-      if (existingUser.rows.length > 0) {
-        if (existingUser.rows[0].is_verified) {
-          return res.status(400).json({ 
-            error: 'User already exists with this email and is verified. Please login.' 
-          });
-        }
-        // If user exists but not verified, allow resending OTP
+      if (existingUser.rows.length > 0 && existingUser.rows[0].is_verified) {
+        return res.status(400).json({ 
+          error: 'User already exists with this email and is verified. Please login.' 
+        });
       }
 
-      // Generate OTP
-      const otp = generateOTP();
+      // Send OTP (email is sent first, then OTP is stored)
+      const result = await sendOTPWithStorage(email, name);
 
-      // Store OTP in database
-      await storeOTP(email, otp);
+      if (result.success) {
+        console.log(`✅ OTP sent successfully to ${email}`);
+        return res.json({
+          success: true,
+          message: 'OTP sent successfully to your email',
+          email: email,
+        });
+      } else {
+        // Email sending failed
+        console.error(`❌ Failed to send OTP to ${email}:`, result.error);
+        return res.status(500).json({
+          error: 'Failed to send OTP email. Please try again.',
+          details: process.env.NODE_ENV === 'development' ? result.error : undefined
+        });
+      }
 
-      // Send OTP email
-      await sendOTPEmail(email, otp, name);
-
-      console.log(`📧 OTP sent to ${email}`);
-
-      res.json({
-        success: true,
-        message: 'OTP sent successfully to your email',
-        email: email,
-      });
     } catch (error) {
       console.error('❌ Send OTP error:', error);
       res.status(500).json({
-        error: 'Failed to send OTP',
-        ...(process.env.NODE_ENV === 'development' && { details: error.message }),
+        error: 'Failed to send OTP. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
 );
 
-// Step 2: Verify OTP and Register User
+/**
+ * Verify OTP and Register User
+ * POST /api/otp/verify-and-register
+ */
 router.post(
   '/verify-and-register',
   [
-    body('email').isEmail().normalizeEmail(),
-    body('otp').isLength({ min: 6, max: 6 }),
-    body('password').isLength({ min: 6 }),
-    body('name').trim().notEmpty(),
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('name').trim().notEmpty().withMessage('Name is required'),
   ],
   async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ 
+          error: 'Validation failed',
+          details: errors.array() 
+        });
       }
 
       const { email, otp, password, name, phone, userType } = req.body;
@@ -155,59 +168,7 @@ router.post(
       console.error('❌ Verify and register error:', error);
       res.status(500).json({
         error: 'Registration failed',
-        ...(process.env.NODE_ENV === 'development' && { details: error.message }),
-      });
-    }
-  }
-);
-
-// Resend OTP
-router.post(
-  '/resend-otp',
-  [body('email').isEmail().normalizeEmail()],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const { email } = req.body;
-
-      // Check if user exists
-      const existingUser = await pool.query(
-        'SELECT name, is_verified FROM users WHERE email = $1',
-        [email]
-      );
-
-      if (existingUser.rows.length > 0 && existingUser.rows[0].is_verified) {
-        return res.status(400).json({ 
-          error: 'Email already verified. Please login.' 
-        });
-      }
-
-      const name = existingUser.rows.length > 0 ? existingUser.rows[0].name : '';
-
-      // Generate new OTP
-      const otp = generateOTP();
-
-      // Store OTP
-      await storeOTP(email, otp);
-
-      // Send OTP email
-      await sendOTPEmail(email, otp, name);
-
-      console.log(`📧 OTP resent to ${email}`);
-
-      res.json({
-        success: true,
-        message: 'OTP resent successfully',
-      });
-    } catch (error) {
-      console.error('❌ Resend OTP error:', error);
-      res.status(500).json({
-        error: 'Failed to resend OTP',
-        ...(process.env.NODE_ENV === 'development' && { details: error.message }),
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }

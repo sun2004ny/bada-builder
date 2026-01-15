@@ -26,7 +26,6 @@ const RegisterWithOTP = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
 
   // Handle input changes
   const handleChange = useCallback((e) => {
@@ -67,20 +66,6 @@ const RegisterWithOTP = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Start resend timer
-  const startResendTimer = () => {
-    setResendTimer(60);
-    const interval = setInterval(() => {
-      setResendTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
   // Step 1: Send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -98,7 +83,6 @@ const RegisterWithOTP = () => {
 
       setOtpSent(true);
       setStep(2);
-      startResendTimer();
       setErrors({ submit: "OTP sent to your email! Please check your inbox." });
     } catch (error) {
       let msg = "Failed to send OTP";
@@ -141,31 +125,6 @@ const RegisterWithOTP = () => {
       });
     } catch (error) {
       let msg = "Verification failed";
-      if (error.response?.data?.error) {
-        msg = error.response.data.error;
-      }
-      setErrors({ submit: msg });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Resend OTP
-  const handleResendOTP = async () => {
-    if (resendTimer > 0) return;
-
-    setLoading(true);
-    setErrors({});
-
-    try {
-      await axios.post(`${API_URL}/otp/resend-otp`, {
-        email: formData.email,
-      });
-
-      startResendTimer();
-      setErrors({ submit: "OTP resent successfully!" });
-    } catch (error) {
-      let msg = "Failed to resend OTP";
       if (error.response?.data?.error) {
         msg = error.response.data.error;
       }
@@ -351,7 +310,7 @@ const RegisterWithOTP = () => {
 
             {errors.submit && (
               <p className={`error submit-error ${
-                errors.submit.includes('resent') ? 'success-login' : ''
+                errors.submit.includes('sent') ? 'success-login' : ''
               }`}>
                 {errors.submit}
               </p>
@@ -360,30 +319,6 @@ const RegisterWithOTP = () => {
             <button className="submit-btn" disabled={loading}>
               {loading ? <span className="spinner"></span> : "Verify & Register"}
             </button>
-
-            <div style={{ textAlign: "center", marginTop: "15px" }}>
-              {resendTimer > 0 ? (
-                <p style={{ color: "#666", fontSize: "14px" }}>
-                  Resend OTP in {resendTimer}s
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleResendOTP}
-                  disabled={loading}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#2563eb",
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                    fontSize: "14px",
-                  }}
-                >
-                  Resend OTP
-                </button>
-              )}
-            </div>
 
             <button
               type="button"
