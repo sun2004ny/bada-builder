@@ -138,15 +138,15 @@ const BookSiteVisit = () => {
       console.log('🔒 User not authenticated, redirecting to login...');
       // Save current location and property data to return after login
       const returnPath = location.pathname + location.search;
-      const returnState = { 
+      const returnState = {
         property,
         returnTo: returnPath,
         message: 'Please login to book a site visit'
       };
-      
-      navigate('/login', { 
+
+      navigate('/login', {
         state: returnState,
-        replace: true 
+        replace: true
       });
     }
   }, [authLoading, isAuthenticated, navigate, location, property]);
@@ -182,7 +182,7 @@ const BookSiteVisit = () => {
     if (!window.google || !mapRef.current) return;
 
     const defaultCenter = { lat: 28.6139, lng: 77.2090 }; // Delhi coordinates
-    
+
     const map = new window.google.maps.Map(mapRef.current, {
       center: defaultCenter,
       zoom: 13,
@@ -240,11 +240,11 @@ const BookSiteVisit = () => {
         if (place.geometry && place.geometry.location) {
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
-          
+
           map.setCenter({ lat, lng });
           map.setZoom(16);
           marker.setPosition({ lat, lng });
-          
+
           setSelectedLocation({
             lat,
             lng,
@@ -296,21 +296,21 @@ const BookSiteVisit = () => {
         if (mapRef.current && markerRef.current) {
           const map = mapRef.current;
           const marker = markerRef.current;
-          
+
           map.setCenter({ lat, lng });
           map.setZoom(16);
           marker.setPosition({ lat, lng });
-          
+
           reverseGeocode(lat, lng);
         }
-        
+
         setCurrentLocationLoading(false);
       },
       (error) => {
         console.error('Error getting location:', error);
         let errorMessage = 'Unable to get your location. ';
-        
-        switch(error.code) {
+
+        switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage += 'Please allow location access and try again.';
             break;
@@ -324,7 +324,7 @@ const BookSiteVisit = () => {
             errorMessage += 'An unknown error occurred.';
             break;
         }
-        
+
         alert(errorMessage);
         setCurrentLocationLoading(false);
       },
@@ -344,7 +344,7 @@ const BookSiteVisit = () => {
     }
     setShowMapModal(true);
     setSelectedLocation(null);
-    
+
     // Initialize map after modal opens
     setTimeout(() => {
       initializeMap();
@@ -385,7 +385,7 @@ const BookSiteVisit = () => {
       order_id: '', // Will be generated from backend if needed
       handler: async function (response) {
         console.log('✅ Payment successful:', response);
-        
+
         // Save payment details
         const paymentData = {
           ...bookingData,
@@ -411,11 +411,7 @@ const BookSiteVisit = () => {
           // Show success and redirect
           setBookingSuccess(true);
           setTimeout(() => {
-            navigate('/', { 
-              state: { 
-                successMessage: 'Your site visit has been booked and payment completed successfully! You will receive a confirmation shortly.' 
-              }
-            });
+            navigate('/');
           }, 3000);
 
         } catch (error) {
@@ -439,7 +435,7 @@ const BookSiteVisit = () => {
         color: '#58335e'
       },
       modal: {
-        ondismiss: function() {
+        ondismiss: function () {
           console.log('Payment cancelled by user');
           setPaymentLoading(false);
         }
@@ -553,13 +549,13 @@ const BookSiteVisit = () => {
           }).then(res => res.json()).catch(() => ({ success: false }))
         ]).then(results => {
           const [emailResult, apiResult] = results;
-          
+
           if (emailResult.status === 'fulfilled' && emailResult.value.success) {
             console.log('✅ Email notification sent successfully');
           } else {
             console.warn('⚠️ Email notification failed:', emailResult.reason);
           }
-          
+
           if (apiResult.status === 'fulfilled' && apiResult.value.success) {
             console.log('✅ API notification sent successfully');
           } else {
@@ -570,14 +566,10 @@ const BookSiteVisit = () => {
         // Show success state and auto-redirect
         setBookingSuccess(true);
         console.log('✅ Booking successful! Redirecting to home...');
-        
+
         // Automatic redirect after 3 seconds
         setTimeout(() => {
-          navigate('/', { 
-            state: { 
-              successMessage: 'Your site visit has been booked successfully! You will receive a confirmation shortly.' 
-            }
-          });
+          navigate('/');
         }, 3000);
       } catch (error) {
         console.error('Error booking site visit:', error);
@@ -593,12 +585,12 @@ const BookSiteVisit = () => {
     return (
       <div className="book-visit-container">
         <div className="form-section ui-bg" style={{ textAlign: 'center', padding: '3rem' }}>
-          <div className="loading-spinner" style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '4px solid #f3f4f6', 
-            borderTop: '4px solid #9e4efb', 
-            borderRadius: '50%', 
+          <div className="loading-spinner" style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #f3f4f6',
+            borderTop: '4px solid #9e4efb',
+            borderRadius: '50%',
             animation: 'spin 1s linear infinite',
             margin: '0 auto 1rem'
           }}></div>
@@ -612,7 +604,7 @@ const BookSiteVisit = () => {
     <div className="book-visit-container">
       <div className="form-section ui-bg">
         <h2>Book a Site Visit</h2>
-        
+
         {/* Property Information */}
         {property ? (
           <div className="property-info-section">
@@ -632,7 +624,7 @@ const BookSiteVisit = () => {
             </div>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="date-time-section">
             <h4>📅 Select Date & Time</h4>
@@ -802,8 +794,8 @@ const BookSiteVisit = () => {
           )}
           <div className="form-actions">
             {formData.paymentMethod === 'previsit' ? (
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading || paymentLoading || !razorpayLoaded}
                 className="pay-button"
               >
@@ -875,7 +867,7 @@ const BookSiteVisit = () => {
                     </>
                   )}
                 </button>
-                
+
                 <div className="search-location">
                   <input
                     ref={searchInputRef}
@@ -885,7 +877,7 @@ const BookSiteVisit = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="location-help">
                 <small>
                   <strong>How to select:</strong> Click on the map, drag the red marker, use your current location, or search for a place above.
