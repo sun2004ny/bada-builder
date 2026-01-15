@@ -37,6 +37,9 @@ if (!process.env.DATABASE_URL) {
 const app = express();
 const PORT = process.env.PORT || 5001; // Default to 5001 if not set
 
+// Trust proxy for external services (Render, Vercel, etc)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors({
