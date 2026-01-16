@@ -225,14 +225,12 @@ const ProfilePage = () => {
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
               <div className="profile-name-mobile">
                 <h2>{userData.name}</h2>
-                <span className={`user-type-badge ${userData.userType.toLowerCase()}`}>{userData.userType}</span>
               </div>
             </div>
 
             <div className="profile-details">
               <div className="profile-name-desktop">
                 <h2>{userData.name}</h2>
-                <span className={`user-type-badge ${userData.userType.toLowerCase()}`}>{userData.userType}</span>
               </div>
               <div className="details-grid">
                 <div className="detail-item">
@@ -246,10 +244,6 @@ const ProfilePage = () => {
                 <div className="detail-item">
                   <div className="detail-icon-wrapper userid"><FiHash className="detail-icon" /></div>
                   <div className="detail-content"><p className="detail-label">User ID</p><p className="detail-value user-id">{userData.userId}</p></div>
-                </div>
-                <div className="detail-item">
-                  <div className="detail-icon-wrapper usertype"><FiBriefcase className="detail-icon" /></div>
-                  <div className="detail-content"><p className="detail-label">Account Type</p><p className="detail-value">{userData.userType} Owner</p></div>
                 </div>
               </div>
             </div>
