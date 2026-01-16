@@ -93,6 +93,9 @@ import AdminManageProperties from './pages/AdminPanel/ManageProperties';
 import { PreloaderProvider } from './context/PreloaderContext';
 import Preloader from './components/Preloader/Preloader';
 
+import BookmarkedProperties from './pages/BookmarkedProperties';
+import { FavoritesProvider } from './context/FavoritesContext';
+
 function AppContent() {
   const [showLeadModal, setShowLeadModal] = useState(false);
   const { currentUser } = useAuth();
@@ -157,6 +160,7 @@ function AppContent() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/my-complaints" element={<MyComplaints />} />
           <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/profile/favorites" element={<BookmarkedProperties />} />
           <Route path="/profile/investments" element={<MyInvestments />} />
           <Route path="/my-properties" element={<MyProperties />} />
           <Route path="/my-bookings" element={<MyBookings />} />
@@ -225,7 +229,9 @@ function App() {
   return (
     <Router>
       <PreloaderProvider>
-        <AppContent />
+        <FavoritesProvider>
+          <AppContent />
+        </FavoritesProvider>
       </PreloaderProvider>
     </Router >
   );

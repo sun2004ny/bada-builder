@@ -57,11 +57,18 @@ router.get('/stats', authenticate, async (req, res) => {
       [userId]
     );
 
+    // Get favorites count
+    const favoritesResult = await pool.query(
+      'SELECT COUNT(*) as count FROM favorites WHERE user_id = $1',
+      [userId]
+    );
+
     res.json({
       properties: parseInt(propertiesResult.rows[0].count) || 0,
       bookings: parseInt(bookingsResult.rows[0].count) || 0,
       liveGroupings: parseInt(groupingResult.rows[0].count) || 0,
       complaints: parseInt(complaintsResult.rows[0].count) || 0,
+      favorites: parseInt(favoritesResult.rows[0].count) || 0,
       // Placeholders for non-Postgres data
       investments: 0,
       shortStayBookings: 0,

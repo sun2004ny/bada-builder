@@ -37,6 +37,8 @@ if (!process.env.DATABASE_URL) {
 const app = express();
 const PORT = process.env.PORT || 5001; // Default to 5001 if not set
 
+import favoritesRoutes from './routes/favorites.js';
+
 // Trust proxy for external services (Render, Vercel, etc)
 app.set('trust proxy', 1);
 
@@ -80,6 +82,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/live-grouping', liveGroupingRoutes);
 app.use('/api/complaints', complaintRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 // 404 handler
 app.use((req, res) => {

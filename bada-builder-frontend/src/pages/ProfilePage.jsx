@@ -7,7 +7,7 @@ import { formatDate } from '../utils/dateFormatter';
 import {
   FiUser, FiMail, FiPhone, FiHash, FiBriefcase, FiEdit3,
   FiTrash2, FiMessageSquare, FiHome, FiUsers, FiCalendar,
-  FiTrendingUp, FiAlertCircle, FiX
+  FiTrendingUp, FiAlertCircle, FiX, FiHeart
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import ChatList from '../components/ChatList/ChatList';
@@ -29,7 +29,8 @@ const ProfilePage = () => {
     bookedSiteVisits: 0,
     shortStayBookings: 0,
     investments: 0,
-    myComplaints: 0
+    myComplaints: 0,
+    favorites: 0
   });
   const [loadingActivity, setLoadingActivity] = useState(true);
   const [showChatList, setShowChatList] = useState(false);
@@ -62,7 +63,8 @@ const ProfilePage = () => {
             bookedSiteVisits: response.bookings || 0,
             shortStayBookings: response.shortStayBookings || 0,
             investments: response.investments || 0,
-            myComplaints: response.complaints || 0
+            myComplaints: response.complaints || 0,
+            favorites: response.favorites || 0
           });
         }
       } catch (error) {
@@ -149,6 +151,14 @@ const ProfilePage = () => {
       count: loadingActivity ? '...' : activityCounts.myComplaints,
       action: () => navigate('/my-complaints'),
       color: 'rose'
+    },
+    {
+      id: 8,
+      title: 'Bookmarked Properties',
+      icon: <FiHeart className="activity-icon" />,
+      count: loadingActivity ? '...' : activityCounts.favorites,
+      path: '/profile/favorites',
+      color: 'red'
     }
   ];
 

@@ -399,6 +399,24 @@ export const complaintsAPI = {
   },
 };
 
+// ==================== FAVORITES API ====================
+export const favoritesAPI = {
+  toggle: async (propertyId) => {
+    return apiRequest('/favorites/toggle', {
+      method: 'POST',
+      body: JSON.stringify({ propertyId }),
+    });
+  },
+
+  getFavoriteIds: async () => {
+    return apiRequest('/favorites/ids');
+  },
+
+  getFavorites: async () => {
+    return apiRequest('/favorites');
+  },
+};
+
 export default {
   authAPI,
   usersAPI,
@@ -408,4 +426,5 @@ export default {
   subscriptionsAPI,
   liveGroupingAPI,
   complaintsAPI,
+  favoritesAPI,
 };

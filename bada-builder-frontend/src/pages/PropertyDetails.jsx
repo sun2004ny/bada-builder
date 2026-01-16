@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ChatBox from '../components/ChatBox/ChatBox';
 import { generateChatId } from '../services/chatService';
 
+import BookmarkButton from '../components/BookmarkButton/BookmarkButton';
+
 const PropertyDetails = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -309,6 +311,10 @@ const PropertyDetails = () => {
               >
                 Book Site Visit
               </button>
+              <div className="flex items-center gap-3">
+                <BookmarkButton propertyId={property.id} source="details" />
+                <span className="text-sm font-semibold text-gray-500 hidden sm:inline">Save to Favorites</span>
+              </div>
             </div>
           </div>
         </div>

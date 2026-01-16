@@ -64,7 +64,27 @@ COMMENT ON COLUMN email_otps.otp IS '6-digit verification code';
 COMMENT ON COLUMN email_otps.expires_at IS 'OTP expiration timestamp (5 minutes from creation)';
 
 -- ============================================
--- 4. SAMPLE QUERIES FOR TESTING
+-- 4. CREATE FAVORITES TABLE
+-- ============================================
+
+-- First, drop the existing table if it exists (to recreate with correct types)
+DROP TABLE IF EXISTS favorites;
+
+CREATE TABLE IF NOT EXISTS favorites (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    property_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, property_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_property_id ON favorites(property_id);
+
+COMMENT ON TABLE favorites IS 'Stores user bookmarked properties';
+
+-- ============================================
+-- 5. SAMPLE QUERIES FOR TESTING
 -- ============================================
 
 -- Check if tables exist
