@@ -134,16 +134,32 @@
     box-shadow: 0 8px 16px rgba(14, 165, 233, 0.3);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 580px) {
     .complaints-tabs {
-        gap: 6px;
-        padding: 6px;
+        gap: 8px;
+        padding: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .complaints-tabs::-webkit-scrollbar {
+        display: none;
     }
 
     .complaint-tab-btn {
-        padding: 10px 8px;
-        font-size: 14px;
+        flex: 0 0 auto;
+        min-width: 140px;
+        padding: 10px 12px;
+        font-size: 13px;
         gap: 6px;
+    }
+
+    .header-titles h1 {
+        font-size: 28px;
+    }
+
+    .section-title {
+        font-size: 18px;
     }
 }
 
@@ -265,6 +281,15 @@
 .status-rejected {
     background: #fef2f2;
     color: #991b1b;
+}
+
+.complaint-item-description {
+    color: #4b5563;
+    line-height: 1.6;
+    font-size: 15px;
+    margin-bottom: 20px;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .complaint-item-title {

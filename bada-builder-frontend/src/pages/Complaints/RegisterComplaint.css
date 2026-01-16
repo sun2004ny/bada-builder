@@ -32,7 +32,16 @@
   padding: 1rem;
   border-radius: 12px;
   backdrop-filter: blur(10px);
-  flex-wrap: wrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE 10+ */
+}
+
+.complaint-tabs::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 .complaint-tab {
@@ -60,9 +69,18 @@
 }
 
 .complaint-tab.active {
-  background: white;
-  color: #667eea;
-  border-color: white;
+  background: linear-gradient(135deg, #3b82f6 0%, #14e055 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.complaint-tab.active .tab-icon {
+  color: white;
+}
+
+.complaint-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .tab-icon {
@@ -180,6 +198,14 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
+.complaint-card.clickable {
+  cursor: pointer;
+}
+
+.complaint-card.clickable:active {
+  transform: translateY(-2px);
+}
+
 .complaint-card-header {
   display: flex;
   justify-content: space-between;
@@ -218,8 +244,8 @@
 }
 
 .status-submitted {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #ecfdf5;
+  color: #10b981;
 }
 
 .status-review {
@@ -248,6 +274,8 @@
   margin-bottom: 0.5rem;
   font-weight: 600;
   line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .complaint-category {
@@ -266,6 +294,8 @@
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .complaint-meta {
@@ -281,6 +311,8 @@
   gap: 0.5rem;
   font-size: 0.85rem;
   color: #6b7280;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .meta-icon {
@@ -674,17 +706,47 @@
   }
 
   .complaint-tabs {
-    flex-direction: column;
+    flex-direction: row;
+    padding: 0.75rem;
     gap: 0.75rem;
+    margin: 0 -1rem 1.5rem;
+    border-radius: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .complaint-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .complaint-tab {
-    min-width: 100%;
+    flex: 0 0 auto;
+    min-width: 160px;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .complaints-list-header h2 {
+    font-size: 1.6rem;
   }
 
   .complaints-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+    padding-bottom: 2rem;
+  }
+
+  .complaint-card {
+    padding: 1rem;
+  }
+
+  .complaint-title {
+    font-size: 1.1rem;
+  }
+
+  .register-complaint-page {
+    padding-top: 80px;
   }
 
   .complaint-form-container {
@@ -712,6 +774,224 @@
   .next-btn,
   .submit-btn {
     width: 100%;
+  }
+}
+
+/* Complaint Detail Modal */
+.complaint-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.complaint-detail-modal {
+  background: white;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+  color: #4b5563;
+}
+
+.close-modal-btn:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+  transform: rotate(90deg);
+}
+
+.modal-scroll-content {
+  padding: 3rem;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+.modal-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.modal-header .complaint-status-badge {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.modal-id-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.badge-value {
+  font-family: monospace;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modal-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+  overflow-wrap: break-word;
+}
+
+.modal-category {
+  font-size: 1.1rem;
+  color: #6366f1;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+.modal-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.info-item {
+  display: flex;
+  gap: 1rem;
+  background: #f9fafb;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+}
+
+.info-icon {
+  font-size: 1.5rem;
+  color: #6366f1;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.info-item label {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.info-item p {
+  color: #374151;
+  font-weight: 500;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.modal-description-section label,
+.modal-media-section label {
+  display: block;
+  font-size: 0.95rem;
+  color: #111827;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.modal-description-section p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #4b5563;
+  background: #fff;
+  white-space: pre-wrap;
+  margin-bottom: 2.5rem;
+  overflow-wrap: break-word;
+}
+
+.modal-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.modal-media-item {
+  aspect-ratio: 16/9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.modal-media-item img,
+.modal-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.modal-media-item img {
+  cursor: pointer;
+}
+
+.modal-media-item img:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .modal-scroll-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+  }
+
+  .modal-info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .modal-media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
   }
 }
 

@@ -379,6 +379,10 @@ export const complaintsAPI = {
     return uploadFile('/complaints', formData, true);
   },
 
+  getAll: async () => {
+    return apiRequest('/complaints', { includeAuth: false });
+  },
+
   getMyComplaints: async () => {
     return apiRequest('/complaints/my-complaints');
   },

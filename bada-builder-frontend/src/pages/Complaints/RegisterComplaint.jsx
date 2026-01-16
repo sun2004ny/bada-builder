@@ -61,6 +61,7 @@ const RegisterComplaint = () => {
     email: '',
     consent: false
   });
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
 
   const categories = [
     'Potholes / Roads',
@@ -82,8 +83,8 @@ const RegisterComplaint = () => {
   const fetchComplaints = async () => {
     setLoadingComplaints(true);
     try {
-      // Fetch complaints from API
-      const response = await complaintsAPI.getMyComplaints();
+      // Fetch all complaints from API (globally visible)
+      const response = await complaintsAPI.getAll();
       const allComplaints = response.complaints || response || [];
 
       // Filter ongoing complaints (Submitted, Under Review, In Progress)
@@ -492,10 +493,11 @@ const RegisterComplaint = () => {
   const renderComplaintCard = (complaint) => (
     <motion.div
       key={complaint.id}
-      className="complaint-card"
+      className="complaint-card clickable"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      onClick={() => setSelectedComplaint(complaint)}
     >
       <div className="complaint-card-header">
         <div className="complaint-id-section">
@@ -679,6 +681,76 @@ const RegisterComplaint = () => {
             <h3>Submitting Complaint...</h3>
             <p>Please wait while we upload your proof and register the complaint.</p>
             <p className="loading-warning">Do not refresh or close this page.</p>
+          </motion.div>
+        </div>
+      )}
+      {/* Complaint Detail Modal */}
+      {selectedComplaint && (
+        <div className="complaint-detail-overlay" onClick={() => setSelectedComplaint(null)}>
+          <motion.div
+            className="complaint-detail-modal"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="close-modal-btn" onClick={() => setSelectedComplaint(null)}>✕</button>
+
+            <div className="modal-scroll-content">
+              <div className="modal-header">
+                <div className="modal-id-section">
+                  <span className="badge-label">ID:</span>
+                  <span className="badge-value">{selectedComplaint.id}</span>
+                </div>
+                <span className={`complaint-status-badge ${getStatusColor(selectedComplaint.status)}`}>
+                  {selectedComplaint.status === 'Submitted' ? 'Ongoing' : selectedComplaint.status}
+                </span>
+              </div>
+
+              <h2 className="modal-title">{selectedComplaint.description?.split('\n')[0] || 'No Title'}</h2>
+              <div className="modal-category">📂 {selectedComplaint.complaint_type}</div>
+
+              <div className="modal-info-grid">
+                <div className="info-item">
+                  <FaMapMarkerAlt className="info-icon" />
+                  <div>
+                    <label>Location</label>
+                    <p>{selectedComplaint.location}</p>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <FaCalendarAlt className="info-icon" />
+                  <div>
+                    <label>Submitted On</label>
+                    <p>{formatDate(selectedComplaint.created_at)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-description-section">
+                <label>Description</label>
+                <p>{selectedComplaint.description?.split('\n\n')[1] || selectedComplaint.description}</p>
+              </div>
+
+              {selectedComplaint.media_urls && selectedComplaint.media_urls.length > 0 && (
+                <div className="modal-media-section">
+                  <label>Proof & Attachments ({selectedComplaint.media_urls.length})</label>
+                  <div className="modal-media-grid">
+                    {selectedComplaint.media_urls.map((url, idx) => {
+                      const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || url.includes('/video/upload/');
+                      return (
+                        <div key={idx} className="modal-media-item">
+                          {isVideo ? (
+                            <video src={url} controls />
+                          ) : (
+                            <img src={url} alt={`Attachment ${idx + 1}`} onClick={() => window.open(url, '_blank')} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </motion.div>
         </div>
       )}
