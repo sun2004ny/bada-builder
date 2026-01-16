@@ -21,8 +21,20 @@ const MyComplaints = () => {
             try {
                 setLoading(true);
                 const response = await complaintsAPI.getMyComplaints();
-                const complaints = response.complaints || response || [];
-                setUserComplaints(complaints);
+                const rawComplaints = response.complaints || response || [];
+                // Map backend fields to consistent names and handle sorting
+                const normalized = rawComplaints.map(c => ({
+                    ...c,
+                    id: c.id || c.complaintId,
+                    displayId: c.id || c.complaintId || 'N/A',
+                    date: c.created_at || c.createdAt,
+                    title: c.description?.split('\n')[0] || 'No Title',
+                    descriptionBody: c.description?.split('\n\n')[1] || c.description,
+                    category: c.complaint_type || c.category,
+                    location: c.location || c.address
+                })).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                setUserComplaints(normalized);
             } catch (error) {
                 console.error('Error fetching complaints:', error);
             } finally {
@@ -39,12 +51,25 @@ const MyComplaints = () => {
 
     const handleMarkFulfilled = async (e, id) => {
         e.stopPropagation();
+        if (!window.confirm("Confirmation: Are you sure you want to mark this complaint as fulfilled? This indicates that the issue has been resolved to your satisfaction.")) {
+            return;
+        }
         try {
             await complaintsAPI.updateStatus(id, 'Resolved');
             // Refresh complaints list
             const response = await complaintsAPI.getMyComplaints();
-            const complaints = response.complaints || response || [];
-            setUserComplaints(complaints);
+            const rawComplaints = response.complaints || response || [];
+            const normalized = rawComplaints.map(c => ({
+                ...c,
+                id: c.id || c.complaintId,
+                displayId: c.id || c.complaintId || 'N/A',
+                date: c.created_at || c.createdAt,
+                title: c.description?.split('\n')[0] || 'No Title',
+                descriptionBody: c.description?.split('\n\n')[1] || c.description,
+                category: c.complaint_type || c.category,
+                location: c.location || c.address
+            })).sort((a, b) => new Date(b.date) - new Date(a.date));
+            setUserComplaints(normalized);
         } catch (error) {
             console.error('Error marking as fulfilled:', error);
             alert('Failed to update status');
@@ -53,7 +78,7 @@ const MyComplaints = () => {
 
     const handleDeleteComplaint = async (e, id) => {
         e.stopPropagation();
-        if (window.confirm('Are you sure you want to delete this complaint permanently?')) {
+        if (window.confirm('Warning: Deleting this complaint will permanently remove it from your records. This action cannot be undone. Are you sure you want to proceed?')) {
             try {
                 // TODO: Add delete endpoint to API if needed
                 // For now, just remove from local state
@@ -63,6 +88,21 @@ const MyComplaints = () => {
                 console.error('Error deleting complaint:', error);
                 alert('Failed to delete complaint');
             }
+        }
+    };
+
+    const formatDate = (dateInput) => {
+        if (!dateInput) return 'N/A';
+        try {
+            const date = new Date(dateInput);
+            if (isNaN(date.getTime())) return 'N/A';
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        } catch (e) {
+            return 'N/A';
         }
     };
 
@@ -130,7 +170,6 @@ const MyComplaints = () => {
                                         <div className="complaints-list">
                                             {userComplaints
                                                 .filter(c => ['Submitted', 'Under Review', 'In Progress'].includes(c.status))
-                                                .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
                                                 .map(complaint => (
                                                     <div
                                                         key={complaint.id}
@@ -138,25 +177,25 @@ const MyComplaints = () => {
                                                         onClick={() => setSelectedComplaint(complaint)}
                                                     >
                                                         <div className="complaint-item-header">
-                                                            <span className="complaint-item-id">#{complaint.id}</span>
+                                                            <span className="complaint-item-id">#{complaint.displayId}</span>
                                                             <span className={`status-tag ${getStatusColorClass(complaint.status)}`}>
                                                                 {complaint.status}
                                                             </span>
                                                         </div>
-                                                        <h4 className="complaint-item-title">{complaint.description?.split('\n')[0] || 'No Title'}</h4>
+                                                        <h4 className="complaint-item-title">{complaint.title}</h4>
                                                         <p className="complaint-item-date">
-                                                            {new Date(complaint.created_at).toLocaleDateString()}
+                                                            {new Date(complaint.date).toLocaleDateString()}
                                                         </p>
                                                         <div className="complaint-item-actions">
                                                             <button
-                                                                className="action-btn fulfill"
+                                                                className="complaint-action-btn fulfill"
                                                                 onClick={(e) => handleMarkFulfilled(e, complaint.id)}
                                                                 title="Mark as Fulfilled"
                                                             >
                                                                 <FiCheckCircle /> Fulfil
                                                             </button>
                                                             <button
-                                                                className="action-btn delete"
+                                                                className="complaint-action-btn delete"
                                                                 onClick={(e) => handleDeleteComplaint(e, complaint.id)}
                                                                 title="Delete Complaint"
                                                             >
@@ -195,14 +234,14 @@ const MyComplaints = () => {
                                                         onClick={() => setSelectedComplaint(complaint)}
                                                     >
                                                         <div className="complaint-item-header">
-                                                            <span className="complaint-item-id">#{complaint.id}</span>
+                                                            <span className="complaint-item-id">#{complaint.displayId}</span>
                                                             <span className={`status-tag ${getStatusColorClass(complaint.status)}`}>
                                                                 {complaint.status}
                                                             </span>
                                                         </div>
-                                                        <h4 className="complaint-item-title">{complaint.description?.split('\n')[0] || 'No Title'}</h4>
+                                                        <h4 className="complaint-item-title">{complaint.title}</h4>
                                                         <p className="complaint-item-date">
-                                                            {new Date(complaint.created_at).toLocaleDateString()}
+                                                            {new Date(complaint.date).toLocaleDateString()}
                                                         </p>
                                                         <div className="complaint-item-actions">
                                                             <button
@@ -253,18 +292,18 @@ const MyComplaints = () => {
                                     <span className={`status-badge-lg ${getStatusColorClass(selectedComplaint.status)}`}>
                                         {selectedComplaint.status}
                                     </span>
-                                    <p className="detail-id">Complaint ID: {selectedComplaint.id}</p>
+                                    <p className="detail-id">Complaint ID: {selectedComplaint.displayId}</p>
                                 </div>
 
-                                <h2 className="detail-title">{selectedComplaint.description?.split('\n')[0] || 'No Title'}</h2>
+                                <h2 className="detail-title">{selectedComplaint.title}</h2>
                                 <div className="detail-meta">
-                                    <span className="meta-tag"><FiFileText /> {selectedComplaint.complaint_type}</span>
-                                    <span className="meta-tag"><FiCalendar /> {new Date(selectedComplaint.created_at).toLocaleDateString()}</span>
+                                    <span className="meta-tag"><FiFileText /> {selectedComplaint.category}</span>
+                                    <span className="meta-tag"><FiCalendar /> {formatDate(selectedComplaint.date)}</span>
                                 </div>
 
                                 <div className="detail-section">
                                     <label>Description</label>
-                                    <p className="description-text">{selectedComplaint.description?.split('\n\n')[1] || selectedComplaint.description}</p>
+                                    <p className="description-text">{selectedComplaint.descriptionBody}</p>
                                 </div>
 
                                 {selectedComplaint.location && (
@@ -274,11 +313,11 @@ const MyComplaints = () => {
                                     </div>
                                 )}
 
-                                {selectedComplaint.media_urls && selectedComplaint.media_urls.length > 0 && (
+                                {(selectedComplaint.media_urls || selectedComplaint.mediaUrls) && (selectedComplaint.media_urls || selectedComplaint.mediaUrls).length > 0 && (
                                     <div className="detail-section">
-                                        <label>Attachments ({selectedComplaint.media_urls.length})</label>
+                                        <label>Attachments ({(selectedComplaint.media_urls || selectedComplaint.mediaUrls).length})</label>
                                         <div className="media-grid">
-                                            {selectedComplaint.media_urls.map((url, idx) => (
+                                            {(selectedComplaint.media_urls || selectedComplaint.mediaUrls).map((url, idx) => (
                                                 <div key={idx} className="media-item" onClick={() => window.open(url, '_blank')}>
                                                     {url.includes('/video/upload') ? (
                                                         <div className="video-thumb">▶ Video Proof</div>

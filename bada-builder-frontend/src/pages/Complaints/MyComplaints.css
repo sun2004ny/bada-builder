@@ -125,13 +125,13 @@
 }
 
 .complaint-tab-btn:first-child.active {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #14e055 100%);
     box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
 }
 
 .complaint-tab-btn:last-child.active {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, #3b82f6 0%, #14e055 100%);
+    box-shadow: 0 8px 16px rgba(14, 165, 233, 0.3);
 }
 
 @media (max-width: 480px) {
@@ -287,39 +287,45 @@
     margin-top: auto;
 }
 
-.action-btn {
+.complaint-action-btn {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 10px;
+    padding: 12px;
     border-radius: 12px;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.action-btn.fulfill {
-    background: #ecfdf5;
-    color: #059669;
-}
-
-.action-btn.fulfill:hover {
-    background: #10b981;
+.complaint-action-btn.fulfill {
+    background: #0ea5e9;
     color: white;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
-.action-btn.delete {
-    background: #fef2f2;
-    color: #ef4444;
+.complaint-action-btn.fulfill:hover {
+    background: #0284c7;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.4);
 }
 
-.action-btn.delete:hover {
+.complaint-action-btn.delete {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.complaint-action-btn.delete:hover {
     background: #dc2626;
-    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
 }
 
 .no-data-msg {
@@ -528,31 +534,34 @@
     font-weight: 800;
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .footer-action-btn.fulfill {
-    background: #10b981;
+    background: #0ea5e9;
     color: white;
+    box-shadow: 0 8px 16px rgba(14, 165, 233, 0.2);
 }
 
 .footer-action-btn.fulfill:hover {
-    background: #059669;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+    background: #0284c7;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(14, 165, 233, 0.4);
 }
 
 .footer-action-btn.delete {
-    background: #fee2e2;
-    color: #ef4444;
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
 }
 
 .footer-action-btn.delete:hover {
-    background: #ef4444;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
+    background: #dc2626;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(239, 68, 68, 0.4);
 }
 
 @media (max-width: 768px) {
