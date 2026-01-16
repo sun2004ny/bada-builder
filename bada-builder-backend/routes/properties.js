@@ -100,6 +100,19 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       total_units,
       completion_date,
       rera_number,
+      // New fields
+      scheme_type,
+      residential_options,
+      commercial_options,
+      base_price,
+      max_price,
+      project_location,
+      amenities,
+      owner_name,
+      possession_status,
+      rera_status,
+      project_stats,
+      contact_phone,
       // Allow overriding user_type from body if provided, else fall back to user's type
       user_type
     } = req.body;
@@ -150,8 +163,11 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       `INSERT INTO properties (
         title, type, location, price, bhk, description, facilities, 
         image_url, images, user_id, user_type, company_name, project_name, 
-        total_units, completion_date, rera_number, subscription_expiry
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        total_units, completion_date, rera_number, subscription_expiry,
+        scheme_type, residential_options, commercial_options, base_price,
+        max_price, project_location, amenities, owner_name, possession_status,
+        rera_status, project_stats, contact_phone
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
       RETURNING *`,
       [
         title,
@@ -171,6 +187,18 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
         completion_date || null,
         rera_number || null,
         subscriptionExpiry,
+        scheme_type || null,
+        Array.isArray(residential_options) ? residential_options : (residential_options ? [residential_options] : []),
+        Array.isArray(commercial_options) ? commercial_options : (commercial_options ? [commercial_options] : []),
+        base_price || null,
+        max_price || null,
+        project_location || null,
+        Array.isArray(amenities) ? amenities : (amenities ? [amenities] : []),
+        owner_name || null,
+        possession_status || null,
+        rera_status || null,
+        typeof project_stats === 'string' ? project_stats : JSON.stringify(project_stats || null),
+        contact_phone || null
       ]
     );
 
@@ -216,6 +244,19 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
       total_units,
       completion_date,
       rera_number,
+      // New fields
+      scheme_type,
+      residential_options,
+      commercial_options,
+      base_price,
+      max_price,
+      project_location,
+      amenities,
+      owner_name,
+      possession_status,
+      rera_status,
+      project_stats,
+      contact_phone,
     } = req.body;
 
     // Handle image updates
@@ -249,8 +290,20 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
         total_units = COALESCE($12, total_units),
         completion_date = COALESCE($13, completion_date),
         rera_number = COALESCE($14, rera_number),
+        scheme_type = COALESCE($15, scheme_type),
+        residential_options = COALESCE($16, residential_options),
+        commercial_options = COALESCE($17, commercial_options),
+        base_price = COALESCE($18, base_price),
+        max_price = COALESCE($19, max_price),
+        project_location = COALESCE($20, project_location),
+        amenities = COALESCE($21, amenities),
+        owner_name = COALESCE($22, owner_name),
+        possession_status = COALESCE($23, possession_status),
+        rera_status = COALESCE($24, rera_status),
+        project_stats = COALESCE($25, project_stats),
+        contact_phone = COALESCE($26, contact_phone),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $15 AND user_id = $16
+      WHERE id = $27 AND user_id = $28
       RETURNING *`,
       [
         title,
@@ -267,6 +320,18 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
         total_units,
         completion_date,
         rera_number,
+        scheme_type,
+        Array.isArray(residential_options) ? residential_options : (residential_options ? [residential_options] : null),
+        Array.isArray(commercial_options) ? commercial_options : (commercial_options ? [commercial_options] : null),
+        base_price,
+        max_price,
+        project_location,
+        Array.isArray(amenities) ? amenities : (amenities ? [amenities] : null),
+        owner_name,
+        possession_status,
+        rera_status,
+        typeof project_stats === 'string' ? project_stats : (project_stats ? JSON.stringify(project_stats) : null),
+        contact_phone,
         req.params.id,
         req.user.id,
       ]

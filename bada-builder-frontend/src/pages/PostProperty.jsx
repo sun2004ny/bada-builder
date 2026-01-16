@@ -688,7 +688,7 @@ const PostProperty = () => {
         propertyData.project_name = activeData.projectName || '';
         propertyData.project_stats = activeData.projectStats || { towers: '', floors: '', units: '', area: '' };
         propertyData.contact_phone = activeData.contactPhone || '';
-        propertyData.completionDate = activeData.completionDate || '';
+        propertyData.completion_date = activeData.completionDate || '';
 
         const expiryDate = new Date();
         expiryDate.setFullYear(expiryDate.getFullYear() + 1);
@@ -700,21 +700,21 @@ const PostProperty = () => {
       }
 
       console.log('💾 Saving to database via API...', propertyData);
-      
+
       // Prepare files for upload
       const imagesToUpload = [];
       if (compressedCoverFile) imagesToUpload.push(compressedCoverFile);
       imagesToUpload.push(...compressedExtraFiles);
-      
+
       // Call backend API to create property
       const response = await propertiesAPI.create(propertyData, imagesToUpload);
       console.log('✅ Property created successfully:', response.property);
 
       setLoading(false);
       setShowDisclaimer(false);
-      
+
       alert('Property posted successfully!');
-      
+
       setTimeout(() => {
         navigate(userType === 'developer' ? '/exhibition/developer' : '/exhibition/individual');
       }, 500);
@@ -889,10 +889,10 @@ const PostProperty = () => {
               <button
                 type="button"
                 className="change-type-btn"
-                onClick={() => { 
-                  setUserType(null); 
-                  setSelectedPropertyFlow(null); 
-                  setEditingProperty(null); 
+                onClick={() => {
+                  setUserType(null);
+                  setSelectedPropertyFlow(null);
+                  setEditingProperty(null);
                   setSubscriptionVerified(false); // Reset subscription flag
                 }}
               >
@@ -928,10 +928,10 @@ const PostProperty = () => {
               <button
                 type="button"
                 className="change-type-btn"
-                onClick={() => { 
-                  setUserType(null); 
-                  setSelectedPropertyFlow(null); 
-                  setEditingProperty(null); 
+                onClick={() => {
+                  setUserType(null);
+                  setSelectedPropertyFlow(null);
+                  setEditingProperty(null);
                   setSubscriptionVerified(false); // Reset subscription flag
                 }}
               >

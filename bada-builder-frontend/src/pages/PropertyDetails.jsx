@@ -432,6 +432,12 @@ const PropertyDetails = () => {
 
               {isDeveloper && (
                 <>
+                  {property.type && (
+                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                      <span className="text-gray-600 font-medium">Property Type</span>
+                      <span className="text-gray-900 font-semibold">{property.type}</span>
+                    </div>
+                  )}
                   {property.scheme_type && (
                     <div className="flex justify-between items-center py-3 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Scheme Type</span>
@@ -448,6 +454,18 @@ const PropertyDetails = () => {
                     <div className="flex justify-between items-center py-3 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Expected Completion</span>
                       <span className="text-orange-600 font-semibold">{property.completion_date}</span>
+                    </div>
+                  )}
+                  {property.total_units && (
+                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                      <span className="text-gray-600 font-medium">Total Units</span>
+                      <span className="text-gray-900 font-semibold">{property.total_units}</span>
+                    </div>
+                  )}
+                  {property.project_stats?.area && (
+                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                      <span className="text-gray-600 font-medium">Project Area</span>
+                      <span className="text-gray-900 font-semibold">{property.project_stats.area}</span>
                     </div>
                   )}
                   {property.rera_status && (

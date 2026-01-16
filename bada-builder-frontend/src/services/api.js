@@ -102,13 +102,13 @@ export const authAPI = {
       body: JSON.stringify({ email, password }),
       includeAuth: false,
     });
-    
+
     // Store token
     if (response.token) {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
     }
-    
+
     return response;
   },
 
@@ -165,12 +165,21 @@ export const propertiesAPI = {
 
   create: async (propertyData, images = []) => {
     const formData = new FormData();
-    
+
     // Append property data
     Object.keys(propertyData).forEach(key => {
       if (propertyData[key] !== undefined && propertyData[key] !== null) {
         if (Array.isArray(propertyData[key])) {
-          propertyData[key].forEach(item => formData.append(key, item));
+          // Send as multiple fields or stringify depending on backend preference
+          // Our backend handles facilities as array if multiple appends or specific logic
+          // Let's stringify if it's an object/array to be safe for complex fields
+          if (['residential_options', 'commercial_options', 'amenities', 'facilities', 'images', 'project_images'].includes(key)) {
+            propertyData[key].forEach(item => formData.append(key, item));
+          } else {
+            formData.append(key, JSON.stringify(propertyData[key]));
+          }
+        } else if (typeof propertyData[key] === 'object' && !(propertyData[key] instanceof File)) {
+          formData.append(key, JSON.stringify(propertyData[key]));
         } else {
           formData.append(key, propertyData[key]);
         }
@@ -187,12 +196,18 @@ export const propertiesAPI = {
 
   update: async (id, propertyData, images = []) => {
     const formData = new FormData();
-    
+
     // Append property data
     Object.keys(propertyData).forEach(key => {
       if (propertyData[key] !== undefined && propertyData[key] !== null) {
         if (Array.isArray(propertyData[key])) {
-          propertyData[key].forEach(item => formData.append(key, item));
+          if (['residential_options', 'commercial_options', 'amenities', 'facilities', 'images', 'project_images'].includes(key)) {
+            propertyData[key].forEach(item => formData.append(key, item));
+          } else {
+            formData.append(key, JSON.stringify(propertyData[key]));
+          }
+        } else if (typeof propertyData[key] === 'object' && !(propertyData[key] instanceof File)) {
+          formData.append(key, JSON.stringify(propertyData[key]));
         } else {
           formData.append(key, propertyData[key]);
         }
@@ -297,7 +312,7 @@ export const liveGroupingAPI = {
 
   create: async (propertyData, images = []) => {
     const formData = new FormData();
-    
+
     Object.keys(propertyData).forEach(key => {
       if (propertyData[key] !== undefined && propertyData[key] !== null) {
         if (Array.isArray(propertyData[key])) {
@@ -319,7 +334,7 @@ export const liveGroupingAPI = {
 
   update: async (id, propertyData, images = []) => {
     const formData = new FormData();
-    
+
     Object.keys(propertyData).forEach(key => {
       if (propertyData[key] !== undefined && propertyData[key] !== null) {
         if (Array.isArray(propertyData[key])) {
@@ -350,7 +365,7 @@ export const liveGroupingAPI = {
 export const complaintsAPI = {
   create: async (complaintData, mediaFiles = []) => {
     const formData = new FormData();
-    
+
     Object.keys(complaintData).forEach(key => {
       if (complaintData[key] !== undefined && complaintData[key] !== null) {
         formData.append(key, complaintData[key]);

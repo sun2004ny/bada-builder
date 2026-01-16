@@ -22,13 +22,18 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
     navigate(`/property-details/${property.id}`, { state: { property, type: source } });
   };
 
+  const propertyTitle = property.project_name || property.projectName || property.title;
+
   return (
-    <div className={`property-card-wrapper ${viewType}-view`}>
+    <div
+      className={`property-card-wrapper ${viewType}-view cursor-pointer`}
+      onClick={handleViewDetails}
+    >
       {/* Property Image */}
       <div className="property-card-image">
-        <img 
-          src={property.image || property.image_url || '/api/placeholder/400/300'} 
-          alt={property.title} 
+        <img
+          src={property.image || property.image_url || '/api/placeholder/400/300'}
+          alt={propertyTitle}
           loading="lazy"
         />
         {property.status && (
@@ -44,12 +49,12 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
       {/* Property Content */}
       <div className="property-card-content">
         {/* Title */}
-        <h3 className="property-title">{property.title}</h3>
+        <h3 className="property-title">{propertyTitle}</h3>
 
         {/* Location */}
         <p className="property-location">
           <FiMapPin className="icon" />
-          {property.location}
+          {property.project_location || property.location}
         </p>
 
         {/* Price */}
@@ -79,22 +84,28 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
         {/* Description (List View Only) */}
         {viewType === 'list' && property.description && (
           <p className="property-description">
-            {property.description.length > 150 
-              ? `${property.description.substring(0, 150)}...` 
+            {property.description.length > 150
+              ? `${property.description.substring(0, 150)}...`
               : property.description}
           </p>
         )}
 
         {/* Action Buttons */}
         <div className="property-actions">
-          <button 
-            onClick={handleViewDetails}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewDetails(e);
+            }}
             className="btn-primary"
           >
             View Details
           </button>
-          <button 
-            onClick={handleBookVisit}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleBookVisit(e);
+            }}
             className="btn-secondary"
           >
             <FiCalendar className="icon" />
