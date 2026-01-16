@@ -1,10 +1,53 @@
-// src/pages/BookSiteVisit.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookingsAPI } from '../services/api';
 import emailjs from '@emailjs/browser';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import './BookSiteVisit.css';
+
+// Fix for default marker icon issue in Leaflet
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Helper component to handle map events
+const MapEvents = ({ onMapClick }) => {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng);
+    },
+  });
+  return null;
+};
+
+// Helper component to handle external map control (like flyTo)
+const MapController = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.flyTo(center, 16);
+    }
+  }, [center, map]);
+
+  // Handle resize when modal opens
+  useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+  }, [map]);
+
+  return null;
+};
 
 const BookSiteVisit = () => {
   const location = useLocation();
@@ -33,15 +76,18 @@ const BookSiteVisit = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
-  // Google Maps states
+  // Map states
   const [showMapModal, setShowMapModal] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [currentLocationLoading, setCurrentLocationLoading] = useState(false);
-  const mapRef = useRef(null);
-  const markerRef = useRef(null);
-  const autocompleteRef = useRef(null);
-  const searchInputRef = useRef(null);
+  const [mapCenter, setMapCenter] = useState([28.6139, 77.2090]); // Delhi
+  const [markerPosition, setMarkerPosition] = useState([28.6139, 77.2090]);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  const searchTimeoutRef = useRef(null);
 
 
   // Set date restrictions (today to 30 days from now, excluding Sundays)
@@ -54,55 +100,7 @@ const BookSiteVisit = () => {
     setMaxDate(maxBookingDate.toISOString().split('T')[0]);
   }, []);
 
-  // Load Google Maps API and suppress error popups
-  useEffect(() => {
-    // Suppress Google Maps authentication error popup
-    window.gm_authFailure = () => {
-      console.log('Google Maps authentication failed - suppressed popup');
-    };
-
-    // Remove any existing error dialogs
-    const removeErrorDialogs = () => {
-      const errorDialogs = document.querySelectorAll('[role="dialog"]');
-      errorDialogs.forEach(dialog => {
-        if (dialog.textContent && dialog.textContent.includes("Google Maps")) {
-          dialog.remove();
-        }
-      });
-    };
-
-    // Create MutationObserver to remove error dialogs as they appear
-    const observer = new MutationObserver(() => {
-      removeErrorDialogs();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    // Load Google Maps API
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        setMapLoaded(true);
-        console.log('✅ Google Maps API loaded successfully');
-      };
-      script.onerror = () => {
-        console.error('❌ Failed to load Google Maps API');
-      };
-      document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+  // Removed Google Maps API loading logic
 
   // Load Razorpay script
   useEffect(() => {
@@ -177,98 +175,61 @@ const BookSiteVisit = () => {
     setFormData({ ...formData, paymentMethod: e.target.value });
   };
 
-  // Initialize Google Maps in modal
-  const initializeMap = () => {
-    if (!window.google || !mapRef.current) return;
+  // Nominatim Search Implementation
+  const handleSearch = async (query) => {
+    if (!query || query.length < 3) return;
 
-    const defaultCenter = { lat: 28.6139, lng: 77.2090 }; // Delhi coordinates
-
-    const map = new window.google.maps.Map(mapRef.current, {
-      center: defaultCenter,
-      zoom: 13,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      styles: [
-        {
-          featureType: "poi",
-          elementType: "labels",
-          stylers: [{ visibility: "off" }]
-        }
-      ]
-    });
-
-    // Create draggable marker
-    const marker = new window.google.maps.Marker({
-      position: defaultCenter,
-      map: map,
-      draggable: true,
-      title: "Drag to select your location"
-    });
-
-    markerRef.current = marker;
-
-    // Handle marker drag
-    marker.addListener('dragend', () => {
-      const position = marker.getPosition();
-      if (position) {
-        const lat = position.lat();
-        const lng = position.lng();
-        reverseGeocode(lat, lng);
-      }
-    });
-
-    // Handle map click
-    map.addListener('click', (event) => {
-      const lat = event.latLng.lat();
-      const lng = event.latLng.lng();
-      marker.setPosition({ lat, lng });
-      reverseGeocode(lat, lng);
-    });
-
-    // Initialize Places Autocomplete for search
-    if (searchInputRef.current) {
-      const autocomplete = new window.google.maps.places.Autocomplete(searchInputRef.current, {
-        componentRestrictions: { country: 'in' },
-        fields: ['place_id', 'geometry', 'name', 'formatted_address']
-      });
-
-      autocompleteRef.current = autocomplete;
-
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry && place.geometry.location) {
-          const lat = place.geometry.location.lat();
-          const lng = place.geometry.location.lng();
-
-          map.setCenter({ lat, lng });
-          map.setZoom(16);
-          marker.setPosition({ lat, lng });
-
-          setSelectedLocation({
-            lat,
-            lng,
-            address: place.formatted_address || place.name
-          });
-        }
-      });
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=5`);
+      const data = await response.json();
+      setSearchResults(data);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Search error:', error);
     }
-
-    return map;
   };
 
-  // Reverse geocoding to get address from coordinates
-  const reverseGeocode = (lat, lng) => {
-    if (!window.google) return;
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
 
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-      if (status === 'OK' && results[0]) {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(() => {
+      handleSearch(query);
+    }, 500);
+  };
+
+  const selectSearchResult = (result) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    const pos = [lat, lng];
+
+    setMarkerPosition(pos);
+    setMapCenter(pos);
+    setSelectedLocation({
+      lat,
+      lng,
+      address: result.display_name
+    });
+    setSearchQuery(result.display_name);
+    setShowSearchResults(false);
+  };
+
+  // Reverse geocoding to get address from coordinates using Nominatim
+  const reverseGeocode = async (lat, lng) => {
+    setAddressLoading(true);
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await response.json();
+
+      if (data && data.display_name) {
         setSelectedLocation({
           lat,
           lng,
-          address: results[0].formatted_address
+          address: data.display_name
         });
+        setSearchQuery(data.display_name);
       } else {
         setSelectedLocation({
           lat,
@@ -276,7 +237,16 @@ const BookSiteVisit = () => {
           address: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
         });
       }
-    });
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      setSelectedLocation({
+        lat,
+        lng,
+        address: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+      });
+    } finally {
+      setAddressLoading(false);
+    }
   };
 
   // Get user's current location
@@ -292,63 +262,40 @@ const BookSiteVisit = () => {
       (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
+        const pos = [lat, lng];
 
-        if (mapRef.current && markerRef.current) {
-          const map = mapRef.current;
-          const marker = markerRef.current;
-
-          map.setCenter({ lat, lng });
-          map.setZoom(16);
-          marker.setPosition({ lat, lng });
-
-          reverseGeocode(lat, lng);
-        }
-
+        setMarkerPosition(pos);
+        setMapCenter(pos);
+        reverseGeocode(lat, lng);
         setCurrentLocationLoading(false);
       },
       (error) => {
         console.error('Error getting location:', error);
-        let errorMessage = 'Unable to get your location. ';
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage += 'Please allow location access and try again.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += 'Location information is unavailable.';
-            break;
-          case error.TIMEOUT:
-            errorMessage += 'Location request timed out.';
-            break;
-          default:
-            errorMessage += 'An unknown error occurred.';
-            break;
-        }
-
-        alert(errorMessage);
+        alert('Unable to get your location. Please allow location access.');
         setCurrentLocationLoading(false);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   };
 
   // Open map modal
   const openMapModal = () => {
-    if (!mapLoaded) {
-      alert('Google Maps is still loading. Please wait a moment and try again.');
-      return;
-    }
     setShowMapModal(true);
     setSelectedLocation(null);
+    setSearchQuery('');
+  };
 
-    // Initialize map after modal opens
-    setTimeout(() => {
-      initializeMap();
-    }, 100);
+  const handleMapClick = (latlng) => {
+    const pos = [latlng.lat, latlng.lng];
+    setMarkerPosition(pos);
+    reverseGeocode(latlng.lat, latlng.lng);
+  };
+
+  const handleMarkerDragEnd = (e) => {
+    const { lat, lng } = e.target.getLatLng();
+    const pos = [lat, lng];
+    setMarkerPosition(pos);
+    reverseGeocode(lat, lng);
   };
 
   // Confirm selected location
@@ -868,13 +815,29 @@ const BookSiteVisit = () => {
                   )}
                 </button>
 
-                <div className="search-location">
+                <div className="search-location" style={{ position: 'relative' }}>
                   <input
-                    ref={searchInputRef}
                     type="text"
                     placeholder="Search for a location..."
                     className="map-search-input"
+                    value={searchQuery}
+                    onChange={handleSearchInputChange}
+                    onFocus={() => searchQuery.length >= 3 && setShowSearchResults(true)}
                   />
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div className="pac-container" style={{ display: 'block', top: '100%', width: '100%' }}>
+                      {searchResults.map((result, idx) => (
+                        <div
+                          key={idx}
+                          className="pac-item"
+                          onClick={() => selectSearchResult(result)}
+                        >
+                          <span className="pac-icon pac-icon-marker"></span>
+                          <span className="pac-item-query">{result.display_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -885,18 +848,34 @@ const BookSiteVisit = () => {
               </div>
             </div>
 
-            {/* Map Container */}
-            <div className="map-container">
+            {/* Map Container - Leaflet */}
+            <div className="map-container" style={{ position: 'relative' }}>
               <div className="map-overlay-tooltip">
                 <div className="tooltip-text">
                   📍 Click anywhere to set pickup location
                 </div>
               </div>
-              <div
-                ref={mapRef}
-                className="google-map"
+
+              <MapContainer
+                center={mapCenter}
+                zoom={13}
                 style={{ width: '100%', height: '450px' }}
-              ></div>
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Marker
+                  position={markerPosition}
+                  draggable={true}
+                  eventHandlers={{
+                    dragend: handleMarkerDragEnd,
+                  }}
+                />
+                <MapEvents onMapClick={handleMapClick} />
+                <MapController center={mapCenter} />
+              </MapContainer>
             </div>
 
             {/* Map Footer */}

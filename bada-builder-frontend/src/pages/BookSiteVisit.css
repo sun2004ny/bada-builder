@@ -207,6 +207,7 @@ button:not([type='submit']):not(.cancel-btn):hover {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -238,7 +239,8 @@ button:not([type='submit']):not(.cancel-btn):hover {
 .form-section form select,
 .form-section form textarea {
   font-size: 1rem;
-  min-height: 44px; /* touch-friendly */
+  min-height: 44px;
+  /* touch-friendly */
   padding: 0.75rem;
   box-sizing: border-box;
 }
@@ -325,7 +327,9 @@ button:not([type='submit']):not(.cancel-btn):hover {
   background-color: #323248 !important;
 }
 
-.date-help, .time-help, .address-help {
+.date-help,
+.time-help,
+.address-help {
   display: block;
   color: #b0b0b0;
   font-size: 0.85rem;
@@ -446,6 +450,7 @@ button:not([type='submit']):not(.cancel-btn):hover {
   border-radius: 8px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   margin-top: 2px !important;
+  z-index: 10001 !important;
 }
 
 .pac-item {
@@ -492,8 +497,13 @@ button:not([type='submit']):not(.cancel-btn):hover {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Address Method Selection */
@@ -841,9 +851,17 @@ button:not([type='submit']):not(.cancel-btn):hover {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .selected-address {
@@ -1033,6 +1051,7 @@ button:not([type='submit']):not(.cancel-btn):hover {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1043,13 +1062,13 @@ button:not([type='submit']):not(.cancel-btn):hover {
   .book-visit-container {
     flex-direction: column;
   }
-  
+
   .people-details,
   .date-time-section,
   .pickup-section {
     padding: 1rem;
   }
-  
+
   .date-time-section h4,
   .pickup-section h4 {
     font-size: 1rem;
@@ -1139,8 +1158,13 @@ button:not([type='submit']):not(.cancel-btn):hover {
 
 /* Authentication loading spinner */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Suppress Google Maps error popups */
@@ -1201,6 +1225,7 @@ button:not([type='submit']):not(.cancel-btn):hover {
   font-size: 0.875rem;
   text-align: center;
 }
+
 /* Property Information Section */
 .property-info-section {
   background: #1a1a2e;
@@ -1279,16 +1304,17 @@ button:not([type='submit']):not(.cancel-btn):hover {
     padding: 1rem;
     margin-bottom: 1.5rem;
   }
-  
+
   .property-info-section h3 {
     font-size: 1.1rem;
   }
-  
+
   .selected-property h4,
   .generic-booking h4 {
     font-size: 1rem;
   }
 }
+
 /* Razorpay Payment Styles */
 .razorpay-section {
   margin: 1.5rem 0;
@@ -1400,8 +1426,13 @@ button:not([type='submit']):not(.cancel-btn):hover {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Form Actions Update */
@@ -1447,24 +1478,24 @@ button:not([type='submit']):not(.cancel-btn):hover {
     margin: 1rem 0;
     padding: 1rem;
   }
-  
+
   .payment-info h4 {
     font-size: 1rem;
   }
-  
+
   .amount-row {
     font-size: 0.9rem;
   }
-  
+
   .pay-button {
     width: 100%;
     min-width: auto;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
-  
+
   .form-actions button {
     width: 100%;
   }
@@ -1500,11 +1531,13 @@ button:not([type='submit']):not(.cancel-btn):hover {
     min-width: 160px;
   }
 
-  .map-container, .google-map {
+  .map-container,
+  .google-map {
     min-height: 400px;
     max-height: 450px;
   }
 }
+
 /* =============================================== */
 /* |      True Full-Screen Mobile Override       | */
 /* =============================================== */
@@ -1528,9 +1561,9 @@ button:not([type='submit']):not(.cancel-btn):hover {
     transform: translateX(-50%);
   }
 
-  .book-visit-container > .form-section,
-  .book-visit-container > .info-section,
-  .book-visit-container > .property-info-section {
+  .book-visit-container>.form-section,
+  .book-visit-container>.info-section,
+  .book-visit-container>.property-info-section {
     width: 100%;
     max-width: 100%;
     margin: 0;
@@ -1541,7 +1574,7 @@ button:not([type='submit']):not(.cancel-btn):hover {
     border-bottom: 1px solid #232323;
   }
 
-  .book-visit-container > .info-section {
+  .book-visit-container>.info-section {
     border-bottom: none;
   }
 
@@ -1574,12 +1607,10 @@ button:not([type='submit']):not(.cancel-btn):hover {
     padding: 0;
     margin-top: 1.5rem;
   }
-  
+
   .form-actions button,
   .pay-button {
     border-radius: 4px;
     width: 100%;
   }
 }
-
-  
