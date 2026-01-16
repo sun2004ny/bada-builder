@@ -31,7 +31,7 @@ const MyComplaints = () => {
         };
 
         fetchComplaints();
-        
+
         // Poll for updates every 30 seconds
         const interval = setInterval(fetchComplaints, 30000);
         return () => clearInterval(interval);
@@ -138,14 +138,14 @@ const MyComplaints = () => {
                                                         onClick={() => setSelectedComplaint(complaint)}
                                                     >
                                                         <div className="complaint-item-header">
-                                                            <span className="complaint-item-id">#{complaint.complaintId}</span>
+                                                            <span className="complaint-item-id">#{complaint.id}</span>
                                                             <span className={`status-tag ${getStatusColorClass(complaint.status)}`}>
                                                                 {complaint.status}
                                                             </span>
                                                         </div>
-                                                        <h4 className="complaint-item-title">{complaint.title}</h4>
+                                                        <h4 className="complaint-item-title">{complaint.description?.split('\n')[0] || 'No Title'}</h4>
                                                         <p className="complaint-item-date">
-                                                            {new Date(complaint.submittedDate || complaint.createdAt?.toDate()).toLocaleDateString()}
+                                                            {new Date(complaint.created_at).toLocaleDateString()}
                                                         </p>
                                                         <div className="complaint-item-actions">
                                                             <button
@@ -195,14 +195,14 @@ const MyComplaints = () => {
                                                         onClick={() => setSelectedComplaint(complaint)}
                                                     >
                                                         <div className="complaint-item-header">
-                                                            <span className="complaint-item-id">#{complaint.complaintId}</span>
+                                                            <span className="complaint-item-id">#{complaint.id}</span>
                                                             <span className={`status-tag ${getStatusColorClass(complaint.status)}`}>
                                                                 {complaint.status}
                                                             </span>
                                                         </div>
-                                                        <h4 className="complaint-item-title">{complaint.title}</h4>
+                                                        <h4 className="complaint-item-title">{complaint.description?.split('\n')[0] || 'No Title'}</h4>
                                                         <p className="complaint-item-date">
-                                                            {new Date(complaint.submittedDate || complaint.createdAt?.toDate()).toLocaleDateString()}
+                                                            {new Date(complaint.created_at).toLocaleDateString()}
                                                         </p>
                                                         <div className="complaint-item-actions">
                                                             <button
@@ -253,32 +253,32 @@ const MyComplaints = () => {
                                     <span className={`status-badge-lg ${getStatusColorClass(selectedComplaint.status)}`}>
                                         {selectedComplaint.status}
                                     </span>
-                                    <p className="detail-id">Complaint ID: {selectedComplaint.complaintId}</p>
+                                    <p className="detail-id">Complaint ID: {selectedComplaint.id}</p>
                                 </div>
 
-                                <h2 className="detail-title">{selectedComplaint.title}</h2>
+                                <h2 className="detail-title">{selectedComplaint.description?.split('\n')[0] || 'No Title'}</h2>
                                 <div className="detail-meta">
-                                    <span className="meta-tag"><FiFileText /> {selectedComplaint.category}</span>
-                                    <span className="meta-tag"><FiCalendar /> {new Date(selectedComplaint.submittedDate || selectedComplaint.createdAt?.toDate()).toLocaleDateString()}</span>
+                                    <span className="meta-tag"><FiFileText /> {selectedComplaint.complaint_type}</span>
+                                    <span className="meta-tag"><FiCalendar /> {new Date(selectedComplaint.created_at).toLocaleDateString()}</span>
                                 </div>
 
                                 <div className="detail-section">
                                     <label>Description</label>
-                                    <p className="description-text">{selectedComplaint.description}</p>
+                                    <p className="description-text">{selectedComplaint.description?.split('\n\n')[1] || selectedComplaint.description}</p>
                                 </div>
 
-                                {selectedComplaint.address && (
+                                {selectedComplaint.location && (
                                     <div className="detail-section">
                                         <label>Location</label>
-                                        <p className="location-text"><FiHome /> {selectedComplaint.address}, {selectedComplaint.pincode}</p>
+                                        <p className="location-text"><FiHome /> {selectedComplaint.location}</p>
                                     </div>
                                 )}
 
-                                {selectedComplaint.mediaUrls && selectedComplaint.mediaUrls.length > 0 && (
+                                {selectedComplaint.media_urls && selectedComplaint.media_urls.length > 0 && (
                                     <div className="detail-section">
-                                        <label>Attachments ({selectedComplaint.mediaUrls.length})</label>
+                                        <label>Attachments ({selectedComplaint.media_urls.length})</label>
                                         <div className="media-grid">
-                                            {selectedComplaint.mediaUrls.map((url, idx) => (
+                                            {selectedComplaint.media_urls.map((url, idx) => (
                                                 <div key={idx} className="media-item" onClick={() => window.open(url, '_blank')}>
                                                     {url.includes('/video/upload') ? (
                                                         <div className="video-thumb">▶ Video Proof</div>

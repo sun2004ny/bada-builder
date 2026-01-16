@@ -10,8 +10,8 @@ const router = express.Router();
 // Create complaint
 router.post(
   '/',
-  optionalAuth,
-  upload.array('media', 5),
+  authenticate,
+  upload.array('media', 20),
   [
     body('name').trim().notEmpty(),
     body('email').isEmail().normalizeEmail(),

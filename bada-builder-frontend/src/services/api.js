@@ -376,7 +376,7 @@ export const complaintsAPI = {
       formData.append('media', file);
     });
 
-    return uploadFile('/complaints', formData, false);
+    return uploadFile('/complaints', formData, true);
   },
 
   getMyComplaints: async () => {

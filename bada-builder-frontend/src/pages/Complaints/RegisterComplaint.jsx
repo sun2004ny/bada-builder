@@ -85,15 +85,15 @@ const RegisterComplaint = () => {
       // Fetch complaints from API
       const response = await complaintsAPI.getMyComplaints();
       const allComplaints = response.complaints || response || [];
-      
+
       // Filter ongoing complaints (Submitted, Under Review, In Progress)
-      const ongoing = allComplaints.filter(complaint => 
+      const ongoing = allComplaints.filter(complaint =>
         ['Submitted', 'Under Review', 'In Progress'].includes(complaint.status)
       );
       setOngoingComplaints(ongoing);
 
       // Filter fulfilled complaints (Resolved, Rejected)
-      const fulfilled = allComplaints.filter(complaint => 
+      const fulfilled = allComplaints.filter(complaint =>
         ['Resolved', 'Rejected'].includes(complaint.status)
       );
       setFulfilledComplaints(fulfilled);
@@ -194,10 +194,10 @@ const RegisterComplaint = () => {
         location: `${formData.address}, ${formData.pincode}`,
         description: `${formData.title}\n\n${formData.description}`
       };
-      
+
       // Send complaint with media files (backend will handle upload)
       const response = await complaintsAPI.create(complaintData, mediaFiles);
-      
+
       // Generate complaint ID from response or timestamp
       const generatedId = response.complaint?.id || response.id || response.complaintId || `CMP${Date.now()}`;
 
@@ -485,8 +485,8 @@ const RegisterComplaint = () => {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-GB');
+    const date = new Date(timestamp);
+    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-GB');
   };
 
   const renderComplaintCard = (complaint) => (
@@ -500,31 +500,31 @@ const RegisterComplaint = () => {
       <div className="complaint-card-header">
         <div className="complaint-id-section">
           <span className="complaint-id-label">ID:</span>
-          <span className="complaint-id-value">{complaint.complaintId}</span>
+          <span className="complaint-id-value">{complaint.id}</span>
         </div>
         <span className={`complaint-status-badge ${getStatusColor(complaint.status)}`}>
           {complaint.status}
         </span>
       </div>
 
-      <h3 className="complaint-title">{complaint.title}</h3>
-      <p className="complaint-category">📂 {complaint.category}</p>
-      <p className="complaint-description">{complaint.description}</p>
+      <h3 className="complaint-title">{complaint.description?.split('\n')[0] || 'No Title'}</h3>
+      <p className="complaint-category">📂 {complaint.complaint_type}</p>
+      <p className="complaint-description">{complaint.description?.split('\n\n')[1] || complaint.description}</p>
 
       <div className="complaint-meta">
         <div className="meta-item">
           <FaMapMarkerAlt className="meta-icon" />
-          <span>{complaint.address}</span>
+          <span>{complaint.location}</span>
         </div>
         <div className="meta-item">
           <FaCalendarAlt className="meta-icon" />
-          <span>Submitted: {formatDate(complaint.createdAt)}</span>
+          <span>Submitted: {formatDate(complaint.created_at)}</span>
         </div>
       </div>
 
-      {complaint.mediaUrls && complaint.mediaUrls.length > 0 && (
+      {complaint.media_urls && complaint.media_urls.length > 0 && (
         <div className="complaint-media-preview">
-          <span className="media-count">📷 {complaint.mediaUrls.length} attachments</span>
+          <span className="media-count">📷 {complaint.media_urls.length} attachments</span>
         </div>
       )}
     </motion.div>
