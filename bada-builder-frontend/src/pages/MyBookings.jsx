@@ -14,15 +14,15 @@ const MyBookings = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔐 Auth state:', { isAuthenticated, currentUser: currentUser?.uid });
-    
+    console.log('🔐 Auth state:', { isAuthenticated, userId: currentUser?.id });
+
     if (!isAuthenticated) {
       console.log('❌ Not authenticated, redirecting to login');
       navigate('/login');
       return;
     }
 
-    if (currentUser?.uid) {
+    if (currentUser?.id) {
       console.log('✅ User authenticated, fetching bookings');
       fetchBookings();
     }
@@ -31,41 +31,22 @@ const MyBookings = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching bookings for user:', currentUser.id || currentUser.uid);
-      
+      console.log('🔍 Fetching bookings for user:', currentUser.id);
+
       // Fetch bookings from API
       const response = await bookingsAPI.getMyBookings();
       const allBookings = response.bookings || response || [];
       console.log('📊 Found bookings:', allBookings.length);
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to start of day for comparison
 
-      // Filter to show only active bookings (today and future)
-      const activeBookings = allBookings.filter(booking => {
-        if (booking.visit_date) {
-          const visitDate = new Date(booking.visit_date);
-          visitDate.setHours(0, 0, 0, 0);
-          
-          // Keep only bookings that are today or in the future
-          if (visitDate < today) {
-            console.log('🗑️ Filtering out past booking:', booking.id, booking.visit_date);
-            return false;
-          }
-        }
-        return true;
-      });
-
-      // Sort manually by created_at
-      activeBookings.sort((a, b) => {
+      // Sort manually by created_at (newest first)
+      allBookings.sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
         const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
         return dateB - dateA;
       });
 
-      console.log('✅ Active bookings loaded:', activeBookings.length);
-      console.log('📊 Total bookings (including past):', allBookings.length);
-      setBookings(activeBookings);
+      console.log('✅ All bookings loaded:', allBookings.length);
+      setBookings(allBookings);
       setAllBookingsCount(allBookings.length);
     } catch (error) {
       console.error('❌ Error fetching bookings:', error);
@@ -129,12 +110,28 @@ const MyBookings = () => {
         <div className="stats-bar">
           <div className="stat-item">
             <span className="stat-label">Active Bookings</span>
-            <span className="stat-value">{bookings.length}</span>
+            <span className="stat-value">
+              {bookings.filter(b => {
+                if (!b.visit_date) return true;
+                const visitDate = new Date(b.visit_date);
+                const today = new Date();
+                visitDate.setHours(0, 0, 0, 0);
+                today.setHours(0, 0, 0, 0);
+                return visitDate >= today;
+              }).length}
+            </span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Past Bookings</span>
             <span className="stat-value">
-              {allBookingsCount - bookings.length}
+              {bookings.filter(b => {
+                if (!b.visit_date) return false;
+                const visitDate = new Date(b.visit_date);
+                const today = new Date();
+                visitDate.setHours(0, 0, 0, 0);
+                today.setHours(0, 0, 0, 0);
+                return visitDate < today;
+              }).length}
             </span>
           </div>
           <div className="stat-item">

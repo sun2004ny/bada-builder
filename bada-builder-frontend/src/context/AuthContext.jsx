@@ -27,18 +27,25 @@ export const AuthProvider = ({ children }) => {
         const user = response.user;
         setCurrentUser({
           id: user.id,
+          uid: user.id, // Add uid for compatibility with existing components
           email: user.email,
           name: user.name,
         });
         setUserProfile({
+          ...user, // Include all fields from backend
           id: user.id,
+          uid: user.id,
           email: user.email,
           name: user.name,
           phone: user.phone,
           userType: user.user_type,
+          user_type: user.user_type, // Maintain both just in case
           profilePhoto: user.profile_photo,
+          profile_photo: user.profile_photo, // Maintain both just in case
           is_subscribed: user.is_subscribed,
+          isSubscribed: user.is_subscribed,
           subscription_expiry: user.subscription_expiry,
+          subscriptionExpiry: user.subscription_expiry,
           subscription_plan: user.subscription_plan,
           subscription_price: user.subscription_price,
           subscribed_at: user.subscribed_at,
@@ -71,6 +78,7 @@ export const AuthProvider = ({ children }) => {
         const user = JSON.parse(storedUser);
         setCurrentUser({
           id: user.id,
+          uid: user.id, // Add uid for compatibility with existing components
           email: user.email,
           name: user.name,
         });

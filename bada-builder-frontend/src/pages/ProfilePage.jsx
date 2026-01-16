@@ -14,29 +14,6 @@ import ChatList from '../components/ChatList/ChatList';
 import ChatBox from '../components/ChatBox/ChatBox';
 import './ProfilePage.css';
 
-// Cloudinary Configuration
-const CLOUDINARY_CLOUD_NAME = "dooamkdih";
-const CLOUDINARY_UPLOAD_PRESET = "profile_photos";
-
-const uploadToCloudinary = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-  try {
-    const response = await fetch(url, { method: 'POST', body: formData });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Cloudinary upload failed: ${errorData.error.message}`);
-    }
-    const data = await response.json();
-    return data.secure_url;
-  } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
-    throw error;
-  }
-};
-
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile, refreshProfile } = useAuth();
@@ -180,10 +157,10 @@ const ProfilePage = () => {
     if (!file || !currentUser) return;
     try {
       setUploading(true);
-      const photoURL = await uploadToCloudinary(file);
 
-      // Update profile photo via API
-      await authAPI.updateProfile({ profile_photo: photoURL });
+      // Use the backend API which handles Cloudinary upload securely
+      const response = await usersAPI.uploadProfilePhoto(file);
+      const photoURL = response.profilePhoto;
 
       setProfilePhoto(photoURL);
       await refreshProfile();
