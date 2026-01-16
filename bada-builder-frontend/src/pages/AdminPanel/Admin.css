@@ -327,3 +327,152 @@
 .remove-image-btn:hover {
     background-color: #dc2626;
 }
+
+/* Manage Reviews Styles */
+.manage-reviews-container {
+    padding-bottom: 50px;
+}
+
+.admin-header {
+    margin-bottom: 30px;
+}
+
+.admin-header h1 {
+    font-size: 2rem;
+    color: #1a202c;
+    margin-bottom: 5px;
+}
+
+.admin-header p {
+    color: #718096;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.admin-review-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.rating-badge {
+    background: #fbbf24;
+    color: #1a202c;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.property-ref {
+    font-size: 0.85rem;
+    color: #718096;
+    background: #f8fafc;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.review-text {
+    line-height: 1.6;
+    color: #4a5568;
+    font-style: italic;
+    flex: 1;
+}
+
+.review-metadata {
+    font-size: 0.8rem;
+    color: #a0aec0;
+    display: flex;
+    gap: 15px;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.approve-btn,
+.reject-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.approve-btn {
+    background-color: #10b981;
+    color: white;
+}
+
+.approve-btn:hover {
+    background-color: #059669;
+}
+
+.reject-btn {
+    background-color: #ef4444;
+    color: white;
+}
+
+.reject-btn:hover {
+    background-color: #dc2626;
+}
+
+.admin-alert {
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.admin-alert.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.admin-alert.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.no-pending {
+    text-align: center;
+    padding: 50px;
+    background: white;
+    border-radius: 12px;
+    color: #718096;
+}

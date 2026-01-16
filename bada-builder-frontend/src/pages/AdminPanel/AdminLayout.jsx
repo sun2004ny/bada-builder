@@ -41,6 +41,12 @@ const AdminLayout = () => {
                     >
                         Manage Properties
                     </Link>
+                    <Link
+                        to="/admin-panel/manage-reviews"
+                        className={`admin-nav-item ${location.pathname.includes('manage-reviews') ? 'active' : ''}`}
+                    >
+                        Manage Reviews
+                    </Link>
                     <button onClick={handleLogout} className="logout-btn">
                         Logout
                     </button>

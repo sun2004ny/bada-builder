@@ -88,6 +88,7 @@ import AdminLogin from './pages/AdminPanel/AdminLogin';
 import AdminLayout from './pages/AdminPanel/AdminLayout';
 import AdminPostProperty from './pages/AdminPanel/PostProperty';
 import AdminManageProperties from './pages/AdminPanel/ManageProperties';
+import AdminManageReviews from './pages/AdminPanel/ManageReviews';
 
 // Preloader Imports
 import { PreloaderProvider } from './context/PreloaderContext';
@@ -175,6 +176,7 @@ function AppContent() {
             <Route index element={<AdminPostProperty />} /> {/* Default to Post Property */}
             <Route path="post-property" element={<AdminPostProperty />} />
             <Route path="manage-properties" element={<AdminManageProperties />} />
+            <Route path="manage-reviews" element={<AdminManageReviews />} />
           </Route>
 
           {/* Learn */}

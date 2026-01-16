@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ChatBox from '../components/ChatBox/ChatBox';
 import { generateChatId } from '../services/chatService';
 
+import ReviewSection from '../components/PropertyReviews/ReviewSection';
 import BookmarkButton from '../components/BookmarkButton/BookmarkButton';
 
 const PropertyDetails = () => {
@@ -640,6 +641,13 @@ const PropertyDetails = () => {
             </p>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <ReviewSection
+          propertyId={property.id}
+          currentUser={currentUser}
+          userProfile={userProfile}
+        />
       </div>
 
       {/* Full Screen Image Viewer Modal */}
