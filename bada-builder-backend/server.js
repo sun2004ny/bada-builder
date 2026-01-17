@@ -17,6 +17,7 @@ import liveGroupingRoutes from './routes/live-grouping.js';
 import complaintRoutes from './routes/complaints.js';
 import reviewRoutes from './routes/reviews.js';
 import chatRoutes from './routes/chat.js';
+import wishlistRoutes from './routes/wishlists.js';
 
 
 // Import database
@@ -88,6 +89,7 @@ app.use('/api/complaints', complaintRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/wishlists', wishlistRoutes);
 
 
 // 404 handler

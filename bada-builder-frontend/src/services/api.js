@@ -36,7 +36,7 @@ const getFileHeaders = (includeAuth = true) => {
 };
 
 // API request wrapper
-const apiRequest = async (endpoint, options = {}) => {
+export const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   const config = {
     ...options,
@@ -62,7 +62,7 @@ const apiRequest = async (endpoint, options = {}) => {
 };
 
 // File upload helper
-const uploadFile = async (endpoint, formData, includeAuth = true, method = 'POST') => {
+export const uploadFile = async (endpoint, formData, includeAuth = true, method = 'POST') => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = getFileHeaders(includeAuth);
 
