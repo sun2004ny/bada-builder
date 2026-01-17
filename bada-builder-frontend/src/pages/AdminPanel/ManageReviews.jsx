@@ -20,7 +20,14 @@ const ManageReviews = () => {
             setPendingReviews(res.data);
         } catch (error) {
             console.error('Error fetching pending reviews:', error);
-            setMessage({ text: 'Failed to load pending reviews.', type: 'error' });
+            if (error.response?.status === 401) {
+                setMessage({
+                    text: 'Unauthorized: You need a backend account to moderate reviews. Please ensure your admin email is registered in the database.',
+                    type: 'error'
+                });
+            } else {
+                setMessage({ text: 'Failed to load pending reviews.', type: 'error' });
+            }
         } finally {
             setLoading(false);
         }
