@@ -42,7 +42,7 @@ const PropertyDetails = () => {
       console.log('Owner ID (user_id):', property.user_id);
       console.log('Owner ID (ownerId):', property.ownerId);
       console.log('Final ownerId:', ownerId);
-      console.log('Should show button:', currentUser && ownerId && currentUser.uid !== ownerId);
+      console.log('Should show button:', currentUser && ownerId && String(currentUser.uid) !== String(ownerId));
     }
   }, [currentUser, property, ownerId]);
 
@@ -531,7 +531,7 @@ const PropertyDetails = () => {
               </div>
 
               {/* Chat with Owner Button - Shown to buyers only */}
-              {currentUser && ownerId && currentUser.uid !== ownerId && (
+              {currentUser && ownerId && String(currentUser.uid) !== String(ownerId) && (
                 <div className="pt-4">
                   <button
                     onClick={() => {

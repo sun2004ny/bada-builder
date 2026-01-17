@@ -45,7 +45,7 @@ const ChatBox = ({
 
                 // Mark chat as read when opened (only if chat exists)
                 if (currentUser) {
-                    await markChatAsRead(chatId, currentUser.uid);
+                    await markChatAsRead(chatId, String(currentUser.uid));
                 }
 
                 return unsubscribe;
@@ -84,7 +84,7 @@ const ChatBox = ({
             setSending(true);
             await sendMessage(
                 chatId,
-                currentUser.uid,
+                String(currentUser.uid),
                 userProfile?.name || currentUser.email,
                 newMessage.trim(),
                 !isOwner ? chatData : null // Pass metadata only for buyer's first message
@@ -169,7 +169,7 @@ const ChatBox = ({
                         {messages.map((msg) => (
                             <div
                                 key={msg.id}
-                                className={`message ${msg.senderId === currentUser?.uid ? 'message-sent' : 'message-received'
+                                className={`message ${String(msg.senderId) === String(currentUser?.uid) ? 'message-sent' : 'message-received'
                                     }`}
                             >
                                 <div className="message-bubble">

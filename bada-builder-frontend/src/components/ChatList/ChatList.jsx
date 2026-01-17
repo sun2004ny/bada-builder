@@ -55,7 +55,7 @@ const ChatList = ({ onChatSelect }) => {
     };
 
     const getOtherParticipant = (chat) => {
-        if (chat.buyerId === currentUser?.uid) {
+        if (String(chat.buyerId) === String(currentUser?.uid)) {
             return {
                 name: chat.ownerName,
                 email: chat.ownerEmail
@@ -68,13 +68,13 @@ const ChatList = ({ onChatSelect }) => {
     };
 
     const getUnreadCount = (chat) => {
-        return chat.unreadCount?.[currentUser?.uid] || 0;
+        return chat.unreadCount?.[String(currentUser?.uid)] || 0;
     };
 
     const filteredChats = chats.filter(chat => {
         if (activeTab === 'all') return true;
-        if (activeTab === 'buyers') return chat.ownerId === currentUser?.uid;
-        if (activeTab === 'sellers') return chat.buyerId === currentUser?.uid;
+        if (activeTab === 'buyers') return String(chat.ownerId) === String(currentUser?.uid);
+        if (activeTab === 'sellers') return String(chat.buyerId) === String(currentUser?.uid);
         return true;
     });
 
@@ -134,7 +134,7 @@ const ChatList = ({ onChatSelect }) => {
 
                         return (
                             <div
-                                key={chat.id}
+                                key={chat.chatId}
                                 className={`chat-item ${unreadCount > 0 ? 'chat-item-unread' : ''}`}
                                 onClick={() => onChatSelect(chat)}
                             >
@@ -162,8 +162,8 @@ const ChatList = ({ onChatSelect }) => {
                                                 <FiUser size={12} />
                                                 {otherParticipant.name}
                                             </p>
-                                            <span className={`chat-item-role ${chat.buyerId !== currentUser?.uid ? 'role-client' : ''}`}>
-                                                {chat.buyerId === currentUser?.uid ? 'Property Owner' : 'Client'}
+                                            <span className={`chat-item-role ${String(chat.buyerId) !== String(currentUser?.uid) ? 'role-client' : ''}`}>
+                                                {String(chat.buyerId) === String(currentUser?.uid) ? 'Property Owner' : 'Client'}
                                             </span>
                                         </div>
                                         <p className="chat-item-last-message">

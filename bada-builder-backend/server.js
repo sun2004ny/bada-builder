@@ -16,6 +16,8 @@ import subscriptionRoutes from './routes/subscriptions.js';
 import liveGroupingRoutes from './routes/live-grouping.js';
 import complaintRoutes from './routes/complaints.js';
 import reviewRoutes from './routes/reviews.js';
+import chatRoutes from './routes/chat.js';
+
 
 // Import database
 import pool from './config/database.js';
@@ -85,6 +87,8 @@ app.use('/api/live-grouping', liveGroupingRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/chat', chatRoutes);
+
 
 // 404 handler
 app.use((req, res) => {

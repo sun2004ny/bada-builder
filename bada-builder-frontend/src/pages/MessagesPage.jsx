@@ -43,16 +43,16 @@ const MessagesPage = () => {
 
             <div className="messages-layout">
                 <div className="messages-list-pane">
-                    <ChatList onChatSelect={handleChatSelect} selectedChatId={selectedChat?.id} />
+                    <ChatList onChatSelect={handleChatSelect} selectedChatId={selectedChat?.chatId} />
                 </div>
 
                 <div className={`messages-content-pane ${selectedChat ? 'active' : ''}`}>
                     {selectedChat ? (
                         <ChatBox
-                            chatId={selectedChat.id}
+                            chatId={selectedChat.chatId}
                             chatData={selectedChat}
                             onClose={handleCloseChat}
-                            isOwner={selectedChat.ownerId === currentUser?.uid}
+                            isOwner={String(selectedChat.ownerId) === String(currentUser?.uid)}
                         />
                     ) : (
                         <div className="messages-empty-state">

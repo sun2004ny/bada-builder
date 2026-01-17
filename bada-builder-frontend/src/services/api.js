@@ -417,6 +417,38 @@ export const favoritesAPI = {
   },
 };
 
+// ==================== CHAT API ====================
+export const chatAPI = {
+  getUserChats: async () => {
+    return apiRequest('/chat/user-chats');
+  },
+
+  createOrGetChat: async (chatData) => {
+    return apiRequest('/chat', {
+      method: 'POST',
+      body: JSON.stringify(chatData),
+    });
+  },
+
+  sendMessage: async (chatId, message) => {
+    return apiRequest(`/chat/${chatId}/message`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  },
+
+  getMessages: async (chatId) => {
+    return apiRequest(`/chat/${chatId}/messages`);
+  },
+
+  markAsRead: async (chatId) => {
+    return apiRequest(`/chat/${chatId}/read`, {
+      method: 'PATCH',
+    });
+  },
+};
+
+
 export default {
   authAPI,
   usersAPI,
@@ -427,4 +459,6 @@ export default {
   liveGroupingAPI,
   complaintsAPI,
   favoritesAPI,
+  chatAPI,
 };
+
