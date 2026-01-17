@@ -142,31 +142,43 @@ const ByDeveloper = () => {
         {/* Projects Grid */}
         {!loading && !error && (
           <div
-            className={`properties-grid ${
-              view === "list" ? "list-view" : "grid-view"
-            }`}
+            className={`properties-grid ${view === "list" ? "list-view" : "grid-view"
+              }`}
           >
-            {projects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <PropertyCard
-                  property={{
-                    ...project,
-                    image: project.image_url,
-                    area: project.area || project.size,
-                    status: project.status || "Active",
-                    badge: "Developer",
-                    owner: project.company_name || "Developer",
-                  }}
-                  viewType={view}
-                  source="developer"
-                />
-              </motion.div>
-            ))}
+            {projects.map((project, index) => {
+              // Parse project_stats if it's a string
+              let parsedStats = project.project_stats;
+              if (parsedStats && typeof parsedStats === 'string') {
+                try {
+                  parsedStats = JSON.parse(parsedStats);
+                } catch (e) {
+                  console.error("Error parsing project_stats:", e);
+                }
+              }
+
+              return (
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <PropertyCard
+                    property={{
+                      ...project,
+                      project_stats: parsedStats,
+                      image: project.image_url,
+                      area: project.area || (parsedStats ? parsedStats.area : null) || project.size,
+                      status: project.status || "Active",
+                      badge: "Developer",
+                      owner: project.company_name || project.owner_name || "Developer",
+                    }}
+                    viewType={view}
+                    source="developer"
+                  />
+                </motion.div>
+              );
+            })}
           </div>
         )}
 

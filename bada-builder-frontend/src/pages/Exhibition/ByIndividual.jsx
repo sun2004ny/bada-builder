@@ -144,9 +144,8 @@ const ByIndividual = () => {
         {/* Properties Grid */}
         {!loading && !error && (
           <div
-            className={`properties-grid ${
-              view === "list" ? "list-view" : "grid-view"
-            }`}
+            className={`properties-grid ${view === "list" ? "list-view" : "grid-view"
+              }`}
           >
             {properties.map((property, index) => (
               <motion.div
@@ -162,6 +161,7 @@ const ByIndividual = () => {
                     area: property.area || property.size,
                     status: property.status || "Available",
                     badge: "Individual",
+                    owner: property.owner_name || "Property Owner",
                   }}
                   viewType={view}
                   source="individual"

@@ -8,20 +8,20 @@ import './SubscriptionPlans.css';
 /* ---------- BASE PLANS (Individual) ---------- */
 const individualPlans = [
   {
-    id: '1month',
+    id: 'ind_1m',
     duration: '1 Month',
     price: 100,
     features: ['Post 1 property', 'Featured listing for 1 month', 'Email support']
   },
   {
-    id: '3months',
+    id: 'ind_6m',
     duration: '6 Months',
     price: 400,
     features: ['Post 1 property', 'Featured listing for 6 month', 'Email support'],
     popular: true
   },
   {
-    id: '6months',
+    id: 'ind_12m',
     duration: '1 Year',
     price: 700,
     features: ['Post 1 property', 'Featured listing for 1 year', 'Email support']
@@ -31,13 +31,13 @@ const individualPlans = [
 /* ---------- DEVELOPER / BUILDER PLAN (ONLY ONE PLAN) ---------- */
 const developerPlan = [
   {
-    id: '12months',
-    duration: '12 month',
+    id: 'dev_12m',
+    duration: '12 Months',
     price: 20000,
     features: [
-      'Post 20 property',
+      'Post 20 properties',
       'Featured listing for 1 year',
-      'Email support'
+      'Priority support'
     ],
     bestValue: true
   }
@@ -91,115 +91,88 @@ const SubscriptionPlans = () => {
     return date.toISOString();
   };
 
-  // Razorpay payment handler (reusing exact logic from BookSiteVisit)
+  // Razorpay payment handler
   const handleRazorpayPayment = async (plan) => {
     if (!window.Razorpay) {
       alert('Payment gateway is loading. Please try again in a moment.');
       return false;
     }
 
-    const amount = plan.price;
-    const currency = 'INR';
+    try {
+      // Step 1: Create Razorpay order on backend
+      console.log('📝 Creating Razorpay order for plan:', plan.id);
+      const orderResponse = await subscriptionsAPI.createOrder(plan.id);
+      console.log('✅ Order created:', orderResponse);
 
-    // Calculate plan duration in months
-    let months = 1;
-    if (plan.id === '3months') months = 6; // 6 months plan
-    else if (plan.id === '6months') months = 12; // 1 year plan
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: orderResponse.amount * 100, // Amount in paise
+        currency: orderResponse.currency || 'INR',
+        name: 'Bada Builder',
+        description: `Property Listing Subscription Plan - ${plan.duration}`,
+        order_id: orderResponse.orderId,
+        handler: async function (response) {
+          console.log('✅ Payment successful:', response);
 
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: amount * 100, // Amount in paise
-      currency: currency,
-      name: 'Bada Builder',
-      description: `Property Listing Subscription Plan - ${plan.duration}`,
-      image: '/logo.png', // Your company logo
-      order_id: '', // Will be generated from backend if needed
-      handler: async function (response) {
-        console.log('✅ Payment successful:', response);
+          try {
+            // Verify payment with backend API
+            const result = await subscriptionsAPI.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan_id: plan.id
+            });
 
-        // Calculate expiry date
-        const expiryDate = calculateExpiryDate(months);
+            console.log('✅ Subscription activated successfully:', result);
 
-        // Prepare payment data
-        const paymentData = {
-          payment_id: response.razorpay_payment_id,
-          amount: amount,
+            // Show success and redirect
+            setPaymentLoading(false);
+
+            // Redirect to post property page
+            setTimeout(() => {
+              navigate('/post-property');
+            }, 500);
+
+          } catch (error) {
+            console.error('Error saving payment/subscription:', error);
+            alert('Payment successful but subscription activation failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
+            setPaymentLoading(false);
+          }
+        },
+        prefill: {
+          name: userProfile?.name || currentUser?.displayName || '',
+          email: userProfile?.email || currentUser?.email || '',
+          contact: userProfile?.phone || currentUser?.phoneNumber || ''
+        },
+        notes: {
+          plan_id: plan.id,
           plan_name: plan.duration,
-          user_id: currentUser.uid,
-          payment_status: 'success',
-          created_at: new Date().toISOString(),
-          razorpay_order_id: response.razorpay_order_id || '',
-          razorpay_signature: response.razorpay_signature || '',
-          payment_currency: currency,
-          payment_timestamp: new Date().toISOString(),
-          user_role: userRole // Store user role with payment
-        };
-
-        // Prepare subscription data
-        const subscriptionData = {
-          active_plan: plan.id,
-          plan_start_date: new Date().toISOString(),
-          plan_status: 'active',
-          is_subscribed: true,
-          subscription_expiry: expiryDate,
-          subscription_plan: plan.id,
-          subscription_price: plan.price,
-          subscribed_at: new Date().toISOString(),
-          user_type: userRole // Store user role in profile
-        };
-
-        try {
-          // Store payment details in database
-          await addDoc(collection(db, 'payments'), paymentData);
-          console.log('✅ Payment data stored successfully');
-
-          // Update user subscription in Firestore
-          await updateDoc(doc(db, 'users', currentUser.uid), subscriptionData);
-          console.log('✅ Subscription activated successfully');
-
-          // Show success and redirect
-          setPaymentLoading(false);
-          // alert(`Successfully subscribed to ${plan.duration} plan! Payment ID: ${response.razorpay_payment_id}`); // Removed blocking alert
-
-          // Redirect to post property page
-          setTimeout(() => {
-            navigate('/post-property');
-          }, 500);
-
-        } catch (error) {
-          console.error('Error saving payment/subscription:', error);
-          alert('Payment successful but subscription activation failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
-          setPaymentLoading(false);
+          plan_price: plan.price,
+          user_id: currentUser?.id || '',
+          user_role: userRole,
+          subscription_type: 'property_listing'
+        },
+        theme: {
+          color: '#58335e'
+        },
+        modal: {
+          ondismiss: function () {
+            console.log('Payment cancelled by user');
+            setPaymentLoading(false);
+            setSelectedPlan(null);
+          }
         }
-      },
-      prefill: {
-        name: userProfile?.name || currentUser?.displayName || '',
-        email: userProfile?.email || currentUser?.email || '',
-        contact: userProfile?.phone || currentUser?.phoneNumber || ''
-      },
-      notes: {
-        plan_id: plan.id,
-        plan_name: plan.duration,
-        plan_price: plan.price,
-        user_id: currentUser.uid,
-        user_role: userRole,
-        subscription_type: 'property_listing'
-      },
-      theme: {
-        color: '#58335e'
-      },
-      modal: {
-        ondismiss: function () {
-          console.log('Payment cancelled by user');
-          setPaymentLoading(false);
-          setSelectedPlan(null);
-        }
-      }
-    };
+      };
 
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
-    return true;
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      return true;
+
+    } catch (error) {
+      console.error('❌ Error creating order:', error);
+      alert(error.response?.data?.error || 'Failed to initiate payment. Please try again.');
+      return false;
+    }
   };
 
   const handleSelectPlan = async (plan) => {

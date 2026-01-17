@@ -23,7 +23,7 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
     navigate(`/property-details/${property.id}`, { state: { property, type: source } });
   };
 
-  const propertyTitle = property.project_name || property.projectName || property.title;
+  const propertyTitle = property.project_name || property.projectName || property.title || property.projectName || 'Untitled Property';
 
   return (
     <div
@@ -58,14 +58,14 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
         {/* Location */}
         <p className="property-location">
           <FiMapPin className="icon" />
-          {property.project_location || property.location}
+          {property.project_location || property.projectLocation || property.location || 'Location Not Specified'}
         </p>
 
         {/* Price */}
         <p className="property-price">
-          {property.price && property.price.includes('undefined')
-            ? (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : property.price.replace(/₹undefined/g, ''))
-            : (property.price || 'Contact for Price')}
+          {property.price && !property.price.toString().includes('undefined')
+            ? property.price
+            : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.base_price ? `₹${property.base_price}` : (property.price && !property.price.toString().includes('undefined') ? property.price : 'Contact for Price')))}
         </p>
 
         {/* Key Highlights */}
@@ -76,10 +76,10 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
               {property.bhk}
             </span>
           )}
-          {property.area && (
+          {(property.area || (property.project_stats && property.project_stats.area)) && (
             <span className="highlight-item">
               <FiMaximize2 className="icon" />
-              {property.area}
+              {property.area || property.project_stats.area}
             </span>
           )}
           {property.type && (

@@ -52,18 +52,32 @@ const PropertyForm = ({
                         </select>
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="price">Price (₹) *</label>
-                        <input
-                            type="text"
-                            id="price"
-                            name="price"
-                            value={formData.price}
-                            onChange={handleChange}
-                            placeholder="e.g. 75,00,000"
-                            required
-                            disabled={disabled}
-                        />
+                    <div className="form-row">
+                        <div className="form-group half">
+                            <label htmlFor="price">Price (₹) *</label>
+                            <input
+                                type="text"
+                                id="price"
+                                name="price"
+                                value={formData.price}
+                                onChange={handleChange}
+                                placeholder="e.g. 75,00,000"
+                                required
+                                disabled={disabled}
+                            />
+                        </div>
+                        <div className="form-group half">
+                            <label htmlFor="area">Built-up Area (sq.ft)</label>
+                            <input
+                                type="text"
+                                id="area"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleChange}
+                                placeholder="e.g. 1500"
+                                disabled={disabled}
+                            />
+                        </div>
                     </div>
                 </div>
 

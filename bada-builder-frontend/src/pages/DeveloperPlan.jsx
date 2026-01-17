@@ -8,7 +8,7 @@ import './SubscriptionPlans.css';
 /* ---------- DEVELOPER / BUILDER PLAN (ONLY ONE PLAN) ---------- */
 const developerPlan = [
   {
-    id: '12_months',
+    id: 'dev_12m',
     duration: '12 Months',
     price: 20000,
     features: [

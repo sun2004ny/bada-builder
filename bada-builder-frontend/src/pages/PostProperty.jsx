@@ -381,52 +381,47 @@ const PostProperty = () => {
         console.log('✅ New image uploaded successfully:', imageUrl);
       }
 
-      const propertyData = {
-        title: formData.title,
-        type: formData.type,
-        location: formData.location,
-        price: formData.price,
-        description: formData.description,
-        facilities: formData.facilities ? formData.facilities.split(',').map(f => f.trim()).filter(f => f) : [],
-        image_url: imageUrl,
-        user_type: userType, // Keep user type
-        // created_at should not change
-        status: 'active'
+      // Helper to ensure we have value from any possible key
+      const getVal = (keys) => {
+        for (const key of keys) {
+          if (formData[key] !== undefined && formData[key] !== null && formData[key] !== '') return formData[key];
+        }
+        return '';
       };
 
-      if (showBhkType && formData.bhk) {
-        propertyData.bhk = formData.bhk;
-      } else {
-        propertyData.bhk = ''; // Clear BHK if property type no longer supports it
-      }
+      const propertyData = {
+        title: getVal(['projectName', 'title']) || (userType === 'developer' ? 'Untitled Project' : 'Untitled Property'),
+        type: getVal(['schemeType', 'type']) || (userType === 'developer' ? 'Project' : 'Property'),
+        location: getVal(['projectLocation', 'location']) || 'Location Not Specified',
+        price: userType === 'developer'
+          ? (formData.basePrice ? `₹${formData.basePrice}${formData.maxPrice ? ` - ₹${formData.maxPrice}` : ''}` : (formData.price || 'Contact for Price'))
+          : (formData.price || 'Contact for Price'),
+        bhk: userType === 'developer' ? null : formData.bhk,
+        description: formData.description || '',
+        facilities: userType === 'developer' ? (formData.amenities || []) : (formData.facilities ? (Array.isArray(formData.facilities) ? formData.facilities : formData.facilities.split(',').map(f => f.trim()).filter(f => f)) : []),
+        area: formData.area || formData.projectStats?.area || '',
+        user_type: userType || 'individual',
+        status: 'active',
 
-      if (userType === 'developer') {
-        propertyData.company_name = formData.ownerName || '';
-        propertyData.project_name = formData.projectName || '';
-        propertyData.scheme_type = formData.schemeType || '';
-        propertyData.residential_options = formData.residentialOptions || [];
-        propertyData.commercial_options = formData.commercialOptions || [];
-        propertyData.base_price = formData.basePrice || '';
-        propertyData.max_price = formData.maxPrice || '';
-        propertyData.project_location = formData.projectLocation || '';
-        propertyData.amenities = formData.amenities || [];
-        propertyData.owner_name = formData.ownerName || '';
-        propertyData.possession_status = formData.possessionStatus || '';
-        propertyData.rera_status = formData.reraStatus || 'No';
-        propertyData.rera_number = formData.reraNumber || '';
-        propertyData.project_stats = formData.projectStats || { towers: '', floors: '', units: '', area: '' };
-        propertyData.contact_phone = formData.contactPhone || '';
-        propertyData.completion_date = formData.completionDate || '';
-      } else {
-        // Clear developer specific fields if user type changed from developer
-        const devFields = [
-          'company_name', 'project_name', 'scheme_type', 'residential_options',
-          'commercial_options', 'base_price', 'max_price', 'project_location',
-          'amenities', 'owner_name', 'possession_status', 'rera_status',
-          'project_stats', 'contact_phone', 'completion_date'
-        ];
-        devFields.forEach(field => propertyData[field] = null);
-      }
+        // Developer Specific (snake_case for backend)
+        project_name: getVal(['projectName', 'title']),
+        project_location: getVal(['projectLocation', 'location']),
+        scheme_type: getVal(['schemeType', 'type']),
+        base_price: formData.basePrice || '',
+        max_price: formData.maxPrice || '',
+        owner_name: formData.ownerName || formData.companyName || '',
+        company_name: formData.companyName || formData.ownerName || '',
+        contact_phone: formData.contactPhone || '',
+        completion_date: formData.completionDate || '',
+        possession_status: formData.possessionStatus || '',
+        total_units: formData.projectStats?.units || formData.totalUnits || '',
+        rera_status: formData.reraStatus || 'No',
+        rera_number: formData.reraNumber || '',
+        project_stats: formData.projectStats || { towers: '', floors: '', units: '', area: '' },
+        amenities: formData.amenities || [],
+        residential_options: formData.residentialOptions || [],
+        commercial_options: formData.commercialOptions || []
+      };
 
       // Update property via backend API
       const images = imageFile ? [imageFile] : [];
@@ -655,16 +650,24 @@ const PostProperty = () => {
       // --- END OPTIMIZATION ---
 
       // Prepare base property data
+      // Helper to ensure we have value from any possible key
+      const getVal = (keys) => {
+        for (const key of keys) {
+          if (activeData[key] !== undefined && activeData[key] !== null && activeData[key] !== '') return activeData[key];
+        }
+        return '';
+      };
+
       const propertyData = {
-        title: userType === 'developer' ? (activeData.projectName || '') : (activeData.title || ''),
-        type: userType === 'developer' ? (activeData.schemeType || '') : (activeData.type || ''),
-        location: userType === 'developer' ? (activeData.projectLocation || '') : (activeData.location || ''),
+        title: getVal(['projectName', 'title']) || (userType === 'developer' ? 'Untitled Project' : 'Untitled Property'),
+        type: getVal(['schemeType', 'type']) || (userType === 'developer' ? 'Project' : 'Property'),
+        location: getVal(['projectLocation', 'location']) || 'Location Not Specified',
         price: userType === 'developer'
-          ? (activeData.basePrice && activeData.maxPrice ? `₹${activeData.basePrice} - ₹${activeData.maxPrice}` : (activeData.basePrice ? `₹${activeData.basePrice}` : (activeData.price || '')))
-          : (activeData.price || ''),
+          ? (activeData.basePrice && activeData.maxPrice ? `₹${activeData.basePrice} - ₹${activeData.maxPrice}` : (activeData.basePrice ? `₹${activeData.basePrice}` : (activeData.price || 'Contact for Price')))
+          : (activeData.price || 'Contact for Price'),
         description: activeData.description || '',
         facilities: activeData.facilities ? (Array.isArray(activeData.facilities) ? activeData.facilities : activeData.facilities.split(',').map(f => f.trim()).filter(f => f)) : [],
-        // Note: image_url and images will be handled by backend from uploaded files
+        area: activeData.area || activeData.projectStats?.area || '',
         user_type: userType || 'individual',
         status: 'active'
       };
@@ -683,34 +686,33 @@ const PostProperty = () => {
 
       // Developer fields...
       if (userType === 'developer') {
-        // ... existing dev fields mapping ...
-        // Note: activeData contains the merged template data which has these fields
         if (brochureFile) propertyData.brochure_url = await uploadToCloudinary(brochureFile);
 
-        propertyData.scheme_type = activeData.schemeType || '';
-        propertyData.residential_options = activeData.residentialOptions || [];
-        propertyData.commercial_options = activeData.commercialOptions || [];
-        propertyData.base_price = activeData.basePrice || activeData.minPrice || ''; // handle key vars
+        propertyData.project_name = getVal(['projectName', 'title']);
+        propertyData.project_location = getVal(['projectLocation', 'location']);
+        propertyData.scheme_type = getVal(['schemeType', 'type']);
+        propertyData.base_price = activeData.basePrice || '';
         propertyData.max_price = activeData.maxPrice || '';
-        propertyData.project_location = activeData.projectLocation || '';
-        propertyData.amenities = activeData.amenities || [];
-        propertyData.owner_name = activeData.ownerName || '';
-        propertyData.company_name = activeData.ownerName || '';
+        propertyData.owner_name = activeData.ownerName || activeData.companyName || '';
+        propertyData.company_name = activeData.companyName || activeData.ownerName || '';
         propertyData.possession_status = activeData.possessionStatus || '';
         propertyData.rera_status = activeData.reraStatus || 'No';
         propertyData.rera_number = activeData.reraNumber || '';
-        propertyData.project_name = activeData.projectName || '';
         propertyData.project_stats = activeData.projectStats || { towers: '', floors: '', units: '', area: '' };
         propertyData.contact_phone = activeData.contactPhone || '';
         propertyData.completion_date = activeData.completionDate || '';
+        propertyData.total_units = activeData.projectStats?.units || '';
+        propertyData.amenities = activeData.amenities || [];
+        propertyData.residential_options = activeData.residentialOptions || [];
+        propertyData.commercial_options = activeData.commercialOptions || [];
 
         const expiryDate = new Date();
         expiryDate.setFullYear(expiryDate.getFullYear() + 1);
         propertyData.expiry_date = expiryDate.toISOString();
       } else {
-        // Pass owner/contact for Individual too if template sent them
-        if (activeData.ownerName) propertyData.owner_name = activeData.ownerName;
-        if (activeData.contactPhone) propertyData.contact_phone = activeData.contactPhone;
+        // Individual Owner fields
+        propertyData.owner_name = activeData.ownerName || '';
+        propertyData.contact_phone = activeData.contactPhone || '';
       }
 
       console.log('💾 Saving to database via API...', propertyData);

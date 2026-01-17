@@ -27,7 +27,7 @@ const PropertyDetails = () => {
 
   // Prepare dynamic data - declared early to avoid hoisting issues in hooks
   const isDeveloper = property?.user_type === 'developer';
-  const propertyTitle = property?.project_name || property?.projectName || property?.title;
+  const propertyTitle = property?.project_name || property?.projectName || property?.title || property?.project_name || 'Untitled Property';
   const propertyImages = property?.project_images || property?.images || (property?.image_url ? [property.image_url] : []) || [];
 
   // Get owner ID - check multiple possible field names
@@ -190,9 +190,9 @@ const PropertyDetails = () => {
   // Default amenities if none provided
   const defaultAmenities = ['Lift', 'Parking', 'Garden', 'Security', 'Gym', 'Power Backup'];
   const displayAmenities = propertyFacilities.length > 0 ? propertyFacilities : defaultAmenities;
-  const displayPrice = (property.price && !property.price.includes('undefined'))
+  const displayPrice = (property.price && !property.price.toString().includes('undefined'))
     ? property.price
-    : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.price || 'Contact for Price'));
+    : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.base_price ? `₹${property.base_price}` : (property.price && !property.price.toString().includes('undefined') ? property.price : 'Contact for Price')));
 
   return (
     <div className="property-details-page">
@@ -299,7 +299,7 @@ const PropertyDetails = () => {
               </h1>
               <div className="flex items-center gap-2 text-gray-600 mb-4">
                 <FiMap className="text-blue-600 flex-shrink-0" size={20} />
-                <p className="text-lg font-medium">{property.project_location || property.location}</p>
+                <p className="text-lg font-medium">{property?.project_location || property?.projectLocation || property?.location || 'Location Not Specified'}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {propertyTags.map((tag, i) => (
@@ -355,10 +355,10 @@ const PropertyDetails = () => {
                   <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Bathrooms</p>
                 </div>
               )}
-              {property.area && (
+              {(property.area || property.project_stats?.area) && (
                 <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200 flex flex-col items-center justify-center text-center">
                   <FiMaximize2 className="text-blue-600 mb-2" size={32} />
-                  <p className="text-2xl font-bold text-gray-900">{property.area}</p>
+                  <p className="text-2xl font-bold text-gray-900">{property.area || property.project_stats?.area}</p>
                   <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Built-up Area</p>
                 </div>
               )}
@@ -424,10 +424,10 @@ const PropertyDetails = () => {
                       <span className="text-gray-900 font-semibold">{property.bhk}</span>
                     </div>
                   )}
-                  {property.area && (
+                  {(property.area || property.project_stats?.area) && (
                     <div className="flex justify-between items-center py-3 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Built-up Area</span>
-                      <span className="text-gray-900 font-semibold">{property.area}</span>
+                      <span className="text-gray-900 font-semibold">{property.area || property.project_stats?.area}</span>
                     </div>
                   )}
                   {property.bathrooms && (

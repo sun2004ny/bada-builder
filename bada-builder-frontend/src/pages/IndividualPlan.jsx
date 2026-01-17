@@ -8,21 +8,21 @@ import './SubscriptionPlans.css';
 /* ---------- INDIVIDUAL PLANS (ONLY THESE 3 PLANS) ---------- */
 const individualPlans = [
   {
-    id: '1_month',
+    id: 'ind_1m',
     duration: '1 Month',
     price: 100,
     features: ['Post 1 property', 'Featured listing for 1 month', 'Email support']
   },
   {
-    id: '6_months',
+    id: 'ind_6m',
     duration: '6 Months',
     price: 400,
     features: ['Post 1 property', 'Featured listing for 6 month', 'Email support'],
     popular: true
   },
   {
-    id: '12_months',
-    duration: '1 Year',
+    id: 'ind_12m',
+    duration: '12 Months',
     price: 700,
     features: ['Post 1 property', 'Featured listing for 1 year', 'Email support']
   }
