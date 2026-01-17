@@ -19,22 +19,26 @@ export const PreloaderProvider = ({ children }) => {
 
         // Wait for fade-in
         setTimeout(() => {
-            // Check if target is a path (string) or a callback function
-            if (typeof target === 'string') {
-                navigate(target);
-            } else if (typeof target === 'function') {
-                target();
-            }
-
-            // Keep loading true for a short moment after action to allow fade out
-            setTimeout(() => {
-                setLoading(false);
-                // Clear icon and text after animation finishes
+            try {
+                // Check if target is a path (string) or a callback function
+                if (typeof target === 'string') {
+                    navigate(target);
+                } else if (typeof target === 'function') {
+                    target();
+                }
+            } catch (error) {
+                console.error('Preloader action failed:', error);
+            } finally {
+                // Keep loading true for a short moment after action to allow fade out
                 setTimeout(() => {
-                    setActiveIcon(null);
-                    setActiveText('');
-                }, 300);
-            }, 300); // Main delay before hiding
+                    setLoading(false);
+                    // Clear icon and text after animation finishes
+                    setTimeout(() => {
+                        setActiveIcon(null);
+                        setActiveText('');
+                    }, 300);
+                }, 300); // Main delay before hiding
+            }
         }, 400); // 400ms delay for the preloader to show up and stabilize
     };
 

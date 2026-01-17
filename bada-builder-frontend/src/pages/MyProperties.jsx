@@ -237,6 +237,7 @@ const MyProperties = () => {
             src={property.image_url || '/placeholder-property.jpg'}
             alt={property.title}
             onError={(e) => {
+              e.target.onerror = null;
               e.target.src = '/placeholder-property.jpg';
             }}
           />

@@ -48,10 +48,23 @@ export const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
+
+    // Safe JSON Parsing Check
+    const contentType = response.headers.get('content-type');
+    let data;
+
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Handle non-JSON response safely (e.g., HTML 404/500/502)
+      const text = await response.text();
+      data = { error: text || `Request failed with status ${response.status}` };
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || 'Request failed');
+      const error = new Error(data.error || 'Request failed');
+      error.status = response.status;
+      throw error;
     }
 
     return data;
@@ -73,10 +86,22 @@ export const uploadFile = async (endpoint, formData, includeAuth = true, method 
       body: formData,
     });
 
-    const data = await response.json();
+    // Safe JSON Parsing Check
+    const contentType = response.headers.get('content-type');
+    let data;
+
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Handle non-JSON response safely
+      const text = await response.text();
+      data = { error: text || `Upload failed with status ${response.status}` };
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || 'Upload failed');
+      const error = new Error(data.error || 'Upload failed');
+      error.status = response.status;
+      throw error;
     }
 
     return data;

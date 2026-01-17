@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -50,24 +50,59 @@ const MapPicker = ({ onLocationSelect, initialLocation }) => {
     const [address, setAddress] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const reverseGeocode = useCallback(async (lat, lng) => {
-        setLoading(true);
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-            const data = await response.json();
-            if (data && data.display_name) {
-                setAddress(data.display_name);
-                onLocationSelect(data.display_name, { lat, lng });
-            } else {
-                setAddress('Address not found');
-            }
-        } catch (error) {
-            console.error('Geocoding error:', error);
-            setAddress('Error fetching address');
-        } finally {
-            setLoading(false);
+    const timeoutRef = useRef(null);
+
+    const reverseGeocode = useCallback((lat, lng) => {
+        // Clear existing timeout to debounce requests
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
         }
+
+        // Set new timeout (500ms delay)
+        timeoutRef.current = setTimeout(async () => {
+            setLoading(true);
+            try {
+                // Add strict header for OSM compliance
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
+                    headers: {
+                        'User-Agent': 'BadaBuilder/1.0'
+                    }
+                });
+
+                // Safe check for JSON content type
+                const contentType = response.headers.get('content-type');
+                let data;
+
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    // Fallback for non-JSON
+                    data = null;
+                }
+
+                if (data && data.display_name) {
+                    setAddress(data.display_name);
+                    onLocationSelect(data.display_name, { lat, lng });
+                } else {
+                    setAddress('Address not found');
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                setAddress('Location lookup failed');
+            } finally {
+                setLoading(false);
+            }
+        }, 500);
     }, [onLocationSelect]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         reverseGeocode(markerPosition[0], markerPosition[1]);

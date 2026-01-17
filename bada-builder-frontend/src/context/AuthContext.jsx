@@ -57,11 +57,16 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      // Clear invalid token
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setCurrentUser(null);
-      setUserProfile(null);
+      // Only log out if it's strictly a 401 Unauthorized error
+      if (error.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setCurrentUser(null);
+        setUserProfile(null);
+      } else {
+        // For other errors (429, 500, Network), keep the session active
+        console.warn('Preserving session despite API error:', error.message);
+      }
     } finally {
       setLoading(false);
       setProfileLoading(false);

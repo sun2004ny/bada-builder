@@ -77,12 +77,17 @@ export const sendMessage = async (chatId, senderId, senderName, message, chatMet
  */
 export const getChatMessages = (chatId, callback) => {
     let isSubscribed = true;
-    let pollInterval = null;
+    let timeoutId = null;
+    let errorCount = 0;
 
     const fetchMessages = async () => {
         if (!isSubscribed) return;
         try {
             const response = await chatAPI.getMessages(chatId);
+
+            // Success: Reset error count
+            errorCount = 0;
+
             if (isSubscribed) {
                 // Map backend message format if necessary
                 const messages = Array.isArray(response.messages) ? response.messages.map(msg => ({
@@ -93,11 +98,31 @@ export const getChatMessages = (chatId, callback) => {
                     timestamp: new Date(msg.timestamp)
                 })) : [];
                 callback(messages);
+
+                // Schedule next poll - standard 3s interval
+                timeoutId = setTimeout(fetchMessages, 3000);
             }
         } catch (error) {
+            if (!isSubscribed) return;
+
+            // Stop polling on critical errors
+            const status = error.response?.status;
+            if ([401, 429, 500, 502, 503].includes(status)) {
+                console.error(`Stopping message poll due to error ${status}`);
+                return;
+            }
+
             console.error('Error fetching messages:', error);
+
+            // Exponential backoff for retryable errors
+            // 3s -> 6s -> 12s -> 24s -> max 60s
+            errorCount++;
+            const delay = Math.min(3000 * Math.pow(2, errorCount - 1), 60000);
+            console.log(`Retrying message poll in ${delay}ms`);
+
             if (isSubscribed) {
                 callback([]); // Resolve loading even on error
+                timeoutId = setTimeout(fetchMessages, delay);
             }
         }
     };
@@ -105,12 +130,9 @@ export const getChatMessages = (chatId, callback) => {
     // Initial fetch
     fetchMessages();
 
-    // Start polling every 3 seconds
-    pollInterval = setInterval(fetchMessages, 3000);
-
     return () => {
         isSubscribed = false;
-        if (pollInterval) clearInterval(pollInterval);
+        if (timeoutId) clearTimeout(timeoutId);
     };
 };
 
@@ -122,12 +144,17 @@ export const getChatMessages = (chatId, callback) => {
  */
 export const getUserChats = (userId, callback) => {
     let isSubscribed = true;
-    let pollInterval = null;
+    let timeoutId = null;
+    let errorCount = 0;
 
     const fetchChats = async () => {
         if (!isSubscribed) return;
         try {
             const response = await chatAPI.getUserChats();
+
+            // Success: Reset error count
+            errorCount = 0;
+
             if (isSubscribed) {
                 const chats = Array.isArray(response.chats) ? response.chats.map(chat => ({
                     chatId: chat.chat_id,
@@ -146,11 +173,31 @@ export const getUserChats = (userId, callback) => {
                     }
                 })) : [];
                 callback(chats);
+
+                // Schedule next poll - standard 5s interval
+                timeoutId = setTimeout(fetchChats, 5000);
             }
         } catch (error) {
+            if (!isSubscribed) return;
+
+            // Stop polling on critical errors
+            const status = error.response?.status;
+            if ([401, 429, 500, 502, 503].includes(status)) {
+                console.error(`Stopping chat list poll due to error ${status}`);
+                return;
+            }
+
             console.error('Error fetching user chats:', error);
+
+            // Exponential backoff for retryable errors
+            // 5s -> 10s -> 20s -> 40s -> max 60s
+            errorCount++;
+            const delay = Math.min(5000 * Math.pow(2, errorCount - 1), 60000);
+            console.log(`Retrying chat list poll in ${delay}ms`);
+
             if (isSubscribed) {
                 callback([]); // Resolve loading even on error
+                timeoutId = setTimeout(fetchChats, delay);
             }
         }
     };
@@ -158,12 +205,9 @@ export const getUserChats = (userId, callback) => {
     // Initial fetch
     fetchChats();
 
-    // Start polling every 5 seconds
-    pollInterval = setInterval(fetchChats, 5000);
-
     return () => {
         isSubscribed = false;
-        if (pollInterval) clearInterval(pollInterval);
+        if (timeoutId) clearTimeout(timeoutId);
     };
 };
 
