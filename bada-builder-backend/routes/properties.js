@@ -68,98 +68,77 @@ router.get('/:id', optionalAuth, async (req, res) => {
 
 // Create property (requires auth and subscription)
 router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
+  const client = await pool.connect();
   try {
-    // Check subscription
-    const userResult = await pool.query(
-      'SELECT is_subscribed, subscription_expiry FROM users WHERE id = $1',
-      [req.user.id]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = userResult.rows[0];
-    const isSubscribed = user.is_subscribed &&
-      (user.subscription_expiry === null || new Date(user.subscription_expiry) > new Date());
-
-    if (!isSubscribed) {
-      return res.status(403).json({ error: 'Subscription required to post properties' });
-    }
-
     const {
-      title,
-      type,
-      location,
-      price,
-      bhk,
-      description,
-      facilities,
-      company_name,
-      project_name,
-      total_units,
-      completion_date,
-      rera_number,
-      // New fields
-      scheme_type,
-      residential_options,
-      commercial_options,
-      base_price,
-      max_price,
-      project_location,
-      amenities,
-      owner_name,
-      possession_status,
-      rera_status,
-      project_stats,
-      contact_phone,
-      // Allow overriding user_type from body if provided, else fall back to user's type
+      title, type, location, price, bhk, description, facilities,
+      image_url, images: bodyImages, company_name, project_name,
+      total_units, completion_date, rera_number, scheme_type,
+      residential_options, commercial_options, base_price,
+      max_price, project_location, amenities, owner_name,
+      possession_status, rera_status, project_stats, contact_phone,
       user_type
     } = req.body;
 
-    // Upload images
-    let imageUrl = null;
-    let images = [];
+    await client.query('BEGIN');
 
-    // Check if files were uploaded via multer
+    // 1. Fetch the user's active subscription with FOR UPDATE lock
+    const subscriptionResult = await client.query(
+      `SELECT * FROM user_subscriptions 
+       WHERE user_id = $1 AND status = 'active' AND expiry_date > NOW() 
+       ORDER BY created_at ASC LIMIT 1 
+       FOR UPDATE`,
+      [req.user.id]
+    );
+
+    if (subscriptionResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'No active subscription found. Please purchase a plan to post properties.' });
+    }
+
+    const subscription = subscriptionResult.rows[0];
+
+    // 2. Check if usage limit is reached
+    if (subscription.properties_used >= subscription.properties_allowed) {
+      // Mark as exhausted if it wasn't already
+      await client.query(
+        "UPDATE user_subscriptions SET status = 'exhausted' WHERE id = $1",
+        [subscription.id]
+      );
+      await client.query('COMMIT');
+      return res.status(403).json({ error: 'Subscription limit reached. Please purchase a new plan.' });
+    }
+
+    // 3. Process images (same logic as before, but using buffers or body)
+    let finalImageUrl = image_url;
+    let finalImages = [];
+
     if (req.files && req.files.length > 0) {
       if (req.files.length === 1) {
-        imageUrl = await uploadImage(req.files[0].buffer, 'properties');
-        images = [imageUrl];
+        finalImageUrl = await uploadImage(req.files[0].buffer, 'properties');
+        finalImages = [finalImageUrl];
       } else {
         const buffers = req.files.map(file => file.buffer);
-        images = await uploadMultipleImages(buffers, 'properties');
-        imageUrl = images[0];
+        finalImages = await uploadMultipleImages(buffers, 'properties');
+        finalImageUrl = finalImages[0];
       }
     } else {
-      // If no files, check body for pre-uploaded URLs (from frontend Cloudinary upload)
-      if (req.body.image_url) imageUrl = req.body.image_url;
-      if (req.body.images) {
-        // handle both array directly or stringified array or single string
-        if (Array.isArray(req.body.images)) {
-          images = req.body.images;
-        } else if (typeof req.body.images === 'string') {
-          // Try to parse if it's a JSON string, otherwise treat as single URL
+      if (bodyImages) {
+        if (Array.isArray(bodyImages)) finalImages = bodyImages;
+        else {
           try {
-            const parsed = JSON.parse(req.body.images);
-            if (Array.isArray(parsed)) images = parsed;
-            else images = [req.body.images];
+            const parsed = JSON.parse(bodyImages);
+            finalImages = Array.isArray(parsed) ? parsed : [bodyImages];
           } catch (e) {
-            images = [req.body.images];
+            finalImages = [bodyImages];
           }
         }
       }
-
-      // Ensure we have at least one image url set if images array exists
-      if (!imageUrl && images && images.length > 0) {
-        imageUrl = images[0];
-      }
+      if (!finalImageUrl && finalImages.length > 0) finalImageUrl = finalImages[0];
     }
 
-    // Calculate subscription expiry (copy from user's subscription)
-    const subscriptionExpiry = user.subscription_expiry;
-
-    const result = await pool.query(
+    // 4. Insert the property
+    const propertyResult = await client.query(
       `INSERT INTO properties (
         title, type, location, price, bhk, description, facilities, 
         image_url, images, user_id, user_type, company_name, project_name, 
@@ -170,42 +149,48 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
       RETURNING *`,
       [
-        title,
-        type,
-        location,
-        price,
-        bhk || null,
-        description,
+        title, type, location, price, bhk || null, description,
         Array.isArray(facilities) ? facilities : (facilities ? [facilities] : []),
-        imageUrl,
-        images,
-        req.user.id,
-        user_type || req.user.user_type, // Prefer body user_type, fallback to auth user_type
-        company_name || null,
-        project_name || null,
-        total_units || null,
-        completion_date || null,
-        rera_number || null,
-        subscriptionExpiry,
+        finalImageUrl, finalImages, req.user.id, user_type || req.user.user_type,
+        company_name || null, project_name || null, total_units || null,
+        completion_date || null, rera_number || null, subscription.expiry_date,
         scheme_type || null,
         Array.isArray(residential_options) ? residential_options : (residential_options ? [residential_options] : []),
         Array.isArray(commercial_options) ? commercial_options : (commercial_options ? [commercial_options] : []),
-        base_price || null,
-        max_price || null,
-        project_location || null,
+        base_price || null, max_price || null, project_location || null,
         Array.isArray(amenities) ? amenities : (amenities ? [amenities] : []),
-        owner_name || null,
-        possession_status || null,
-        rera_status || null,
+        owner_name || null, possession_status || null, rera_status || null,
         typeof project_stats === 'string' ? project_stats : JSON.stringify(project_stats || null),
         contact_phone || null
       ]
     );
 
-    res.status(201).json({ property: result.rows[0] });
+    // 5. Increment usage
+    const newUsed = subscription.properties_used + 1;
+    let newStatus = 'active';
+    if (newUsed >= subscription.properties_allowed) {
+      newStatus = 'exhausted';
+    }
+
+    await client.query(
+      "UPDATE user_subscriptions SET properties_used = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3",
+      [newUsed, newStatus, subscription.id]
+    );
+
+    // 6. Insert usage log
+    await client.query(
+      "INSERT INTO subscription_usage (user_id, subscription_id, action) VALUES ($1, $2, 'property_posted')",
+      [req.user.id, subscription.id.toString()]
+    );
+
+    await client.query('COMMIT');
+    res.status(201).json({ property: propertyResult.rows[0], subscription: { used: newUsed, allowed: subscription.properties_allowed, status: newStatus } });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Create property error:', error);
-    res.status(500).json({ error: 'Failed to create property' });
+    res.status(500).json({ error: 'Failed to create property', details: error.message });
+  } finally {
+    client.release();
   }
 });
 

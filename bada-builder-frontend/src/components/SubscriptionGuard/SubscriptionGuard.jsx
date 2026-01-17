@@ -8,11 +8,11 @@ import './SubscriptionGuard.css';
  * SubscriptionGuard - Enforces subscription requirement for property posting
  * Shows subscription status and redirects to purchase if needed
  */
-const SubscriptionGuard = ({ 
-  children, 
-  onSubscriptionVerified, 
+const SubscriptionGuard = ({
+  children,
+  onSubscriptionVerified,
   userType = 'individual',
-  action = 'post property' 
+  action = 'post property'
 }) => {
   const navigate = useNavigate();
   const { currentUser, userProfile } = useAuth();
@@ -40,9 +40,9 @@ const SubscriptionGuard = ({
 
     try {
       setSubscriptionStatus(prev => ({ ...prev, loading: true }));
-      
-      const result = await SubscriptionService.checkPropertyPostingSubscription(currentUser.uid);
-      
+
+      const result = await SubscriptionService.checkPropertyPostingSubscription();
+
       setSubscriptionStatus({
         loading: false,
         hasSubscription: result.hasSubscription,
@@ -108,16 +108,16 @@ const SubscriptionGuard = ({
         <div className="subscription-required">
           <div className="subscription-icon">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="#FFD700"/>
-              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" stroke="#FFA500" strokeWidth="1"/>
+              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="#FFD700" />
+              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" stroke="#FFA500" strokeWidth="1" />
             </svg>
           </div>
-          
+
           <h2>Subscription Required</h2>
           <p className="subscription-message">
             To {action}, you need an active subscription plan.
           </p>
-          
+
           <div className="subscription-reason">
             <strong>Status:</strong> {subscriptionStatus.reason}
           </div>
@@ -133,15 +133,15 @@ const SubscriptionGuard = ({
           </div>
 
           <div className="subscription-actions">
-            <button 
+            <button
               className="purchase-subscription-btn"
               onClick={handlePurchaseSubscription}
             >
               <span className="btn-icon">💳</span>
               Purchase Subscription
             </button>
-            
-            <button 
+
+            <button
               className="refresh-subscription-btn"
               onClick={handleRefreshSubscription}
             >
@@ -152,7 +152,7 @@ const SubscriptionGuard = ({
 
           <div className="subscription-note">
             <p>
-              <strong>Note:</strong> Each subscription allows you to post one property. 
+              <strong>Note:</strong> Each subscription allows you to post one property.
               After posting, you'll need a new subscription for additional properties.
             </p>
           </div>

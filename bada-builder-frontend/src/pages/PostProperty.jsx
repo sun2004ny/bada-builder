@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { propertiesAPI, authAPI } from '../services/api';
+import { propertiesAPI, authAPI, subscriptionsAPI } from '../services/api';
 import PropertyForm from '../components/PropertyForm/PropertyForm';
 import DeveloperForm from '../components/DeveloperForm/DeveloperForm';
 import SubscriptionGuard from '../components/SubscriptionGuard/SubscriptionGuard';
@@ -182,16 +182,15 @@ const PostProperty = () => {
     const fetchUserProfile = async () => {
       if (userType === 'developer' && currentUser?.id) {
         try {
-          const response = await authAPI.getCurrentUser();
-          // For developers, we assume they have credits if subscribed
-          // Backend doesn't track individual credits yet, so we set a default
-          if (response.user.is_subscribed) {
-            setDeveloperCredits(20); // Default to 20 credits for subscribed developers
+          const response = await subscriptionsAPI.getStatus();
+          // Use real postsLeft from backend
+          if (response.isSubscribed) {
+            setDeveloperCredits(response.postsLeft || 0);
           } else {
             setDeveloperCredits(0);
           }
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          console.error('Error fetching developer subscription status:', error);
           setDeveloperCredits(0);
         }
       }

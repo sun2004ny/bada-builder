@@ -1,78 +1,61 @@
-// TODO: Replace with subscriptionsAPI
-// import { subscriptionsAPI, propertiesAPI, authAPI } from './api';
+import { subscriptionsAPI } from './api';
 
 /**
  * Subscription Service for handling property posting subscriptions
  */
 export class SubscriptionService {
-  
+
   /**
    * Check if user has an active, unused subscription for property posting
-   * @param {string} userId - Firebase user ID
    * @returns {Promise<{hasSubscription: boolean, subscription: object|null, reason: string}>}
    */
-  static async checkPropertyPostingSubscription(userId) {
+  static async checkPropertyPostingSubscription() {
     try {
-      console.log('🔍 Checking property posting subscription for user:', userId);
-      
-      // TODO: Use authAPI.getCurrentUser() or subscriptionsAPI.getStatus()
-      // For now, return no subscription
-      return { hasSubscription: false, subscription: null, reason: 'API implementation needed' };
-      
-      // TODO: Implement with subscriptionsAPI.getStatus() and propertiesAPI.getMyProperties()
-      
+      console.log('🔍 Checking property posting subscription...');
+
+      const response = await subscriptionsAPI.getStatus();
+
+      if (response && response.isSubscribed) {
+        // For individuals, we check if they have posts left
+        const hasPostsLeft = (response.postsLeft || 0) > 0;
+
+        return {
+          hasSubscription: hasPostsLeft,
+          subscription: response,
+          reason: hasPostsLeft ? 'Active subscription' : 'Subscription exhausted. Please purchase a new plan.'
+        };
+      }
+
+      return {
+        hasSubscription: false,
+        subscription: null,
+        reason: 'No active subscription found.'
+      };
+
     } catch (error) {
       console.error('Error checking subscription:', error);
-      return { hasSubscription: false, subscription: null, reason: 'Error checking subscription' };
+      return { hasSubscription: false, subscription: null, reason: 'Error checking subscription status' };
     }
   }
-  
+
   /**
    * Mark subscription as used after successful property posting
-   * @param {string} userId - Firebase user ID
-   * @param {string} propertyId - Property document ID
    * @returns {Promise<boolean>}
    */
-  static async markSubscriptionUsed(userId, propertyId) {
-    try {
-      console.log('📝 Marking subscription as used for property:', propertyId);
-      // TODO: Implement with API - update property with subscription tracking
-      console.log('✅ Subscription usage should be recorded (API implementation needed)');
-      return true;
-      
-    } catch (error) {
-      console.error('Error marking subscription as used:', error);
-      return false;
-    }
+  static async markSubscriptionUsed() {
+    // This is handled automatically by the backend property posting transaction now
+    console.log('✅ Subscription usage is handled automatically by the server during posting.');
+    return true;
   }
-  
-  /**
-   * Create a new subscription record after successful payment
-   * @param {string} userId - Firebase user ID
-   * @param {object} subscriptionData - Subscription details
-   * @returns {Promise<string>} - Subscription ID
-   */
-  static async createSubscription(userId, subscriptionData) {
-    try {
-      console.log('💳 Creating new subscription for user:', userId);
-      // TODO: Use subscriptionsAPI.verifyPayment() after payment
-      throw new Error('API implementation needed - use subscriptionsAPI.verifyPayment()');
-      
-    } catch (error) {
-      console.error('Error creating subscription:', error);
-      throw error;
-    }
-  }
-  
+
   /**
    * Get subscription details for display
-   * @param {string} userId - Firebase user ID
    * @returns {Promise<object|null>}
    */
-  static async getSubscriptionDetails(userId) {
+  static async getSubscriptionDetails() {
     try {
-      // TODO: Use subscriptionsAPI.getStatus() and propertiesAPI.getMyProperties()
-      return null;
+      const response = await subscriptionsAPI.getStatus();
+      return response;
     } catch (error) {
       console.error('Error getting subscription details:', error);
       return null;

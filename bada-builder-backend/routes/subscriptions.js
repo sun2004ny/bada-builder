@@ -174,8 +174,8 @@ router.post('/verify-payment', authenticate, async (req, res) => {
       }
     }
 
-    // Update user subscription (same for both individual and developer)
-    const updateQuery = `UPDATE users SET
+    // Update user subscription (for backward compatibility)
+    const updateUserQuery = `UPDATE users SET
       is_subscribed = TRUE,
       subscription_expiry = $1,
       subscription_plan = $2,
@@ -184,10 +184,34 @@ router.post('/verify-payment', authenticate, async (req, res) => {
       updated_at = CURRENT_TIMESTAMP
     WHERE id = $4
     RETURNING *`;
-    const updateParams = [newExpiryDate, plan_id, plan.price, req.user.id];
+    const updateUserParams = [newExpiryDate, plan_id, plan.price, req.user.id];
+    const userResultUpdate = await pool.query(updateUserQuery, updateUserParams);
+    const user = userResultUpdate.rows[0];
 
-    const result = await pool.query(updateQuery, updateParams);
-    const user = result.rows[0];
+    // NEW: Insert into strict user_subscriptions table (Firebase style)
+    const propertiesAllowed = plan.properties || 1;
+    const insertUserSubscriptionQuery = `
+      INSERT INTO user_subscriptions (
+        user_id, plan_id, plan_name, plan_price,
+        properties_allowed, properties_used, status, 
+        expiry_date, payment_id, razorpay_order_id, 
+        razorpay_payment_id, razorpay_signature
+      ) VALUES ($1, $2, $3, $4, $5, 0, 'active', $6, $7, $8, $9, $10)
+      RETURNING *;
+    `;
+    const subResult = await pool.query(insertUserSubscriptionQuery, [
+      req.user.id,
+      plan_id,
+      plan.name || plan_id,
+      plan.price,
+      propertiesAllowed,
+      newExpiryDate,
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    ]);
+    const activeSub = subResult.rows[0];
 
     // Send confirmation email
     sendEmail({
@@ -198,9 +222,10 @@ router.post('/verify-payment', authenticate, async (req, res) => {
         <p>Your subscription has been activated successfully.</p>
         <p><strong>Plan:</strong> ${plan_id}</p>
         <p><strong>Price:</strong> ₹${plan.price}</p>
+        <p><strong>Properties Allowed:</strong> ${propertiesAllowed}</p>
         <p><strong>Valid Until:</strong> ${newExpiryDate.toLocaleDateString()}</p>
       `,
-      textContent: `Subscription activated! Plan: ${plan_id}, Price: ₹${plan.price}, Valid until: ${newExpiryDate.toLocaleDateString()}`
+      textContent: `Subscription activated! Plan: ${plan_id}, Price: ₹${plan.price}, Properties Allowed: ${propertiesAllowed}, Valid until: ${newExpiryDate.toLocaleDateString()}`
     }).catch(err => console.error('Subscription email failed:', err));
 
     res.json({
@@ -210,6 +235,9 @@ router.post('/verify-payment', authenticate, async (req, res) => {
         expiry: user.subscription_expiry,
         plan: user.subscription_plan,
         price: user.subscription_price,
+        propertiesAllowed: activeSub.properties_allowed,
+        propertiesUsed: activeSub.properties_used,
+        id: activeSub.id
       },
     });
   } catch (error) {
@@ -237,12 +265,26 @@ router.get('/status', authenticate, async (req, res) => {
       (subscription.subscription_expiry === null ||
         new Date(subscription.subscription_expiry) > new Date());
 
+    // Also get details from strict user_subscriptions table
+    const subDetails = await pool.query(
+      `SELECT properties_allowed, properties_used, status as sub_status, expiry_date
+       FROM user_subscriptions 
+       WHERE user_id = $1 AND status = 'active' AND expiry_date > NOW() 
+       ORDER BY created_at DESC LIMIT 1`,
+      [req.user.id]
+    );
+
+    const activeDetails = subDetails.rows[0] || { properties_allowed: 0, properties_used: 0 };
+
     res.json({
       isSubscribed: isActive,
       expiry: subscription.subscription_expiry,
       plan: subscription.subscription_plan,
       price: subscription.subscription_price,
       subscribedAt: subscription.subscribed_at,
+      propertiesAllowed: activeDetails.properties_allowed,
+      propertiesUsed: activeDetails.properties_used,
+      postsLeft: Math.max(0, activeDetails.properties_allowed - activeDetails.properties_used)
     });
   } catch (error) {
     console.error('Get subscription status error:', error);
