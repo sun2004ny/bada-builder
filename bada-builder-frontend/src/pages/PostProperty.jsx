@@ -401,18 +401,31 @@ const PostProperty = () => {
       }
 
       if (userType === 'developer') {
-        propertyData.company_name = formData.companyName || '';
+        propertyData.company_name = formData.ownerName || '';
         propertyData.project_name = formData.projectName || '';
-        propertyData.total_units = formData.totalUnits || '';
-        propertyData.completion_date = formData.completionDate || '';
+        propertyData.scheme_type = formData.schemeType || '';
+        propertyData.residential_options = formData.residentialOptions || [];
+        propertyData.commercial_options = formData.commercialOptions || [];
+        propertyData.base_price = formData.basePrice || '';
+        propertyData.max_price = formData.maxPrice || '';
+        propertyData.project_location = formData.projectLocation || '';
+        propertyData.amenities = formData.amenities || [];
+        propertyData.owner_name = formData.ownerName || '';
+        propertyData.possession_status = formData.possessionStatus || '';
+        propertyData.rera_status = formData.reraStatus || 'No';
         propertyData.rera_number = formData.reraNumber || '';
+        propertyData.project_stats = formData.projectStats || { towers: '', floors: '', units: '', area: '' };
+        propertyData.contact_phone = formData.contactPhone || '';
+        propertyData.completion_date = formData.completionDate || '';
       } else {
         // Clear developer specific fields if user type changed from developer
-        propertyData.company_name = '';
-        propertyData.project_name = '';
-        propertyData.total_units = '';
-        propertyData.completion_date = '';
-        propertyData.rera_number = '';
+        const devFields = [
+          'company_name', 'project_name', 'scheme_type', 'residential_options',
+          'commercial_options', 'base_price', 'max_price', 'project_location',
+          'amenities', 'owner_name', 'possession_status', 'rera_status',
+          'project_stats', 'contact_phone', 'completion_date'
+        ];
+        devFields.forEach(field => propertyData[field] = null);
       }
 
       // Update property via backend API
@@ -646,7 +659,9 @@ const PostProperty = () => {
         title: userType === 'developer' ? (activeData.projectName || '') : (activeData.title || ''),
         type: userType === 'developer' ? (activeData.schemeType || '') : (activeData.type || ''),
         location: userType === 'developer' ? (activeData.projectLocation || '') : (activeData.location || ''),
-        price: userType === 'developer' ? `₹${activeData.basePrice} - ₹${activeData.maxPrice}` : (activeData.price || ''),
+        price: userType === 'developer'
+          ? (activeData.basePrice && activeData.maxPrice ? `₹${activeData.basePrice} - ₹${activeData.maxPrice}` : (activeData.basePrice ? `₹${activeData.basePrice}` : (activeData.price || '')))
+          : (activeData.price || ''),
         description: activeData.description || '',
         facilities: activeData.facilities ? (Array.isArray(activeData.facilities) ? activeData.facilities : activeData.facilities.split(',').map(f => f.trim()).filter(f => f)) : [],
         // Note: image_url and images will be handled by backend from uploaded files

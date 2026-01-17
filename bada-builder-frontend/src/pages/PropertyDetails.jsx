@@ -55,8 +55,17 @@ const PropertyDetails = () => {
         try {
           const propertyData = await propertiesAPI.getById(id);
           if (propertyData.property) {
-            setProperty({ id: propertyData.property.id, ...propertyData.property });
+            const p = propertyData.property;
+            // Parse project_stats if it's a string
+            if (p.project_stats && typeof p.project_stats === 'string') {
+              try { p.project_stats = JSON.parse(p.project_stats); } catch (e) { console.error("Error parsing project_stats:", e); }
+            }
+            setProperty({ id: p.id, ...p });
           } else if (propertyData.id) {
+            const p = propertyData.id; // Wait, propertyData.id is usually the property itself in some API structures
+            if (p.project_stats && typeof p.project_stats === 'string') {
+              try { p.project_stats = JSON.parse(p.project_stats); } catch (e) { console.error("Error parsing project_stats:", e); }
+            }
             setProperty(propertyData);
           }
         } catch (error) {
@@ -181,11 +190,9 @@ const PropertyDetails = () => {
   // Default amenities if none provided
   const defaultAmenities = ['Lift', 'Parking', 'Garden', 'Security', 'Gym', 'Power Backup'];
   const displayAmenities = propertyFacilities.length > 0 ? propertyFacilities : defaultAmenities;
-  const displayPrice = property.price ||
-    (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : null) ||
-    property.groupPrice ||
-    property.priceRange ||
-    'Contact for Price';
+  const displayPrice = (property.price && !property.price.includes('undefined'))
+    ? property.price
+    : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.price || 'Contact for Price'));
 
   return (
     <div className="property-details-page">
@@ -382,6 +389,13 @@ const PropertyDetails = () => {
                   <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Units</p>
                 </div>
               )}
+              {property.project_stats.floors && (
+                <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200 flex flex-col items-center justify-center text-center">
+                  <FiMaximize2 className="text-blue-600 mb-2" size={32} />
+                  <p className="text-2xl font-bold text-gray-900">{property.project_stats.floors}</p>
+                  <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Floors</p>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -467,6 +481,12 @@ const PropertyDetails = () => {
                     <div className="flex justify-between items-center py-3 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Total Units</span>
                       <span className="text-gray-900 font-semibold">{property.total_units}</span>
+                    </div>
+                  )}
+                  {property.project_stats?.floors && (
+                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                      <span className="text-gray-600 font-medium">Total Floors</span>
+                      <span className="text-gray-900 font-semibold">{property.project_stats.floors}</span>
                     </div>
                   )}
                   {property.project_stats?.area && (

@@ -62,7 +62,11 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
         </p>
 
         {/* Price */}
-        <p className="property-price">{property.price}</p>
+        <p className="property-price">
+          {property.price && property.price.includes('undefined')
+            ? (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : property.price.replace(/₹undefined/g, ''))
+            : (property.price || 'Contact for Price')}
+        </p>
 
         {/* Key Highlights */}
         <div className="property-highlights">
