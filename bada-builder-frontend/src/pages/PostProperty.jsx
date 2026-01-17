@@ -1168,7 +1168,7 @@ const PostProperty = () => {
                   </button>
                   <button
                     className="confirm-btn"
-                    onClick={handleFinalSubmit}
+                    onClick={() => handleFinalSubmit()}
                     disabled={loading}
                   >
                     {loading ? (
