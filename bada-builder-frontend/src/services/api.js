@@ -37,7 +37,24 @@ const getFileHeaders = (includeAuth = true) => {
 
 // API request wrapper
 export const apiRequest = async (endpoint, options = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
+  let url = `${API_BASE_URL}${endpoint}`;
+
+  // Handle query parameters
+  if (options.params) {
+    const queryParams = new URLSearchParams();
+    Object.keys(options.params).forEach(key => {
+      if (options.params[key] !== undefined && options.params[key] !== null && options.params[key] !== '') {
+        queryParams.append(key, options.params[key]);
+      }
+    });
+    const queryString = queryParams.toString();
+    if (queryString) {
+      url += (url.includes('?') ? '&' : '?') + queryString;
+    }
+    // Remove params from options so it's not sent in the fetch config
+    delete options.params;
+  }
+
   const config = {
     ...options,
     headers: {

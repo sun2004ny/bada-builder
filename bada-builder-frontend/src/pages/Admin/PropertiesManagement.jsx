@@ -16,194 +16,144 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  MoreVertical
+  MoreVertical,
+  Activity,
+  RefreshCw,
+  Building,
+  TrendingUp,
+  MessageSquare,
+  Star
 } from 'lucide-react';
+import { adminAPI } from '../../services/adminApi';
+import AdminPropertyModal from './AdminPropertyModal';
 
 const PropertiesManagement = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    pending: 0,
+    featured: 0
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [selectedProperties, setSelectedProperties] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchProperties();
-  }, []);
+    fetchData();
 
-  const fetchProperties = async () => {
+    // Real-time polling every 10 seconds
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [statusFilter, sourceFilter, searchTerm]);
+
+  const fetchData = async (isPoll = false) => {
     try {
-      setLoading(true);
-      
-      // Mock data for comprehensive property management
-      const mockProperties = [
-        {
-          id: 1,
-          title: 'Luxury Villa in Gurgaon',
-          type: 'Villa',
-          category: 'Individual',
-          price: '2.5 Cr',
-          location: 'Sector 54, Gurgaon',
-          status: 'active',
-          featured: true,
-          owner: 'John Developer',
-          created_at: '2024-01-20T10:30:00Z',
-          updated_at: '2024-01-21T15:30:00Z',
-          images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400'],
-          description: 'Beautiful luxury villa with modern amenities',
-          area: '2500 sq ft',
-          bedrooms: 4,
-          bathrooms: 3,
-          amenities: ['Swimming Pool', 'Garden', 'Parking', 'Security'],
-          views: 1250,
-          inquiries: 45,
-          bookings: 12
-        },
-        {
-          id: 2,
-          title: 'Modern Apartment Complex',
-          type: 'Apartment',
-          category: 'Developer',
-          price: '1.2 Cr',
-          location: 'Sector 150, Noida',
-          status: 'active',
-          featured: false,
-          owner: 'Jane Builder',
-          created_at: '2024-01-19T14:22:00Z',
-          updated_at: '2024-01-20T10:15:00Z',
-          images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400'],
-          description: 'Contemporary apartment complex with excellent connectivity',
-          area: '1200 sq ft',
-          bedrooms: 3,
-          bathrooms: 2,
-          amenities: ['Gym', 'Elevator', 'Parking', 'Power Backup'],
-          views: 890,
-          inquiries: 32,
-          bookings: 8
-        },
-        {
-          id: 3,
-          title: 'Commercial Office Space',
-          type: 'Commercial',
-          category: 'Bada Builder',
-          price: '80 Lakh',
-          location: 'Connaught Place, Delhi',
-          status: 'pending',
-          featured: true,
-          owner: 'Bada Builder',
-          created_at: '2024-01-18T09:15:00Z',
-          updated_at: '2024-01-18T09:15:00Z',
-          images: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'],
-          description: 'Prime commercial space in the heart of Delhi',
-          area: '500 sq ft',
-          bedrooms: 0,
-          bathrooms: 1,
-          amenities: ['Elevator', 'Power Backup', 'Security', 'Parking'],
-          views: 567,
-          inquiries: 23,
-          bookings: 5
-        },
-        {
-          id: 4,
-          title: 'Residential Plot',
-          type: 'Plot',
-          category: 'Individual',
-          price: '45 Lakh',
-          location: 'Sector 89, Faridabad',
-          status: 'inactive',
-          featured: false,
-          owner: 'Mike Properties',
-          created_at: '2024-01-15T16:45:00Z',
-          updated_at: '2024-01-16T12:30:00Z',
-          images: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400'],
-          description: 'Well-located residential plot ready for construction',
-          area: '200 sq yards',
-          bedrooms: 0,
-          bathrooms: 0,
-          amenities: ['Road Access', 'Electricity', 'Water Connection'],
-          views: 234,
-          inquiries: 12,
-          bookings: 2
-        }
-      ];
-      
-      setTimeout(() => {
-        setProperties(mockProperties);
-        setLoading(false);
-      }, 500);
-      
+      if (!isPoll) setLoading(true);
+      else setIsRefreshing(true);
+
+      const [propertiesData, statsData] = await Promise.all([
+        adminAPI.getAdminProperties({
+          source: sourceFilter,
+          status: statusFilter,
+          search: searchTerm
+        }),
+        adminAPI.getAdminPropertyStats()
+      ]);
+
+      setProperties(propertiesData);
+      setStats(statsData);
     } catch (error) {
-      console.error('Error fetching properties:', error);
-      setLoading(false);
+      console.error('Error fetching data:', error);
+    } finally {
+      if (!isPoll) setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const filteredProperties = properties.filter(property => {
-    const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         property.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         property.owner.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || property.status === statusFilter;
-    const matchesType = typeFilter === 'all' || property.type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  const handleStatusChange = (propertyId, newStatus) => {
-    setProperties(properties.map(property => 
-      property.id === propertyId 
-        ? { ...property, status: newStatus, updated_at: new Date().toISOString() }
-        : property
-    ));
+  const handleStatusChange = async (propertyId, newStatus) => {
+    try {
+      await adminAPI.patchAdminProperty(propertyId, { status: newStatus });
+      setProperties(properties.map(property =>
+        property.id === propertyId
+          ? { ...property, status: newStatus, updated_at: new Date().toISOString() }
+          : property
+      ));
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
   };
 
-  const handleFeaturedToggle = (propertyId) => {
-    setProperties(properties.map(property => 
-      property.id === propertyId 
-        ? { ...property, featured: !property.featured, updated_at: new Date().toISOString() }
-        : property
-    ));
+  const handleFeaturedToggle = async (propertyId) => {
+    const property = properties.find(p => p.id === propertyId);
+    try {
+      await adminAPI.patchAdminProperty(propertyId, { is_featured: !property.is_featured });
+      setProperties(properties.map(p =>
+        p.id === propertyId
+          ? { ...p, is_featured: !p.is_featured, updated_at: new Date().toISOString() }
+          : p
+      ));
+    } catch (error) {
+      console.error('Error toggling featured:', error);
+    }
   };
 
-  const handleDelete = (propertyId) => {
+  const handleDelete = async (propertyId) => {
     if (window.confirm('Are you sure you want to delete this property?')) {
-      setProperties(properties.filter(property => property.id !== propertyId));
+      try {
+        await adminAPI.deleteAdminProperty(propertyId);
+        setProperties(properties.filter(property => property.id !== propertyId));
+      } catch (error) {
+        console.error('Error deleting property:', error);
+      }
     }
   };
 
-  const handleBulkAction = (action) => {
-    if (selectedProperties.length === 0) return;
-    
-    switch (action) {
-      case 'activate':
-        setProperties(properties.map(property => 
-          selectedProperties.includes(property.id) 
-            ? { ...property, status: 'active' }
-            : property
-        ));
-        break;
-      case 'deactivate':
-        setProperties(properties.map(property => 
-          selectedProperties.includes(property.id) 
-            ? { ...property, status: 'inactive' }
-            : property
-        ));
-        break;
-      case 'feature':
-        setProperties(properties.map(property => 
-          selectedProperties.includes(property.id) 
-            ? { ...property, featured: true }
-            : property
-        ));
-        break;
-      case 'delete':
-        if (window.confirm(`Are you sure you want to delete ${selectedProperties.length} properties?`)) {
-          setProperties(properties.filter(property => !selectedProperties.includes(property.id)));
-        }
-        break;
+  const handleSave = async (propertyData) => {
+    try {
+      if (selectedProperty) {
+        await adminAPI.updateAdminProperty(selectedProperty.id, propertyData);
+      } else {
+        await adminAPI.addAdminProperty(propertyData);
+      }
+      setShowAddModal(false);
+      setShowEditModal(false);
+      setSelectedProperty(null);
+      fetchData(); // Refresh list and stats
+    } catch (error) {
+      console.error('Error saving property:', error);
     }
-    setSelectedProperties([]);
+  };
+
+  const handleBulkAction = async (action) => {
+    if (selectedProperties.length === 0) return;
+
+    try {
+      if (action === 'delete') {
+        if (!window.confirm(`Are you sure you want to delete ${selectedProperties.length} properties?`)) return;
+        await Promise.all(selectedProperties.map(id => adminAPI.deleteAdminProperty(id)));
+      } else {
+        const updateData = {};
+        if (action === 'activate') updateData.status = 'active';
+        if (action === 'deactivate') updateData.status = 'inactive';
+        if (action === 'feature') updateData.is_featured = true;
+
+        await Promise.all(selectedProperties.map(id => adminAPI.patchAdminProperty(id, updateData)));
+      }
+      setSelectedProperties([]);
+      fetchData();
+    } catch (error) {
+      console.error('Error in bulk action:', error);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -219,7 +169,8 @@ const PropertiesManagement = () => {
     switch (category) {
       case 'Individual': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'Developer': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'Bada Builder': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case 'Live Grouping': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'By Bada Builder': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
@@ -251,7 +202,13 @@ const PropertiesManagement = () => {
             <Download className="h-4 w-4" />
             <span>Export</span>
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+          <button
+            onClick={() => {
+              setSelectedProperty(null);
+              setShowAddModal(true);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
             <span>Add Property</span>
           </button>
@@ -264,7 +221,7 @@ const PropertiesManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Properties</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{properties.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
             </div>
             <Home className="h-8 w-8 text-blue-600" />
           </div>
@@ -273,7 +230,7 @@ const PropertiesManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active</p>
-              <p className="text-2xl font-bold text-green-600">{properties.filter(p => p.status === 'active').length}</p>
+              <p className="text-2xl font-bold text-green-600">{stats.active}</p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
@@ -282,7 +239,7 @@ const PropertiesManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">{properties.filter(p => p.status === 'pending').length}</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
             </div>
             <Clock className="h-8 w-8 text-yellow-600" />
           </div>
@@ -291,9 +248,9 @@ const PropertiesManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Featured</p>
-              <p className="text-2xl font-bold text-purple-600">{properties.filter(p => p.featured).length}</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.featured}</p>
             </div>
-            <Eye className="h-8 w-8 text-purple-600" />
+            <Star className="h-8 w-8 text-purple-600" />
           </div>
         </div>
       </div>
@@ -321,15 +278,15 @@ const PropertiesManagement = () => {
           <option value="pending">Pending</option>
         </select>
         <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
           className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          <option value="all">All Types</option>
-          <option value="Villa">Villa</option>
-          <option value="Apartment">Apartment</option>
-          <option value="Commercial">Commercial</option>
-          <option value="Plot">Plot</option>
+          <option value="all">All Sources</option>
+          <option value="Individual">Individual</option>
+          <option value="Developer">Developer</option>
+          <option value="Live Grouping">Live Grouping</option>
+          <option value="By Bada Builder">By Bada Builder</option>
         </select>
       </div>
 
@@ -381,7 +338,7 @@ const PropertiesManagement = () => {
                     type="checkbox"
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedProperties(filteredProperties.map(p => p.id));
+                        setSelectedProperties(properties.map(p => p.id));
                       } else {
                         setSelectedProperties([]);
                       }
@@ -410,7 +367,7 @@ const PropertiesManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredProperties.map((property) => (
+              {properties.map((property) => (
                 <tr key={property.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
@@ -436,7 +393,7 @@ const PropertiesManagement = () => {
                       <div className="ml-4">
                         <div className="flex items-center space-x-2">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">{property.title}</div>
-                          {property.featured && (
+                          {property.is_featured && (
                             <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full">
                               Featured
                             </span>
@@ -453,8 +410,8 @@ const PropertiesManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(property.category)}`}>
-                      {property.category}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(property.property_source)}`}>
+                      {property.property_source}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -469,20 +426,24 @@ const PropertiesManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <div>Views: {property.views}</div>
-                    <div>Inquiries: {property.inquiries}</div>
-                    <div>Bookings: {property.bookings}</div>
+                    <div>Views: {property.views || 0}</div>
+                    <div>Inquiries: {property.inquiries || 0}</div>
+                    <div>Bookings: {property.bookings_count || 0}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleFeaturedToggle(property.id)}
-                        className={`p-1 rounded ${property.featured ? 'text-yellow-600' : 'text-gray-400'} hover:bg-gray-100 dark:hover:bg-gray-700`}
-                        title={property.featured ? 'Remove from featured' : 'Add to featured'}
+                        className={`p-1 rounded ${property.is_featured ? 'text-yellow-600' : 'text-gray-400'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+                        title={property.is_featured ? 'Remove from featured' : 'Add to featured'}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Star className="h-4 w-4" />
                       </button>
                       <button
+                        onClick={() => {
+                          setSelectedProperty(property);
+                          setShowEditModal(true);
+                        }}
                         className="p-1 text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                         title="Edit property"
                       >
@@ -513,13 +474,24 @@ const PropertiesManagement = () => {
         </div>
       </div>
 
-      {filteredProperties.length === 0 && (
+      {properties.length === 0 && (
         <div className="text-center py-12">
           <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No properties found</h3>
           <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
         </div>
       )}
+      {/* Add/Edit Modal */}
+      <AdminPropertyModal
+        isOpen={showAddModal || showEditModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setShowEditModal(false);
+          setSelectedProperty(null);
+        }}
+        onSave={handleSave}
+        property={selectedProperty}
+      />
     </div>
   );
 };

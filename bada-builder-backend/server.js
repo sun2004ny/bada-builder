@@ -19,6 +19,7 @@ import reviewRoutes from './routes/reviews.js';
 import chatRoutes from './routes/chat.js';
 import wishlistRoutes from './routes/wishlists.js';
 import adminRoutes from './routes/admin.js';
+import adminPropertiesRoutes from './routes/adminProperties.js';
 
 
 // Import database
@@ -92,6 +93,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin-properties', adminPropertiesRoutes);
 
 
 // 404 handler

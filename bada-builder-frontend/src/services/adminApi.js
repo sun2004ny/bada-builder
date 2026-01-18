@@ -156,6 +156,72 @@ export const adminAPI = {
     }
   },
 
+  // Unified Property Management
+  async getAdminProperties(filters = {}) {
+    try {
+      return await apiRequest('/admin-properties', { params: filters });
+    } catch (error) {
+      console.error('Error fetching admin properties:', error);
+      throw error;
+    }
+  },
+
+  async getAdminPropertyStats() {
+    try {
+      return await apiRequest('/admin-properties/stats');
+    } catch (error) {
+      console.error('Error fetching admin property stats:', error);
+      throw error;
+    }
+  },
+
+  async addAdminProperty(propertyData) {
+    try {
+      return await apiRequest('/admin-properties', {
+        method: 'POST',
+        body: propertyData
+      });
+    } catch (error) {
+      console.error('Error adding admin property:', error);
+      throw error;
+    }
+  },
+
+  async updateAdminProperty(propertyId, propertyData) {
+    try {
+      return await apiRequest(`/admin-properties/${propertyId}`, {
+        method: 'PUT',
+        body: propertyData
+      });
+    } catch (error) {
+      console.error('Error updating admin property:', error);
+      throw error;
+    }
+  },
+
+  async patchAdminProperty(propertyId, data) {
+    try {
+      return await apiRequest(`/admin-properties/${propertyId}/status`, {
+        method: 'PATCH',
+        body: data
+      });
+    } catch (error) {
+      console.error('Error patching admin property:', error);
+      throw error;
+    }
+  },
+
+  async deleteAdminProperty(propertyId) {
+    try {
+      return await apiRequest(`/admin-properties/${propertyId}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.error('Error deleting admin property:', error);
+      throw error;
+    }
+  },
+
   // Audit logs
   async getAuditLogs(filters = {}) {
     try {

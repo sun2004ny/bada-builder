@@ -138,20 +138,23 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
     }
 
     // 4. Insert the property
+    const finalUserType = user_type || req.user.user_type;
+    const propertySource = finalUserType === 'developer' ? 'Developer' : 'Individual';
+
     const propertyResult = await client.query(
       `INSERT INTO properties (
         title, type, location, price, bhk, description, facilities, 
-        image_url, images, user_id, user_type, company_name, project_name, 
+        image_url, images, user_id, user_type, property_source, company_name, project_name, 
         total_units, completion_date, rera_number, subscription_expiry,
         scheme_type, residential_options, commercial_options, base_price,
         max_price, project_location, amenities, owner_name, possession_status,
         rera_status, project_stats, contact_phone
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
       RETURNING *`,
       [
         title, type, location, price, bhk || null, description,
         Array.isArray(facilities) ? facilities : (facilities ? [facilities] : []),
-        finalImageUrl, finalImages, req.user.id, user_type || req.user.user_type,
+        finalImageUrl, finalImages, req.user.id, finalUserType, propertySource,
         company_name || null, project_name || null, total_units || null,
         completion_date || null, rera_number || null, subscription.expiry_date,
         scheme_type || null,
