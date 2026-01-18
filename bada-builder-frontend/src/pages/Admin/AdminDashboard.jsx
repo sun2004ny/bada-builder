@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Home, 
-  Activity, 
-  TrendingUp, 
+import {
+  Users,
+  Home,
+  Activity,
+  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock,
   DollarSign
 } from 'lucide-react';
+import { adminAPI } from '../../services/adminApi';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -17,6 +18,9 @@ const AdminDashboard = () => {
     pendingApprovals: 0,
     totalRevenue: 0,
     activeListings: 0,
+    approvalRate: 0,
+    avgResponseTime: 0,
+    userSatisfaction: 0,
     recentActivity: []
   });
   const [loading, setLoading] = useState(true);
@@ -25,32 +29,26 @@ const AdminDashboard = () => {
     fetchDashboardStats();
   }, []);
 
+  const formatTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return date.toLocaleDateString();
+  };
+
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      
-      // Use mock data directly (no API calls)
-      const mockData = {
-        totalUsers: 1250,
-        totalProperties: 340,
-        pendingApprovals: 12,
-        totalRevenue: 2500000,
-        activeListings: 280,
-        recentActivity: [
-          { id: 1, type: 'user_registration', message: 'New user registered: john@example.com', time: '2 minutes ago' },
-          { id: 2, type: 'property_submitted', message: 'Property submitted for approval: Luxury Villa in Gurgaon', time: '15 minutes ago' },
-          { id: 3, type: 'property_approved', message: 'Property approved: Modern Apartment in Noida', time: '1 hour ago' }
-        ]
-      };
-      
-      // Simulate loading delay
-      setTimeout(() => {
-        setStats(mockData);
-        setLoading(false);
-      }, 500);
-      
+      const data = await adminAPI.getDashboardStats();
+      setStats(data);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -61,8 +59,8 @@ const AdminDashboard = () => {
         <div>
           <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{title}</p>
           <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-            {typeof value === 'number' && title.includes('Revenue') 
-              ? `₹${(value / 100000).toFixed(1)}L` 
+            {typeof value === 'number' && title.includes('Revenue')
+              ? `₹${(value / 100000).toFixed(1)}L`
               : value.toLocaleString()}
           </p>
           {change && (
@@ -97,7 +95,7 @@ const AdminDashboard = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs text-gray-900 dark:text-white">{activity.message}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{activity.time}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatTime(activity.time)}</p>
         </div>
       </div>
     );
@@ -129,7 +127,7 @@ const AdminDashboard = () => {
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">Welcome back! Here's what's happening.</p>
         </div>
-        <button 
+        <button
           onClick={fetchDashboardStats}
           className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
         >
@@ -181,15 +179,15 @@ const AdminDashboard = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">Approval Rate</span>
-              <span className="font-semibold text-green-600">94%</span>
+              <span className="font-semibold text-green-600">{stats.approvalRate}%</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">Average Response Time</span>
-              <span className="font-semibold text-gray-900 dark:text-white">2.4 hours</span>
+              <span className="font-semibold text-gray-900 dark:text-white">{stats.avgResponseTime} hours</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">User Satisfaction</span>
-              <span className="font-semibold text-green-600">4.8/5</span>
+              <span className="font-semibold text-green-600">{stats.userSatisfaction}/5</span>
             </div>
           </div>
         </div>
@@ -220,7 +218,7 @@ const AdminDashboard = () => {
               Review and approve pending property submissions
             </p>
           </div>
-          
+
           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center space-x-2">
               <AlertCircle className="h-4 w-4 text-blue-600" />
@@ -232,7 +230,7 @@ const AdminDashboard = () => {
               Address user complaints and issues
             </p>
           </div>
-          
+
           <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-4 w-4 text-green-600" />

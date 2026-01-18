@@ -5,27 +5,8 @@ export const adminAPI = {
   // Dashboard stats
   async getDashboardStats() {
     try {
-      // For now, we'll aggregate data from existing endpoints
-      const [usersResponse, propertiesResponse] = await Promise.all([
-        // Note: These endpoints don't exist yet, so we'll use mock data
-        // In production, you'd need to create admin-specific endpoints
-        fetch('/api/admin/stats/users').catch(() => ({ json: () => ({ count: 0 }) })),
-        fetch('/api/admin/stats/properties').catch(() => ({ json: () => ({ count: 0 }) }))
-      ]);
-
-      // Mock data for now - replace with actual API calls when backend is ready
-      return {
-        totalUsers: 1250,
-        totalProperties: 340,
-        pendingApprovals: 12,
-        totalRevenue: 2500000,
-        activeListings: 280,
-        recentActivity: [
-          { id: 1, type: 'user_registration', message: 'New user registered', time: '2 minutes ago' },
-          { id: 2, type: 'property_submitted', message: 'Property submitted for approval', time: '15 minutes ago' },
-          { id: 3, type: 'property_approved', message: 'Property approved', time: '1 hour ago' }
-        ]
-      };
+      const response = await apiRequest('/admin/stats');
+      return response;
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
       throw error;
@@ -37,7 +18,7 @@ export const adminAPI = {
     try {
       // Mock data for now - replace with actual admin endpoint
       // In production: return apiRequest('/admin/users', { params: filters });
-      
+
       return {
         users: [
           {
@@ -85,7 +66,7 @@ export const adminAPI = {
     try {
       // Mock implementation - replace with actual admin endpoint
       // In production: return apiRequest(`/admin/users/${userId}/status`, { method: 'PATCH', body: { status } });
-      
+
       console.log(`Updating user ${userId} status to ${status}`);
       return { success: true, message: `User ${status} successfully` };
     } catch (error) {
@@ -153,7 +134,7 @@ export const adminAPI = {
     try {
       // Mock implementation - replace with actual admin endpoint
       // In production: return apiRequest(`/admin/properties/${propertyId}/approve`, { method: 'PATCH' });
-      
+
       console.log(`Approving property ${propertyId}`);
       return { success: true, message: 'Property approved successfully' };
     } catch (error) {
@@ -166,7 +147,7 @@ export const adminAPI = {
     try {
       // Mock implementation - replace with actual admin endpoint
       // In production: return apiRequest(`/admin/properties/${propertyId}/reject`, { method: 'PATCH', body: { reason } });
-      
+
       console.log(`Rejecting property ${propertyId} with reason: ${reason}`);
       return { success: true, message: 'Property rejected successfully' };
     } catch (error) {
@@ -180,7 +161,7 @@ export const adminAPI = {
     try {
       // Mock data for now - replace with actual admin endpoint
       // In production: return apiRequest('/admin/audit-logs', { params: filters });
-      
+
       return {
         logs: [
           {

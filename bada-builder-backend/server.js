@@ -18,6 +18,7 @@ import complaintRoutes from './routes/complaints.js';
 import reviewRoutes from './routes/reviews.js';
 import chatRoutes from './routes/chat.js';
 import wishlistRoutes from './routes/wishlists.js';
+import adminRoutes from './routes/admin.js';
 
 
 // Import database
@@ -90,6 +91,7 @@ app.use('/api/favorites', favoritesRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/wishlists', wishlistRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 // 404 handler
