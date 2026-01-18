@@ -100,7 +100,7 @@ const RealEstateFinancialModelling = () => {
           <code>
             =IRR(values)
             <br />
-            =IRR ({-10000000, 800000, 850000, 892500, 937125, 13483981}) → returns approx.
+            =IRR (&#123;-10000000, 800000, 850000, 892500, 937125, 13483981&#125;) → returns approx.
             <br />
             18.6%
           </code>
@@ -116,7 +116,7 @@ const RealEstateFinancialModelling = () => {
           <code>
             =NPV(12%, values from Year 1 to Year 5) - ₹1,00,00,000
             <br />
-            = NPV(12%, {800000, 850000, 892500, 937125, 13483981}) - 10000000
+            = NPV(12%, &#123;800000, 850000, 892500, 937125, 13483981&#125;) - 10000000
             <br />
             → Returns approx. ₹8,65,000 (positive → good investment)
           </code>
