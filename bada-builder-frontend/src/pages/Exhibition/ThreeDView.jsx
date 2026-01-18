@@ -1,152 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sky, Text } from '@react-three/drei';
+import { OrbitControls, Sky, Text, PerspectiveCamera } from '@react-three/drei';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import { useAuth } from '../../context/AuthContext';
+import { liveGroupDynamicAPI } from '../../services/api';
 import './LiveGrouping.css';
 
-// --- Constants & Config ---
-const TOWER_COUNT = 3;
-const FLOORS = 10;
-const TOWER_SPACING = 15;
-const FLOOR_HEIGHT = 1.2;
-const UNIT_WIDTH = 2;
-const UNIT_DEPTH = 2;
-const SHOP_HEIGHT = 1.5;
+// --- Configuration ---
+const TOWER_SPACING = 20;
+const FLOOR_HEIGHT = 2.5;
+const UNIT_WIDTH = 4;
+const UNIT_DEPTH = 4;
+const UNIT_GAP = 0.5;
 
 // Colors
-const COLOR_AVAILABLE = '#22c55e'; // Greenssss
+const COLOR_AVAILABLE = '#22c55e'; // Green
 const COLOR_BOOKED = '#ef4444';    // Red
-const COLOR_HOLD = '#eab308';      // Yellow
-const COLOR_SHOP = '#f59e0b';      // Amber
-const COLOR_PARKING = '#64748b';   // Slate
-const COLOR_DEFAULT = '#e2e8f0';
+const COLOR_LOCKED = '#eab308';    // Yellow
+const COLOR_DEFAULT = '#94a3b8';
 
-// --- Components ---
+// --- Sub-Components ---
 
-const UnitDetailsModal = ({ unit, onClose, onBookNow, onHold, paymentLoading }) => {
-    if (!unit) return null;
-
-    // Calculate 0.5% advance payment
-    const advanceAmount = (unit.price * 0.5) / 100;
-
-    return (
-        <div style={{
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            backgroundColor: 'white', padding: '24px', borderRadius: '16px', zIndex: 100,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            minWidth: '320px', border: '2px solid #e2e8f0'
-        }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 'bold', color: '#1e293b' }}>
-                Unit: {unit.unitNumber} (Floor {unit.floorId})
-            </h3>
-
-            <div style={{ marginBottom: '16px', display: 'grid', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Type:</span>
-                    <span style={{ fontWeight: '600' }}>{unit.unitType || 'Standard'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Super Area:</span>
-                    <span style={{ fontWeight: '600' }}>{unit.superBuiltUpArea} sq ft</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Carpet Area:</span>
-                    <span style={{ fontWeight: '600' }}>{unit.carpetArea} sq ft</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Price:</span>
-                    <span style={{ fontWeight: '600', color: '#0f172a' }}>₹{(unit.price / 100000).toFixed(2)} L</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Advance (0.5%):</span>
-                    <span style={{ fontWeight: '700', color: '#2563eb' }}>₹{(advanceAmount / 100000).toFixed(2)} L</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#64748b' }}>Status:</span>
-                    <span style={{
-                        padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase',
-                        backgroundColor: unit.status === 'booked' ? '#fee2e2' : unit.status === 'hold' ? '#fef9c3' : '#dcfce7',
-                        color: unit.status === 'booked' ? '#991b1b' : unit.status === 'hold' ? '#854d0e' : '#166534'
-                    }}>
-                        {unit.status}
-                    </span>
-                </div>
-            </div>
-
-            <div style={{ display: 'grid', gap: '8px' }}>
-                {unit.status === 'available' && (
-                    <>
-                        <button
-                            onClick={() => onBookNow(unit)}
-                            disabled={paymentLoading}
-                            style={{
-                                background: paymentLoading ? '#94a3b8' : '#2563eb',
-                                color: 'white',
-                                padding: '10px',
-                                borderRadius: '8px',
-                                border: 'none',
-                                fontWeight: 'bold',
-                                cursor: paymentLoading ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            {paymentLoading ? 'Processing...' : `Book Now - Pay ₹${(advanceAmount / 100000).toFixed(2)}L`}
-                        </button>
-                        <button
-                            onClick={() => onHold(unit)}
-                            disabled={paymentLoading}
-                            style={{
-                                background: paymentLoading ? '#cbd5e1' : '#f59e0b',
-                                color: 'white',
-                                padding: '10px',
-                                borderRadius: '8px',
-                                border: 'none',
-                                fontWeight: 'bold',
-                                cursor: paymentLoading ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            Hold Unit
-                        </button>
-                    </>
-                )}
-                {unit.status !== 'available' && (
-                    <div style={{ textAlign: 'center', color: '#64748b', fontSize: '14px', padding: '8px' }}>
-                        Unavailable for Booking
-                    </div>
-                )}
-                <button
-                    onClick={onClose}
-                    disabled={paymentLoading}
-                    style={{
-                        background: 'transparent',
-                        color: '#64748b',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        border: '1px solid #cbd5e1',
-                        cursor: paymentLoading ? 'not-allowed' : 'pointer'
-                    }}
-                >
-                    Close
-                </button>
-            </div>
-        </div>
-    );
-};
-
-const UnitBox = ({ position, name, status, isShop, isParking, onClick, size, label }) => {
+const UnitBox = ({ unit, position, size, onClick }) => {
     const [hovered, setHovered] = useState(false);
     const meshRef = useRef();
 
-    // Color Logic based on Firestore Status
     let color = COLOR_DEFAULT;
-    if (status === 'booked') color = COLOR_BOOKED;
-    else if (status === 'hold') color = COLOR_HOLD;
-    else if (status === 'available') color = COLOR_AVAILABLE;
-    else if (isShop) color = COLOR_SHOP;
-    else if (isParking) color = COLOR_PARKING;
+    if (unit.status === 'booked') color = COLOR_BOOKED;
+    else if (unit.status === 'locked') color = COLOR_LOCKED;
+    else if (unit.status === 'available') color = COLOR_AVAILABLE;
 
-    if (hovered && status !== 'booked') color = '#3b82f6'; // Hover blue if not booked
+    if (hovered && unit.status === 'available') color = '#3b82f6';
 
     return (
         <group position={position}>
@@ -154,390 +39,254 @@ const UnitBox = ({ position, name, status, isShop, isParking, onClick, size, lab
                 ref={meshRef}
                 onClick={(e) => {
                     e.stopPropagation();
-                    onClick(name);
+                    onClick(unit);
                 }}
                 onPointerOver={(e) => {
                     e.stopPropagation();
                     setHovered(true);
                 }}
-                onPointerOut={(e) => setHovered(false)}
+                onPointerOut={() => setHovered(false)}
             >
                 <boxGeometry args={[size[0], size[1], size[2]]} />
-                <meshStandardMaterial color={color} roughness={0.5} metalness={0.1} />
+                <meshStandardMaterial
+                    color={color}
+                    roughness={0.3}
+                    metalness={0.2}
+                    transparent
+                    opacity={unit.status === 'booked' ? 0.9 : 0.7}
+                />
                 <lineSegments>
                     <edgesGeometry args={[new THREE.BoxGeometry(size[0], size[1], size[2])]} />
-                    <lineBasicMaterial color="#94a3b8" />
+                    <lineBasicMaterial color="white" />
                 </lineSegments>
             </mesh>
-            {label && (
-                <Text position={[0, 0, size[2] / 2 + 0.1]} fontSize={0.3} color="#1e293b" anchorX="center" anchorY="middle">
-                    {label}
-                </Text>
-            )}
+            <Text
+                position={[0, 0, size[2] / 2 + 0.05]}
+                fontSize={0.8}
+                color="white"
+                anchorX="center"
+                anchorY="middle"
+            >
+                {unit.unit_number}
+            </Text>
         </group>
     );
 };
 
-const Tower = ({ towerIndex, position, unitsData, onUnitClick }) => {
-    const units = [];
-
-    // 1. Ground Floor (Shops)
-    units.push(
-        <UnitBox key={`Tower_${towerIndex + 1}_G_S1`} name={`Tower_${towerIndex + 1}_G_S1`} position={[-UNIT_WIDTH / 2 - 0.2, 0, UNIT_DEPTH / 2]} size={[UNIT_WIDTH, SHOP_HEIGHT, UNIT_DEPTH]} isShop={true} label="SHOP" onClick={onUnitClick} />
-    );
-    units.push(
-        <UnitBox key={`Tower_${towerIndex + 1}_G_S2`} name={`Tower_${towerIndex + 1}_G_S2`} position={[UNIT_WIDTH / 2 + 0.2, 0, UNIT_DEPTH / 2]} size={[UNIT_WIDTH, SHOP_HEIGHT, UNIT_DEPTH]} isShop={true} label="SHOP" onClick={onUnitClick} />
-    );
-    units.push(
-        <UnitBox key={`Tower_${towerIndex + 1}_Park`} name={`Tower_${towerIndex + 1}_Park`} position={[0, 0, -UNIT_DEPTH / 2]} size={[UNIT_WIDTH * 2.2, SHOP_HEIGHT, UNIT_DEPTH]} isParking={true} label="PARKING" onClick={onUnitClick} />
-    );
-
-    // 2. Residential Floors
-    for (let floor = 1; floor <= FLOORS; floor++) {
-        const floorY = (SHOP_HEIGHT / 2) + (floor * FLOOR_HEIGHT) + 0.1;
-
-        ['A', 'B', 'C', 'D'].forEach((unitChar, idx) => {
-            /* 
-               IMPORTANT: 
-               We use a unique ID string for mapping 3D objects to Firestore data.
-               Format: "Tower_1_Floor_5_Unit_A"
-               This ID must match the 'id' field in the Firestore unit doc.
-            */
-            const uniqueId = `Tower_${towerIndex + 1}_Floor_${floor}_Unit_${unitChar}`;
-            const unitData = unitsData[uniqueId] || { status: 'available' }; // Default to available if not loaded
-
-            let pos = [0, floorY, 0];
-            if (unitChar === 'A') pos = [-UNIT_WIDTH / 2 - 0.2, floorY, UNIT_DEPTH / 2 + 0.2];
-            if (unitChar === 'B') pos = [UNIT_WIDTH / 2 + 0.2, floorY, UNIT_DEPTH / 2 + 0.2];
-            if (unitChar === 'C') pos = [-UNIT_WIDTH / 2 - 0.2, floorY, -UNIT_DEPTH / 2 - 0.2];
-            if (unitChar === 'D') pos = [UNIT_WIDTH / 2 + 0.2, floorY, -UNIT_DEPTH / 2 - 0.2];
-
-            units.push(
-                <UnitBox
-                    key={uniqueId} name={uniqueId} position={pos} size={[UNIT_WIDTH, FLOOR_HEIGHT, UNIT_DEPTH]}
-                    label={`${floor}${unitChar}`}
-                    status={unitData.status}
-                    onClick={onUnitClick}
-                />
-            );
-        });
-    }
-
-    // 3. Roof
-    const roofY = (SHOP_HEIGHT / 2) + ((FLOORS + 1) * FLOOR_HEIGHT);
-    units.push(
-        <mesh position={[0, roofY - 0.4, 0]} key={`Tower_${towerIndex + 1}_Roof`}>
-            <boxGeometry args={[UNIT_WIDTH * 2.5, 0.2, UNIT_DEPTH * 2.5]} />
-            <meshStandardMaterial color="#334155" />
-        </mesh>
-    );
+const Tower = ({ tower, position, onUnitClick }) => {
+    // Group units by floor
+    const unitsByFloor = tower.units.reduce((acc, unit) => {
+        if (!acc[unit.floor_number]) acc[unit.floor_number] = [];
+        acc[unit.floor_number].push(unit);
+        return acc;
+    }, {});
 
     return (
         <group position={position}>
-            <Text position={[0, roofY + 1, 0]} fontSize={1} color="black" anchorX="center" anchorY="bottom">{`TOWER ${towerIndex + 1}`}</Text>
-            {units}
+            {/* Tower label */}
+            <Text
+                position={[0, (tower.total_floors + 1) * FLOOR_HEIGHT, 0]}
+                fontSize={2.5}
+                color="#1e293b"
+                anchorX="center"
+            >
+                {tower.tower_name}
+            </Text>
+
+            {/* Render units floor by floor */}
+            {Object.entries(unitsByFloor).map(([floor, units]) => {
+                const floorNum = parseInt(floor);
+                const floorY = floorNum * FLOOR_HEIGHT;
+
+                // Arrange units in a grid around center
+                const cols = Math.ceil(Math.sqrt(units.length));
+
+                return units.map((unit, idx) => {
+                    const row = Math.floor(idx / cols);
+                    const col = idx % cols;
+
+                    const posX = (col - (cols - 1) / 2) * (UNIT_WIDTH + UNIT_GAP);
+                    const posZ = (row - (Math.ceil(units.length / cols) - 1) / 2) * (UNIT_DEPTH + UNIT_GAP);
+
+                    return (
+                        <UnitBox
+                            key={unit.id}
+                            unit={unit}
+                            position={[posX, floorY, posZ]}
+                            size={[UNIT_WIDTH, FLOOR_HEIGHT * 0.9, UNIT_DEPTH]}
+                            onClick={onUnitClick}
+                        />
+                    );
+                });
+            })}
+
+            {/* Foundation / Ground */}
+            <mesh position={[0, FLOOR_HEIGHT / 2, 0]}>
+                <boxGeometry args={[UNIT_WIDTH * 3, 0.5, UNIT_DEPTH * 3]} />
+                <meshStandardMaterial color="#475569" />
+            </mesh>
         </group>
     );
 };
+
+// --- Main Page ---
 
 const ThreeDView = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { currentUser, isAuthenticated, userProfile } = useAuth();
+    const { currentUser, isAuthenticated } = useAuth();
     const property = location.state?.property;
-    const propertyId = property?.id || 'viram-template-demo';
 
-    const [unitsData, setUnitsData] = useState({});
-    const [selectedUnitId, setSelectedUnitId] = useState(null);
-    const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+    const [project, setProject] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [selectedUnit, setSelectedUnit] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
 
-    // Load Razorpay Script
     useEffect(() => {
-        const loadRazorpay = () => {
-            return new Promise((resolve) => {
-                if (window.Razorpay) {
-                    setRazorpayLoaded(true);
-                    resolve(true);
-                    return;
-                }
+        if (property?.id) {
+            fetchHierarchy();
+        } else {
+            setLoading(false);
+        }
+    }, [property]);
 
-                const script = document.createElement('script');
-                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-                script.onload = () => {
-                    setRazorpayLoaded(true);
-                    console.log('\u2705 Razorpay script loaded successfully');
-                    resolve(true);
-                };
-                script.onerror = () => {
-                    console.error('\u274c Failed to load Razorpay script');
-                    resolve(false);
-                };
-                document.head.appendChild(script);
-            });
-        };
-
-        loadRazorpay();
-    }, []);
-
-    // Load units data from API instead of Firebase
-    useEffect(() => {
-        if (!propertyId) return;
-
-        const loadUnitsData = async () => {
-            try {
-                console.log("Loading units data from API...");
-                
-                // For now, create sample data structure
-                // TODO: Replace with actual API call to get property units
-                const sampleData = {};
-                
-                // Generate sample units for 3D view
-                for (let t = 1; t <= TOWER_COUNT; t++) {
-                    for (let f = 1; f <= FLOORS; f++) {
-                        ['A', 'B', 'C', 'D'].forEach(u => {
-                            const uniqueId = `Tower_${t}_Floor_${f}_Unit_${u}`;
-                            sampleData[uniqueId] = {
-                                id: uniqueId,
-                                towerId: t,
-                                floorId: f,
-                                unitNumber: `${f}${u}`,
-                                unitType: '3 BHK',
-                                carpetArea: 1200,
-                                superBuiltUpArea: 1550,
-                                price: 7500000 + (f * 50000),
-                                status: Math.random() > 0.7 ? 'booked' : 'available',
-                                projectId: String(propertyId),
-                                updatedAt: new Date()
-                            };
-                        });
-                    }
-                }
-                
-                setUnitsData(sampleData);
-                console.log("Units data loaded successfully!");
-                
-            } catch (error) {
-                console.error("Error loading units data:", error);
-            }
-        };
-
-        loadUnitsData();
-    }, [propertyId]);
-
-    // Handle Logic
-    const handleUnitClick = (id) => {
-        if (id.includes('Unit')) {
-            setSelectedUnitId(id);
+    const fetchHierarchy = async () => {
+        try {
+            setLoading(true);
+            const data = await liveGroupDynamicAPI.getFullHierarchy(property.id);
+            setProject(data.project);
+        } catch (error) {
+            console.error('Error fetching project hierarchy:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Razorpay Payment Handler for Book Now
-    const handleBookNowPayment = async (unit) => {
-        // Validation
+    const handleUnitClick = async (unit) => {
+        if (unit.status !== 'available') return;
+
         if (!isAuthenticated) {
-            alert('Please login to book a unit');
+            alert('Please login to lock and book a unit.');
             navigate('/login');
             return;
         }
 
-        if (!razorpayLoaded) {
-            alert('Payment gateway is loading. Please try again in a moment.');
-            return;
+        try {
+            setPaymentLoading(true);
+            // 🚨 Locking Mechanism
+            await liveGroupDynamicAPI.lockUnit(unit.id);
+
+            // Refresh hierarchy to show yellow status
+            await fetchHierarchy();
+
+            // Open details for payment
+            setSelectedUnit(unit);
+        } catch (error) {
+            alert(error.message || 'Failed to lock unit. It might have been taken just now.');
+        } finally {
+            setPaymentLoading(false);
         }
-
-        if (unit.status !== 'available') {
-            alert('This unit is no longer available');
-            return;
-        }
-
-        setPaymentLoading(true);
-
-        // Calculate 0.5% advance payment
-        const advanceAmount = (unit.price * 0.5) / 100;
-        const currency = 'INR';
-
-        console.log('\ud83d\ude80 Starting unit booking payment for:', unit.unitNumber);
-        console.log('\ud83d\udcb0 Advance Amount (0.5%):', advanceAmount);
-
-        const options = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-            amount: advanceAmount * 100, // Amount in paise
-            currency: currency,
-            name: 'Bada Builder',
-            description: `Unit Booking - ${unit.unitNumber} (${property?.title || 'Property'})`,
-            image: '/logo.png',
-            handler: async function (response) {
-                console.log('✅ Payment successful:', response);
-
-                try {
-                    // Store payment and booking data
-                    const paymentData = {
-                        payment_id: response.razorpay_payment_id,
-                        user_id: currentUser?.uid || 'guest',
-                        user_name: userProfile?.name || currentUser?.displayName || 'User',
-                        user_email: userProfile?.email || currentUser?.email,
-                        property_id: String(propertyId),
-                        property_title: property?.title || 'Property',
-                        unit_id: unit.id,
-                        unit_number: unit.unitNumber,
-                        tower_id: unit.towerId,
-                        floor_id: unit.floorId,
-                        amount: advanceAmount,
-                        unit_price: unit.price,
-                        payment_type: 'unit_booking',
-                        payment_status: 'success',
-                        currency: currency,
-                        razorpay_order_id: response.razorpay_order_id || '',
-                        razorpay_signature: response.razorpay_signature || '',
-                        created_at: new Date().toISOString()
-                    };
-
-                    // TODO: Replace with API call to save payment and booking
-                    console.log('Payment data to save:', paymentData);
-                    
-                    // Update unit status locally
-                    setUnitsData(prev => ({
-                        ...prev,
-                        [unit.id]: {
-                            ...prev[unit.id],
-                            status: 'booked',
-                            bookedBy: currentUser?.uid || 'guest',
-                            bookedAt: new Date().toISOString()
-                        }
-                    }));
-
-                    console.log('✅ Unit booked successfully!');
-                    
-                    // Close modal and show success
-                    setPaymentLoading(false);
-                    setSelectedUnitId(null);
-                    alert(`✅ Booking Successful!\n\nUnit: ${unit.unitNumber}\nAmount Paid: ₹${(advanceAmount / 100000).toFixed(2)}L\nPayment ID: ${response.razorpay_payment_id}\n\nThe unit will now appear as BOOKED (RED).`);
-
-                    alert(`\u2705 Booking Successful!\\n\\nUnit: ${unit.unitNumber}\\nAmount Paid: \u20b9${(advanceAmount / 100000).toFixed(2)}L\\nPayment ID: ${response.razorpay_payment_id}\\n\\nThe unit will now appear as BOOKED (RED).`);
-
-                } catch (error) {
-                    console.error('Error saving booking:', error);
-                    alert(`Payment successful but booking failed. Please contact support.\nPayment ID: ${response.razorpay_payment_id}`);
-                    setPaymentLoading(false);
-                }
-            },
-            prefill: {
-                name: userProfile?.name || currentUser?.displayName || '',
-                email: userProfile?.email || currentUser?.email || '',
-                contact: userProfile?.phone || currentUser?.phoneNumber || ''
-            },
-            notes: {
-                property_id: String(propertyId),
-                unit_id: unit.id,
-                unit_number: unit.unitNumber,
-                user_id: currentUser.uid,
-                payment_type: 'unit_booking_advance'
-            },
-            theme: {
-                color: '#2563eb'
-            },
-            modal: {
-                ondismiss: function () {
-                    console.log('Payment cancelled by user');
-                    setPaymentLoading(false);
-                }
-            }
-        };
-
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
     };
 
-    // Hold Unit Handler (without payment)
-    const handleHoldUnit = async (unit) => {
-        if (!isAuthenticated) {
-            alert('Please login to hold a unit');
-            navigate('/login');
-            return;
-        }
-
-        if (unit.status !== 'available') {
-            alert('This unit is no longer available');
-            return;
-        }
-
+    const handleBookNow = async () => {
+        if (!selectedUnit) return;
         setPaymentLoading(true);
 
         try {
-            // TODO: Replace with API call to hold unit
-            console.log('Holding unit:', unit.id);
-            
-            // Update unit status locally
-            setUnitsData(prev => ({
-                ...prev,
-                [unit.id]: {
-                    ...prev[unit.id],
-                    status: 'hold',
-                    heldBy: currentUser?.uid || 'guest',
-                    heldAt: new Date().toISOString()
-                }
-            }));
+            // In real production, this would trigger Razorpay
+            // On success, we call the book API
+            alert('Payment Success (Mock)! Finalizing booking...');
 
-            console.log('✅ Unit put on hold');
-            setPaymentLoading(false);
-            setSelectedUnitId(null);
-            alert(`Unit ${unit.unitNumber} is now on HOLD.`);
+            await liveGroupDynamicAPI.bookUnit(selectedUnit.id, {
+                amount: (selectedUnit.price * 0.5) / 100,
+                payment_id: 'PAY-' + Math.random().toString(36).substr(2, 9)
+            });
 
+            alert('Unit booked successfully! Redirecting...');
+            setSelectedUnit(null);
+            await fetchHierarchy();
         } catch (error) {
-            console.error('Error holding unit:', error);
-            alert('Failed to hold unit. Please try again.');
+            alert('Booking failed: ' + error.message);
+        } finally {
             setPaymentLoading(false);
         }
     };
 
-    const selectedUnit = selectedUnitId ? unitsData[selectedUnitId] : null;
+    if (loading) return <div className="loader-container"><div className="spinner"></div><p>Generating 3D Scene...</p></div>;
+    if (!project) return <div className="error-container"><h3>Project not found</h3><button onClick={() => navigate(-1)}>Go Back</button></div>;
 
     return (
-        <div className="three-d-view-container">
-            {/* Back & Legend Overlay */}
-            <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10, background: 'rgba(255, 255, 255, 0.95)', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxWidth: '250px' }}>
-                <button onClick={() => navigate(-1)} style={{ marginBottom: '10px', cursor: 'pointer', border: 'none', background: 'transparent', fontSize: '16px', fontWeight: 'bold' }}>⬅ Back</button>
-                <h1 style={{ margin: '0 0 5px 0', fontSize: '20px' }}>{property?.title || 'Viram Template'}</h1>
-                <div style={{ marginTop: '15px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}><div style={{ width: 12, height: 12, background: COLOR_AVAILABLE, borderRadius: '2px' }}></div> Available</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}><div style={{ width: 12, height: 12, background: COLOR_BOOKED, borderRadius: '2px' }}></div> Booked</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}><div style={{ width: 12, height: 12, background: COLOR_HOLD, borderRadius: '2px' }}></div> On Hold</div>
+        <div className="three-d-page">
+            {/* Header Overlay */}
+            <div className="scene-overlay header">
+                <button className="back-btn" onClick={() => navigate(-1)}>← Exit View</button>
+                <div className="project-info">
+                    <h1>{project.title}</h1>
+                    <p>{project.location} • {project.towers.length} Towers • {project.total_slots} Units</p>
                 </div>
             </div>
 
-            {/* Unit Modal Overlay */}
+            {/* Legend Overlay */}
+            <div className="scene-overlay legend">
+                <div className="legend-item"><div className="color available"></div> Available</div>
+                <div className="legend-item"><div className="color locked"></div> In Checkout (10m)</div>
+                <div className="legend-item"><div className="color booked"></div> Sold</div>
+            </div>
+
+            {/* Selection Modal */}
             {selectedUnit && (
-                <UnitDetailsModal
-                    unit={selectedUnit}
-                    onClose={() => setSelectedUnitId(null)}
-                    onBookNow={handleBookNowPayment}
-                    onHold={handleHoldUnit}
-                    paymentLoading={paymentLoading}
-                />
+                <div className="unit-modal-v2">
+                    <div className="modal-content">
+                        <h2>Unit {selectedUnit.unit_number}</h2>
+                        <div className="unit-stats">
+                            <div className="u-stat"><span>Floor</span> <strong>{selectedUnit.floor_number}</strong></div>
+                            <div className="u-stat"><span>Type</span> <strong>{selectedUnit.unit_type}</strong></div>
+                            <div className="u-stat"><span>Area</span> <strong>{selectedUnit.area} sq ft</strong></div>
+                            <div className="u-stat"><span>Price</span> <strong>₹{(selectedUnit.price / 100000).toFixed(2)} L</strong></div>
+                        </div>
+                        <p className="advance-note">Pay 0.5% Advance to confirm: <strong>₹{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</strong></p>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setSelectedUnit(null)}>Cancel</button>
+                            <button className="book-btn" onClick={handleBookNow} disabled={paymentLoading}>
+                                {paymentLoading ? 'Processing...' : 'Proceed to Payment'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
-            <Canvas camera={{ position: [20, 20, 40], fov: 45 }}>
-                <Sky sunPosition={[100, 20, 100]} />
-                <ambientLight intensity={0.6} />
-                <directionalLight position={[10, 20, 10]} intensity={1.2} castShadow />
-                <OrbitControls target={[0, 5, 0]} maxPolarAngle={Math.PI / 2 - 0.05} minDistance={10} maxDistance={100} />
+            <Canvas shadows>
+                <PerspectiveCamera makeDefault position={[50, 50, 100]} fov={40} />
+                <Sky sunPosition={[100, 20, 50]} />
+                <ambientLight intensity={0.7} />
+                <directionalLight
+                    position={[50, 100, 50]}
+                    intensity={1.5}
+                    castShadow
+                    shadow-mapSize={[2048, 2048]}
+                />
+                <OrbitControls target={[0, (project.towers[0]?.total_floors || 5) * 1.25, 0]} maxPolarAngle={Math.PI / 2.1} />
 
-                <group position={[-(TOWER_SPACING), 0, 0]}>
-                    <Tower towerIndex={0} position={[0, 0, 0]} unitsData={unitsData} onUnitClick={handleUnitClick} />
-                </group>
-                <group position={[0, 0, 0]}>
-                    <Tower towerIndex={1} position={[0, 0, 0]} unitsData={unitsData} onUnitClick={handleUnitClick} />
-                </group>
-                <group position={[TOWER_SPACING, 0, 0]}>
-                    <Tower towerIndex={2} position={[0, 0, 0]} unitsData={unitsData} onUnitClick={handleUnitClick} />
+                <group>
+                    {project.towers.map((tower, idx) => {
+                        const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                        return (
+                            <Tower
+                                key={tower.id}
+                                tower={tower}
+                                position={[posX, 0, 0]}
+                                onUnitClick={handleUnitClick}
+                            />
+                        );
+                    })}
                 </group>
 
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-                    <planeGeometry args={[100, 100]} />
-                    <meshStandardMaterial color="#f0fdf4" />
+                {/* Ground */}
+                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
+                    <planeGeometry args={[1000, 1000]} />
+                    <meshStandardMaterial color="#e2e8f0" />
                 </mesh>
-                <gridHelper args={[100, 50]} position={[0, -0.05, 0]} />
+                <gridHelper args={[200, 40]} position={[0, -0.4, 0]} colorCenterLine="#94a3b8" />
             </Canvas>
         </div>
     );

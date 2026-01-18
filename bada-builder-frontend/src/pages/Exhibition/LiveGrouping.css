@@ -766,3 +766,199 @@
     height: calc(100vh - 110px);
   }
 }
+
+/* --- ThreeDView V2 Overlays --- */
+.three-d-page {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background: #f1f5f9;
+}
+
+.scene-overlay {
+  position: absolute;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.scene-overlay.header {
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: white;
+}
+
+.project-info h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.project-info p {
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.scene-overlay.legend {
+  bottom: 2rem;
+  left: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-item .color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.color.available {
+  background: #22c55e;
+}
+
+.color.locked {
+  background: #eab308;
+}
+
+.color.booked {
+  background: #ef4444;
+}
+
+.unit-modal-v2 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  background: white;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid #e2e8f0;
+}
+
+.modal-content h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.unit-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.u-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.u-stat span {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.u-stat strong {
+  font-size: 1.125rem;
+  color: #1e293b;
+}
+
+.advance-note {
+  background: #f0f9ff;
+  color: #0369a1;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  text-align: center;
+  border: 1px solid #bae6fd;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.book-btn {
+  flex: 2;
+  padding: 0.75rem;
+  background: #2563eb;
+  color: white;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+  cursor: pointer;
+}
+
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 1.5rem;
+  background: #f8fafc;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

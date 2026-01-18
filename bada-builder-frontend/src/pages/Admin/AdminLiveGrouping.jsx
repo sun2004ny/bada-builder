@@ -1,706 +1,393 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-// TODO: Remove Firebase - implement with API
+import {
+  Plus, Search, TowerControl as Tower, Building2,
+  Trash2, Edit, Eye, Save, X, ChevronRight,
+  ChevronLeft, LayoutGrid, List, CheckCircle2, AlertCircle
+} from 'lucide-react';
+import { liveGroupDynamicAPI } from '../../services/api';
 import './AdminLiveGrouping.css';
-
-// --- Cloudinary Configuration ---
-const CLOUDINARY_CLOUD_NAME = "dooamkdih";
-const CLOUDINARY_UPLOAD_PRESET = "property_images";
-
-/**
- * Uploads an image file to Cloudinary using an unsigned preset.
- * @param {File} file The image file to upload.
- * @returns {Promise<string>} A promise that resolves to the secure URL of the uploaded image.
- */
-const uploadToCloudinary = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Cloudinary upload failed: ${errorData.error.message}`);
-    }
-
-    const data = await response.json();
-    return data.secure_url;
-  } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
-    throw error;
-  }
-};
-
 
 const AdminLiveGrouping = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [properties, setProperties] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [imageFiles, setImageFiles] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [saving, setSaving] = useState(false);
 
-  const [formData, setFormData] = useState({
+  // Form State
+  const [projectData, setProjectData] = useState({
     title: '',
     developer: '',
     location: '',
-    originalPrice: '',
-    groupPrice: '',
+    description: '',
+    original_price: '',
+    group_price: '',
     discount: '',
-    type: '',
-    totalSlots: '',
-    filledSlots: '',
-    timeLeft: '',
-    minBuyers: '',
-    benefits: '',
-    status: 'active',
+    savings: '',
+    type: 'Apartment',
+    min_buyers: 5,
     area: '',
     possession: '',
-    reraNumber: '',
-    facilities: '',
-    description: '',
-    advantages: '',
-    tokenAmount: '',
-    refundPolicy: "100% refund if group doesn't fill",
-    closingDate: '',
-    expectedCompletion: ''
+    rera_number: ''
   });
 
+  const [towers, setTowers] = useState([
+    { name: 'Tower A', floors: 10, unitsPerFloor: 4 }
+  ]);
+
+  const [unitSettings, setUnitSettings] = useState({
+    unitType: '3 BHK',
+    areaPerUnit: 1500,
+    pricePerUnit: 7500000
+  });
+
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+
   useEffect(() => {
-    // Check if user is admin (you can add admin check in AuthContext)
-    if (!isAuthenticated) {
-      alert('Please login to access admin panel');
-      navigate('/login');
-      return;
-    }
-    
-    fetchProperties();
-  }, [isAuthenticated, navigate]);
+    fetchProjects();
+  }, []);
 
-  const fetchProperties = async () => {
+  const fetchProjects = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'live_grouping_properties'));
-      const propertiesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setProperties(propertiesData);
+      setLoading(true);
+      const data = await liveGroupDynamicAPI.getAll();
+      setProjects(data.projects || []);
     } catch (error) {
-      console.error('Error fetching properties:', error);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 5) {
-      alert('Maximum 5 images allowed');
-      return;
-    }
-    
-    setImageFiles(files);
-    
-    // Create previews
-    const previews = files.map(file => URL.createObjectURL(file));
-    setImagePreviews(previews);
-  };
-
-  const uploadImages = async () => {
-    const uploadPromises = imageFiles.map(file => uploadToCloudinary(file));
-    const imageUrls = await Promise.all(uploadPromises);
-    return imageUrls;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Upload images to Cloudinary
-      let imageUrls = [];
-      if (imageFiles.length > 0) {
-        console.log(`📸 Uploading ${imageFiles.length} images to Cloudinary...`);
-        imageUrls = await uploadImages();
-        console.log('✅ Images uploaded successfully:', imageUrls);
-      }
-
-      // Calculate savings
-      const originalPriceNum = parseFloat(formData.originalPrice.replace(/[^0-9.]/g, ''));
-      const groupPriceNum = parseFloat(formData.groupPrice.replace(/[^0-9.]/g, ''));
-      const savings = `₹${(originalPriceNum - groupPriceNum).toFixed(0)} Lakhs`;
-
-      // Prepare property data
-      const propertyData = {
-        title: formData.title,
-        developer: formData.developer,
-        location: formData.location,
-        originalPrice: formData.originalPrice,
-        groupPrice: formData.groupPrice,
-        discount: formData.discount,
-        savings: savings,
-        type: formData.type,
-        totalSlots: parseInt(formData.totalSlots),
-        filledSlots: parseInt(formData.filledSlots),
-        timeLeft: formData.timeLeft,
-        minBuyers: parseInt(formData.minBuyers),
-        benefits: formData.benefits.split(',').map(b => b.trim()),
-        status: formData.status,
-        area: formData.area,
-        possession: formData.possession,
-        reraNumber: formData.reraNumber,
-        facilities: formData.facilities.split(',').map(f => f.trim()),
-        description: formData.description,
-        advantages: formData.advantages.split('|').map(adv => {
-          const [place, distance] = adv.split(':');
-          return { place: place.trim(), distance: distance.trim() };
-        }),
-        groupDetails: {
-          tokenAmount: formData.tokenAmount,
-          refundPolicy: formData.refundPolicy,
-          closingDate: formData.closingDate,
-          expectedCompletion: formData.expectedCompletion
-        },
-        // Use Cloudinary URLs. If editing and no new images, this field won't be updated.
-        ...(imageUrls.length > 0 && { 
-            images: imageUrls,
-            image: imageUrls[0] 
-        }),
-        created_at: new Date().toISOString(),
-        created_by: currentUser.uid
-      };
-
-      if (editingId) {
-        // If editing, don't overwrite images unless new ones are uploaded
-        const docRef = doc(db, 'live_grouping_properties', editingId);
-        if (imageUrls.length === 0) {
-            // Keep existing images if none are uploaded
-            delete propertyData.images;
-            delete propertyData.image;
-        }
-        await updateDoc(docRef, propertyData);
-        alert('Property updated successfully!');
-      } else {
-        // Add new property, ensuring placeholder if no images
-        if (imageUrls.length === 0) {
-            propertyData.images = ['/placeholder-property.jpg'];
-            propertyData.image = '/placeholder-property.jpg';
-        }
-        await addDoc(collection(db, 'live_grouping_properties'), propertyData);
-        alert('Property added successfully!');
-      }
-
-      // Reset form
-      resetForm();
-      fetchProperties();
-      setShowForm(false);
-    } catch (error) {
-      console.error('Error saving property:', error);
-      alert('Error saving property: ' + error.message);
+      console.error('Fetch projects error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (property) => {
-    setEditingId(property.id);
-    setFormData({
-      title: property.title,
-      developer: property.developer,
-      location: property.location,
-      originalPrice: property.originalPrice,
-      groupPrice: property.groupPrice,
-      discount: property.discount,
-      type: property.type,
-      totalSlots: property.totalSlots.toString(),
-      filledSlots: property.filledSlots.toString(),
-      timeLeft: property.timeLeft,
-      minBuyers: property.minBuyers.toString(),
-      benefits: property.benefits.join(', '),
-      status: property.status,
-      area: property.area,
-      possession: property.possession,
-      reraNumber: property.reraNumber,
-      facilities: property.facilities.join(', '),
-      description: property.description,
-      advantages: property.advantages.map(a => `${a.place}: ${a.distance}`).join(' | '),
-      tokenAmount: property.groupDetails.tokenAmount,
-      refundPolicy: property.groupDetails.refundPolicy,
-      closingDate: property.groupDetails.closingDate,
-      expectedCompletion: property.groupDetails.expectedCompletion
-    });
-    // Set image previews from existing images if available
-    setImagePreviews(property.images || []);
-    setImageFiles([]); // Clear any selected files
-    setShowForm(true);
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setImageFiles(files);
+    const previews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(previews);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this property?')) return;
-
+  const handleCreateProject = async () => {
     try {
-      await deleteDoc(doc(db, 'live_grouping_properties', id));
-      alert('Property deleted successfully!');
-      fetchProperties();
+      setSaving(true);
+
+      // 1. Create Project
+      const response = await liveGroupDynamicAPI.createProject(projectData, imageFiles);
+      const newProject = response.project;
+
+      // 2. Add Towers & Generate Units
+      for (const towerInfo of towers) {
+        const towerResponse = await liveGroupDynamicAPI.addTower(newProject.id, {
+          tower_name: towerInfo.name,
+          total_floors: towerInfo.floors
+        });
+
+        await liveGroupDynamicAPI.generateUnits(towerResponse.tower.id, {
+          unitsPerFloor: towerInfo.unitsPerFloor,
+          pricePerUnit: unitSettings.pricePerUnit,
+          unitType: unitSettings.unitType,
+          areaPerUnit: unitSettings.areaPerUnit
+        });
+      }
+
+      alert('Project, Towers, and Units created successfully!');
+      setShowWizard(false);
+      setWizardStep(1);
+      fetchProjects();
     } catch (error) {
-      console.error('Error deleting property:', error);
-      alert('Error deleting property: ' + error.message);
+      console.error('Wizard submission error:', error);
+      alert('Failed to complete setup: ' + error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      developer: '',
-      location: '',
-      originalPrice: '',
-      groupPrice: '',
-      discount: '',
-      type: '',
-      totalSlots: '',
-      filledSlots: '',
-      timeLeft: '',
-      minBuyers: '',
-      benefits: '',
-      status: 'active',
-      area: '',
-      possession: '',
-      reraNumber: '',
-      facilities: '',
-      description: '',
-      advantages: '',
-      tokenAmount: '',
-      refundPolicy: "100% refund if group doesn't fill",
-      closingDate: '',
-      expectedCompletion: ''
-    });
-    setEditingId(null);
-    setImageFiles([]);
-    setImagePreviews([]);
+  const handleDeleteProject = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this project and all its towers/units? This cannot be undone.')) return;
+    try {
+      await liveGroupDynamicAPI.deleteProject(id);
+      fetchProjects();
+    } catch (error) {
+      alert('Delete failed: ' + error.message);
+    }
+  };
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      await liveGroupDynamicAPI.updateProjectStatus(id, status);
+      fetchProjects();
+    } catch (error) {
+      alert('Status update failed: ' + error.message);
+    }
+  };
+
+  const addTowerRow = () => {
+    setTowers([...towers, { name: `Tower ${String.fromCharCode(65 + towers.length)}`, floors: 10, unitsPerFloor: 4 }]);
+  };
+
+  const removeTowerRow = (index) => {
+    setTowers(towers.filter((_, i) => i !== index));
+  };
+
+  const updateTowerRow = (index, field, value) => {
+    const newTowers = [...towers];
+    // Handle number inputs specifically to prevent NaN
+    if (field === 'floors' || field === 'unitsPerFloor') {
+      newTowers[index][field] = value === '' ? '' : parseInt(value);
+    } else {
+      newTowers[index][field] = value;
+    }
+    setTowers(newTowers);
   };
 
   return (
-    <div className="admin-live-grouping">
-      <div className="admin-container">
-        <div className="admin-header">
-          <h1>🔴 Manage Live Grouping Properties</h1>
-          <button 
-            className="add-property-btn"
-            onClick={() => {
-              resetForm();
-              setShowForm(!showForm);
-            }}
+    <div className="admin-live-grouping overhaul">
+      {/* LOADING OVERLAY */}
+      <AnimatePresence>
+        {saving && (
+          <motion.div
+            className="loading-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            {showForm ? '✕ Cancel' : '+ Add New Property'}
-          </button>
+            <div className="loader-content">
+              <div className="spinner large"></div>
+              <h3>Generating Project...</h3>
+              <p>Creating towers, units, and 3D data.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="admin-header-v2">
+        <div className="header-content">
+          <h1>Live Grouping <span className="badge">Data Driven</span></h1>
+          <p>Create and manage projects with dynamic tower and unit hierarchies.</p>
         </div>
+        <button className="primary-btn" onClick={() => setShowWizard(true)}>
+          <Plus size={20} /> New Project Wizard
+        </button>
+      </div>
 
-        {/* Add/Edit Form */}
-        {showForm && (
-          <motion.div 
-            className="property-form-container"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+      {loading ? (
+        <div className="admin-loader">
+          <div className="spinner"></div>
+          <p>Loading projects...</p>
+        </div>
+      ) : (
+        <div className="projects-grid-v2">
+          {projects.map(project => (
+            <motion.div
+              className="project-card-v2"
+              key={project.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <div className="card-image">
+                <img src={project.image || '/placeholder-property.jpg'} alt={project.title} />
+                <div className={`status-pill ${project.status}`}>{project.status}</div>
+              </div>
+              <div className="card-body">
+                <h3>{project.title}</h3>
+                <p className="location"><Building2 size={14} /> {project.location}</p>
+                <div className="stats-row">
+                  <div className="stat">
+                    <span className="label">Towers</span>
+                    <span className="value">{project.tower_count || 'N/A'}</span>
+                  </div>
+                  <div className="stat">
+                    <span className="label">Units</span>
+                    <span className="value">{project.total_slots}</span>
+                  </div>
+                </div>
+                <div className="actions">
+                  <button className="icon-btn" title="View in Exhibition" onClick={() => navigate(`/exhibition/live-grouping`)}>
+                    <Eye size={18} />
+                  </button>
+                  <select
+                    className="status-dropdown"
+                    value={project.status}
+                    onChange={(e) => handleStatusChange(project.id, e.target.value)}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="live">Live</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                  <button className="icon-btn delete" title="Delete Project" onClick={() => handleDeleteProject(project.id)}>
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* MULTI-STEP WIZARD MODAL */}
+      <AnimatePresence>
+        {showWizard && (
+          <motion.div
+            className="wizard-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <h2>{editingId ? 'Edit Property' : 'Add New Property'}</h2>
-            <form onSubmit={handleSubmit} className="admin-form">
-              {/* Basic Information */}
-              <div className="form-section">
-                <h3>Basic Information</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Property Title *</label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      placeholder="e.g., Skyline Towers - Group Buy"
-                      required
-                    />
-                  </div>
+            <motion.div
+              className="wizard-modal"
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+            >
+              <div className="wizard-header">
+                <h2>Create Live Grouping Project</h2>
+                <button className="close-btn" onClick={() => setShowWizard(false)}><X /></button>
+              </div>
 
-                  <div className="form-group">
-                    <label>Developer *</label>
-                    <input
-                      type="text"
-                      name="developer"
-                      value={formData.developer}
-                      onChange={handleChange}
-                      placeholder="e.g., Shree Balaji Builders"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Location *</label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleChange}
-                      placeholder="e.g., Waghodia Road, Vadodara"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Property Type *</label>
-                    <input
-                      type="text"
-                      name="type"
-                      value={formData.type}
-                      onChange={handleChange}
-                      placeholder="e.g., 3 BHK Apartment"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Area *</label>
-                    <input
-                      type="text"
-                      name="area"
-                      value={formData.area}
-                      onChange={handleChange}
-                      placeholder="e.g., 1450 sq.ft"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Possession *</label>
-                    <input
-                      type="text"
-                      name="possession"
-                      value={formData.possession}
-                      onChange={handleChange}
-                      placeholder="e.g., Dec 2025"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>RERA Number *</label>
-                    <input
-                      type="text"
-                      name="reraNumber"
-                      value={formData.reraNumber}
-                      onChange={handleChange}
-                      placeholder="e.g., PR/GJ/VADODARA/123456"
-                      required
-                    />
-                  </div>
+              <div className="wizard-stepper">
+                <div className={`step ${wizardStep >= 1 ? 'active' : ''} ${wizardStep > 1 ? 'completed' : ''}`}>
+                  <div className="node">1</div>
+                  <span>Basics</span>
+                </div>
+                <div className="line"></div>
+                <div className={`step ${wizardStep >= 2 ? 'active' : ''} ${wizardStep > 2 ? 'completed' : ''}`}>
+                  <div className="node">2</div>
+                  <span>Hierarchy</span>
+                </div>
+                <div className="line"></div>
+                <div className={`step ${wizardStep >= 3 ? 'active' : ''} ${wizardStep > 3 ? 'completed' : ''}`}>
+                  <div className="node">3</div>
+                  <span>Units</span>
                 </div>
               </div>
 
-              {/* Pricing */}
-              <div className="form-section">
-                <h3>Pricing</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Original Price *</label>
-                    <input
-                      type="text"
-                      name="originalPrice"
-                      value={formData.originalPrice}
-                      onChange={handleChange}
-                      placeholder="e.g., ₹75 Lakhs"
-                      required
-                    />
+              <div className="wizard-content">
+                {wizardStep === 1 && (
+                  <div className="step-pane">
+                    <h3>Project Information</h3>
+                    <div className="form-grid">
+                      <div className="input-group">
+                        <label>Project Title</label>
+                        <input type="text" value={projectData.title} onChange={e => setProjectData({ ...projectData, title: e.target.value })} placeholder="e.g. Skyline Residency" />
+                      </div>
+                      <div className="input-group">
+                        <label>Location</label>
+                        <input type="text" value={projectData.location} onChange={e => setProjectData({ ...projectData, location: e.target.value })} placeholder="e.g. Sector 45, Gurgaon" />
+                      </div>
+                      <div className="input-group">
+                        <label>Regular Price (sq ft)</label>
+                        <input type="text" value={projectData.original_price} onChange={e => setProjectData({ ...projectData, original_price: e.target.value })} placeholder="e.g. ₹5,500" />
+                      </div>
+                      <div className="input-group">
+                        <label>Group Price (sq ft)</label>
+                        <input type="text" value={projectData.group_price} onChange={e => setProjectData({ ...projectData, group_price: e.target.value })} placeholder="e.g. ₹4,800" />
+                      </div>
+                      <div className="input-group">
+                        <label>Discount Label</label>
+                        <input type="text" value={projectData.discount} onChange={e => setProjectData({ ...projectData, discount: e.target.value })} placeholder="e.g. 12.5% OFF" />
+                      </div>
+                      <div className="input-group">
+                        <label>Min. Buyers to Start</label>
+                        <input type="number" value={projectData.min_buyers} onChange={e => setProjectData({ ...projectData, min_buyers: e.target.value })} />
+                      </div>
+                      <div className="input-group full">
+                        <label>Images</label>
+                        <input type="file" multiple onChange={handleImageChange} />
+                        <div className="previews">
+                          {imagePreviews.map((p, i) => <img key={i} src={p} alt="" />)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  <div className="form-group">
-                    <label>Group Price *</label>
-                    <input
-                      type="text"
-                      name="groupPrice"
-                      value={formData.groupPrice}
-                      onChange={handleChange}
-                      placeholder="e.g., ₹68 Lakhs"
-                      required
-                    />
+                {wizardStep === 2 && (
+                  <div className="step-pane">
+                    <div className="pane-header">
+                      <h3>Towers & Floors Configuration</h3>
+                      <button className="add-btn" onClick={addTowerRow}><Plus size={16} /> Add Tower</button>
+                    </div>
+                    <table className="wizard-table">
+                      <thead>
+                        <tr>
+                          <th>Tower Name</th>
+                          <th>Floors</th>
+                          <th>Units / Floor</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {towers.map((t, idx) => (
+                          <tr key={idx}>
+                            <td><input type="text" value={t.name} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
+                            <td><input type="number" value={t.floors} onChange={e => updateTowerRow(idx, 'floors', e.target.value)} /></td>
+                            <td><input type="number" value={t.unitsPerFloor} onChange={e => updateTowerRow(idx, 'unitsPerFloor', e.target.value)} /></td>
+                            <td><button className="remove-btn" onClick={() => removeTowerRow(idx)}><Trash2 size={16} /></button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
+                )}
 
-                  <div className="form-group">
-                    <label>Discount *</label>
-                    <input
-                      type="text"
-                      name="discount"
-                      value={formData.discount}
-                      onChange={handleChange}
-                      placeholder="e.g., 9% OFF"
-                      required
-                    />
-                  </div>
+                {wizardStep === 3 && (
+                  <div className="step-pane">
+                    <h3>Unit Generation Defaults</h3>
+                    <p className="hint">These settings apply to all generated units in this project.</p>
+                    <div className="form-grid">
+                      <div className="input-group">
+                        <label>Unit Type</label>
+                        <input type="text" value={unitSettings.unitType} onChange={e => setUnitSettings({ ...unitSettings, unitType: e.target.value })} placeholder="e.g. 3 BHK" />
+                      </div>
+                      <div className="input-group">
+                        <label>Unit Area (sq ft)</label>
+                        <input type="number" value={unitSettings.areaPerUnit} onChange={e => setUnitSettings({ ...unitSettings, areaPerUnit: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Total Price (Approx)</label>
+                        <input type="number" value={unitSettings.pricePerUnit} onChange={e => setUnitSettings({ ...unitSettings, pricePerUnit: e.target.value })} />
+                      </div>
+                    </div>
 
-                  <div className="form-group">
-                    <label>Token Amount *</label>
-                    <input
-                      type="text"
-                      name="tokenAmount"
-                      value={formData.tokenAmount}
-                      onChange={handleChange}
-                      placeholder="e.g., ₹50,000"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Group Details */}
-              <div className="form-section">
-                <h3>Group Details</h3>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Total Slots *</label>
-                    <input
-                      type="number"
-                      name="totalSlots"
-                      value={formData.totalSlots}
-                      onChange={handleChange}
-                      placeholder="e.g., 20"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Filled Slots *</label>
-                    <input
-                      type="number"
-                      name="filledSlots"
-                      value={formData.filledSlots}
-                      onChange={handleChange}
-                      placeholder="e.g., 14"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Minimum Buyers *</label>
-                    <input
-                      type="number"
-                      name="minBuyers"
-                      value={formData.minBuyers}
-                      onChange={handleChange}
-                      placeholder="e.g., 15"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Time Left *</label>
-                    <input
-                      type="text"
-                      name="timeLeft"
-                      value={formData.timeLeft}
-                      onChange={handleChange}
-                      placeholder="e.g., 2 Days 5 Hours"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Closing Date *</label>
-                    <input
-                      type="text"
-                      name="closingDate"
-                      value={formData.closingDate}
-                      onChange={handleChange}
-                      placeholder="e.g., Dec 20, 2025"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Status *</label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="active">Active</option>
-                      <option value="closing">Closing Soon</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Description & Details */}
-              <div className="form-section">
-                <h3>Description & Details</h3>
-                <div className="form-group full-width">
-                  <label>Description *</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Detailed description of the property..."
-                    rows="4"
-                    required
-                  />
-                </div>
-
-                <div className="form-group full-width">
-                  <label>Benefits (comma-separated) *</label>
-                  <input
-                    type="text"
-                    name="benefits"
-                    value={formData.benefits}
-                    onChange={handleChange}
-                    placeholder="e.g., Free Modular Kitchen, 2 Years Maintenance Free, Premium Flooring"
-                    required
-                  />
-                  <small>Separate each benefit with a comma</small>
-                </div>
-
-                <div className="form-group full-width">
-                  <label>Facilities (comma-separated) *</label>
-                  <input
-                    type="text"
-                    name="facilities"
-                    value={formData.facilities}
-                    onChange={handleChange}
-                    placeholder="e.g., Swimming Pool, Gym, Parking, Security, Garden"
-                    required
-                  />
-                  <small>Separate each facility with a comma</small>
-                </div>
-
-                <div className="form-group full-width">
-                  <label>Location Advantages (format: Place: Distance | Place: Distance) *</label>
-                  <input
-                    type="text"
-                    name="advantages"
-                    value={formData.advantages}
-                    onChange={handleChange}
-                    placeholder="e.g., Railway Station: 2.5 km | Airport: 8 km | School: 500 m"
-                    required
-                  />
-                  <small>Format: Place: Distance | Place: Distance</small>
-                </div>
-              </div>
-
-              {/* Images */}
-              <div className="form-section">
-                <h3>Property Images</h3>
-                <div className="form-group full-width">
-                  <label>Upload Images (Max 5)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                  />
-                  <small>Upload up to 5 images. First image will be the main image.</small>
-                </div>
-
-                {imagePreviews.length > 0 && (
-                  <div className="image-previews">
-                    {imagePreviews.map((preview, idx) => (
-                      <img key={idx} src={preview} alt={`Preview ${idx + 1}`} />
-                    ))}
+                    <div className="summary-box">
+                      <h4>Generation Summary</h4>
+                      <div className="summary-grid">
+                        <div className="s-item">
+                          <span>Total Towers</span>
+                          <strong>{towers.length}</strong>
+                        </div>
+                        <div className="s-item">
+                          <span>Total Units</span>
+                          <strong>{towers.reduce((acc, t) => acc + ((parseInt(t.floors) || 0) * (parseInt(t.unitsPerFloor) || 0)), 0)}</strong>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Submit Button */}
-              <div className="form-actions">
-                <button type="submit" className="submit-btn" disabled={loading}>
-                  {loading ? 'Saving...' : editingId ? 'Update Property' : 'Add Property'}
+              <div className="wizard-footer">
+                <button className="secondary-btn" onClick={() => wizardStep > 1 ? setWizardStep(wizardStep - 1) : setShowWizard(false)}>
+                  {wizardStep === 1 ? 'Cancel' : 'Back'}
                 </button>
-                <button 
-                  type="button" 
-                  className="cancel-btn"
-                  onClick={() => {
-                    resetForm();
-                    setShowForm(false);
-                  }}
-                >
-                  Cancel
-                </button>
+                <div className="filler"></div>
+                {wizardStep < 3 ? (
+                  <button className="primary-btn" onClick={() => setWizardStep(wizardStep + 1)}>
+                    Next <ChevronRight size={18} />
+                  </button>
+                ) : (
+                  <button className="primary-btn finish" onClick={handleCreateProject} disabled={saving}>
+                    {saving ? 'Creating...' : 'Confirm & Generate'} <CheckCircle2 size={18} />
+                  </button>
+                )}
               </div>
-            </form>
+            </motion.div>
           </motion.div>
         )}
-
-        {/* Properties List */}
-        <div className="properties-list">
-          <h2>Existing Properties ({properties.length})</h2>
-          {properties.length === 0 ? (
-            <p className="no-properties">No properties added yet. Click "Add New Property" to get started.</p>
-          ) : (
-            <div className="properties-grid-admin">
-              {properties.map((property) => (
-                <motion.div
-                  key={property.id}
-                  className="property-card-admin"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="property-image-admin">
-                    <img src={property.image} alt={property.title} />
-                    <span className={`status-badge-admin ${property.status}`}>
-                      {property.status}
-                    </span>
-                  </div>
-                  <div className="property-info-admin">
-                    <h3>{property.title}</h3>
-                    <p className="developer">🏢 {property.developer}</p>
-                    <p className="location">📍 {property.location}</p>
-                    <div className="price-info">
-                      <span className="original-price">{property.originalPrice}</span>
-                      <span className="group-price">{property.groupPrice}</span>
-                      <span className="discount">{property.discount}</span>
-                    </div>
-                    <div className="slots-info">
-                      {property.filledSlots}/{property.totalSlots} Buyers Joined
-                    </div>
-                    <div className="admin-actions">
-                      <button 
-                        className="edit-btn"
-                        onClick={() => handleEdit(property)}
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button 
-                        className="delete-btn"
-                        onClick={() => handleDelete(property.id)}
-                      >
-                        🗑️ Delete
-                      </button>
-                      <button 
-                        className="view-btn"
-                        onClick={() => navigate(`/exhibition/live-grouping/${property.id}`)}
-                      >
-                        👁️ View
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      </AnimatePresence>
     </div>
   );
 };

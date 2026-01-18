@@ -405,6 +405,70 @@ export const liveGroupingAPI = {
   },
 };
 
+// ==================== DYNAMIC LIVE GROUPING API ====================
+export const liveGroupDynamicAPI = {
+  // Public
+  getAll: async () => {
+    return apiRequest('/live-grouping-dynamic', { includeAuth: false });
+  },
+
+  getFullHierarchy: async (projectId) => {
+    return apiRequest(`/live-grouping-dynamic/${projectId}/full`, { includeAuth: false });
+  },
+
+  lockUnit: async (unitId) => {
+    return apiRequest(`/live-grouping-dynamic/units/${unitId}/lock`, {
+      method: 'POST',
+    });
+  },
+
+  bookUnit: async (unitId, paymentData) => {
+    return apiRequest(`/live-grouping-dynamic/units/${unitId}/book`, {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  },
+
+  // Admin
+  createProject: async (projectData, images = []) => {
+    const formData = new FormData();
+    Object.keys(projectData).forEach(key => {
+      if (projectData[key] !== undefined && projectData[key] !== null) {
+        formData.append(key, projectData[key]);
+      }
+    });
+    images.forEach(image => formData.append('images', image));
+    return uploadFile('/live-grouping-dynamic/admin/projects', formData);
+  },
+
+  addTower: async (projectId, towerData) => {
+    return apiRequest(`/live-grouping-dynamic/admin/projects/${projectId}/towers`, {
+      method: 'POST',
+      body: JSON.stringify(towerData),
+    });
+  },
+
+  generateUnits: async (towerId, generationData) => {
+    return apiRequest(`/live-grouping-dynamic/admin/towers/${towerId}/generate-units`, {
+      method: 'POST',
+      body: JSON.stringify(generationData),
+    });
+  },
+
+  deleteProject: async (projectId) => {
+    return apiRequest(`/live-grouping-dynamic/admin/projects/${projectId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  updateProjectStatus: async (projectId, status) => {
+    return apiRequest(`/live-grouping-dynamic/admin/projects/${projectId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+};
+
 // ==================== COMPLAINTS API ====================
 export const complaintsAPI = {
   create: async (complaintData, mediaFiles = []) => {
@@ -501,6 +565,7 @@ export default {
   bookingsAPI,
   subscriptionsAPI,
   liveGroupingAPI,
+  liveGroupDynamicAPI,
   complaintsAPI,
   favoritesAPI,
   chatAPI,

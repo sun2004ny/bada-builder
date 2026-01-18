@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { liveGroupDynamicAPI } from '../../services/api';
 import {
   Search,
   Plus,
@@ -18,6 +20,7 @@ import {
 } from 'lucide-react';
 
 const LiveGroupingManagement = () => {
+  const navigate = useNavigate();
   const [groupings, setGroupings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,129 +34,41 @@ const LiveGroupingManagement = () => {
   const fetchLiveGroupings = async () => {
     try {
       setLoading(true);
-      
-      // Mock data for live grouping management
-      const mockGroupings = [
-        {
-          id: 1,
-          title: 'Luxury Apartments in Gurgaon - Group Buy',
-          location: 'Sector 54, Gurgaon',
-          target_participants: 50,
-          current_participants: 32,
-          min_participants: 20,
-          price_per_unit: '1.2 Cr',
-          discount_percentage: 15,
-          original_price: '1.41 Cr',
-          status: 'active',
-          start_date: '2024-01-15T00:00:00Z',
-          end_date: '2024-02-15T23:59:59Z',
-          created_at: '2024-01-10T10:30:00Z',
-          images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400'],
-          description: 'Premium apartments with group buying benefits',
-          amenities: ['Swimming Pool', 'Gym', 'Parking', 'Security'],
-          developer: 'Premium Builders',
-          total_revenue: '38.4 Cr',
-          completion_percentage: 64,
-          days_remaining: 22,
-          inquiries: 156,
-          conversions: 32
-        },
-        {
-          id: 2,
-          title: 'Commercial Spaces - Bulk Investment',
-          location: 'Connaught Place, Delhi',
-          target_participants: 30,
-          current_participants: 28,
-          min_participants: 15,
-          price_per_unit: '80 Lakh',
-          discount_percentage: 20,
-          original_price: '1 Cr',
-          status: 'active',
-          start_date: '2024-01-20T00:00:00Z',
-          end_date: '2024-02-20T23:59:59Z',
-          created_at: '2024-01-15T14:22:00Z',
-          images: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400'],
-          description: 'Prime commercial spaces with guaranteed returns',
-          amenities: ['Elevator', 'Power Backup', 'Security', 'Parking'],
-          developer: 'Metro Developers',
-          total_revenue: '22.4 Cr',
-          completion_percentage: 93,
-          days_remaining: 8,
-          inquiries: 89,
-          conversions: 28
-        },
-        {
-          id: 3,
-          title: 'Villa Community - Group Purchase',
-          location: 'Sector 89, Faridabad',
-          target_participants: 25,
-          current_participants: 12,
-          min_participants: 10,
-          price_per_unit: '2.5 Cr',
-          discount_percentage: 12,
-          original_price: '2.84 Cr',
-          status: 'pending',
-          start_date: '2024-01-25T00:00:00Z',
-          end_date: '2024-03-25T23:59:59Z',
-          created_at: '2024-01-20T09:15:00Z',
-          images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400'],
-          description: 'Exclusive villa community with modern amenities',
-          amenities: ['Private Garden', 'Swimming Pool', 'Club House', 'Security'],
-          developer: 'Elite Homes',
-          total_revenue: '30 Cr',
-          completion_percentage: 48,
-          days_remaining: 45,
-          inquiries: 67,
-          conversions: 12
-        },
-        {
-          id: 4,
-          title: 'Student Housing - Bulk Booking',
-          location: 'Sector 150, Noida',
-          target_participants: 100,
-          current_participants: 85,
-          min_participants: 50,
-          price_per_unit: '25 Lakh',
-          discount_percentage: 10,
-          original_price: '27.5 Lakh',
-          status: 'completed',
-          start_date: '2024-01-01T00:00:00Z',
-          end_date: '2024-01-31T23:59:59Z',
-          created_at: '2023-12-20T16:45:00Z',
-          images: ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400'],
-          description: 'Modern student housing with all facilities',
-          amenities: ['Wi-Fi', 'Cafeteria', 'Study Rooms', 'Recreation'],
-          developer: 'Student Living Co.',
-          total_revenue: '21.25 Cr',
-          completion_percentage: 100,
-          days_remaining: 0,
-          inquiries: 234,
-          conversions: 85
-        }
-      ];
-      
-      setTimeout(() => {
-        setGroupings(mockGroupings);
-        setLoading(false);
-      }, 500);
-      
+      const data = await liveGroupDynamicAPI.getAll();
+      const projects = data.projects || [];
+
+      const processed = projects.map(p => ({
+        ...p,
+        target_participants: p.total_slots || 50,
+        current_participants: p.filled_slots || 0,
+        total_revenue: `₹${((p.filled_slots || 0) * (parseFloat(p.group_price?.replace(/[^0-9.]/g, '') || 4000) * 1500 / 10000000)).toFixed(2)} Cr`,
+        completion_percentage: p.total_slots > 0 ? Math.round((p.filled_slots / p.total_slots) * 100) : 0,
+        days_remaining: p.status === 'live' ? 15 : 0,
+        inquiries: 0,
+        conversions: p.filled_slots || 0,
+        price_per_unit: p.group_price,
+        images: p.images || [p.image || 'https://via.placeholder.com/400'],
+      }));
+
+      setGroupings(processed);
     } catch (error) {
       console.error('Error fetching live groupings:', error);
+    } finally {
       setLoading(false);
     }
   };
 
   const filteredGroupings = groupings.filter(grouping => {
     const matchesSearch = grouping.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grouping.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grouping.developer.toLowerCase().includes(searchTerm.toLowerCase());
+      grouping.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      grouping.developer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || grouping.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const handleStatusChange = (groupingId, newStatus) => {
-    setGroupings(groupings.map(grouping => 
-      grouping.id === groupingId 
+    setGroupings(groupings.map(grouping =>
+      grouping.id === groupingId
         ? { ...grouping, status: newStatus }
         : grouping
     ));
@@ -208,9 +123,12 @@ const LiveGroupingManagement = () => {
             <Download className="h-4 w-4" />
             <span>Export</span>
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+          <button
+            onClick={() => navigate('/admin/live-grouping-management')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
-            <span>Create Grouping</span>
+            <span>Create Grouping (Wizard)</span>
           </button>
         </div>
       </div>
@@ -303,10 +221,10 @@ const LiveGroupingManagement = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{grouping.title}</h3>
-              
+
               <div className="space-y-3 mb-4">
                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                   <MapPin className="h-4 w-4 mr-2" />
@@ -329,7 +247,7 @@ const LiveGroupingManagement = () => {
                   <span>{grouping.completion_percentage}%</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
+                  <div
                     className={`h-2 rounded-full ${getProgressColor(grouping.completion_percentage)}`}
                     style={{ width: `${grouping.completion_percentage}%` }}
                   ></div>

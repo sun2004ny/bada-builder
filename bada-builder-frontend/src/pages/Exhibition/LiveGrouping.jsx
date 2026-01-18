@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { liveGroupingAPI } from '../../services/api';
+import { liveGroupDynamicAPI } from '../../services/api';
 import ViewToggle from '../../components/ViewToggle/ViewToggle';
 import PropertyCard from '../../components/PropertyCard/PropertyCard';
 import useViewPreference from '../../hooks/useViewPreference';
@@ -24,18 +24,8 @@ const LiveGrouping = () => {
 
   useEffect(() => {
     // Separate active and closed groups
-    const active = liveGroups.filter(group => {
-      // Auto-close if group is full
-      if (group.filledSlots >= group.totalSlots) {
-        return false; // Move to closed
-      }
-      return group.status !== 'closed';
-    });
-
-    const closed = liveGroups.filter(group => {
-      // Group is closed if full or manually closed
-      return group.filledSlots >= group.totalSlots || group.status === 'closed';
-    });
+    const active = liveGroups.filter(group => group.status !== 'closed' && group.status !== 'archived');
+    const closed = liveGroups.filter(group => group.status === 'closed');
 
     setActiveGroups(active);
     setClosedGroups(closed);
@@ -44,124 +34,25 @@ const LiveGrouping = () => {
   const fetchLiveGroups = async () => {
     try {
       setLoading(true);
-      // Fetch from API
-      const response = await liveGroupingAPI.getAll();
-      const groupsData = response.properties || response || [];
-      
-      // Process groups for display
-      const processedGroups = groupsData.map(group => {
-        // Parse numeric inputs safely
-        const storedPrice = Number(group.original_price || group.pricePerSqFt);
-        const validPrice = !isNaN(storedPrice) && storedPrice > 0 ? storedPrice : 4500;
+      const response = await liveGroupDynamicAPI.getAll();
+      const groupsData = response.projects || [];
 
-        // Calculate group price based on discount
-        const discountStr = group.discount || '10%';
-        const discountVal = parseInt(discountStr.replace(/[^0-9]/g, '')) || 10;
-        const groupPrice = Math.round(validPrice * (1 - (discountVal / 100)));
+      const processedGroups = groupsData.map(group => ({
+        ...group,
+        timeLeft: group.status === 'live' ? 'Limited Time' : 'Closed',
+        benefits: group.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
+        pricePerSqFt: parseFloat(group.original_price?.replace(/[^0-9.]/g, '') || 4500),
+        groupPricePerSqFt: parseFloat(group.group_price?.replace(/[^0-9.]/g, '') || 4000),
+      }));
 
-        return {
-          ...group,
-          // Add defaults if missing to prevent crashes
-          units: group.units || [
-            { name: "Standard Unit", area: 1200 },
-            { name: "Premium Unit", area: 1500 }
-          ],
-          benefits: group.benefits && group.benefits.length > 0 ? group.benefits : ["Group Discount", "Premium Location", "Verified Builder"],
-          filledSlots: parseInt(group.filled_slots || group.filledSlots) || 0,
-          totalSlots: parseInt(group.total_slots || group.totalSlots) || 20,
-          minBuyers: parseInt(group.min_buyers || group.minBuyers) || 5,
-          pricePerSqFt: validPrice,
-          groupPricePerSqFt: groupPrice,
-          status: group.status || 'active',
-          image: (group.images && group.images.length > 0) ? group.images[0] : (group.image || '/placeholder-property.jpg'),
-          type: group.type || group.category || '3 BHK Apartment',
-          developer: group.developer || 'Verified Builder',
-          location: group.location || 'Vadodara'
-        };
-      });
-      
-      if (processedGroups.length > 0) {
-        setLiveGroups(processedGroups);
-      } else {
-        setLiveGroups(fallbackGroups);
-      }
+      setLiveGroups(processedGroups);
     } catch (error) {
       console.error('Error fetching live groups:', error);
-      setLiveGroups(fallbackGroups);
+      setLiveGroups([]);
     } finally {
       setLoading(false);
     }
   };
-
-  // Fallback example properties
-  const fallbackGroups = [
-    {
-      id: 1,
-      title: "Skyline Towers - Group Buy",
-      developer: "Shree Balaji Builders",
-      location: "Waghodia Road, Vadodara",
-      pricePerSqFt: 5172, // Regular price per sq ft
-      groupPricePerSqFt: 4690, // Group discounted price per sq ft
-      discount: "9% OFF",
-      image: "/placeholder-property.jpg",
-      type: "3 BHK Apartment",
-      units: [
-        { name: "2 BHK", area: 1200 },
-        { name: "3 BHK", area: 1450 },
-        { name: "3 BHK Premium", area: 1650 }
-      ],
-      totalSlots: 20,
-      filledSlots: 14,
-      timeLeft: "2 Days 5 Hours",
-      minBuyers: 15,
-      benefits: ["Free Modular Kitchen", "2 Years Maintenance Free", "Premium Flooring"],
-      status: "active"
-    },
-    {
-      id: 2,
-      title: "Green Valley Phase 2",
-      developer: "Prestige Group",
-      location: "Manjalpur, Vadodara",
-      pricePerSqFt: 3864, // Regular price per sq ft
-      groupPricePerSqFt: 3455, // Group discounted price per sq ft
-      discount: "11% OFF",
-      image: "/placeholder-property.jpg",
-      type: "4 BHK Villa",
-      units: [
-        { name: "3 BHK Villa", area: 2000 },
-        { name: "4 BHK Villa", area: 2200 },
-        { name: "4 BHK Duplex", area: 2500 }
-      ],
-      totalSlots: 15,
-      filledSlots: 15,
-      timeLeft: "Closing Soon",
-      minBuyers: 10,
-      benefits: ["Free Club Membership", "Landscaped Garden", "Solar Panels"],
-      status: "closing"
-    },
-    {
-      id: 3,
-      title: "Royal Heights Premium  villa",
-      developer: "Kalpataru Developers",
-      location: "Akota, Vadodara",
-      pricePerSqFt: 3429, // Regular price per sq ft
-      groupPricePerSqFt: 3000, // Group discounted price per sq ft
-      discount: "12% OFF",
-      image: "https://www.freepik.com/free-ai-image/luxurious-villa-with-modern-architectural-design_266554207.htm#fromView=keyword&page=1&position=1&uuid=e6f3e18d-bdbd-41f0-b432-4cadc16e41ee&query=Villa",
-      type: "Luxury Penthouse",
-      units: [
-        { name: "Penthouse 3 BHK", area: 3000 },
-        { name: "Penthouse 4 BHK", area: 3500 },
-        { name: "Penthouse Duplex", area: 4200 }
-      ],
-      totalSlots: 10,
-      filledSlots: 6,
-      timeLeft: "5 Days 12 Hours",
-      minBuyers: 8,
-      benefits: ["Private Terrace", "Smart Home System", "Concierge Service"],
-      status: "active"
-    }
-  ];
 
   const handleJoinGroup = (group) => {
     setSelectedGroup(group);

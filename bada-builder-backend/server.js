@@ -14,6 +14,7 @@ import leadRoutes from './routes/leads.js';
 import bookingRoutes from './routes/bookings.js';
 import subscriptionRoutes from './routes/subscriptions.js';
 import liveGroupingRoutes from './routes/live-grouping.js';
+import liveGroupDynamicRoutes from './routes/live-group-dynamic.js';
 import complaintRoutes from './routes/complaints.js';
 import reviewRoutes from './routes/reviews.js';
 import chatRoutes from './routes/chat.js';
@@ -87,6 +88,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/live-grouping', liveGroupingRoutes);
+app.use('/api/live-grouping-dynamic', liveGroupDynamicRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/reviews', reviewRoutes);
@@ -111,11 +113,29 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔗 Health check: http://localhost:${PORT}/health`);
 });
+
+// Periodic Cleanup for Live Grouping Unit Locks (Every 1 minute)
+setInterval(async () => {
+    try {
+        const now = new Date();
+        const expiryTime = new Date(now.getTime() - 10 * 60 * 1000); // 10 minutes ago
+
+        const result = await pool.query(
+            "UPDATE live_group_units SET status = 'available', locked_at = NULL, locked_by = NULL WHERE status = 'locked' AND locked_at < $1",
+            [expiryTime]
+        );
+        if (result.rowCount > 0) {
+            console.log(`🕒 Released ${result.rowCount} expired unit locks.`);
+        }
+    } catch (error) {
+        console.error('Lock cleanup error:', error);
+    }
+}, 60000);
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

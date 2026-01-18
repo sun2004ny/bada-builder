@@ -18,148 +18,35 @@ const LiveGroupingDetails = () => {
 
   const fetchProperty = async () => {
     try {
-      // TODO: Use liveGroupingAPI.getById(id)
-      const response = await liveGroupingAPI.getById(id);
-      if (response.property || response.id) {
-        setProperty(response.property || response);
-      } else {
-        // If not found in database, check fallback data
-        const fallbackProperty = fallbackData[id];
-        if (fallbackProperty) {
-          setProperty(fallbackProperty);
-        } else {
-          setProperty(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching property:', error);
-      // On error, try fallback data
-      const fallbackProperty = fallbackData[id];
-      if (fallbackProperty) {
-        setProperty(fallbackProperty);
+      setLoading(true);
+      const response = await liveGroupDynamicAPI.getFullHierarchy(id);
+      const project = response.project;
+
+      if (project) {
+        // Map to expected format
+        const processedProject = {
+          ...project,
+          pricePerSqFt: parseFloat(project.original_price?.replace(/[^0-9.]/g, '') || 4500),
+          groupPricePerSqFt: parseFloat(project.group_price?.replace(/[^0-9.]/g, '') || 4000),
+          images: project.images || [project.image || '/placeholder-property.jpg'],
+          benefits: project.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
+          facilities: project.facilities || ["Swimming Pool", "Gym", "Parking", "Security"],
+          advantages: Array.isArray(project.advantages) ? project.advantages : [],
+          groupDetails: project.group_details || {
+            refundPolicy: "100% refund if group doesn't fill",
+            closingDate: "Not specified",
+            expectedCompletion: project.possession || "TBD"
+          }
+        };
+        setProperty(processedProject);
       } else {
         setProperty(null);
       }
+    } catch (error) {
+      console.error('Error fetching property:', error);
+      setProperty(null);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Fallback example data
-  const fallbackData = {
-    1: {
-      id: 1,
-      title: "Skyline Towers - Group Buy",
-      developer: "Shree Balaji Builders",
-      location: "Waghodia Road, Vadodara",
-      pricePerSqFt: 5172, // Regular price per sq ft
-      groupPricePerSqFt: 4690, // Group discounted price per sq ft
-      discount: "9% OFF",
-      image: "/placeholder-property.jpg",
-      type: "3 BHK Apartment",
-      area: "1450 sq.ft",
-      units: [
-        { name: "2 BHK", area: 1200 },
-        { name: "3 BHK", area: 1450 },
-        { name: "3 BHK Premium", area: 1650 }
-      ],
-      totalSlots: 20,
-      filledSlots: 14,
-      timeLeft: "2 Days 5 Hours",
-      minBuyers: 15,
-      benefits: ["Free Modular Kitchen", "2 Years Maintenance Free", "Premium Flooring"],
-      status: "active",
-      images: ["/placeholder-property.jpg", "/placeholder-property.jpg", "/placeholder-property.jpg"],
-      possession: "Dec 2025",
-      reraNumber: "PR/GJ/VADODARA/123456",
-      facilities: ["Swimming Pool", "Gym", "Parking", "Security", "Garden", "Power Backup", "Lift", "Club House"],
-      description: "Skyline Towers offers premium 3 BHK apartments with modern amenities and excellent connectivity. Join the group buy to save on per sq ft pricing and get exclusive benefits worth ₹5 Lakhs.",
-      advantages: [
-        { place: "Railway Station", distance: "2.5 km" },
-        { place: "Airport", distance: "8 km" },
-        { place: "School", distance: "500 m" }
-      ],
-      groupDetails: {
-        refundPolicy: "100% refund if group doesn't fill",
-        closingDate: "Dec 20, 2025",
-        expectedCompletion: "Dec 2025"
-      }
-    },
-    2: {
-      id: 2,
-      title: "Green Valley Phase 2",
-      developer: "Prestige Group",
-      location: "Manjalpur, Vadodara",
-      pricePerSqFt: 3864, // Regular price per sq ft
-      groupPricePerSqFt: 3455, // Group discounted price per sq ft
-      discount: "11% OFF",
-      image: "/placeholder-property.jpg",
-      type: "4 BHK Villa",
-      area: "2200 sq.ft",
-      units: [
-        { name: "3 BHK Villa", area: 2000 },
-        { name: "4 BHK Villa", area: 2200 },
-        { name: "4 BHK Duplex", area: 2500 }
-      ],
-      totalSlots: 15,
-      filledSlots: 15,
-      timeLeft: "Closing Soon",
-      minBuyers: 10,
-      benefits: ["Free Club Membership", "Landscaped Garden", "Solar Panels"],
-      status: "closing",
-      images: ["/placeholder-property.jpg", "/placeholder-property.jpg", "/placeholder-property.jpg"],
-      possession: "Ready to Move",
-      reraNumber: "PR/GJ/VADODARA/789012",
-      facilities: ["Swimming Pool", "Gym", "Parking", "Security", "Garden", "Power Backup", "Club House", "Kids Play Area"],
-      description: "Green Valley Phase 2 offers luxurious 4 BHK villas in a gated community with world-class amenities. This group is closing soon!",
-      advantages: [
-        { place: "Highway", distance: "1 km" },
-        { place: "Mall", distance: "3 km" },
-        { place: "Hospital", distance: "2 km" }
-      ],
-      groupDetails: {
-        refundPolicy: "100% refund if group doesn't fill",
-        closingDate: "Dec 18, 2025",
-        expectedCompletion: "Ready to Move"
-      }
-    },
-    3: {
-      id: 3,
-      title: "Royal Heights Premium",
-      developer: "Kalpataru Developers",
-      location: "Akota, Vadodara",
-      pricePerSqFt: 3429, // Regular price per sq ft
-      groupPricePerSqFt: 3000, // Group discounted price per sq ft
-      discount: "12% OFF",
-      image: "/placeholder-property.jpg",
-      type: "Luxury Penthouse",
-      area: "3500 sq.ft",
-      units: [
-        { name: "Penthouse 3 BHK", area: 3000 },
-        { name: "Penthouse 4 BHK", area: 3500 },
-        { name: "Penthouse Duplex", area: 4200 }
-      ],
-      totalSlots: 10,
-      filledSlots: 6,
-      timeLeft: "5 Days 12 Hours",
-      minBuyers: 8,
-      benefits: ["Private Terrace", "Smart Home System", "Concierge Service"],
-      status: "active",
-      images: ["/placeholder-property.jpg", "/placeholder-property.jpg", "/placeholder-property.jpg"],
-      possession: "Jun 2026",
-      reraNumber: "PR/GJ/VADODARA/345678",
-      facilities: ["Swimming Pool", "Gym", "Parking", "Security", "Garden", "Power Backup", "Lift", "Club House", "Spa", "Rooftop Lounge"],
-      description: "Royal Heights Premium offers ultra-luxury penthouses with breathtaking views and world-class amenities. Join the exclusive group buy.",
-      advantages: [
-        { place: "Business District", distance: "1.5 km" },
-        { place: "Fine Dining", distance: "500 m" },
-        { place: "Metro Station", distance: "800 m" }
-      ],
-      groupDetails: {
-        refundPolicy: "100% refund if group doesn't fill",
-        closingDate: "Dec 25, 2025",
-        expectedCompletion: "Jun 2026"
-      }
     }
   };
 
@@ -213,7 +100,7 @@ const LiveGroupingDetails = () => {
         </button>
 
         {/* Image Gallery */}
-        <motion.div 
+        <motion.div
           className="image-gallery"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -239,7 +126,7 @@ const LiveGroupingDetails = () => {
           {/* Left Column */}
           <div className="left-column">
             {/* Title & Info */}
-            <motion.div 
+            <motion.div
               className="property-header"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -258,7 +145,7 @@ const LiveGroupingDetails = () => {
             </motion.div>
 
             {/* Group Progress */}
-            <motion.div 
+            <motion.div
               className="group-progress-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -280,9 +167,9 @@ const LiveGroupingDetails = () => {
                 </div>
               </div>
               <div className="progress-bar-large">
-                <div 
+                <div
                   className="progress-fill-large"
-                  style={{ 
+                  style={{
                     width: `${getProgressPercentage(property.filledSlots, property.totalSlots)}%`,
                     backgroundColor: getStatusColor(property.status)
                   }}
@@ -294,7 +181,7 @@ const LiveGroupingDetails = () => {
             </motion.div>
 
             {/* Description */}
-            <motion.div 
+            <motion.div
               className="description-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -305,7 +192,7 @@ const LiveGroupingDetails = () => {
             </motion.div>
 
             {/* Group Benefits */}
-            <motion.div 
+            <motion.div
               className="benefits-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -323,7 +210,7 @@ const LiveGroupingDetails = () => {
             </motion.div>
 
             {/* Facilities */}
-            <motion.div 
+            <motion.div
               className="facilities-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -340,7 +227,7 @@ const LiveGroupingDetails = () => {
             </motion.div>
 
             {/* Location Advantages */}
-            <motion.div 
+            <motion.div
               className="location-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -358,7 +245,7 @@ const LiveGroupingDetails = () => {
             </motion.div>
 
             {/* Developer Info */}
-            <motion.div 
+            <motion.div
               className="developer-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -377,7 +264,7 @@ const LiveGroupingDetails = () => {
 
           {/* Right Column - Sticky Pricing Card */}
           <div className="right-column">
-            <motion.div 
+            <motion.div
               className="pricing-card sticky"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -405,14 +292,14 @@ const LiveGroupingDetails = () => {
               {property.units && property.units.length > 0 && (
                 <div className="price-range-section-details">
                   <h4>Price Range (Multiple Units)</h4>
-                  
+
                   <div className="range-item-details">
                     <span className="range-label-details">Regular Price Range:</span>
                     <span className="range-value-details">
                       {formatPriceRange(calculatePriceRange(property.pricePerSqFt, property.units))}
                     </span>
                   </div>
-                  
+
                   {/* Visual Range Bar */}
                   <div className="range-bar-container-details">
                     <div className="range-bar-details">
@@ -427,14 +314,14 @@ const LiveGroupingDetails = () => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="range-item-details group-range-details">
                     <span className="range-label-details">🎯 Group Price Range:</span>
                     <span className="range-value-details highlight">
                       {formatPriceRange(calculatePriceRange(property.groupPricePerSqFt, property.units))}
                     </span>
                   </div>
-                  
+
                   {/* Visual Range Bar for Group Price */}
                   <div className="range-bar-container-details">
                     <div className="range-bar-details">
@@ -449,7 +336,7 @@ const LiveGroupingDetails = () => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="units-info-details">
                     <span className="units-label-details">Available Units:</span>
                     <div className="units-list-details">
@@ -487,17 +374,17 @@ const LiveGroupingDetails = () => {
                 </div>
               </div>
 
-              <button 
+              <button
                 className="join-btn-large"
                 onClick={handleJoinGroup}
                 disabled={property.status === 'closed'}
               >
-                {property.status === 'closing' ? '⚡ Join Now - Closing Soon!' : 
-                 property.status === 'closed' ? '❌ Group Closed' : 
-                 '🤝 Join This Group'}
+                {property.status === 'closing' ? '⚡ Join Now - Closing Soon!' :
+                  property.status === 'closed' ? '❌ Group Closed' :
+                    '🤝 Join This Group'}
               </button>
 
-              <button 
+              <button
                 className="contact-btn"
                 onClick={() => navigate('/book-visit', { state: { property: { ...property, type: 'grouping-details' } } })}
               >
