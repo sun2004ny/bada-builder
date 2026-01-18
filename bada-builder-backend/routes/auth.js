@@ -11,11 +11,11 @@ const router = express.Router();
 // Register
 router.post(
     '/register', [
-        body('email').isEmail().normalizeEmail(),
-        body('password').isLength({ min: 6 }),
-        body('name').trim().notEmpty(),
-    ],
-    async(req, res) => {
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 6 }),
+    body('name').trim().notEmpty(),
+],
+    async (req, res) => {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
@@ -101,10 +101,10 @@ router.post(
 // Login
 router.post(
     '/login', [
-        body('email').isEmail().normalizeEmail(),
-        body('password').notEmpty(),
-    ],
-    async(req, res) => {
+    body('email').isEmail().normalizeEmail(),
+    body('password').notEmpty(),
+],
+    async (req, res) => {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
@@ -187,7 +187,7 @@ router.post(
 );
 
 // Get current user
-router.get('/me', authenticate, async(req, res) => {
+router.get('/me', authenticate, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT id, email, name, phone, user_type, profile_photo, 
@@ -208,12 +208,12 @@ router.get('/me', authenticate, async(req, res) => {
 });
 
 // Update profile
-router.put('/profile', authenticate, async(req, res) => {
+router.put('/profile', authenticate, async (req, res) => {
     try {
         const { name, phone, userType, profile_photo } = req.body;
-        
+
         console.log('📝 Profile update request:', { name, phone, userType, profile_photo: profile_photo ? 'provided' : 'not provided' });
-        
+
         const updates = [];
         const values = [];
         let paramCount = 1;
@@ -227,8 +227,14 @@ router.put('/profile', authenticate, async(req, res) => {
             values.push(phone);
         }
         if (userType) {
-            updates.push(`user_type = $${paramCount++}`);
-            values.push(userType);
+            // SECURITY FIX: Only allow admins to change user_type. 
+            // If the logged-in user is NOT an admin, ignore the userType update request.
+            if (req.user.user_type === 'admin') {
+                updates.push(`user_type = $${paramCount++}`);
+                values.push(userType);
+            } else {
+                console.warn(`🛑 Unauthorized user_type update attempt by user ${req.user.id}`);
+            }
         }
         if (profile_photo !== undefined) {
             updates.push(`profile_photo = $${paramCount++}`);

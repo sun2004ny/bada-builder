@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const AdminRedirect = () => {
   const navigate = useNavigate();
-  const { currentUser, loading, profileLoading } = useAuth();
+  const { currentUser, userProfile, loading, profileLoading } = useAuth();
 
   useEffect(() => {
     // Wait for auth to load
@@ -12,16 +12,18 @@ const AdminRedirect = () => {
 
     // Check if user is already logged in and is admin
     if (currentUser) {
-      const userType = currentUser.user_type || currentUser.userType;
+      const userType = userProfile?.user_type || userProfile?.userType || currentUser?.user_type || currentUser?.userType;
+      console.log('AdminRedirect check:', { userType, currentUser, userProfile });
       if (userType === 'admin') {
         navigate('/admin');
       } else {
+        // Redirect regular users back to user login or home
         navigate('/login');
       }
     } else {
       navigate('/login');
     }
-  }, [currentUser, loading, profileLoading, navigate]);
+  }, [currentUser, userProfile, loading, profileLoading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

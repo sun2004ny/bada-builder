@@ -85,9 +85,9 @@ const AdminLayout = () => {
     },
     {
       name: 'Live Grouping',
-      href: '/admin/live-grouping',
+      href: '/admin/live-grouping-management',
       icon: Users,
-      current: location.pathname === '/admin/live-grouping'
+      current: location.pathname === '/admin/live-grouping-management'
     },
     {
       name: 'By Bada Builder',
@@ -205,8 +205,8 @@ const AdminLayout = () => {
                   key={item.name}
                   to={item.href}
                   className={`group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${item.current
-                      ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/30'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-gray-900 dark:hover:text-white hover:shadow-lg'
+                    ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 border border-blue-400/30'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-gray-900 dark:hover:text-white hover:shadow-lg'
                     }`}
                   onClick={() => setSidebarOpen(false)}
                 >

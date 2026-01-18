@@ -149,6 +149,7 @@ function AppContent() {
             <Route path="bookings" element={<PropertyApproval />} />
             <Route path="analytics" element={<AuditLogs />} />
             <Route path="settings" element={<AuditLogs />} />
+            <Route path="live-grouping-management" element={<AdminLiveGrouping />} />
           </Route>
 
           <Route path="/" element={
@@ -188,14 +189,13 @@ function AppContent() {
           <Route path="/profile/investments" element={<MyInvestments />} />
           <Route path="/my-properties" element={<MyProperties />} />
           <Route path="/my-bookings" element={<MyBookings />} />
-          <Route path="/admin/live-grouping" element={<AdminLiveGrouping />} />
           <Route path="/investments/:type" element={<InvestmentListing />} />
           <Route path="/investment-details/:id" element={<InvestmentDetails />} />
           <Route path="/about" element={<About />} />
 
           {/* Legacy admin routes redirect */}
           <Route path="/admin-panel/*" element={<AdminRedirect />} />
-          
+
           {/* Debug route */}
           <Route path="/admin-debug" element={<AdminDebug />} />
 

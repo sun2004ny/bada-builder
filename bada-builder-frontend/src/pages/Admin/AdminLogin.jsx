@@ -11,17 +11,21 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { currentUser, userProfile, refreshProfile } = useAuth();
+  const { currentUser, userProfile, refreshProfile, loading: authLoading, profileLoading } = useAuth();
 
   useEffect(() => {
-    // If already logged in as admin, redirect to admin panel
-    if (currentUser) {
+    // ONLY redirect if we are CERTAIN this is an admin
+    if (currentUser && !loading && !authLoading && !profileLoading) {
       const userType = userProfile?.user_type || userProfile?.userType || currentUser?.user_type || currentUser?.userType;
       if (userType === 'admin') {
         navigate('/admin');
+      } else {
+        // If logged in but NOT an admin, we stay here.
+        // This allows them to login with an admin account and overwrite their non-admin session.
+        console.log('User is logged in but not an admin. Staying on admin login page.');
       }
     }
-  }, [currentUser, userProfile, navigate]);
+  }, [currentUser, userProfile, loading, authLoading, profileLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
