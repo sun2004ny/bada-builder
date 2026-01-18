@@ -41,14 +41,19 @@ router.get('/stats', authenticate, isAdmin, async (req, res) => {
  * @access  Private (Admin)
  */
 router.get('/', authenticate, isAdmin, async (req, res) => {
-    const { source, status, search } = req.query;
+    const { source, status, search, type_strict } = req.query;
     try {
         let query = 'SELECT * FROM properties WHERE 1=1';
         const params = [];
 
-        if (source && source !== 'all' && source !== 'All') {
-            params.push(source);
-            query += ` AND property_source = $${params.length}`;
+        // source usually maps to property_source (UI label)
+        // type_strict maps to property_type_strict (Internal class)
+        const filterSource = source || type_strict;
+
+        if (filterSource && filterSource !== 'all' && filterSource !== 'All' && filterSource !== 'All Sources') {
+            params.push(filterSource);
+            // Check both columns for backward compatibility during transition
+            query += ` AND (property_source = $${params.length} OR property_type_strict = $${params.length})`;
         }
 
         if (status && status !== 'all') {
@@ -79,7 +84,8 @@ router.get('/', authenticate, isAdmin, async (req, res) => {
 router.post('/', authenticate, isAdmin, async (req, res) => {
     const {
         title, type, location, price, description, facilities, images,
-        property_source, status, metadata, is_featured, rera_number, bhk, area
+        property_source, status, metadata, is_featured, rera_number, bhk, area,
+        property_type_strict, credit_used
     } = req.body;
 
     // Map property_source to user_type for public filtering compatibility
@@ -92,13 +98,16 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
             `INSERT INTO properties (
                 title, type, location, price, description, facilities, images, image_url,
                 property_source, status, metadata, is_featured, rera_number, bhk, 
-                area, user_id, user_type, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW(), NOW())
+                area, user_id, user_type, property_type_strict, credit_used, 
+                created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW(), NOW())
             RETURNING *`,
             [
                 title, type, location, price, description, facilities || [], images || [], images?.[0] || null,
                 property_source || 'Individual', status || 'active', metadata || {}, is_featured || false,
-                rera_number, bhk, area, req.user.id, mappedUserType
+                rera_number, bhk, area, req.user.id, mappedUserType,
+                property_type_strict || (property_source === 'Developer' ? 'developer' : 'individual'),
+                credit_used || (property_source === 'Developer' ? 'developer' : 'individual')
             ]
         );
         res.status(201).json(result.rows[0]);
@@ -117,7 +126,8 @@ router.put('/:id', authenticate, isAdmin, async (req, res) => {
     const { id } = req.params;
     const {
         title, type, location, price, description, facilities, images,
-        property_source, status, metadata, is_featured, rera_number, bhk, area
+        property_source, status, metadata, is_featured, rera_number, bhk, area,
+        property_type_strict, credit_used
     } = req.body;
 
     // Map property_source to user_type for public filtering compatibility
@@ -131,11 +141,14 @@ router.put('/:id', authenticate, isAdmin, async (req, res) => {
                 title = $1, type = $2, location = $3, price = $4, description = $5, 
                 facilities = $6, images = $7, image_url = $8, property_source = $9, 
                 status = $10, metadata = $11, is_featured = $12, rera_number = $13, 
-                bhk = $14, area = $15, user_type = $16, updated_at = NOW()
-            WHERE id = $17 RETURNING *`,
+                bhk = $14, area = $15, user_type = $16,
+                property_type_strict = $17, credit_used = $18, 
+                updated_at = NOW()
+            WHERE id = $19 RETURNING *`,
             [
                 title, type, location, price, description, facilities || [], images || [], images?.[0] || null,
-                property_source, status, metadata || {}, is_featured || false, rera_number, bhk, area, mappedUserType, id
+                property_source, status, metadata || {}, is_featured || false, rera_number, bhk, area, mappedUserType,
+                property_type_strict, credit_used, id
             ]
         );
 

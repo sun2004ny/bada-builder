@@ -66,7 +66,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
   }
 });
 
-// Create property (requires auth and subscription)
+// Create property (requires auth and credits)
 router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
   const client = await pool.connect();
   try {
@@ -77,39 +77,39 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       residential_options, commercial_options, base_price,
       max_price, project_location, amenities, owner_name,
       possession_status, rera_status, project_stats, contact_phone,
-      user_type
+      user_type, credit_used
     } = req.body;
 
     await client.query('BEGIN');
 
-    // 1. Fetch the user's active subscription with FOR UPDATE lock
-    const subscriptionResult = await client.query(
-      `SELECT * FROM user_subscriptions 
-       WHERE user_id = $1 AND status = 'active' AND expiry_date > NOW() 
-       ORDER BY created_at ASC LIMIT 1 
-       FOR UPDATE`,
+    // 1. Determine credit and property type
+    // The user MUST provide credit_used. Default to individual if not provided but it should be explicit.
+    const requestedCredit = credit_used || 'individual';
+    const propertyTypeStrict = requestedCredit; // individual -> individual, developer -> developer
+
+    // 2. Fetch the user's credits with FOR UPDATE lock
+    const userResult = await client.query(
+      `SELECT individual_credits, developer_credits, user_type FROM users WHERE id = $1 FOR UPDATE`,
       [req.user.id]
     );
 
-    if (subscriptionResult.rows.length === 0) {
+    if (userResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ error: 'No active subscription found. Please purchase a plan to post properties.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
-    const subscription = subscriptionResult.rows[0];
+    const userData = userResult.rows[0];
+    const creditField = requestedCredit === 'developer' ? 'developer_credits' : 'individual_credits';
+    const availableCredits = userData[creditField];
 
-    // 2. Check if usage limit is reached
-    if (subscription.properties_used >= subscription.properties_allowed) {
-      // Mark as exhausted if it wasn't already
-      await client.query(
-        "UPDATE user_subscriptions SET status = 'exhausted' WHERE id = $1",
-        [subscription.id]
-      );
-      await client.query('COMMIT');
-      return res.status(403).json({ error: 'Subscription limit reached. Please purchase a new plan.' });
+    if (!availableCredits || availableCredits <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({
+        error: `Insufficient credits. You must use ${requestedCredit === 'developer' ? 'Developer' : 'Individual'} Credit to post a ${requestedCredit === 'developer' ? 'Developer' : 'Individual'} property.`
+      });
     }
 
-    // 3. Process images (same logic as before, but using buffers or body)
+    // 3. Process images
     let finalImageUrl = image_url;
     let finalImages = [];
 
@@ -137,26 +137,28 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       if (!finalImageUrl && finalImages.length > 0) finalImageUrl = finalImages[0];
     }
 
-    // 4. Insert the property
-    const finalUserType = user_type || req.user.user_type;
-    const propertySource = finalUserType === 'developer' ? 'Developer' : 'Individual';
+    // 4. Insert the property with strict types
+    const finalUserType = user_type || userData.user_type;
+    const propertySource = requestedCredit === 'developer' ? 'Developer' : 'Individual';
 
     const propertyResult = await client.query(
       `INSERT INTO properties (
         title, type, location, price, bhk, description, facilities, 
-        image_url, images, user_id, user_type, property_source, company_name, project_name, 
-        total_units, completion_date, rera_number, subscription_expiry,
+        image_url, images, user_id, user_type, property_source, 
+        credit_used, property_type_strict,
+        company_name, project_name, total_units, completion_date, rera_number,
         scheme_type, residential_options, commercial_options, base_price,
         max_price, project_location, amenities, owner_name, possession_status,
         rera_status, project_stats, contact_phone
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)
       RETURNING *`,
       [
         title, type, location, price, bhk || null, description,
         Array.isArray(facilities) ? facilities : (facilities ? [facilities] : []),
         finalImageUrl, finalImages, req.user.id, finalUserType, propertySource,
+        requestedCredit, propertyTypeStrict,
         company_name || null, project_name || null, total_units || null,
-        completion_date || null, rera_number || null, subscription.expiry_date,
+        completion_date || null, rera_number || null,
         scheme_type || null,
         Array.isArray(residential_options) ? residential_options : (residential_options ? [residential_options] : []),
         Array.isArray(commercial_options) ? commercial_options : (commercial_options ? [commercial_options] : []),
@@ -168,26 +170,26 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
       ]
     );
 
-    // 5. Increment usage
-    const newUsed = subscription.properties_used + 1;
-    let newStatus = 'active';
-    if (newUsed >= subscription.properties_allowed) {
-      newStatus = 'exhausted';
-    }
-
+    // 5. Deduct credit
     await client.query(
-      "UPDATE user_subscriptions SET properties_used = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3",
-      [newUsed, newStatus, subscription.id]
+      `UPDATE users SET ${creditField} = ${creditField} - 1, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [req.user.id]
     );
 
-    // 6. Insert usage log
+    // 6. Log usage
     await client.query(
-      "INSERT INTO subscription_usage (user_id, subscription_id, action) VALUES ($1, $2, 'property_posted')",
-      [req.user.id, subscription.id.toString()]
+      "INSERT INTO subscription_usage (user_id, action, metadata) VALUES ($1, $2, $3)",
+      [req.user.id, 'property_posted', JSON.stringify({ credit_used: requestedCredit, property_id: propertyResult.rows[0].id })]
     );
 
     await client.query('COMMIT');
-    res.status(201).json({ property: propertyResult.rows[0], subscription: { used: newUsed, allowed: subscription.properties_allowed, status: newStatus } });
+    res.status(201).json({
+      property: propertyResult.rows[0],
+      credits: {
+        type: requestedCredit,
+        remaining: availableCredits - 1
+      }
+    });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Create property error:', error);

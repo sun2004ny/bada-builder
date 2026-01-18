@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// TODO: Remove Firebase - implement with API
+import { subscriptionsAPI } from '../services/api';
 import './SubscriptionPlans.css';
 
 /* ---------- BASE PLANS (Individual) ---------- */
@@ -128,9 +128,16 @@ const SubscriptionPlans = () => {
             // Show success and redirect
             setPaymentLoading(false);
 
-            // Redirect to post property page
+            // Redirect to post property page with state to skip selection screens
             setTimeout(() => {
-              navigate('/post-property');
+              navigate('/post-property', {
+                state: {
+                  userType: userRole,
+                  selectedPropertyFlow: 'new_selection',
+                  subscriptionVerified: true
+                },
+                replace: true
+              });
             }, 500);
 
           } catch (error) {

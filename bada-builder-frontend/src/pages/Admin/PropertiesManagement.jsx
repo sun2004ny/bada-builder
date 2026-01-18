@@ -120,10 +120,26 @@ const PropertiesManagement = () => {
 
   const handleSave = async (propertyData) => {
     try {
+      // Map source to strict types
+      const sourceMap = {
+        'Individual': { type: 'individual', credit: 'individual' },
+        'Developer': { type: 'developer', credit: 'developer' },
+        'Live Grouping': { type: 'live_grouping', credit: 'individual' },
+        'By Bada Builder': { type: 'bada_builder', credit: 'developer' }
+      };
+
+      const mapped = sourceMap[propertyData.property_source] || { type: 'individual', credit: 'individual' };
+
+      const finalData = {
+        ...propertyData,
+        property_type_strict: mapped.type,
+        credit_used: mapped.credit
+      };
+
       if (selectedProperty) {
-        await adminAPI.updateAdminProperty(selectedProperty.id, propertyData);
+        await adminAPI.updateAdminProperty(selectedProperty.id, finalData);
       } else {
-        await adminAPI.addAdminProperty(propertyData);
+        await adminAPI.addAdminProperty(finalData);
       }
       setShowAddModal(false);
       setShowEditModal(false);
@@ -410,9 +426,16 @@ const PropertiesManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(property.property_source)}`}>
-                      {property.property_source}
-                    </span>
+                    <div className="flex flex-col space-y-1">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(property.property_source)}`}>
+                        {property.property_source}
+                      </span>
+                      {property.credit_used && (
+                        <span className="text-[10px] text-gray-500 font-mono uppercase">
+                          Credit: {property.credit_used}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">₹{property.price}</div>

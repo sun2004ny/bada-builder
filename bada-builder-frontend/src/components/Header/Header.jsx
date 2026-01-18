@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logo from '../../assets/logo.png';
-import UserTypeModal from '../UserTypeModal/UserTypeModal';
 import SearchBar from '../SearchBar/SearchBar';
 import './Header.css';
 // Firebase removed - using JWT auth via AuthContext
@@ -73,7 +72,6 @@ const Header = () => {
   // ... existing state ...
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileLongLiveOpen, setMobileLongLiveOpen] = useState(false);
-  const [isUserTypeModalOpen, setIsUserTypeModalOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -362,7 +360,7 @@ const Header = () => {
           {/* Desktop Buttons */}
           <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
             <button
-              onClick={() => setIsUserTypeModalOpen(true)}
+              onClick={() => navigate('/post-property')}
               className="bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-2.5 rounded-full shadow-md hover:shadow-lg hover:from-green-700 hover:to-green-800 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-50 font-medium text-sm tracking-wide transform hover:scale-105 active:scale-95 whitespace-nowrap"
             >
               Post Property
@@ -562,7 +560,7 @@ const Header = () => {
                   <button
                     onClick={() => {
                       toggleMobileMenu();
-                      setIsUserTypeModalOpen(true);
+                      navigate('/post-property');
                     }}
                     className="mobile-post-listing-btn"
                   >
@@ -702,11 +700,6 @@ const Header = () => {
         </div>
       )}
 
-      {/* User Type Modal */}
-      <UserTypeModal
-        isOpen={isUserTypeModalOpen}
-        onClose={() => setIsUserTypeModalOpen(false)}
-      />
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

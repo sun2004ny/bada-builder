@@ -41,16 +41,6 @@ router.post('/create-order', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Invalid plan id' });
     }
 
-    // Check if user already has an active subscription to prevent duplicates
-    const activeSubCheck = await pool.query(
-      "SELECT id FROM user_subscriptions WHERE user_id = $1 AND status = 'active' AND expiry_date > NOW() LIMIT 1",
-      [req.user.id]
-    );
-
-    if (activeSubCheck.rows.length > 0) {
-      return res.status(400).json({ error: 'You already have an active subscription.' });
-    }
-
     console.log('💰 Plan details:', plan);
 
     // Create Razorpay order using BACKEND price
@@ -117,17 +107,25 @@ router.post('/verify-payment', authenticate, async (req, res) => {
       }
     }
 
-    // Update user subscription (for backward compatibility)
+    // Increment specific credit balance based on plan type
+    let creditUpdateField = 'individual_credits';
+    if (plan.user_type === 'developer') {
+      creditUpdateField = 'developer_credits';
+    }
+
+    // Update user credits and subscription info (for backward compatibility)
     const updateUserQuery = `UPDATE users SET
       is_subscribed = TRUE,
       subscription_expiry = $1,
       subscription_plan = $2,
       subscription_price = $3,
+      user_type = $4,
+      ${creditUpdateField} = ${creditUpdateField} + $5,
       subscribed_at = COALESCE(subscribed_at, CURRENT_TIMESTAMP),
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $4
+    WHERE id = $6
     RETURNING *`;
-    const updateUserParams = [newExpiryDate, plan.id, plan.price, req.user.id];
+    const updateUserParams = [newExpiryDate, plan.id, plan.price, plan.user_type, plan.properties_allowed, req.user.id];
     const userResultUpdate = await pool.query(updateUserQuery, updateUserParams);
     const user = userResultUpdate.rows[0];
 
@@ -194,7 +192,7 @@ router.get('/status', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT is_subscribed, subscription_expiry, subscription_plan, 
-              subscription_price, subscribed_at
+              subscription_price, subscribed_at, individual_credits, developer_credits
        FROM users WHERE id = $1`,
       [req.user.id]
     );
@@ -227,7 +225,9 @@ router.get('/status', authenticate, async (req, res) => {
       subscribedAt: subscription.subscribed_at,
       propertiesAllowed: activeDetails.properties_allowed,
       propertiesUsed: activeDetails.properties_used,
-      postsLeft: Math.max(0, activeDetails.properties_allowed - activeDetails.properties_used)
+      postsLeft: Math.max(0, activeDetails.properties_allowed - activeDetails.properties_used),
+      individual_credits: subscription.individual_credits || 0,
+      developer_credits: subscription.developer_credits || 0
     });
   } catch (error) {
     console.error('Get subscription status error:', error);

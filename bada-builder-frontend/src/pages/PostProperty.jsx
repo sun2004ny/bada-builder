@@ -57,7 +57,7 @@ const NewPropertySelectionContent = ({ userType, setUserType, setSelectedPropert
       <button
         type="button"
         className="change-type-btn"
-        onClick={() => { setUserType(null); setSelectedPropertyFlow(null); }}
+        onClick={() => { setUserType(null); setSelectedPropertyFlow(null); setCreditUsed(null); }}
       >
         Change User Type
       </button>
@@ -112,22 +112,43 @@ const PostProperty = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
 
-  // Get userType from navigation state or location state
-  const locationState = location.state || window.history.state?.usr;
+  // Get state from navigation
+  const locationState = location.state;
   const [userType, setUserType] = useState(locationState?.userType || null);
   const [selectedPropertyFlow, setSelectedPropertyFlow] = useState(
-    locationState?.selectedPropertyFlow || null // Initialize from navigation state
+    locationState?.selectedPropertyFlow || null
   );
+  const [subscriptionVerified, setSubscriptionVerified] = useState(
+    locationState?.subscriptionVerified || false
+  );
+
   const [existingProperties, setExistingProperties] = useState([]);
   const [fetchingProperties, setFetchingProperties] = useState(false);
   const [editingProperty, setEditingProperty] = useState(null);
-  const [subscriptionVerified, setSubscriptionVerified] = useState(
-    locationState?.subscriptionVerified || false // Initialize from navigation state
-  );
   const [currentSubscription, setCurrentSubscription] = useState(null);
-  const [developerCredits, setDeveloperCredits] = useState(null); // Add developer credits state
-  const [timerRefresh, setTimerRefresh] = useState(0); // For refreshing timers
+  const [developerCredits, setDeveloperCredits] = useState(null);
+  const [individualCredits, setIndividualCredits] = useState(null);
+  const [timerRefresh, setTimerRefresh] = useState(0);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  // Use explicit credit used selection
+  const [creditUsed, setCreditUsed] = useState(locationState?.userType || null);
+
+  // Sync state if it changes via navigation
+  useEffect(() => {
+    if (location.state) {
+      if (location.state.userType) {
+        setUserType(location.state.userType);
+        setCreditUsed(location.state.userType);
+      }
+      if (location.state.selectedPropertyFlow) {
+        setSelectedPropertyFlow(location.state.selectedPropertyFlow);
+      }
+      if (location.state.subscriptionVerified) {
+        setSubscriptionVerified(location.state.subscriptionVerified);
+      }
+    }
+  }, [location.state]);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -135,6 +156,7 @@ const PostProperty = () => {
     location: '',
     price: '',
     bhk: '',
+    area: '',
     description: '',
     facilities: '',
     // Developer specific fields
@@ -156,7 +178,8 @@ const PostProperty = () => {
       units: '',
       area: ''
     },
-    contactPhone: ''
+    contactPhone: '',
+    completionDate: ''
   });
 
   const [projectImages, setProjectImages] = useState([]);
@@ -177,27 +200,24 @@ const PostProperty = () => {
     // Note: Subscription check is now handled only when user clicks "Create New Property"
   }, [isAuthenticated, navigate, currentUser]);
 
-  // Effect to fetch developer credits from backend
+  // Effect to fetch all credits from backend
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (userType === 'developer' && currentUser?.id) {
+    const fetchCredits = async () => {
+      if (currentUser?.id) {
         try {
           const response = await subscriptionsAPI.getStatus();
-          // Use real postsLeft from backend
-          if (response.isSubscribed) {
-            setDeveloperCredits(response.postsLeft || 0);
-          } else {
-            setDeveloperCredits(0);
-          }
+          setDeveloperCredits(response.developer_credits || 0);
+          setIndividualCredits(response.individual_credits || 0);
         } catch (error) {
-          console.error('Error fetching developer subscription status:', error);
+          console.error('Error fetching credits:', error);
           setDeveloperCredits(0);
+          setIndividualCredits(0);
         }
       }
     };
 
-    fetchUserProfile();
-  }, [userType, currentUser]);
+    fetchCredits();
+  }, [currentUser]);
 
   // Effect to fetch existing properties from backend
   useEffect(() => {
@@ -669,6 +689,7 @@ const PostProperty = () => {
         facilities: activeData.facilities ? (Array.isArray(activeData.facilities) ? activeData.facilities : activeData.facilities.split(',').map(f => f.trim()).filter(f => f)) : [],
         area: activeData.area || activeData.projectStats?.area || '',
         user_type: userType || 'individual',
+        credit_used: creditUsed || (userType === 'developer' ? 'developer' : 'individual'),
         status: 'active'
       };
 
@@ -747,17 +768,22 @@ const PostProperty = () => {
 
 
   const handleFlowEntry = (flow) => {
-    if (flow === 'new_selection' && userType === 'developer') {
-      if (developerCredits === null) {
-        alert('Please wait, checking developer credits...');
+    if (flow === 'new_selection') {
+      const type = creditUsed || userType;
+      const credits = type === 'developer' ? developerCredits : individualCredits;
+
+      if (credits === null) {
+        alert('Please wait, checking credits...');
         return;
       }
-      if (developerCredits <= 0) {
-        alert('You do not have enough credits to post a property. Please purchase a developer subscription plan.');
-        navigate('/developer-plan', {
+
+      if (credits <= 0) {
+        alert(`You do not have enough ${type === 'developer' ? 'Developer' : 'Individual'} credits to post. Please purchase a plan.`);
+        const targetPath = type === 'developer' ? '/developer-plan' : '/subscription-plans';
+        navigate(targetPath, {
           state: {
             returnTo: '/post-property',
-            userType: 'developer'
+            userType: type
           }
         });
         return;
@@ -785,11 +811,17 @@ const PostProperty = () => {
               <motion.div
                 className="user-type-card"
                 whileHover={{ y: -8, scale: 1.02 }}
-                onClick={() => setUserType('individual')}
+                onClick={() => {
+                  setUserType('individual');
+                  setCreditUsed('individual');
+                }}
               >
                 <div className="card-icon">👤</div>
                 <h3>Individual Owner</h3>
                 <p>Selling or renting your own property</p>
+                <div className="credit-balance-badge" style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+                  Available Credits: {individualCredits ?? '...'}
+                </div>
                 <ul className="card-features">
                   <li>✓ Direct listing</li>
                   <li>✓ No commission</li>
@@ -803,11 +835,17 @@ const PostProperty = () => {
               <motion.div
                 className="user-type-card"
                 whileHover={{ y: -8, scale: 1.02 }}
-                onClick={() => setUserType('developer')}
+                onClick={() => {
+                  setUserType('developer');
+                  setCreditUsed('developer');
+                }}
               >
                 <div className="card-icon">🏢</div>
                 <h3>Developer / Builder</h3>
                 <p>Listing projects or multiple units</p>
+                <div className="credit-balance-badge" style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+                  Available Credits: {developerCredits ?? '...'}
+                </div>
                 <ul className="card-features">
                   <li>✓ Project listing</li>
                   <li>✓ Multiple units</li>
@@ -831,7 +869,10 @@ const PostProperty = () => {
               <button
                 type="button"
                 className="change-type-btn"
-                onClick={() => setUserType(null)}
+                onClick={() => {
+                  setUserType(null);
+                  setCreditUsed(null);
+                }}
               >
                 Change User Type
               </button>

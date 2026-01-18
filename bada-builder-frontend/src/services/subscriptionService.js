@@ -15,14 +15,18 @@ export class SubscriptionService {
 
       const response = await subscriptionsAPI.getStatus();
 
-      if (response && response.isSubscribed) {
-        // For individuals, we check if they have posts left
-        const hasPostsLeft = (response.postsLeft || 0) > 0;
+      if (response) {
+        // Handle credit-based system
+        const individualCredits = response.individual_credits || 0;
+        const developerCredits = response.developer_credits || 0;
+        const hasCredits = individualCredits > 0 || developerCredits > 0;
 
         return {
-          hasSubscription: hasPostsLeft,
+          hasSubscription: hasCredits,
           subscription: response,
-          reason: hasPostsLeft ? 'Active subscription' : 'Subscription exhausted. Please purchase a new plan.'
+          reason: hasCredits
+            ? `Active balance (${individualCredits} Ind, ${developerCredits} Dev)`
+            : 'No credits left. Please purchase a plan.'
         };
       }
 
