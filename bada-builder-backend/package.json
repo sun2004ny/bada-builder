@@ -9,7 +9,9 @@
     "dev": "nodemon server.js",
     "migrate": "node scripts/migrate.js",
     "setup-otp": "node scripts/create-otp-tables.js",
-    "test-otp": "node test-otp-system.js"
+    "test-otp": "node test-otp-system.js",
+    "create-admin": "node scripts/create-admin.js",
+    "fix-admin": "node scripts/fix-admin-password.js"
   },
   "keywords": [
     "real-estate",

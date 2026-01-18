@@ -84,11 +84,18 @@ import NPVCalculator from './pages/calculator/NPVCalculator';
 
 
 
-import AdminLogin from './pages/AdminPanel/AdminLogin';
-import AdminLayout from './pages/AdminPanel/AdminLayout';
-import AdminPostProperty from './pages/AdminPanel/PostProperty';
-import AdminManageProperties from './pages/AdminPanel/ManageProperties';
-import AdminManageReviews from './pages/AdminPanel/ManageReviews';
+// New Admin Panel Components
+import NewAdminLayout from './pages/Admin/AdminLayout';
+import AdminLogin from './pages/Admin/AdminLogin';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import UserManagement from './pages/Admin/UserManagement';
+import PropertyApproval from './pages/Admin/PropertyApproval';
+import AuditLogs from './pages/Admin/AuditLogs';
+import PropertiesManagement from './pages/Admin/PropertiesManagement';
+import LiveGroupingManagement from './pages/Admin/LiveGroupingManagement';
+import BadaBuilderManagement from './pages/Admin/BadaBuilderManagement';
+import AdminRedirect from './pages/AdminRedirect';
+import AdminDebug from './pages/AdminDebug';
 
 // Preloader Imports
 import { PreloaderProvider } from './context/PreloaderContext';
@@ -102,6 +109,7 @@ function AppContent() {
   const { currentUser } = useAuth();
   const location = useLocation();
   const isMessagesPage = location.pathname === '/messages';
+  const isAdminPanel = location.pathname.startsWith('/admin-panel') || location.pathname.startsWith('/admin');
 
   useEffect(() => {
     // Hide modal if user logs in or navigates away from Home page
@@ -122,12 +130,27 @@ function AppContent() {
     <>
       <ScrollToTop />
       <Preloader />
-      {!isMessagesPage && <Header />}
-      {!isMessagesPage && <GlobalSearchBar />}
+      {!isMessagesPage && !isAdminPanel && <Header />}
+      {!isMessagesPage && !isAdminPanel && <GlobalSearchBar />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
-      {!isMessagesPage && <Chatbot />}
-      <main style={{ minHeight: isMessagesPage ? '100vh' : '60vh' }}>
+      {!isMessagesPage && !isAdminPanel && <Chatbot />}
+      <main style={{ minHeight: isMessagesPage || isAdminPanel ? '100vh' : '60vh' }}>
         <Routes>
+          {/* Admin Panel Login Route */}
+          <Route path="/admin-panel" element={<AdminLogin />} />
+
+          {/* Admin Panel Routes */}
+          <Route path="/admin" element={<NewAdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="properties" element={<PropertiesManagement />} />
+            <Route path="live-grouping" element={<LiveGroupingManagement />} />
+            <Route path="bada-builder" element={<BadaBuilderManagement />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="bookings" element={<PropertyApproval />} />
+            <Route path="analytics" element={<AuditLogs />} />
+            <Route path="settings" element={<AuditLogs />} />
+          </Route>
+
           <Route path="/" element={
             <>
               <HeroSection />
@@ -170,14 +193,11 @@ function AppContent() {
           <Route path="/investment-details/:id" element={<InvestmentDetails />} />
           <Route path="/about" element={<About />} />
 
-          {/* Admin Panel Routes */}
-          <Route path="/admin-panel/login" element={<AdminLogin />} />
-          <Route path="/admin-panel" element={<AdminLayout />}>
-            <Route index element={<AdminPostProperty />} /> {/* Default to Post Property */}
-            <Route path="post-property" element={<AdminPostProperty />} />
-            <Route path="manage-properties" element={<AdminManageProperties />} />
-            <Route path="manage-reviews" element={<AdminManageReviews />} />
-          </Route>
+          {/* Legacy admin routes redirect */}
+          <Route path="/admin-panel/*" element={<AdminRedirect />} />
+          
+          {/* Debug route */}
+          <Route path="/admin-debug" element={<AdminDebug />} />
 
           {/* Learn */}
           <Route path="/learn/lease-and-asset-management" element={<LAM />}></Route>
@@ -222,7 +242,7 @@ function AppContent() {
           <Route path="/projects/:id" element={<ProjectDetails />} />
         </Routes>
       </main>
-      {!isMessagesPage && <Footer />}
+      {!isMessagesPage && !isAdminPanel && <Footer />}
     </>
   );
 }
