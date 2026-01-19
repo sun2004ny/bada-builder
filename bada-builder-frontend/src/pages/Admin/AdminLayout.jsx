@@ -13,7 +13,8 @@ import {
   Moon,
   Sun,
   Building,
-  TrendingUp
+  TrendingUp,
+  MessageSquare,
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -100,6 +101,12 @@ const AdminLayout = () => {
       href: '/admin/users',
       icon: Users,
       current: location.pathname === '/admin/users'
+    },
+    {
+      name: 'Reviews',
+      href: '/admin/reviews',
+      icon: MessageSquare,
+      current: location.pathname === '/admin/reviews'
     },
     {
       name: 'Bookings',

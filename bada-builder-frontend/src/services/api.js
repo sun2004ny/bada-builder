@@ -556,6 +556,33 @@ export const chatAPI = {
   },
 };
 
+// ==================== REVIEWS API ====================
+export const reviewsAPI = {
+  getPending: async () => {
+    return apiRequest('/reviews/admin/pending');
+  },
+
+  approve: async (id) => {
+    return apiRequest(`/reviews/admin/approve/${id}`, {
+      method: 'PATCH',
+    });
+  },
+
+  reject: async (id) => {
+    return apiRequest(`/reviews/admin/reject/${id}`, {
+      method: 'PATCH',
+    });
+  },
+
+  getAll: async (propertyId) => {
+    return apiRequest(`/reviews/property/${propertyId}`, { includeAuth: false });
+  },
+
+  getStats: async (propertyId) => {
+    return apiRequest(`/reviews/stats/${propertyId}`, { includeAuth: false });
+  },
+};
+
 
 export default {
   authAPI,
@@ -569,5 +596,6 @@ export default {
   complaintsAPI,
   favoritesAPI,
   chatAPI,
+  reviewsAPI,
 };
 

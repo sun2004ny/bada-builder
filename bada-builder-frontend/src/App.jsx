@@ -96,6 +96,7 @@ import LiveGroupingManagement from './pages/Admin/LiveGroupingManagement';
 import BadaBuilderManagement from './pages/Admin/BadaBuilderManagement';
 import AdminRedirect from './pages/AdminRedirect';
 import AdminDebug from './pages/AdminDebug';
+import AdminReviews from './pages/Admin/AdminReviews';
 
 // Preloader Imports
 import { PreloaderProvider } from './context/PreloaderContext';
@@ -146,6 +147,7 @@ function AppContent() {
             <Route path="live-grouping" element={<LiveGroupingManagement />} />
             <Route path="bada-builder" element={<BadaBuilderManagement />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="reviews" element={<AdminReviews />} />
             <Route path="bookings" element={<PropertyApproval />} />
             <Route path="analytics" element={<AuditLogs />} />
             <Route path="settings" element={<AuditLogs />} />
