@@ -1,24 +1,35 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
+  /* Default to Light Mode Colors */
+  color-scheme: light;
+  color: #213547;
+  background-color: #ffffff;
 
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark Mode Override */
+:root:has(.dark),
+html.dark :root,
+html.dark body {
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
   background: radial-gradient(circle at 20% 20%, #182649, transparent 60%),
     radial-gradient(circle at 80% 80%, #140b27, transparent 60%),
     #000000;
   background-attachment: fixed;
   background-repeat: no-repeat;
   background-size: cover;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -31,12 +42,21 @@ a:hover {
   color: #361d68;
 }
 
+/* Dark Mode Links */
+html.dark a {
+  color: #ffffff;
+}
+
+html.dark a:hover {
+  color: #a78bfa;
+}
+
 body {
   margin: 0;
   padding: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: transparent;
+  /* background managed by :root/dark override */
   width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -68,10 +88,11 @@ button {
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.25s;
+  background-color: #f9f9f9;
 }
 
 button:hover {
-  border-color: #d5d5d5;
+  border-color: #646cff;
 }
 
 button:focus,
@@ -79,19 +100,10 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #58335e;
-  }
-
-  button {
-    background-color: #58335e;
-  }
+/* Dark Mode Buttons */
+html.dark button {
+  background-color: #1a1a1a;
+  color: white;
 }
 
 /* Global Google Maps Error Suppression */

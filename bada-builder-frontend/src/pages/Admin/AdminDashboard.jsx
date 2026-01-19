@@ -125,11 +125,11 @@ const AdminDashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Welcome back! Here's what's happening.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Welcome back! Here's what's happening.</p>
         </div>
         <button
           onClick={fetchDashboardStats}
-          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
         >
           Refresh
         </button>
@@ -174,20 +174,20 @@ const AdminDashboard = () => {
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">Quick Stats</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Active Listings</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Active Listings</span>
               <span className="font-semibold text-gray-900 dark:text-white">{stats.activeListings}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Approval Rate</span>
-              <span className="font-semibold text-green-600">{stats.approvalRate}%</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Approval Rate</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">{stats.approvalRate}%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Average Response Time</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Average Response Time</span>
               <span className="font-semibold text-gray-900 dark:text-white">{stats.avgResponseTime} hours</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">User Satisfaction</span>
-              <span className="font-semibold text-green-600">{stats.userSatisfaction}/5</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">User Satisfaction</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">{stats.userSatisfaction}/5</span>
             </div>
           </div>
         </div>
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-yellow-600" />
+              <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               <span className="font-medium text-sm text-yellow-800 dark:text-yellow-200">
                 {stats.pendingApprovals} Properties Pending
               </span>
@@ -221,7 +221,7 @@ const AdminDashboard = () => {
 
           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center space-x-2">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span className="font-medium text-sm text-blue-800 dark:text-blue-200">
                 3 Open Complaints
               </span>
@@ -233,7 +233,7 @@ const AdminDashboard = () => {
 
           <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
               <span className="font-medium text-sm text-green-800 dark:text-green-200">
                 System Healthy
               </span>
