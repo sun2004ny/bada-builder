@@ -154,25 +154,74 @@
 }
 
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px; /* Prevent flex shrinking */
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: #f1f5f9;
-  color: #475569;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #334155;
   transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.icon-btn svg {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important; /* Force size */
+  min-height: 20px !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important; /* Ensure lines are thick enough */
+  fill: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
 }
 
 .icon-btn:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-2px);
+}
+
+.icon-btn.primary {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.icon-btn.primary svg {
+  stroke: #2563eb !important;
+}
+
+.icon-btn.primary:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.icon-btn.primary:hover svg {
+  stroke: white !important;
+}
+
+.icon-btn.delete {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.icon-btn.delete svg {
+  stroke: #ef4444 !important;
 }
 
 .icon-btn.delete:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #ef4444;
+  color: white;
+}
+
+.icon-btn.delete:hover svg {
+  stroke: white !important;
 }
 
 /* Wizard Modal */

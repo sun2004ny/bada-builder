@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, TowerControl as Tower, Building2,
   Trash2, Edit, Eye, Save, X, ChevronRight,
-  ChevronLeft, LayoutGrid, List, CheckCircle2, AlertCircle
+  ChevronLeft, LayoutGrid, List, CheckCircle2, AlertCircle,
+  ArrowLeft, Lock, DollarSign
 } from 'lucide-react';
 import { liveGroupDynamicAPI } from '../../services/api';
+import TwoDView from '../../pages/Exhibition/TwoDView'; // Import the 2D View component
 import './AdminLiveGrouping.css';
 
 const AdminLiveGrouping = () => {
@@ -16,6 +18,16 @@ const AdminLiveGrouping = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [saving, setSaving] = useState(false);
+
+  // View Mode State
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'detail'
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [projectHierarchy, setProjectHierarchy] = useState(null);
+
+  // Admin Action Modal State
+  const [showUnitActionModal, setShowUnitActionModal] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Form State
   const [projectData, setProjectData] = useState({
@@ -124,6 +136,62 @@ const AdminLiveGrouping = () => {
     }
   };
 
+  // --- NEW: View Project Hierarchy ---
+  const handleViewProject = async (project) => {
+    try {
+        setLoading(true);
+        const data = await liveGroupDynamicAPI.getFullHierarchy(project.id);
+        setProjectHierarchy(data.project); // Assuming API returns { project: ... } with nested towers/units
+        setSelectedProject(project);
+        setViewMode('detail');
+    } catch (error) {
+        console.error("Failed to load project details:", error);
+        alert("Could not load project details.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleBackToList = () => {
+      setViewMode('list');
+      setSelectedProject(null);
+      setProjectHierarchy(null);
+  };
+
+  // --- NEW: Unit Action Handler ---
+  const handleUnitClick = (unit) => {
+      setSelectedUnit(unit);
+      setShowUnitActionModal(true);
+  };
+
+  const handleAdminAction = async (action) => {
+      if (!selectedUnit) return;
+      setActionLoading(true);
+      try {
+          if (action === 'lock') {
+              await liveGroupDynamicAPI.lockUnit(selectedUnit.id);
+          } else if (action === 'book') {
+              // Mock payment data for admin booking
+              await liveGroupDynamicAPI.bookUnit(selectedUnit.id, {
+                  amount: 50000,
+                  currency: 'INR',
+                  userName: 'Admin Booking'
+              });
+          }
+           // Refresh data
+           const data = await liveGroupDynamicAPI.getFullHierarchy(selectedProject.id);
+           setProjectHierarchy(data.project);
+           setShowUnitActionModal(false);
+           // alert(`Unit ${action}ed successfully!`); // Optional feedback
+      } catch (error) {
+          console.error(`Failed to ${action} unit:`, error);
+          alert(`Failed to ${action} unit: ` + error.message);
+      } finally {
+          setActionLoading(false);
+      }
+  };
+
+
   const addTowerRow = () => {
     setTowers([...towers, { name: `Tower ${String.fromCharCode(65 + towers.length)}`, floors: 10, unitsPerFloor: 4 }]);
   };
@@ -168,9 +236,11 @@ const AdminLiveGrouping = () => {
           <h1>Live Grouping <span className="badge">Data Driven</span></h1>
           <p>Create and manage projects with dynamic tower and unit hierarchies.</p>
         </div>
-        <button className="primary-btn" onClick={() => setShowWizard(true)}>
-          <Plus size={20} /> New Project Wizard
-        </button>
+        {viewMode === 'list' && (
+            <button className="primary-btn" onClick={() => setShowWizard(true)}>
+            <Plus size={20} /> New Project Wizard
+            </button>
+        )}
       </div>
 
       {loading ? (
@@ -179,52 +249,76 @@ const AdminLiveGrouping = () => {
           <p>Loading projects...</p>
         </div>
       ) : (
-        <div className="projects-grid-v2">
-          {projects.map(project => (
-            <motion.div
-              className="project-card-v2"
-              key={project.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-            >
-              <div className="card-image">
-                <img src={project.image || '/placeholder-property.jpg'} alt={project.title} />
-                <div className={`status-pill ${project.status}`}>{project.status}</div>
-              </div>
-              <div className="card-body">
-                <h3>{project.title}</h3>
-                <p className="location"><Building2 size={14} /> {project.location}</p>
-                <div className="stats-row">
-                  <div className="stat">
-                    <span className="label">Towers</span>
-                    <span className="value">{project.tower_count || 'N/A'}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="label">Units</span>
-                    <span className="value">{project.total_slots}</span>
-                  </div>
+        <>
+            {viewMode === 'list' ? (
+                // LIST VIEW
+                <div className="projects-grid-v2">
+                {projects.map(project => (
+                    <motion.div
+                    className="project-card-v2"
+                    key={project.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    >
+                    <div className="card-image">
+                        <img src={project.image || '/placeholder-property.jpg'} alt={project.title} />
+                        <div className={`status-pill ${project.status}`}>{project.status}</div>
+                    </div>
+                    <div className="card-body">
+                        <h3>{project.title}</h3>
+                        <p className="location"><Building2 size={14} /> {project.location}</p>
+                        <div className="stats-row">
+                        <div className="stat">
+                            <span className="label">Towers</span>
+                            <span className="value">{project.tower_count || 'N/A'}</span>
+                        </div>
+                        <div className="stat">
+                            <span className="label">Units</span>
+                            <span className="value">{project.total_slots}</span>
+                        </div>
+                        </div>
+                        <div className="actions">
+                        <button className="icon-btn primary" title="Manage Units" onClick={() => handleViewProject(project)}>
+                            <LayoutGrid size={20} />
+                        </button>
+                        <select
+                            className="status-dropdown"
+                            value={project.status}
+                            onChange={(e) => handleStatusChange(project.id, e.target.value)}
+                        >
+                            <option value="pending">Pending</option>
+                            <option value="live">Live</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                        <button className="icon-btn delete" title="Delete Project" onClick={() => handleDeleteProject(project.id)}>
+                            <Trash2 size={18} />
+                        </button>
+                        </div>
+                    </div>
+                    </motion.div>
+                ))}
                 </div>
-                <div className="actions">
-                  <button className="icon-btn" title="View in Exhibition" onClick={() => navigate(`/exhibition/live-grouping`)}>
-                    <Eye size={18} />
-                  </button>
-                  <select
-                    className="status-dropdown"
-                    value={project.status}
-                    onChange={(e) => handleStatusChange(project.id, e.target.value)}
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="live">Live</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                  <button className="icon-btn delete" title="Delete Project" onClick={() => handleDeleteProject(project.id)}>
-                    <Trash2 size={18} />
-                  </button>
+            ) : (
+                // DETAIL/2D VIEW
+                <div className="detail-view-container relative h-[calc(100vh-140px)] w-full flex flex-col">
+                    <div className="flex items-center gap-4 mb-4 px-4">
+                         <button onClick={handleBackToList} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium">
+                            <ArrowLeft size={18} /> Back to Projects
+                        </button>
+                        <h2 className="text-xl font-bold text-slate-800">{selectedProject?.title} - Unit Management</h2>
+                    </div>
+                    
+                    {/* 2D View Container - Dark Mode Wrapper */}
+                    <div className="flex-1 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-700 relative">
+                        {projectHierarchy ? (
+                            <TwoDView project={projectHierarchy} onUnitClick={handleUnitClick} />
+                        ) : (
+                             <div className="flex items-center justify-center h-full text-slate-400">Loading hierarchy...</div>
+                        )}
+                    </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+            )}
+        </>
       )}
 
       {/* MULTI-STEP WIZARD MODAL */}
@@ -388,6 +482,65 @@ const AdminLiveGrouping = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ADMIN ACTION MODAL */}
+      <AnimatePresence>
+          {showUnitActionModal && selectedUnit && (
+              <motion.div
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowUnitActionModal(false)}
+              >
+                  <motion.div
+                    className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl m-4"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900">Unit {selectedUnit.unit_number}</h3>
+                                <p className="text-sm text-slate-500">Current Status: <span className="font-semibold uppercase">{selectedUnit.status}</span></p>
+                            </div>
+                            <button onClick={() => setShowUnitActionModal(false)} className="p-1 hover:bg-slate-100 rounded-full">
+                                <X size={20} className="text-slate-400" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {selectedUnit.status === 'available' && (
+                                <>
+                                    <button 
+                                        className="w-full py-3 rounded-xl bg-amber-50 text-amber-700 font-bold border border-amber-200 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"
+                                        onClick={() => handleAdminAction('lock')}
+                                        disabled={actionLoading}
+                                    >
+                                        <Lock size={18} /> {actionLoading ? 'Processing...' : 'Hold Unit (Lock)'}
+                                    </button>
+                                     <button 
+                                        className="w-full py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                                        onClick={() => handleAdminAction('book')}
+                                        disabled={actionLoading}
+                                    >
+                                        <DollarSign size={18} /> {actionLoading ? 'Processing...' : 'Mark as Booked'}
+                                    </button>
+                                </>
+                            )}
+                             {selectedUnit.status !== 'available' && (
+                                 <div className="p-4 bg-slate-50 rounded-xl text-center text-slate-500 text-sm">
+                                     This unit is currently <strong>{selectedUnit.status}</strong>. 
+                                     <br/>Unlock/Release functionality coming soon.
+                                 </div>
+                             )}
+                        </div>
+                  </motion.div>
+              </motion.div>
+          )}
+      </AnimatePresence>
+
     </div>
   );
 };

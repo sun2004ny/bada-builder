@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Text, PerspectiveCamera } from '@react-three/drei';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
+import { ChevronLeft, Layers, Box, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { liveGroupDynamicAPI } from '../../services/api';
 import './LiveGrouping.css';
@@ -131,26 +133,23 @@ const Tower = ({ tower, position, onUnitClick }) => {
 
 // --- Main Page ---
 
+import TwoDView from './TwoDView';
+
 const ThreeDView = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { currentUser, isAuthenticated } = useAuth();
+    const { isAuthenticated } = useAuth();
     const property = location.state?.property;
 
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedUnit, setSelectedUnit] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
+    
+    // View Mode State
+    const [viewMode, setViewMode] = useState('3d'); // '3d' | '2d'
 
-    useEffect(() => {
-        if (property?.id) {
-            fetchHierarchy();
-        } else {
-            setLoading(false);
-        }
-    }, [property]);
-
-    const fetchHierarchy = async () => {
+    const fetchHierarchy = useCallback(async () => {
         try {
             setLoading(true);
             const data = await liveGroupDynamicAPI.getFullHierarchy(property.id);
@@ -160,7 +159,15 @@ const ThreeDView = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [property]);
+
+    useEffect(() => {
+        if (property?.id) {
+            fetchHierarchy();
+        } else {
+            setLoading(false);
+        }
+    }, [property, fetchHierarchy]);
 
     const handleUnitClick = async (unit) => {
         if (unit.status !== 'available') return;
@@ -212,82 +219,174 @@ const ThreeDView = () => {
         }
     };
 
-    if (loading) return <div className="loader-container"><div className="spinner"></div><p>Generating 3D Scene...</p></div>;
+    if (loading) return <div className="loader-container"><div className="spinner"></div><p>Generating Scene...</p></div>;
     if (!project) return <div className="error-container"><h3>Project not found</h3><button onClick={() => navigate(-1)}>Go Back</button></div>;
 
     return (
-        <div className="three-d-page">
+        <div className="relative w-full h-screen bg-slate-50 overflow-hidden">
             {/* Header Overlay */}
-            <div className="scene-overlay header">
-                <button className="back-btn" onClick={() => navigate(-1)}>← Exit View</button>
-                <div className="project-info">
-                    <h1>{project.title}</h1>
-                    <p>{project.location} • {project.towers.length} Towers • {project.total_slots} Units</p>
+            <div className="absolute top-0 left-0 w-full z-50 p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-to-b from-slate-900/90 via-slate-900/50 to-transparent pointer-events-none space-y-4 md:space-y-0 text-shadow-sm">
+                <div className="pointer-events-auto flex items-center gap-4 w-full md:w-auto">
+                    <button 
+                        className="bg-white/10 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 flex items-center gap-2 group shadow-lg shadow-black/5"
+                        onClick={() => navigate(-1)}
+                    >
+                        <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="hidden sm:inline">Back</span>
+                    </button>
+                    
+                    <div className="!text-white flex-1 md:flex-none">
+                        <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
+                        <p className="text-xs md:text-sm !text-slate-200 font-medium flex items-center gap-2">
+                             {project.location} <span className="w-1 h-1 rounded-full bg-white/50"></span> {project.towers.length} Towers <span className="w-1 h-1 rounded-full bg-white/50"></span> {project.total_slots} Units
+                        </p>
+                    </div>
+                </div>
+
+                {/* View Toggle */}
+                <div className="pointer-events-auto self-center md:self-auto bg-slate-900/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 flex relative shadow-2xl">
+                    {['3d', '2d'].map((mode) => (
+                        <button
+                            key={mode}
+                            onClick={() => setViewMode(mode)}
+                            className={`relative z-10 px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${
+                                viewMode === mode ? 'text-slate-900' : 'text-slate-200 hover:text-white'
+                            }`}
+                        >
+                            {viewMode === mode && (
+                                <motion.div
+                                    layoutId="toggle-bg"
+                                    className="absolute inset-0 bg-white rounded-full shadow-lg"
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    style={{ zIndex: -1 }}
+                                />
+                            )}
+                            {mode === '3d' ? <Box size={14} strokeWidth={2.5} /> : <Layers size={14} strokeWidth={2.5} />}
+                            {mode === '3d' ? '3D View' : 'Blueprint'}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Legend Overlay */}
-            <div className="scene-overlay legend">
-                <div className="legend-item"><div className="color available"></div> Available</div>
-                <div className="legend-item"><div className="color locked"></div> In Checkout (10m)</div>
-                <div className="legend-item"><div className="color booked"></div> Sold</div>
+            {/* Legend Overlay - Responsive positioning */}
+            <div className="absolute bottom-6 left-6 z-40 bg-white/80 backdrop-blur-xl p-4 md:p-5 rounded-2xl shadow-2xl border border-white/40 pointer-events-auto transform transition-transform hover:scale-105 hidden sm:block">
+                <div className="flex items-center gap-2 mb-3">
+                    <Info size={14} className="text-slate-400" />
+                    <h3 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">Live Status</h3>
+                </div>
+                <div className="space-y-2.5">
+                    <div className="flex items-center gap-3 group cursor-help">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-transform"></div>
+                        <span className="text-xs md:text-sm font-semibold text-slate-700">Available</span>
+                    </div>
+                    <div className="flex items-center gap-3 group cursor-help">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)] group-hover:scale-110 transition-transform"></div>
+                        <span className="text-xs md:text-sm font-semibold text-slate-700">Checking Out <span className="text-[10px] text-slate-400 ml-1 font-medium bg-slate-100 px-1.5 py-0.5 rounded-md">Live</span></span>
+                    </div>
+                    <div className="flex items-center gap-3 group cursor-help">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)] group-hover:scale-110 transition-transform"></div>
+                        <span className="text-xs md:text-sm font-semibold text-slate-700 opacity-60">Sold Out</span>
+                    </div>
+                </div>
             </div>
 
             {/* Selection Modal */}
             {selectedUnit && (
-                <div className="unit-modal-v2">
-                    <div className="modal-content">
-                        <h2>Unit {selectedUnit.unit_number}</h2>
-                        <div className="unit-stats">
-                            <div className="u-stat"><span>Floor</span> <strong>{selectedUnit.floor_number}</strong></div>
-                            <div className="u-stat"><span>Type</span> <strong>{selectedUnit.unit_type}</strong></div>
-                            <div className="u-stat"><span>Area</span> <strong>{selectedUnit.area} sq ft</strong></div>
-                            <div className="u-stat"><span>Price</span> <strong>₹{(selectedUnit.price / 100000).toFixed(2)} L</strong></div>
-                        </div>
-                        <p className="advance-note">Pay 0.5% Advance to confirm: <strong>₹{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</strong></p>
-                        <div className="modal-actions">
-                            <button className="cancel-btn" onClick={() => setSelectedUnit(null)}>Cancel</button>
-                            <button className="book-btn" onClick={handleBookNow} disabled={paymentLoading}>
-                                {paymentLoading ? 'Processing...' : 'Proceed to Payment'}
-                            </button>
+                <div className="absolute inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-800">Unit {selectedUnit.unit_number}</h2>
+                                    <p className="text-slate-500">Floor {selectedUnit.floor_number} • {selectedUnit.unit_type}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-slate-400 uppercase font-semibold">Total Price</p>
+                                    <p className="text-xl font-bold text-slate-900">₹{(selectedUnit.price / 100000).toFixed(2)} L</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                    <p className="text-xs text-slate-400 font-medium uppercase">Carpet Area</p>
+                                    <p className="font-semibold text-slate-700">{selectedUnit.area} sq ft</p>
+                                </div>
+                                <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                    <p className="text-xs text-emerald-600 font-medium uppercase">Booking Amount</p>
+                                    <p className="font-semibold text-emerald-700">₹{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</p>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-slate-500 text-center mb-6 bg-slate-50 p-3 rounded-lg">
+                                Pay <span className="font-bold text-slate-900">0.5%</span> now to lock this unit instantly.
+                            </p>
+
+                            <div className="flex gap-3">
+                                <button 
+                                    className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                    onClick={() => setSelectedUnit(null)}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    className="flex-[2] py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                                    onClick={handleBookNow} 
+                                    disabled={paymentLoading}
+                                >
+                                    {paymentLoading ? 'Processing...' : 'Proceed to Payment'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            <Canvas shadows>
-                <PerspectiveCamera makeDefault position={[50, 50, 100]} fov={40} />
-                <Sky sunPosition={[100, 20, 50]} />
-                <ambientLight intensity={0.7} />
-                <directionalLight
-                    position={[50, 100, 50]}
-                    intensity={1.5}
-                    castShadow
-                    shadow-mapSize={[2048, 2048]}
-                />
-                <OrbitControls target={[0, (project.towers[0]?.total_floors || 5) * 1.25, 0]} maxPolarAngle={Math.PI / 2.1} />
+            {/* 3D Canvas */}
+            {viewMode === '3d' && (
+                <Canvas shadows className="w-full h-full">
+                    <PerspectiveCamera makeDefault position={[50, 50, 100]} fov={40} />
+                    <Sky sunPosition={[100, 20, 50]} />
+                    <ambientLight intensity={0.7} />
+                    <directionalLight
+                        position={[50, 100, 50]}
+                        intensity={1.5}
+                        castShadow
+                        shadow-mapSize={[2048, 2048]}
+                    />
+                    <OrbitControls target={[0, (project.towers[0]?.total_floors || 5) * 1.25, 0]} maxPolarAngle={Math.PI / 2.1} />
 
-                <group>
-                    {project.towers.map((tower, idx) => {
-                        const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
-                        return (
-                            <Tower
-                                key={tower.id}
-                                tower={tower}
-                                position={[posX, 0, 0]}
-                                onUnitClick={handleUnitClick}
-                            />
-                        );
-                    })}
-                </group>
+                    <group>
+                        {project.towers.map((tower, idx) => {
+                            const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                            return (
+                                <Tower
+                                    key={tower.id}
+                                    tower={tower}
+                                    position={[posX, 0, 0]}
+                                    onUnitClick={handleUnitClick}
+                                />
+                            );
+                        })}
+                    </group>
 
-                {/* Ground */}
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
-                    <planeGeometry args={[1000, 1000]} />
-                    <meshStandardMaterial color="#e2e8f0" />
-                </mesh>
-                <gridHelper args={[200, 40]} position={[0, -0.4, 0]} colorCenterLine="#94a3b8" />
-            </Canvas>
+                    {/* Ground */}
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
+                        <planeGeometry args={[1000, 1000]} />
+                        <meshStandardMaterial color="#e2e8f0" />
+                    </mesh>
+                    <gridHelper args={[200, 40]} position={[0, -0.4, 0]} colorCenterLine="#94a3b8" />
+                </Canvas>
+            )}
+
+            {/* 2D View */}
+            {viewMode === '2d' && (
+                <div className="absolute inset-x-0 bottom-0 top-20 z-0 bg-slate-50">
+                     <TwoDView 
+                        project={project} 
+                        onUnitClick={handleUnitClick} 
+                    />
+                </div>
+            )}
         </div>
     );
 };
