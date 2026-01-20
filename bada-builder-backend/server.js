@@ -122,8 +122,8 @@ app.use('/api/reviews', mutationLimiter, reviewRoutes);
 app.use('/api/chat', mutationLimiter, chatRoutes);
 app.use('/api/wishlists', mutationLimiter, wishlistRoutes);
 app.use('/api/favorites', mutationLimiter, favoritesRoutes);
-app.use('/api/admin', authLimiter, adminRoutes);
 app.use('/api/admin/properties', mutationLimiter, adminPropertiesRoutes);
+app.use('/api/admin', authLimiter, adminRoutes);
 
 
 // 404 handler
