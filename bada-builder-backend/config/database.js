@@ -13,10 +13,13 @@ const pool = new Pool({
     connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
+    statement_timeout: 30000, // 30 second query timeout
 });
 
-// Test connection
-pool.on('connect', () => {
+// Test connection and set query timeout
+pool.on('connect', (client) => {
+    // Set statement timeout for this connection
+    client.query('SET statement_timeout = 30000'); // 30 seconds
     console.log('✅ Connected to PostgreSQL database');
 });
 

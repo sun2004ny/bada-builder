@@ -82,6 +82,7 @@ export const apiRequest = async (endpoint, options = {}) => {
       console.error('❌ API Error Response:', data);
       const error = new Error(data.error || 'Request failed');
       error.status = response.status;
+      error.response = { status: response.status, data };
       throw error;
     }
 
@@ -120,6 +121,7 @@ export const uploadFile = async (endpoint, formData, includeAuth = true, method 
       console.error('❌ API Error Response:', data);
       const error = new Error(data.error || 'Upload failed');
       error.status = response.status;
+      error.response = { status: response.status, data };
       throw error;
     }
 

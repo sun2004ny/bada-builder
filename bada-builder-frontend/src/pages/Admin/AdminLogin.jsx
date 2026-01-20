@@ -29,6 +29,13 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Prevent double submission
+    if (loading) {
+      e.stopPropagation();
+      return;
+    }
+
     setLoading(true);
     setError('');
 

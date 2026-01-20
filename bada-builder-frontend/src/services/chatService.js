@@ -106,7 +106,7 @@ export const getChatMessages = (chatId, callback) => {
             if (!isSubscribed) return;
 
             // Stop polling on critical errors
-            const status = error.response?.status;
+            const status = error.status || error.response?.status;
             if ([401, 429, 500, 502, 503].includes(status)) {
                 console.error(`Stopping message poll due to error ${status}`);
                 return;
@@ -181,7 +181,7 @@ export const getUserChats = (userId, callback) => {
             if (!isSubscribed) return;
 
             // Stop polling on critical errors
-            const status = error.response?.status;
+            const status = error.status || error.response?.status;
             if ([401, 429, 500, 502, 503].includes(status)) {
                 console.error(`Stopping chat list poll due to error ${status}`);
                 return;

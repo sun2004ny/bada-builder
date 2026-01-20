@@ -181,6 +181,12 @@ const RegisterComplaint = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Prevent double submission
+    if (loading) {
+      e.stopPropagation();
+      return;
+    }
+
     if (!validateForm()) return;
 
     setLoading(true);

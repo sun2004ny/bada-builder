@@ -26,6 +26,7 @@ const RegisterWithOTP = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
 
   // Handle input changes
   const handleChange = useCallback((e) => {
@@ -69,7 +70,13 @@ const RegisterWithOTP = () => {
   // Step 1: Send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    
+
+    // Check cooldown
+    if (otpCooldown > 0) {
+      setErrors({ submit: `Please wait ${otpCooldown}s before resending OTP` });
+      return;
+    }
+
     if (!validate()) return;
 
     setLoading(true);
@@ -83,6 +90,19 @@ const RegisterWithOTP = () => {
 
       setOtpSent(true);
       setStep(2);
+
+      // Start 60-second cooldown
+      setOtpCooldown(60);
+      const interval = setInterval(() => {
+        setOtpCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
       setErrors({ submit: "OTP sent to your email! Please check your inbox." });
     } catch (error) {
       let msg = "Failed to send OTP";
@@ -257,9 +277,8 @@ const RegisterWithOTP = () => {
                 disabled={loading}
               >
                 <i
-                  className={`far ${
-                    showConfirmPassword ? "fa-eye" : "fa-eye-slash"
-                  }`}
+                  className={`far ${showConfirmPassword ? "fa-eye" : "fa-eye-slash"
+                    }`}
                 />
               </button>
             </div>
@@ -268,15 +287,15 @@ const RegisterWithOTP = () => {
             )}
 
             {errors.submit && (
-              <p className={`error submit-error ${
-                errors.submit.includes('sent') ? 'success-login' : ''
-              }`}>
+              <p className={`error submit-error ${errors.submit.includes('sent') ? 'success-login' : ''
+                }`}>
                 {errors.submit}
               </p>
             )}
 
-            <button className="submit-btn" disabled={loading}>
-              {loading ? <span className="spinner"></span> : "Send OTP"}
+            <button className="submit-btn" disabled={loading || otpCooldown > 0}>
+              {loading ? <span className="spinner"></span> :
+                otpCooldown > 0 ? `Resend in ${otpCooldown}s` : "Send OTP"}
             </button>
           </form>
         ) : (
@@ -309,9 +328,8 @@ const RegisterWithOTP = () => {
             {errors.otp && <p className="error">{errors.otp}</p>}
 
             {errors.submit && (
-              <p className={`error submit-error ${
-                errors.submit.includes('sent') ? 'success-login' : ''
-              }`}>
+              <p className={`error submit-error ${errors.submit.includes('sent') ? 'success-login' : ''
+                }`}>
                 {errors.submit}
               </p>
             )}

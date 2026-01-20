@@ -439,6 +439,12 @@ const BookSiteVisit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Prevent double submission
+    if (loading || paymentLoading) {
+      e.stopPropagation();
+      return;
+    }
+
     if (!isAuthenticated) {
       alert('Please login to book a site visit');
       navigate('/login');

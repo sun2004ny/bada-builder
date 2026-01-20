@@ -143,7 +143,10 @@ const Login = () => {
     e.preventDefault();
 
     // Prevent submission if already loading
-    if (loading) return;
+    if (loading) {
+      e.stopPropagation();
+      return;
+    }
 
     if (!validate()) return;
 
@@ -246,7 +249,7 @@ const Login = () => {
 
           {errors.submit && (
             <p className={`error submit-error ${errors.submit.includes('successful') ? 'success-login' :
-                errors.submit.includes('reset') ? 'info-message' : ''
+              errors.submit.includes('reset') ? 'info-message' : ''
               }`}>
               {errors.submit}
             </p>

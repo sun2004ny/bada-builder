@@ -59,14 +59,42 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting - Route-specific limiters
+// Strict limiter for authentication endpoints (prevent brute force)
+const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.',
+    max: 10, // 10 attempts per 15 minutes
+    message: 'Too many login attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
-app.use('/api/', limiter);
+// Medium limiter for OTP and sensitive operations
+const otpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 OTP requests per 15 minutes
+    message: 'Too many OTP requests, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Relaxed limiter for mutations (POST/PUT/DELETE)
+const mutationLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 30, // 30 requests per minute
+    message: 'Too many requests, please slow down.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Very relaxed limiter for read operations (GET)
+const readLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 100, // 100 requests per minute
+    message: 'Too many requests, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -78,24 +106,24 @@ app.get('/health', async (req, res) => {
     }
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/otp', otpRoutes);
-app.use('/api/forgot-password', forgotPasswordRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/properties', propertyRoutes);
-app.use('/api/leads', leadRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/live-grouping', liveGroupingRoutes);
-app.use('/api/live-grouping-dynamic', liveGroupDynamicRoutes);
-app.use('/api/complaints', complaintRoutes);
-app.use('/api/favorites', favoritesRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/wishlists', wishlistRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin-properties', adminPropertiesRoutes);
+// API Routes with route-specific rate limiters
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/otp', otpLimiter, otpRoutes);
+app.use('/api/forgot-password', otpLimiter, forgotPasswordRoutes);
+app.use('/api/users', readLimiter, userRoutes);
+app.use('/api/properties', mutationLimiter, propertyRoutes);
+app.use('/api/leads', mutationLimiter, leadRoutes);
+app.use('/api/bookings', mutationLimiter, bookingRoutes);
+app.use('/api/subscriptions', mutationLimiter, subscriptionRoutes);
+app.use('/api/live-grouping', readLimiter, liveGroupingRoutes);
+app.use('/api/live-grouping-dynamic', readLimiter, liveGroupDynamicRoutes);
+app.use('/api/complaints', mutationLimiter, complaintRoutes);
+app.use('/api/reviews', mutationLimiter, reviewRoutes);
+app.use('/api/chat', mutationLimiter, chatRoutes);
+app.use('/api/wishlists', mutationLimiter, wishlistRoutes);
+app.use('/api/favorites', mutationLimiter, favoritesRoutes);
+app.use('/api/admin', authLimiter, adminRoutes);
+app.use('/api/admin/properties', mutationLimiter, adminPropertiesRoutes);
 
 
 // 404 handler

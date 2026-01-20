@@ -55,7 +55,10 @@ const Connect = () => {
 
         e.preventDefault();
 
-        if (sending) return;
+        if (sending) {
+            e.stopPropagation();
+            return;
+        }
 
 
 
