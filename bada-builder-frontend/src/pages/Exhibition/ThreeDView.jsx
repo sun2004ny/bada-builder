@@ -4,7 +4,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Text, PerspectiveCamera } from '@react-three/drei';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
-import { ChevronLeft, Layers, Box, Info } from 'lucide-react';
+import { ChevronLeft, Layers, Box, Info, Timer, X, CreditCard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { liveGroupDynamicAPI } from '../../services/api';
 import './LiveGrouping.css';
@@ -17,10 +17,11 @@ const UNIT_DEPTH = 4;
 const UNIT_GAP = 0.5;
 
 // Colors
-const COLOR_AVAILABLE = '#22c55e'; // Green
-const COLOR_BOOKED = '#ef4444';    // Red
-const COLOR_LOCKED = '#eab308';    // Yellow
+const COLOR_AVAILABLE = '#22c55e';
+const COLOR_BOOKED = '#ef4444';
+const COLOR_LOCKED = '#fbbf24';
 const COLOR_DEFAULT = '#94a3b8';
+const COLOR_SELECTED = '#3b82f6';
 
 // --- Sub-Components ---
 
@@ -35,7 +36,7 @@ const UnitBox = ({ unit, position, size, onClick, specialColor, rotation = [0, 0
 
     if (unit.status === 'available') color = COLOR_AVAILABLE;
 
-    if (hovered && unit.status === 'available') color = '#3b82f6';
+    if (hovered && unit.status === 'available') color = COLOR_SELECTED;
 
     return (
         <group position={position} rotation={rotation}>
@@ -197,6 +198,8 @@ const ThreeDView = () => {
 
     // View Mode State
     const [viewMode, setViewMode] = useState('3d'); // '3d' | '2d'
+    const [showHoldOptions, setShowHoldOptions] = useState(false);
+    const [holdLoading, setHoldLoading] = useState(false);
 
     const fetchHierarchy = useCallback(async () => {
         try {
@@ -213,13 +216,38 @@ const ThreeDView = () => {
     useEffect(() => {
         if (property?.id) {
             fetchHierarchy();
+
+            // 🔄 Polling for real-time status sync (every 3 seconds)
+            const interval = setInterval(() => {
+                const fetchSilent = async () => {
+                    try {
+                        const data = await liveGroupDynamicAPI.getFullHierarchy(property.id);
+                        setProject(data.project);
+                    } catch (e) {
+                        console.error('Silent fetch error:', e);
+                    }
+                };
+                fetchSilent();
+            }, 3000);
+
+            return () => clearInterval(interval);
         } else {
             setLoading(false);
         }
     }, [property, fetchHierarchy]);
 
-    const handleUnitClick = async (unit) => {
-        if (unit.status !== 'available') return;
+    const handleUnitClick = (unit) => {
+        // If booked by someone else
+        if (unit.status === 'booked') {
+            alert('This unit is already booked.');
+            return;
+        }
+
+        // If locked by someone else
+        if (unit.status === 'locked' && !selectedUnit) {
+            alert('This unit is currently on hold. Please try again later.');
+            return;
+        }
 
         if (!isAuthenticated) {
             alert('Please login to lock and book a unit.');
@@ -227,20 +255,21 @@ const ThreeDView = () => {
             return;
         }
 
+        setSelectedUnit(unit);
+        setShowHoldOptions(false);
+    };
+
+    const handleHoldUnit = async (duration) => {
+        if (!selectedUnit) return;
+        setHoldLoading(true);
         try {
-            setPaymentLoading(true);
-            // 🚨 Locking Mechanism
-            await liveGroupDynamicAPI.lockUnit(unit.id);
-
-            // Refresh hierarchy to show yellow status
+            await liveGroupDynamicAPI.lockUnit(selectedUnit.id, duration);
             await fetchHierarchy();
-
-            // Open details for payment
-            setSelectedUnit(unit);
+            setShowHoldOptions(false);
         } catch (error) {
-            alert(error.message || 'Failed to lock unit. It might have been taken just now.');
+            alert(error.message || 'Failed to hold unit.');
         } finally {
-            setPaymentLoading(false);
+            setHoldLoading(false);
         }
     };
 
@@ -319,39 +348,52 @@ const ThreeDView = () => {
                 </div>
             </div>
 
-            {/* Legend Overlay - Responsive positioning */}
-            <div className="absolute bottom-6 left-6 z-40 bg-white/80 backdrop-blur-xl p-4 md:p-5 rounded-2xl shadow-2xl border border-white/40 pointer-events-auto transform transition-transform hover:scale-105 hidden sm:block">
-                <div className="flex items-center gap-2 mb-3">
-                    <Info size={14} className="text-slate-400" />
-                    <h3 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">Live Status</h3>
+            {/* Legend Overlay */}
+            <div className="absolute bottom-6 left-6 z-40 bg-white/90 backdrop-blur-xl p-5 rounded-3xl shadow-2xl border border-white/40 pointer-events-auto transform transition-transform hover:scale-105 hidden sm:block">
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Inventory</h3>
                 </div>
-                <div className="space-y-2.5">
-                    <div className="flex items-center gap-3 group cursor-help">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-transform"></div>
-                        <span className="text-xs md:text-sm font-semibold text-slate-700">Available</span>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4 group cursor-help">
+                        <div className="w-3.5 h-3.5 rounded-lg bg-emerald-500 shadow-[0_4px_12px_rgba(16,185,129,0.3)] group-hover:scale-125 transition-all"></div>
+                        <span className="text-[13px] font-bold text-slate-600">Available</span>
                     </div>
-                    <div className="flex items-center gap-3 group cursor-help">
-                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)] group-hover:scale-110 transition-transform"></div>
-                        <span className="text-xs md:text-sm font-semibold text-slate-700">Checking Out <span className="text-[10px] text-slate-400 ml-1 font-medium bg-slate-100 px-1.5 py-0.5 rounded-md">Live</span></span>
+                    <div className="flex items-center gap-4 group cursor-help">
+                        <div className="w-3.5 h-3.5 rounded-lg bg-amber-400 shadow-[0_4px_12px_rgba(251,191,36,0.3)] group-hover:scale-125 transition-all"></div>
+                        <span className="text-[13px] font-bold text-slate-600">On Hold</span>
                     </div>
-                    <div className="flex items-center gap-3 group cursor-help">
-                        <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)] group-hover:scale-110 transition-transform"></div>
-                        <span className="text-xs md:text-sm font-semibold text-slate-700 opacity-60">Sold Out</span>
+                    <div className="flex items-center gap-4 group cursor-help">
+                        <div className="w-3.5 h-3.5 rounded-lg bg-rose-500 shadow-[0_4px_12px_rgba(244,63,94,0.3)] group-hover:scale-125 transition-all"></div>
+                        <span className="text-[13px] font-bold text-slate-600">Booked</span>
                     </div>
                 </div>
             </div>
 
             {/* Selection Modal */}
             {selectedUnit && (
-                <div className="absolute inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-all duration-300">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
+                    >
                         <div className="p-6">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-800">
-                                        {selectedUnit.floor_number === -1 ? 'Parking Slot' : 'Unit'} {selectedUnit.unit_number}
-                                    </h2>
-                                    <p className="text-slate-500">
+                            {/* Close & Header */}
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="space-y-0.5">
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                                            {selectedUnit.floor_number === -1 ? 'Slot' : 'Unit'} {selectedUnit.unit_number}
+                                        </h2>
+                                        {selectedUnit.status === 'locked' && (
+                                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 border border-amber-200">
+                                                <Timer size={9} /> Held
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
                                         {selectedUnit.floor_number === -1
                                             ? 'Basement Level'
                                             : selectedUnit.floor_number === 0
@@ -359,44 +401,114 @@ const ThreeDView = () => {
                                                 : `Floor ${selectedUnit.floor_number}`} • {selectedUnit.unit_type}
                                     </p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-sm text-slate-400 uppercase font-semibold">Total Price</p>
-                                    <p className="text-xl font-bold text-slate-900">₹{(selectedUnit.price / 100000).toFixed(2)} L</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 mb-6">
-                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                    <p className="text-xs text-slate-400 font-medium uppercase">{selectedUnit.floor_number === -1 ? 'Parking Area' : 'Carpet Area'}</p>
-                                    <p className="font-semibold text-slate-700">{selectedUnit.area} sq ft</p>
-                                </div>
-                                <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                                    <p className="text-xs text-emerald-600 font-medium uppercase">Booking Amount</p>
-                                    <p className="font-semibold text-emerald-700">₹{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</p>
-                                </div>
-                            </div>
-
-                            <p className="text-sm text-slate-500 text-center mb-6 bg-slate-50 p-3 rounded-lg">
-                                Pay <span className="font-bold text-slate-900">0.5%</span> now to lock this {selectedUnit.floor_number === -1 ? 'spot' : 'unit'} instantly.
-                            </p>
-
-                            <div className="flex gap-3">
                                 <button
-                                    className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
                                     onClick={() => setSelectedUnit(null)}
+                                    className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    className="flex-[2] py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                                    onClick={handleBookNow}
-                                    disabled={paymentLoading}
-                                >
-                                    {paymentLoading ? 'Processing...' : 'Proceed to Payment'}
+                                    <X size={18} />
                                 </button>
                             </div>
+
+                            {/* Main Info Card */}
+                            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 mb-4 space-y-3">
+                                <div className="flex justify-between items-center border-b border-slate-200/50 pb-2.5">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
+                                    <span className="text-xl font-black text-slate-900">₹{(selectedUnit.price / 100000).toFixed(2)} L</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
+                                            {selectedUnit.floor_number === -1 ? 'Area' : 'Carpet Area'}
+                                        </p>
+                                        <p className="text-base font-black text-slate-700">{selectedUnit.area} sq ft</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Booking (0.5%)</p>
+                                        <p className="text-base font-black text-emerald-600">₹{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Area */}
+                            {!showHoldOptions ? (
+                                <div className="space-y-4">
+                                    {/* Real-time Status Disclaimer */}
+                                    <div className="bg-emerald-50 border border-emerald-100/50 p-2.5 rounded-xl flex items-center gap-2.5">
+                                        <div className="bg-emerald-500 rounded-full p-1 text-white shrink-0">
+                                            <Info size={10} strokeWidth={3} />
+                                        </div>
+                                        <p className="text-[11px] font-bold text-emerald-800 leading-tight">
+                                            Pay ₹<span className="text-sm font-black text-emerald-950">{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</span> (0.5%) right now to secure this unit instantly.
+                                        </p>
+                                    </div>
+
+                                    {/* Action Buttons Row */}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            className="flex-1 py-3 bg-slate-100 text-slate-600 font-extrabold rounded-xl hover:bg-slate-200 transition-all active:scale-95 text-[10px] uppercase tracking-widest border border-slate-200 shadow-sm"
+                                            onClick={() => setSelectedUnit(null)}
+                                        >
+                                            Cancel
+                                        </button>
+
+                                        <button
+                                            className="flex-1 py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-amber-200/40 disabled:opacity-50 text-[10px] uppercase tracking-widest"
+                                            style={{ backgroundColor: '#f59e0b' }} // Solid Amber/Yellow
+                                            onClick={() => setShowHoldOptions(true)}
+                                            disabled={selectedUnit.status === 'locked'}
+                                        >
+                                            <Timer size={14} strokeWidth={3} />
+                                            {selectedUnit.status === 'locked' ? 'Held' : 'Hold'}
+                                        </button>
+
+                                        <button
+                                            className="flex-[1.2] py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xl shadow-rose-200/40 text-[10px] uppercase tracking-widest"
+                                            style={{ backgroundColor: '#ef4444' }} // Solid Red
+                                            onClick={handleBookNow}
+                                            disabled={paymentLoading}
+                                        >
+                                            <CreditCard size={14} strokeWidth={3} />
+                                            {paymentLoading ? 'Wait' : 'Book'}
+                                        </button>
+                                    </div>
+
+                                    <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-[0.2em]">Secure Encryption Active</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 animate-in slide-in-from-bottom-5 duration-300">
+                                    <div className="flex items-center gap-3 justify-center mb-2">
+                                        <div className="h-px bg-slate-100 flex-1"></div>
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Select Duration</h3>
+                                        <div className="h-px bg-slate-100 flex-1"></div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            className="py-6 bg-amber-50 border-2 border-amber-200 rounded-2xl hover:bg-amber-100 transition-all text-center group active:scale-95"
+                                            onClick={() => handleHoldUnit(30)}
+                                            disabled={holdLoading}
+                                        >
+                                            <span className="block text-3xl font-black text-amber-600 group-hover:scale-110 transition-transform tracking-tight">30</span>
+                                            <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Minutes</span>
+                                        </button>
+                                        <button
+                                            className="py-6 bg-orange-50 border-2 border-orange-200 rounded-2xl hover:bg-orange-100 transition-all text-center group active:scale-95"
+                                            onClick={() => handleHoldUnit(60)}
+                                            disabled={holdLoading}
+                                        >
+                                            <span className="block text-3xl font-black text-orange-600 group-hover:scale-110 transition-transform tracking-tight">1</span>
+                                            <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">Hour</span>
+                                        </button>
+                                    </div>
+                                    <button
+                                        className="w-full py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                                        onClick={() => setShowHoldOptions(false)}
+                                    >
+                                        <ChevronLeft size={14} /> Back to Details
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             )}
 

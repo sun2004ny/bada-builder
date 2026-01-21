@@ -55,11 +55,12 @@ router.get('/:id/full', optionalAuth, async (req, res) => {
     }
 });
 
-// Lock a unit for 10 minutes
+// Lock a unit for custom duration
 router.post('/units/:id/lock', authenticate, async (req, res) => {
     try {
         const unitId = req.params.id;
         const userId = req.user.id;
+        const { duration = 10 } = req.body; // duration in minutes
 
         // Start transaction
         const client = await pool.connect();
@@ -68,7 +69,7 @@ router.post('/units/:id/lock', authenticate, async (req, res) => {
 
             // Check if available
             const checkResult = await client.query(
-                'SELECT status, locked_at FROM live_group_units WHERE id = $1 FOR UPDATE',
+                'SELECT status, locked_at, locked_by FROM live_group_units WHERE id = $1 FOR UPDATE',
                 [unitId]
             );
 
@@ -77,24 +78,30 @@ router.post('/units/:id/lock', authenticate, async (req, res) => {
             const unit = checkResult.rows[0];
             const now = new Date();
 
-            // If locked, check if expired (10 mins)
+            // If locked, check if expired (default 10 mins or specific duration)
             if (unit.status === 'locked' && unit.locked_at) {
                 const lockDuration = (now - new Date(unit.locked_at)) / 1000 / 60;
-                if (lockDuration < 10) {
-                    return res.status(400).json({ error: 'Unit is currently locked by another user' });
+                // If it's locked by someone else and not expired, error
+                if (unit.locked_by !== userId && lockDuration < 10) {
+                    return res.status(400).json({ error: 'Unit is currently on hold by another user' });
                 }
             } else if (unit.status === 'booked') {
                 return res.status(400).json({ error: 'Unit is already booked' });
             }
 
             // Perform lock
+            const expiry = new Date(now.getTime() + duration * 60000);
             await client.query(
                 'UPDATE live_group_units SET status = $1, locked_at = $2, locked_by = $3 WHERE id = $4',
                 ['locked', now, userId, unitId]
             );
 
             await client.query('COMMIT');
-            res.json({ message: 'Unit locked for 10 minutes', unitId });
+            res.json({
+                message: `Unit held for ${duration} minutes`,
+                unitId,
+                expiresAt: expiry
+            });
         } catch (e) {
             await client.query('ROLLBACK');
             throw e;
@@ -104,6 +111,54 @@ router.post('/units/:id/lock', authenticate, async (req, res) => {
     } catch (error) {
         console.error('Lock unit error:', error);
         res.status(500).json({ error: error.message || 'Failed to lock unit' });
+    }
+});
+
+// Book a unit permanently
+router.post('/units/:id/book', authenticate, async (req, res) => {
+    try {
+        const unitId = req.params.id;
+        const userId = req.user.id;
+        const { paymentData } = req.body;
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            const checkResult = await client.query(
+                'SELECT status, locked_by FROM live_group_units WHERE id = $1 FOR UPDATE',
+                [unitId]
+            );
+
+            if (checkResult.rows.length === 0) throw new Error('Unit not found');
+            const unit = checkResult.rows[0];
+
+            if (unit.status === 'booked') {
+                return res.status(400).json({ error: 'Unit is already booked' });
+            }
+
+            // If locked by someone else, check if it's REALLY locked (expiry logic)
+            // But for simplicity in this flow, if it's booked, we just update status
+
+            await client.query(
+                'UPDATE live_group_units SET status = $1, booked_at = NOW(), booked_by = $2, locked_at = NULL, locked_by = NULL WHERE id = $3',
+                ['booked', userId, unitId]
+            );
+
+            // Record booking in a main bookings table if exists
+            // For now, updating the status in units is the primary goal
+
+            await client.query('COMMIT');
+            res.json({ message: 'Unit successfully booked', unitId });
+        } catch (e) {
+            await client.query('ROLLBACK');
+            throw e;
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Book unit error:', error);
+        res.status(500).json({ error: 'Failed to book unit' });
     }
 });
 

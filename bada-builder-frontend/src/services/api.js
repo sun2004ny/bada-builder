@@ -418,16 +418,17 @@ export const liveGroupDynamicAPI = {
     return apiRequest(`/live-grouping-dynamic/${projectId}/full`, { includeAuth: false });
   },
 
-  lockUnit: async (unitId) => {
+  lockUnit: async (unitId, duration) => {
     return apiRequest(`/live-grouping-dynamic/units/${unitId}/lock`, {
       method: 'POST',
+      body: JSON.stringify({ duration }),
     });
   },
 
   bookUnit: async (unitId, paymentData) => {
     return apiRequest(`/live-grouping-dynamic/units/${unitId}/book`, {
       method: 'POST',
-      body: JSON.stringify(paymentData),
+      body: JSON.stringify({ paymentData }),
     });
   },
 
