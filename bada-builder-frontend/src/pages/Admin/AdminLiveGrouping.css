@@ -156,7 +156,8 @@
 .icon-btn {
   width: 40px;
   height: 40px;
-  min-width: 40px; /* Prevent flex shrinking */
+  min-width: 40px;
+  /* Prevent flex shrinking */
   min-height: 40px;
   display: flex;
   align-items: center;
@@ -172,10 +173,12 @@
 .icon-btn svg {
   width: 20px !important;
   height: 20px !important;
-  min-width: 20px !important; /* Force size */
+  min-width: 20px !important;
+  /* Force size */
   min-height: 20px !important;
   stroke: currentColor !important;
-  stroke-width: 2px !important; /* Ensure lines are thick enough */
+  stroke-width: 2px !important;
+  /* Ensure lines are thick enough */
   fill: none !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -350,15 +353,25 @@
 }
 
 .input-group input {
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease-in-out;
+}
+
+.input-group input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
 }
 
 .input-group input:focus {
   border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .previews {
@@ -401,11 +414,31 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.wizard-table td label {
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
 .wizard-table input {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  color: #334155;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.wizard-table input:focus {
+  border-color: #2563eb;
+  outline: none;
 }
 
 .remove-btn {
@@ -525,7 +558,8 @@
   width: 100vw;
   height: 100vh;
   background: rgba(255, 255, 255, 0.95);
-  z-index: 1000;
+  z-index: 2000;
+  /* Ensure it's above wizard (z-index 1000) */
   display: flex;
   align-items: center;
   justify-content: center;

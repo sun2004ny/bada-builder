@@ -162,7 +162,7 @@ router.post('/admin/projects/:id/towers', authenticate, isAdmin, async (req, res
 router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (req, res) => {
     try {
         const towerId = req.params.id;
-        const { unitsPerFloor, pricePerUnit, unitType, areaPerUnit } = req.body;
+        const { unitsPerFloor, pricePerUnit, unitType, areaPerUnit, hasBasement, hasGroundFloor } = req.body;
 
         // Get tower floors
         const towerResult = await pool.query('SELECT total_floors FROM live_group_towers WHERE id = $1', [towerId]);
@@ -172,19 +172,46 @@ router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (re
         const unitsData = [];
         const unitChars = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-        for (let f = 1; f <= floors; f++) {
+        // Helper to add units for a specific floor
+        const addUnitsForFloor = (floorNum, prefix = '') => {
             for (let u = 0; u < unitsPerFloor; u++) {
                 const unitChar = unitChars[u] || u;
+                // e.g. B-1A or GF-1A if you want prefixes, OR just B-A?
+                // Standard convention: 
+                // Floor 1: 1A, 1B
+                // GF: GF-A, GF-B
+                // Basement: B-A, B-B (or B1-A if multiple basements, but let's stick to B for single)
+
+                let unitLabel = '';
+                if (floorNum === -1) unitLabel = `B-${unitChar}`;
+                else if (floorNum === 0) unitLabel = `GF-${unitChar}`;
+                else unitLabel = `${floorNum}${unitChar}`;
+
                 unitsData.push({
                     tower_id: towerId,
-                    floor_number: f,
-                    unit_number: `${f}${unitChar}`,
+                    floor_number: floorNum,
+                    unit_number: unitLabel,
                     unit_type: unitType,
                     area: areaPerUnit,
                     price: pricePerUnit,
                     status: 'available'
                 });
             }
+        };
+
+        // 1. Basement (Floor -1)
+        if (hasBasement) {
+            addUnitsForFloor(-1);
+        }
+
+        // 2. Ground Floor (Floor 0)
+        if (hasGroundFloor) {
+            addUnitsForFloor(0);
+        }
+
+        // 3. Regular Floors (1 to N)
+        for (let f = 1; f <= floors; f++) {
+            addUnitsForFloor(f);
         }
 
         // Bulk insert

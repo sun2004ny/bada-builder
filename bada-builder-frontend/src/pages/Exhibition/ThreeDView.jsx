@@ -24,14 +24,21 @@ const COLOR_DEFAULT = '#94a3b8';
 
 // --- Sub-Components ---
 
-const UnitBox = ({ unit, position, size, onClick }) => {
+const UnitBox = ({ unit, position, size, onClick, specialColor }) => {
     const [hovered, setHovered] = useState(false);
     const meshRef = useRef();
 
-    let color = COLOR_DEFAULT;
+    let color = specialColor || COLOR_DEFAULT;
     if (unit.status === 'booked') color = COLOR_BOOKED;
     else if (unit.status === 'locked') color = COLOR_LOCKED;
-    else if (unit.status === 'available') color = COLOR_AVAILABLE;
+    else if (unit.status === 'available' && !specialColor) color = COLOR_AVAILABLE;
+    // Note: If specialColor is set (GF/Basement), we might want to keep that color even if available to distinguish it?
+    // Or should available green override it?
+    // Requirement says "Distinct visuals... to avoid user confusion".
+    // Let's make "Available" still green, but maybe a tailored green?
+    // Or keeps the special color until interacted with?
+    // Let's stick to standard status colors, but "Default/Idle" color is the special one.
+    if (unit.status === 'available') color = COLOR_AVAILABLE; // Override for availability to be clear it's buyable
 
     if (hovered && unit.status === 'available') color = '#3b82f6';
 
@@ -83,6 +90,15 @@ const Tower = ({ tower, position, onUnitClick }) => {
         return acc;
     }, {});
 
+    // Sort floors: Basement (-1) -> GF (0) -> 1 -> 2 ...
+    const sortedFloors = Object.keys(unitsByFloor).sort((a, b) => parseInt(a) - parseInt(b));
+
+    // Calculate vertical offset based on whether GF/Basement exist
+    // If GF exists (0), Floor 1 starts at FLOOR_HEIGHT.
+    // If only Basement (-1), Floor 1 starts at 0? No, let's keep standard:
+    // Floor 1 is always at 1 * FLOOR_HEIGHT (2.5) essentially, relative to "Ground" (0).
+    // GF is at 0. Basement is at -2.5. This keeps it consistent.
+
     return (
         <group position={position}>
             {/* Tower label */}
@@ -96,9 +112,20 @@ const Tower = ({ tower, position, onUnitClick }) => {
             </Text>
 
             {/* Render units floor by floor */}
-            {Object.entries(unitsByFloor).map(([floor, units]) => {
+            {sortedFloors.map((floor) => {
                 const floorNum = parseInt(floor);
-                const floorY = floorNum * FLOOR_HEIGHT;
+                const units = unitsByFloor[floor];
+
+                // Determine Y Position & Special Styling
+                let floorY = floorNum * FLOOR_HEIGHT;
+
+                // Helper to determine special styling
+                let specialColor = null; // Default
+                if (floorNum === -1) {
+                    specialColor = '#64748b'; // Basement Darker
+                } else if (floorNum === 0) {
+                    specialColor = '#cbd5e1'; // GF Different
+                }
 
                 // Arrange units in a grid around center
                 const cols = Math.ceil(Math.sqrt(units.length));
@@ -117,13 +144,14 @@ const Tower = ({ tower, position, onUnitClick }) => {
                             position={[posX, floorY, posZ]}
                             size={[UNIT_WIDTH, FLOOR_HEIGHT * 0.9, UNIT_DEPTH]}
                             onClick={onUnitClick}
+                            specialColor={specialColor}
                         />
                     );
                 });
             })}
 
             {/* Foundation / Ground */}
-            <mesh position={[0, FLOOR_HEIGHT / 2, 0]}>
+            <mesh position={[0, -FLOOR_HEIGHT / 2 - 0.5, 0]}>
                 <boxGeometry args={[UNIT_WIDTH * 3, 0.5, UNIT_DEPTH * 3]} />
                 <meshStandardMaterial color="#475569" />
             </mesh>
@@ -145,7 +173,8 @@ const ThreeDView = () => {
     const [loading, setLoading] = useState(true);
     const [selectedUnit, setSelectedUnit] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
-    
+    const [showBasement, setShowBasement] = useState(false);
+
     // View Mode State
     const [viewMode, setViewMode] = useState('3d'); // '3d' | '2d'
 
@@ -227,44 +256,58 @@ const ThreeDView = () => {
             {/* Header Overlay */}
             <div className="absolute top-0 left-0 w-full z-50 p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-to-b from-slate-900/90 via-slate-900/50 to-transparent pointer-events-none space-y-4 md:space-y-0 text-shadow-sm">
                 <div className="pointer-events-auto flex items-center gap-4 w-full md:w-auto">
-                    <button 
+                    <button
                         className="bg-white/10 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 flex items-center gap-2 group shadow-lg shadow-black/5"
                         onClick={() => navigate(-1)}
                     >
                         <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                         <span className="hidden sm:inline">Back</span>
                     </button>
-                    
+
                     <div className="!text-white flex-1 md:flex-none">
                         <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
                         <p className="text-xs md:text-sm !text-slate-200 font-medium flex items-center gap-2">
-                             {project.location} <span className="w-1 h-1 rounded-full bg-white/50"></span> {project.towers.length} Towers <span className="w-1 h-1 rounded-full bg-white/50"></span> {project.total_slots} Units
+                            {project.location} <span className="w-1 h-1 rounded-full bg-white/50"></span> {project.towers.length} Towers <span className="w-1 h-1 rounded-full bg-white/50"></span> {project.total_slots} Units
                         </p>
                     </div>
                 </div>
 
                 {/* View Toggle */}
-                <div className="pointer-events-auto self-center md:self-auto bg-slate-900/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 flex relative shadow-2xl">
-                    {['3d', '2d'].map((mode) => (
-                        <button
-                            key={mode}
-                            onClick={() => setViewMode(mode)}
-                            className={`relative z-10 px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${
-                                viewMode === mode ? 'text-slate-900' : 'text-slate-200 hover:text-white'
+                <div className="pointer-events-auto self-center md:self-auto flex gap-3">
+                    {/* Basement Toggle */}
+                    <button
+                        onClick={() => setShowBasement(!showBasement)}
+                        className={`px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 shadow-xl border border-white/10 ${showBasement
+                            ? 'bg-slate-800 text-white ring-2 ring-slate-500 ring-offset-2 ring-offset-slate-900'
+                            : 'bg-white/90 text-slate-700 hover:bg-white'
                             }`}
-                        >
-                            {viewMode === mode && (
-                                <motion.div
-                                    layoutId="toggle-bg"
-                                    className="absolute inset-0 bg-white rounded-full shadow-lg"
-                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                    style={{ zIndex: -1 }}
-                                />
-                            )}
-                            {mode === '3d' ? <Box size={14} strokeWidth={2.5} /> : <Layers size={14} strokeWidth={2.5} />}
-                            {mode === '3d' ? '3D View' : 'Blueprint'}
-                        </button>
-                    ))}
+                    >
+                        <Layers size={14} strokeWidth={2.5} className={showBasement ? "text-emerald-400" : "text-slate-400"} />
+                        {showBasement ? 'Hide Basement' : 'Show Basement'}
+                    </button>
+
+                    {/* View Toggle */}
+                    <div className="bg-slate-900/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 flex relative shadow-2xl">
+                        {['3d', '2d'].map((mode) => (
+                            <button
+                                key={mode}
+                                onClick={() => setViewMode(mode)}
+                                className={`relative z-10 px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${viewMode === mode ? 'text-slate-900' : 'text-slate-200 hover:text-white'
+                                    }`}
+                            >
+                                {viewMode === mode && (
+                                    <motion.div
+                                        layoutId="toggle-bg"
+                                        className="absolute inset-0 bg-white rounded-full shadow-lg"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        style={{ zIndex: -1 }}
+                                    />
+                                )}
+                                {mode === '3d' ? <Box size={14} strokeWidth={2.5} /> : <Layers size={14} strokeWidth={2.5} />}
+                                {mode === '3d' ? '3D View' : 'Blueprint'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -297,8 +340,16 @@ const ThreeDView = () => {
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-slate-800">Unit {selectedUnit.unit_number}</h2>
-                                    <p className="text-slate-500">Floor {selectedUnit.floor_number} • {selectedUnit.unit_type}</p>
+                                    <h2 className="text-2xl font-bold text-slate-800">
+                                        {selectedUnit.floor_number === -1 ? 'Parking Slot' : 'Unit'} {selectedUnit.unit_number}
+                                    </h2>
+                                    <p className="text-slate-500">
+                                        {selectedUnit.floor_number === -1
+                                            ? 'Basement Level'
+                                            : selectedUnit.floor_number === 0
+                                                ? 'Ground Floor'
+                                                : `Floor ${selectedUnit.floor_number}`} • {selectedUnit.unit_type}
+                                    </p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-slate-400 uppercase font-semibold">Total Price</p>
@@ -308,7 +359,7 @@ const ThreeDView = () => {
 
                             <div className="grid grid-cols-2 gap-4 mb-6">
                                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                    <p className="text-xs text-slate-400 font-medium uppercase">Carpet Area</p>
+                                    <p className="text-xs text-slate-400 font-medium uppercase">{selectedUnit.floor_number === -1 ? 'Parking Area' : 'Carpet Area'}</p>
                                     <p className="font-semibold text-slate-700">{selectedUnit.area} sq ft</p>
                                 </div>
                                 <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
@@ -318,19 +369,19 @@ const ThreeDView = () => {
                             </div>
 
                             <p className="text-sm text-slate-500 text-center mb-6 bg-slate-50 p-3 rounded-lg">
-                                Pay <span className="font-bold text-slate-900">0.5%</span> now to lock this unit instantly.
+                                Pay <span className="font-bold text-slate-900">0.5%</span> now to lock this {selectedUnit.floor_number === -1 ? 'spot' : 'unit'} instantly.
                             </p>
 
                             <div className="flex gap-3">
-                                <button 
+                                <button
                                     className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
                                     onClick={() => setSelectedUnit(null)}
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     className="flex-[2] py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                                    onClick={handleBookNow} 
+                                    onClick={handleBookNow}
                                     disabled={paymentLoading}
                                 >
                                     {paymentLoading ? 'Processing...' : 'Proceed to Payment'}
@@ -358,11 +409,14 @@ const ThreeDView = () => {
                     <group>
                         {project.towers.map((tower, idx) => {
                             const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                            // Lift building if basement is shown
+                            const liftY = showBasement ? 3.5 : 0;
+
                             return (
                                 <Tower
                                     key={tower.id}
                                     tower={tower}
-                                    position={[posX, 0, 0]}
+                                    position={[posX, liftY, 0]}
                                     onUnitClick={handleUnitClick}
                                 />
                             );
@@ -370,7 +424,7 @@ const ThreeDView = () => {
                     </group>
 
                     {/* Ground */}
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]} receiveShadow>
                         <planeGeometry args={[1000, 1000]} />
                         <meshStandardMaterial color="#e2e8f0" />
                     </mesh>
@@ -381,9 +435,9 @@ const ThreeDView = () => {
             {/* 2D View */}
             {viewMode === '2d' && (
                 <div className="absolute inset-x-0 bottom-0 top-20 z-0 bg-slate-50">
-                     <TwoDView 
-                        project={project} 
-                        onUnitClick={handleUnitClick} 
+                    <TwoDView
+                        project={project}
+                        onUnitClick={handleUnitClick}
                     />
                 </div>
             )}
