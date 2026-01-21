@@ -194,17 +194,20 @@
 
 .progress-bar {
   width: 100%;
-  height: 12px;
-  background: #e5e7eb;
-  border-radius: 6px;
+  height: 16px;
+  background: #cbd5e1;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .progress-fill {
   height: 100%;
-  background: #16a34a;
-  border-radius: 6px;
-  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  border-radius: 8px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
 
 /* Pricing Section */
@@ -962,5 +965,3 @@
     transform: rotate(360deg);
   }
 }
-
-

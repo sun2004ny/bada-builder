@@ -94,6 +94,26 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
           )}
         </div>
 
+        {/* Progress Bar for Live Grouping */}
+        {(property.total_slots || property.totalSlots || property.min_buyers || property.minBuyers) && (
+          <div className="property-progress">
+            <div className="progress-info">
+              <span className="joined-count">
+                {property.filled_slots || property.filledSlots || 0}/{property.total_slots || property.totalSlots || 0} Buyers Joined
+              </span>
+              <span className="min-tag">Min: {property.min_buyers || property.minBuyers || 0}</span>
+            </div>
+            <div className="progress-bar-container">
+              <div
+                className="progress-bar-fill"
+                style={{
+                  width: `${Math.max(((property.filled_slots || property.filledSlots || 0) / (property.total_slots || property.totalSlots || 1)) * 100, (property.filled_slots || property.filledSlots) > 0 ? 5 : 0)}%`
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Description (List View Only) */}
         {viewType === 'list' && property.description && (
           <p className="property-description">

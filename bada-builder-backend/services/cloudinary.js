@@ -34,7 +34,7 @@ export const uploadFile = async (buffer, folder = 'bada-builder') => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
-        resource_type: 'auto',
+        resource_type: 'raw', // Use 'raw' for PDFs and other docs to avoid rendering/401 issues
       },
       (error, result) => {
         if (error) {

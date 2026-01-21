@@ -13,7 +13,13 @@ router.get('/', optionalAuth, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT p.*, 
-            (SELECT COUNT(*) FROM live_group_towers WHERE project_id = p.id) as tower_count
+            (SELECT COUNT(*) FROM live_group_towers WHERE project_id = p.id) as tower_count,
+            (SELECT COUNT(*) FROM live_group_units u 
+             JOIN live_group_towers t ON u.tower_id = t.id 
+             WHERE t.project_id = p.id) as total_slots,
+            (SELECT COUNT(*) FROM live_group_units u 
+             JOIN live_group_towers t ON u.tower_id = t.id 
+             WHERE t.project_id = p.id AND u.status = 'booked') as filled_slots
             FROM live_group_projects p 
             WHERE status != $1 
             ORDER BY created_at DESC`,
@@ -32,7 +38,17 @@ router.get('/:id/full', optionalAuth, async (req, res) => {
         const projectId = req.params.id;
 
         // 1. Get Project
-        const projectResult = await pool.query('SELECT * FROM live_group_projects WHERE id = $1', [projectId]);
+        const projectResult = await pool.query(
+            `SELECT p.*,
+            (SELECT COUNT(*) FROM live_group_units u 
+             JOIN live_group_towers t ON u.tower_id = t.id 
+             WHERE t.project_id = p.id) as total_slots,
+            (SELECT COUNT(*) FROM live_group_units u 
+             JOIN live_group_towers t ON u.tower_id = t.id 
+             WHERE t.project_id = p.id AND u.status = 'booked') as filled_slots
+            FROM live_group_projects p WHERE p.id = $1`,
+            [projectId]
+        );
         if (projectResult.rows.length === 0) return res.status(404).json({ error: 'Project not found' });
 
         const project = projectResult.rows[0];

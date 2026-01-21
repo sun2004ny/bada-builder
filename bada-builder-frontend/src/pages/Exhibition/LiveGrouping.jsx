@@ -43,6 +43,9 @@ const LiveGrouping = () => {
         benefits: group.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
         pricePerSqFt: parseFloat(group.original_price?.replace(/[^0-9.]/g, '') || 4500),
         groupPricePerSqFt: parseFloat(group.group_price?.replace(/[^0-9.]/g, '') || 4000),
+        filledSlots: group.filled_slots || 0,
+        totalSlots: group.total_slots || 0,
+        minBuyers: group.min_buyers || 0,
       }));
 
       setLiveGroups(processedGroups);
@@ -64,7 +67,10 @@ const LiveGrouping = () => {
   };
 
   const getProgressPercentage = (filled, total) => {
-    return (filled / total) * 100;
+    if (!total || total === 0) return 0;
+    const perc = (filled / total) * 100;
+    if (filled > 0 && perc < 4) return 4; // Minimum 4% width if joined
+    return perc;
   };
 
   const getStatusColor = (status) => {

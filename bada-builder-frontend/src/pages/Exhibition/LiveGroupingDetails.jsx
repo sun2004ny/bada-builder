@@ -101,13 +101,8 @@ const LiveGroupingDetails = () => {
 
   const handleDownloadBrochure = () => {
     if (property.brochure_url) {
-      const link = document.createElement('a');
-      link.href = property.brochure_url;
-      link.target = '_blank';
-      link.download = `Brochure_${property.title.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Open in new tab for PDFs, more reliable across origins
+      window.open(property.brochure_url, '_blank', 'noopener,noreferrer');
     } else {
       alert('Brochure not available for this project.');
     }
