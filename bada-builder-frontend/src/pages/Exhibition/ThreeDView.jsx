@@ -24,7 +24,7 @@ const COLOR_DEFAULT = '#94a3b8';
 
 // --- Sub-Components ---
 
-const UnitBox = ({ unit, position, size, onClick, specialColor }) => {
+const UnitBox = ({ unit, position, size, onClick, specialColor, rotation = [0, 0, 0] }) => {
     const [hovered, setHovered] = useState(false);
     const meshRef = useRef();
 
@@ -32,18 +32,13 @@ const UnitBox = ({ unit, position, size, onClick, specialColor }) => {
     if (unit.status === 'booked') color = COLOR_BOOKED;
     else if (unit.status === 'locked') color = COLOR_LOCKED;
     else if (unit.status === 'available' && !specialColor) color = COLOR_AVAILABLE;
-    // Note: If specialColor is set (GF/Basement), we might want to keep that color even if available to distinguish it?
-    // Or should available green override it?
-    // Requirement says "Distinct visuals... to avoid user confusion".
-    // Let's make "Available" still green, but maybe a tailored green?
-    // Or keeps the special color until interacted with?
-    // Let's stick to standard status colors, but "Default/Idle" color is the special one.
-    if (unit.status === 'available') color = COLOR_AVAILABLE; // Override for availability to be clear it's buyable
+
+    if (unit.status === 'available') color = COLOR_AVAILABLE;
 
     if (hovered && unit.status === 'available') color = '#3b82f6';
 
     return (
-        <group position={position}>
+        <group position={position} rotation={rotation}>
             <mesh
                 ref={meshRef}
                 onClick={(e) => {
@@ -63,6 +58,7 @@ const UnitBox = ({ unit, position, size, onClick, specialColor }) => {
                     metalness={0.2}
                     transparent
                     opacity={unit.status === 'booked' ? 0.9 : 0.7}
+                    side={THREE.DoubleSide}
                 />
                 <lineSegments>
                     <edgesGeometry args={[new THREE.BoxGeometry(size[0], size[1], size[2])]} />
@@ -83,6 +79,9 @@ const UnitBox = ({ unit, position, size, onClick, specialColor }) => {
 };
 
 const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
+    const BASEMENT_HEIGHT = 4.0;
+    const UNIT_HEIGHT = FLOOR_HEIGHT * 0.9;
+
     // Group units by floor
     const unitsByFloor = tower.units.reduce((acc, unit) => {
         if (!acc[unit.floor_number]) acc[unit.floor_number] = [];
@@ -91,22 +90,36 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
     }, {});
 
     const sortedFloors = Object.keys(unitsByFloor).sort((a, b) => parseInt(a) - parseInt(b));
-
-    // Calculate Pillar Position
-    // Only if Basement exists (-1)
     const hasBasement = lowestFloor === -1;
-    const pillarHeight = 1;
-    // Pillar Top should be at Lowest Floor Bottom (Local).
-    // Lowest Floor Bottom = lowestFloor * 2.5 - 1.125.
-    // Pillar Center = Top - Height/2.
-    const pillarTop = lowestFloor * FLOOR_HEIGHT - (FLOOR_HEIGHT * 0.9 / 2);
-    const pillarY = pillarTop - (pillarHeight / 2);
+    const hasGF = unitsByFloor[0] !== undefined;
+
+    // Filter out basement from units rendering (it will be a single block)
+    const unitsFloors = sortedFloors.filter(f => parseInt(f) !== -1);
+
+    // Calculate vertical position for each floor
+    const getFloorY = (floorNum) => {
+        const bH = hasBasement ? BASEMENT_HEIGHT : 0;
+        const gfH = hasGF ? FLOOR_HEIGHT : 0;
+
+        if (floorNum === -1) return BASEMENT_HEIGHT / 2;
+        if (floorNum === 0) return bH + (UNIT_HEIGHT / 2);
+
+        // Floor 1 sits above GF or B or Ground
+        return bH + gfH + (floorNum - 1) * FLOOR_HEIGHT + (UNIT_HEIGHT / 2);
+    };
+
+    // Calculate Footprint based on unitsPerFloor
+    const sampleFloorUnits = unitsByFloor[1] || unitsByFloor[0] || unitsByFloor[-1] || [];
+    const cols = Math.ceil(Math.sqrt(sampleFloorUnits.length || 4));
+    const rows = Math.ceil(sampleFloorUnits.length / cols) || 1;
+    const footprintWidth = cols * (UNIT_WIDTH + UNIT_GAP) + 1;
+    const footprintDepth = rows * (UNIT_DEPTH + UNIT_GAP) + 1;
 
     return (
         <group position={position}>
             {/* Tower Name Label */}
             <Text
-                position={[0, (tower.total_floors + 1) * FLOOR_HEIGHT, 0]}
+                position={[0, (tower.total_floors + 1) * FLOOR_HEIGHT + (hasBasement ? 2 : 0), 0]}
                 fontSize={2.5}
                 color="#1e293b"
                 anchorX="center"
@@ -114,23 +127,30 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
                 {tower.tower_name}
             </Text>
 
-            {/* Render units floor by floor */}
-            {sortedFloors.map((floor) => {
+            {/* Render Unified Basement Volume */}
+            {hasBasement && (
+                <group position={[0, BASEMENT_HEIGHT / 2, 0]}>
+                    <mesh receiveShadow castShadow>
+                        <boxGeometry args={[footprintWidth, BASEMENT_HEIGHT, footprintDepth]} />
+                        <meshStandardMaterial color="#334155" roughness={0.8} />
+                    </mesh>
+                    <lineSegments>
+                        <edgesGeometry args={[new THREE.BoxGeometry(footprintWidth, BASEMENT_HEIGHT, footprintDepth)]} />
+                        <lineBasicMaterial color="#475569" />
+                    </lineSegments>
+                </group>
+            )}
+
+            {/* Render units floor by floor (starting from GF) */}
+            {unitsFloors.map((floor) => {
                 const floorNum = parseInt(floor);
                 const units = unitsByFloor[floor];
-
-                // Determine Y Position & Special Styling
-                let floorY = floorNum * FLOOR_HEIGHT;
+                const floorY = getFloorY(floorNum);
 
                 let specialColor = null;
-                if (floorNum === -1) {
-                    specialColor = '#475569'; // Basement - Concrete Dark
-                } else if (floorNum === 0) {
-                    specialColor = '#94a3b8'; // GF - Light Concrete/Grey
+                if (floorNum === 0) {
+                    specialColor = '#64748b'; // GF - Concrete/Glass mix
                 }
-
-                // Arrange units in a grid around center
-                const cols = Math.ceil(Math.sqrt(units.length));
 
                 return units.map((unit, idx) => {
                     const row = Math.floor(idx / cols);
@@ -139,26 +159,23 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
                     const posX = (col - (cols - 1) / 2) * (UNIT_WIDTH + UNIT_GAP);
                     const posZ = (row - (Math.ceil(units.length / cols) - 1) / 2) * (UNIT_DEPTH + UNIT_GAP);
 
+                    // Back units (A & B sides) should be rotated 180 deg to face outward
+                    const isBackUnit = unit.unit_number.includes('A') || unit.unit_number.includes('B');
+                    const rotation = isBackUnit ? [0, Math.PI, 0] : [0, 0, 0];
+
                     return (
                         <UnitBox
                             key={unit.id}
                             unit={unit}
                             position={[posX, floorY, posZ]}
-                            size={[UNIT_WIDTH, FLOOR_HEIGHT * 0.9, UNIT_DEPTH]}
+                            size={[UNIT_WIDTH, UNIT_HEIGHT, UNIT_DEPTH]}
                             onClick={onUnitClick}
                             specialColor={specialColor}
+                            rotation={rotation}
                         />
                     );
                 });
             })}
-
-            {/* Pillar / Foundation Structure - Only for Basement towers */}
-            {lowestFloor === -1 && (
-                <mesh position={[0, pillarY, 0]}>
-                    <boxGeometry args={[UNIT_WIDTH * 2.5, pillarHeight, UNIT_DEPTH * 2.5]} />
-                    <meshStandardMaterial color="#1e293b" roughness={1} />
-                </mesh>
-            )}
         </group>
     );
 };
@@ -401,27 +418,16 @@ const ThreeDView = () => {
                         {project.towers.map((tower, idx) => {
                             const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
 
-                            // Calculate Lowest Floor to determine structural base
                             const towerUnits = tower.units || [];
                             const lowestFloor = towerUnits.length > 0
                                 ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
                                 : 1;
 
-                            const hasBasement = lowestFloor === -1;
-
-                            // Lift logic:
-                            // Ground Floor offset = 1.125 (to sit exactly on grid at Y=0)
-                            // If Basement (-1) exists, lift it to sit on a 1u Pillar.
-                            // Pillar height = 1. Target bottom = 1.
-                            // Formula: Shift = TargetBottom + 1.125 - (lowest * 2.5)
-                            const targetBottom = hasBasement ? 1 : 0;
-                            const liftY = targetBottom + 1.125 - (lowestFloor * FLOOR_HEIGHT);
-
                             return (
                                 <Tower
                                     key={tower.id}
                                     tower={tower}
-                                    position={[posX, liftY, 0]}
+                                    position={[posX, 0, 0]}
                                     onUnitClick={handleUnitClick}
                                     lowestFloor={lowestFloor}
                                 />
