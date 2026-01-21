@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 // TODO: Implement with liveGroupingAPI.getById()
-import { liveGroupingAPI } from '../../services/api';
+import { liveGroupingAPI, liveGroupDynamicAPI } from '../../services/api';
 import { calculateTokenAmount, formatCurrency, calculateTotalPrice, calculateSavings, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
 import './LiveGroupingDetails.css';
 
@@ -19,19 +19,27 @@ const LiveGroupingDetails = () => {
   const fetchProperty = async () => {
     try {
       setLoading(true);
-      const response = await liveGroupDynamicAPI.getFullHierarchy(id);
-      const project = response.project;
+      const data = await liveGroupDynamicAPI.getFullHierarchy(id);
+      const project = data.project;
 
       if (project) {
         // Map to expected format
         const processedProject = {
           ...project,
-          pricePerSqFt: parseFloat(project.original_price?.replace(/[^0-9.]/g, '') || 4500),
-          groupPricePerSqFt: parseFloat(project.group_price?.replace(/[^0-9.]/g, '') || 4000),
-          images: project.images || [project.image || '/placeholder-property.jpg'],
+          title: project.title || 'Untitled Project',
+          location: project.location || 'Location not specified',
+          pricePerSqFt: parseFloat(project.original_price?.replace(/[^0-9.]/g, '') || 0),
+          groupPricePerSqFt: parseFloat(project.group_price?.replace(/[^0-9.]/g, '') || 0),
+          images: project.images || (project.image ? [project.image] : ['/placeholder-property.jpg']),
           benefits: project.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
           facilities: project.facilities || ["Swimming Pool", "Gym", "Parking", "Security"],
           advantages: Array.isArray(project.advantages) ? project.advantages : [],
+          filledSlots: project.filled_slots || 0,
+          totalSlots: project.total_slots || 0,
+          minBuyers: project.min_buyers || 0,
+          reraNumber: project.rera_number || 'Applied',
+          timeLeft: project.time_left || '15 Days',
+          savings: project.savings || '0',
           groupDetails: project.group_details || {
             refundPolicy: "100% refund if group doesn't fill",
             closingDate: "Not specified",
@@ -88,7 +96,21 @@ const LiveGroupingDetails = () => {
 
   const handleJoinGroup = () => {
     // Navigate to 3D view to join the group
-    navigate('/exhibition/3d-view', { state: { property } });
+    navigate(`/exhibition/live-grouping-details/${id}`);
+  };
+
+  const handleDownloadBrochure = () => {
+    if (property.brochure_url) {
+      const link = document.createElement('a');
+      link.href = property.brochure_url;
+      link.target = '_blank';
+      link.download = `Brochure_${property.title.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert('Brochure not available for this project.');
+    }
   };
 
   return (
@@ -286,6 +308,12 @@ const LiveGroupingDetails = () => {
                   <span className="label">🎯 Live Grouping Price</span>
                   <span className="amount group-highlight">₹{property.groupPricePerSqFt?.toLocaleString() || 'N/A'} / sq ft</span>
                 </div>
+                {property.savings && (
+                  <div className="savings-highlight-mini">
+                    <span>💰 Total Savings: </span>
+                    <strong>{property.savings}</strong>
+                  </div>
+                )}
               </div>
 
               {/* Price Range for Multiple Units */}
@@ -379,13 +407,35 @@ const LiveGroupingDetails = () => {
                 onClick={handleJoinGroup}
                 disabled={property.status === 'closed'}
               >
-                {property.status === 'closing' ? '⚡ Join Now - Closing Soon!' :
-                  property.status === 'closed' ? '❌ Group Closed' :
-                    '🤝 Join This Group'}
+                <div className="flex items-center justify-center gap-2">
+                  <span>🏢</span>
+                  {property.status === 'closing' ? '⚡ Join Now - Closing Soon!' :
+                    property.status === 'closed' ? '❌ Group Closed' :
+                      '🤝 Join This Group'}
+                </div>
+              </button>
+
+              <button
+                className="threed-view-btn"
+                onClick={() => navigate(`/exhibition/live-grouping-details/${id}`)}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span>🏗️</span> View 3D Visualization
+                </div>
               </button>
 
               <button
                 className="contact-btn"
+                onClick={handleDownloadBrochure}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span>📥</span> Download Brochure
+                </div>
+              </button>
+
+              <button
+                className="contact-btn"
+                style={{ border: '1px solid #e2e8f0', color: '#64748b' }}
                 onClick={() => navigate('/book-visit', { state: { property: { ...property, type: 'grouping-details' } } })}
               >
                 📞 Book Site Visit

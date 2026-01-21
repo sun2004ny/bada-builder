@@ -2,7 +2,7 @@ import express from 'express';
 import pool from '../config/database.js';
 import { authenticate, optionalAuth, isAdmin } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
-import { uploadImage, uploadMultipleImages } from '../services/cloudinary.js';
+import { uploadImage, uploadMultipleImages, uploadFile } from '../services/cloudinary.js';
 
 const router = express.Router();
 
@@ -165,27 +165,38 @@ router.post('/units/:id/book', authenticate, async (req, res) => {
 // --- ADMIN ROUTES ---
 
 // Create Project
-router.post('/admin/projects', authenticate, isAdmin, upload.array('images', 5), async (req, res) => {
+router.post('/admin/projects', authenticate, isAdmin, upload.fields([
+    { name: 'images', maxCount: 10 },
+    { name: 'brochure', maxCount: 1 }
+]), async (req, res) => {
     try {
         const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area } = req.body;
 
         let image = null;
         let images = [];
+        let brochure_url = null;
 
-        if (req.files && req.files.length > 0) {
-            const buffers = req.files.map(file => file.buffer);
-            images = await uploadMultipleImages(buffers, 'live_grouping');
+        // Handle Images
+        if (req.files && req.files['images']) {
+            const imageBuffers = req.files['images'].map(file => file.buffer);
+            images = await uploadMultipleImages(imageBuffers, 'live_grouping');
             image = images[0];
+        }
+
+        // Handle Brochure
+        if (req.files && req.files['brochure']) {
+            const brochureBuffer = req.files['brochure'][0].buffer;
+            brochure_url = await uploadFile(brochureBuffer, 'live_grouping_brochures');
         }
 
         const result = await pool.query(
             `INSERT INTO live_group_projects (
         title, developer, location, description, status, image, images, 
         original_price, group_price, discount, savings, type, min_buyers,
-        possession, rera_number, area, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) 
+        possession, rera_number, area, created_by, brochure_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
       RETURNING *`,
-            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id]
+            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url]
         );
 
         res.status(201).json({ project: result.rows[0] });

@@ -433,7 +433,7 @@ export const liveGroupDynamicAPI = {
   },
 
   // Admin
-  createProject: async (projectData, images = []) => {
+  createProject: async (projectData, images = [], brochure = null) => {
     const formData = new FormData();
     Object.keys(projectData).forEach(key => {
       if (projectData[key] !== undefined && projectData[key] !== null) {
@@ -441,6 +441,7 @@ export const liveGroupDynamicAPI = {
       }
     });
     images.forEach(image => formData.append('images', image));
+    if (brochure) formData.append('brochure', brochure);
     return uploadFile('/live-grouping-dynamic/admin/projects', formData);
   },
 

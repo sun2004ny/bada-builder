@@ -29,6 +29,26 @@ export const uploadImage = async (buffer, folder = 'bada-builder') => {
   });
 };
 
+export const uploadFile = async (buffer, folder = 'bada-builder') => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: 'auto',
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result.secure_url);
+        }
+      }
+    );
+
+    uploadStream.end(buffer);
+  });
+};
+
 export const uploadMultipleImages = async (buffers, folder = 'bada-builder') => {
   const uploadPromises = buffers.map(buffer => uploadImage(buffer, folder));
   return Promise.all(uploadPromises);

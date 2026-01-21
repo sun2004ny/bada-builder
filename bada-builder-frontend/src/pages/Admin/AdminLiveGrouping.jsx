@@ -58,6 +58,8 @@ const AdminLiveGrouping = () => {
 
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [brochureFile, setBrochureFile] = useState(null);
+  const [brochurePreview, setBrochurePreview] = useState('');
 
   useEffect(() => {
     fetchProjects();
@@ -82,12 +84,20 @@ const AdminLiveGrouping = () => {
     setImagePreviews(previews);
   };
 
+  const handleBrochureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBrochureFile(file);
+      setBrochurePreview(file.name);
+    }
+  };
+
   const handleCreateProject = async () => {
     try {
       setSaving(true);
 
       // 1. Create Project
-      const response = await liveGroupDynamicAPI.createProject(projectData, imageFiles);
+      const response = await liveGroupDynamicAPI.createProject(projectData, imageFiles, brochureFile);
       const newProject = response.project;
 
       // 2. Add Towers & Generate Units
@@ -397,10 +407,15 @@ const AdminLiveGrouping = () => {
                       </div>
                       <div className="input-group full">
                         <label>Images</label>
-                        <input type="file" multiple onChange={handleImageChange} />
+                        <input type="file" multiple onChange={handleImageChange} accept="image/*" />
                         <div className="previews">
                           {imagePreviews.map((p, i) => <img key={i} src={p} alt="" />)}
                         </div>
+                      </div>
+                      <div className="input-group full">
+                        <label>Brochure (PDF)</label>
+                        <input type="file" onChange={handleBrochureChange} accept=".pdf" />
+                        {brochurePreview && <p className="text-sm text-green-600 mt-1">✓ {brochurePreview}</p>}
                       </div>
                     </div>
                   </div>
