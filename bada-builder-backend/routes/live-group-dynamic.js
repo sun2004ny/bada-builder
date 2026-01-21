@@ -162,7 +162,11 @@ router.post('/admin/projects/:id/towers', authenticate, isAdmin, async (req, res
 router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (req, res) => {
     try {
         const towerId = req.params.id;
-        const { unitsPerFloor, pricePerUnit, unitType, areaPerUnit, hasBasement, hasGroundFloor } = req.body;
+        let { unitsPerFloor, pricePerUnit, unitType, areaPerUnit, hasBasement, hasGroundFloor } = req.body;
+
+        // Force boolean conversion
+        hasBasement = String(hasBasement) === 'true' || hasBasement === true;
+        hasGroundFloor = String(hasGroundFloor) === 'true' || hasGroundFloor === true;
 
         // Get tower floors
         const towerResult = await pool.query('SELECT total_floors FROM live_group_towers WHERE id = $1', [towerId]);

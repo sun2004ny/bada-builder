@@ -102,8 +102,8 @@ const AdminLiveGrouping = () => {
           pricePerUnit: unitSettings.pricePerUnit,
           unitType: unitSettings.unitType,
           areaPerUnit: unitSettings.areaPerUnit,
-          hasBasement: towerInfo.hasBasement,
-          hasGroundFloor: towerInfo.hasGroundFloor
+          hasBasement: !!towerInfo.hasBasement,
+          hasGroundFloor: !!towerInfo.hasGroundFloor
         });
       }
 
@@ -203,14 +203,20 @@ const AdminLiveGrouping = () => {
   };
 
   const updateTowerRow = (index, field, value) => {
-    const newTowers = [...towers];
-    // Handle number inputs specifically to prevent NaN
-    if (field === 'floors' || field === 'unitsPerFloor') {
-      newTowers[index][field] = value === '' ? '' : parseInt(value);
-    } else {
-      newTowers[index][field] = value;
-    }
-    setTowers(newTowers);
+    setTowers(prevTowers => {
+      const newTowers = [...prevTowers];
+      const updatedTower = { ...newTowers[index] };
+
+      // Handle number inputs specifically to prevent NaN
+      if (field === 'floors' || field === 'unitsPerFloor') {
+        updatedTower[field] = value === '' ? '' : parseInt(value);
+      } else {
+        updatedTower[field] = value;
+      }
+
+      newTowers[index] = updatedTower;
+      return newTowers;
+    });
   };
 
   return (

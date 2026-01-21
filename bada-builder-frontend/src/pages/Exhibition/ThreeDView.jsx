@@ -82,7 +82,7 @@ const UnitBox = ({ unit, position, size, onClick, specialColor }) => {
     );
 };
 
-const Tower = ({ tower, position, onUnitClick }) => {
+const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
     // Group units by floor
     const unitsByFloor = tower.units.reduce((acc, unit) => {
         if (!acc[unit.floor_number]) acc[unit.floor_number] = [];
@@ -90,18 +90,21 @@ const Tower = ({ tower, position, onUnitClick }) => {
         return acc;
     }, {});
 
-    // Sort floors: Basement (-1) -> GF (0) -> 1 -> 2 ...
     const sortedFloors = Object.keys(unitsByFloor).sort((a, b) => parseInt(a) - parseInt(b));
 
-    // Calculate vertical offset based on whether GF/Basement exist
-    // If GF exists (0), Floor 1 starts at FLOOR_HEIGHT.
-    // If only Basement (-1), Floor 1 starts at 0? No, let's keep standard:
-    // Floor 1 is always at 1 * FLOOR_HEIGHT (2.5) essentially, relative to "Ground" (0).
-    // GF is at 0. Basement is at -2.5. This keeps it consistent.
+    // Calculate Pillar Position
+    // Only if Basement exists (-1)
+    const hasBasement = lowestFloor === -1;
+    const pillarHeight = 1;
+    // Pillar Top should be at Lowest Floor Bottom (Local).
+    // Lowest Floor Bottom = lowestFloor * 2.5 - 1.125.
+    // Pillar Center = Top - Height/2.
+    const pillarTop = lowestFloor * FLOOR_HEIGHT - (FLOOR_HEIGHT * 0.9 / 2);
+    const pillarY = pillarTop - (pillarHeight / 2);
 
     return (
         <group position={position}>
-            {/* Tower label */}
+            {/* Tower Name Label */}
             <Text
                 position={[0, (tower.total_floors + 1) * FLOOR_HEIGHT, 0]}
                 fontSize={2.5}
@@ -119,12 +122,11 @@ const Tower = ({ tower, position, onUnitClick }) => {
                 // Determine Y Position & Special Styling
                 let floorY = floorNum * FLOOR_HEIGHT;
 
-                // Helper to determine special styling
-                let specialColor = null; // Default
+                let specialColor = null;
                 if (floorNum === -1) {
-                    specialColor = '#64748b'; // Basement Darker
+                    specialColor = '#475569'; // Basement - Concrete Dark
                 } else if (floorNum === 0) {
-                    specialColor = '#cbd5e1'; // GF Different
+                    specialColor = '#94a3b8'; // GF - Light Concrete/Grey
                 }
 
                 // Arrange units in a grid around center
@@ -150,11 +152,13 @@ const Tower = ({ tower, position, onUnitClick }) => {
                 });
             })}
 
-            {/* Foundation / Ground */}
-            <mesh position={[0, -FLOOR_HEIGHT / 2 - 0.5, 0]}>
-                <boxGeometry args={[UNIT_WIDTH * 3, 0.5, UNIT_DEPTH * 3]} />
-                <meshStandardMaterial color="#475569" />
-            </mesh>
+            {/* Pillar / Foundation Structure - Only for Basement towers */}
+            {lowestFloor === -1 && (
+                <mesh position={[0, pillarY, 0]}>
+                    <boxGeometry args={[UNIT_WIDTH * 2.5, pillarHeight, UNIT_DEPTH * 2.5]} />
+                    <meshStandardMaterial color="#1e293b" roughness={1} />
+                </mesh>
+            )}
         </group>
     );
 };
@@ -173,7 +177,6 @@ const ThreeDView = () => {
     const [loading, setLoading] = useState(true);
     const [selectedUnit, setSelectedUnit] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
-    const [showBasement, setShowBasement] = useState(false);
 
     // View Mode State
     const [viewMode, setViewMode] = useState('3d'); // '3d' | '2d'
@@ -274,18 +277,6 @@ const ThreeDView = () => {
 
                 {/* View Toggle */}
                 <div className="pointer-events-auto self-center md:self-auto flex gap-3">
-                    {/* Basement Toggle */}
-                    <button
-                        onClick={() => setShowBasement(!showBasement)}
-                        className={`px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 shadow-xl border border-white/10 ${showBasement
-                            ? 'bg-slate-800 text-white ring-2 ring-slate-500 ring-offset-2 ring-offset-slate-900'
-                            : 'bg-white/90 text-slate-700 hover:bg-white'
-                            }`}
-                    >
-                        <Layers size={14} strokeWidth={2.5} className={showBasement ? "text-emerald-400" : "text-slate-400"} />
-                        {showBasement ? 'Hide Basement' : 'Show Basement'}
-                    </button>
-
                     {/* View Toggle */}
                     <div className="bg-slate-900/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 flex relative shadow-2xl">
                         {['3d', '2d'].map((mode) => (
@@ -409,8 +400,22 @@ const ThreeDView = () => {
                     <group>
                         {project.towers.map((tower, idx) => {
                             const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
-                            // Lift building if basement is shown
-                            const liftY = showBasement ? 3.5 : 0;
+
+                            // Calculate Lowest Floor to determine structural base
+                            const towerUnits = tower.units || [];
+                            const lowestFloor = towerUnits.length > 0
+                                ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
+                                : 1;
+
+                            const hasBasement = lowestFloor === -1;
+
+                            // Lift logic:
+                            // Ground Floor offset = 1.125 (to sit exactly on grid at Y=0)
+                            // If Basement (-1) exists, lift it to sit on a 1u Pillar.
+                            // Pillar height = 1. Target bottom = 1.
+                            // Formula: Shift = TargetBottom + 1.125 - (lowest * 2.5)
+                            const targetBottom = hasBasement ? 1 : 0;
+                            const liftY = targetBottom + 1.125 - (lowestFloor * FLOOR_HEIGHT);
 
                             return (
                                 <Tower
@@ -418,13 +423,14 @@ const ThreeDView = () => {
                                     tower={tower}
                                     position={[posX, liftY, 0]}
                                     onUnitClick={handleUnitClick}
+                                    lowestFloor={lowestFloor}
                                 />
                             );
                         })}
                     </group>
 
-                    {/* Ground */}
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]} receiveShadow>
+                    {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
                         <planeGeometry args={[1000, 1000]} />
                         <meshStandardMaterial color="#e2e8f0" />
                     </mesh>
