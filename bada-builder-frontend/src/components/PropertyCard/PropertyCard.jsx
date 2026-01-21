@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiMapPin, FiHome, FiMaximize2, FiCalendar } from 'react-icons/fi';
 import './PropertyCard.css';
 import BookmarkButton from '../BookmarkButton/BookmarkButton';
+import { motion } from 'framer-motion';
+import AnimatedButton from '../Motion/AnimatedButton';
 
 /**
  * Reusable PropertyCard component that supports both grid and list views
@@ -26,9 +28,12 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
   const propertyTitle = property.project_name || property.projectName || property.title || property.projectName || 'Untitled Property';
 
   return (
-    <div
+    <motion.div
       className={`property-card-wrapper ${viewType}-view cursor-pointer`}
       onClick={handleViewDetails}
+      whileHover={{ y: -8, boxShadow: "0 10px 30px rgba(0,0,0,0.15)" }}
+      transition={{ duration: 0.3 }}
+      layout
     >
       {/* Property Image */}
       <div className="property-card-image">
@@ -100,7 +105,7 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
 
         {/* Action Buttons */}
         <div className="property-actions">
-          <button
+          <AnimatedButton
             onClick={(e) => {
               e.stopPropagation();
               handleViewDetails(e);
@@ -108,8 +113,8 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
             className="btn-primary"
           >
             View Details
-          </button>
-          <button
+          </AnimatedButton>
+          <AnimatedButton
             onClick={(e) => {
               e.stopPropagation();
               handleBookVisit(e);
@@ -118,10 +123,10 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
           >
             <FiCalendar className="icon" />
             Book Visit
-          </button>
+          </AnimatedButton>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

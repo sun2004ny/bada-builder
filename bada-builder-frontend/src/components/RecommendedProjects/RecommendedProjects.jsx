@@ -4,6 +4,7 @@ import './RecommendedProjects.css';
 import { Link } from 'react-router-dom';
 import { propertiesAPI, liveGroupingAPI } from '../../services/api';
 import PropertyCard from '../PropertyCard/PropertyCard';
+import ScrollReveal from '../Motion/ScrollReveal';
 
 const RecommendedProjects = () => {
   const [featuredProperties, setFeaturedProperties] = useState({
@@ -114,13 +115,11 @@ const RecommendedProjects = () => {
           const property = featuredProperties[category.key];
 
           return (
-            <motion.div
+            <ScrollReveal
               key={category.key}
               className="featured-category"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.15 }}
+              delay={idx * 0.15}
+              width="100%"
             >
               <div className="category-header">
                 <h3>{category.title}</h3>
@@ -150,7 +149,7 @@ const RecommendedProjects = () => {
                   </div>
                 </div>
               )}
-            </motion.div>
+            </ScrollReveal>
           );
         })}
       </div>

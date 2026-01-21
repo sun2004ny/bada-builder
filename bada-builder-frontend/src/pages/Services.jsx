@@ -1,7 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import './Services.css';
+import PageTransition from '../components/Motion/PageTransition';
+import ScrollReveal from '../components/Motion/ScrollReveal';
+import AnimatedButton from '../components/Motion/AnimatedButton';
 
 const services = [
   {
@@ -74,68 +76,65 @@ const Services = () => {
   };
 
   return (
-    <div className="services-page">
-      <div className="services-container">
-        <motion.div 
-          className="services-header"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1>Our Services</h1>
-          <p>Comprehensive real estate solutions for all your needs</p>
-        </motion.div>
-
-        <div className="services-grid">
-          {services.map((service, index) => (
-            <motion.div 
-              key={service.id} 
-              className="service-card"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ y: -8, transition: { duration: 0.2 } }}
-            >
-              <div className="service-icon">{service.icon}</div>
-              <h3>{service.title}</h3>
-              <p className="service-description">{service.description}</p>
-              <ul className="service-features">
-                {service.features.map((feature, index) => (
-                  <li key={index}>
-                    <svg className="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <button 
-                className="service-btn"
-                onClick={() => handleServiceClick(service)}
-              >
-                {service.link ? 'Explore Now' : 'Learn More'}
-              </button>
-            </motion.div>
-          ))}
-        </div>
-
-        <motion.div 
-          className="cta-section"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        >
-          <h2>Need Help Choosing?</h2>
-          <p>Our experts are here to guide you through every step</p>
-          <button 
-            className="cta-button"
-            onClick={() => navigate('/contact')}
+    <PageTransition>
+      <div className="services-page">
+        <div className="services-container">
+          <ScrollReveal
+            className="services-header"
+            width="100%"
           >
-            Contact Us
-          </button>
-        </motion.div>
+            <h1>Our Services</h1>
+            <p>Comprehensive real estate solutions for all your needs</p>
+          </ScrollReveal>
+
+          <div className="services-grid">
+            {services.map((service, index) => (
+              <ScrollReveal
+                key={service.id}
+                className="service-card"
+                delay={index * 0.1}
+                width="100%"
+              >
+                <div className="service-icon">{service.icon}</div>
+                <h3>{service.title}</h3>
+                <p className="service-description">{service.description}</p>
+                <ul className="service-features">
+                  {service.features.map((feature, idx) => (
+                    <li key={idx}>
+                      <svg className="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <AnimatedButton
+                  className="service-btn"
+                  onClick={() => handleServiceClick(service)}
+                >
+                  {service.link ? 'Explore Now' : 'Learn More'}
+                </AnimatedButton>
+              </ScrollReveal>
+            ))}
+          </div>
+
+          <ScrollReveal
+            className="cta-section"
+            delay={0.8}
+            width="100%"
+          >
+            <h2>Need Help Choosing?</h2>
+            <p>Our experts are here to guide you through every step</p>
+            <AnimatedButton
+              className="cta-button"
+              onClick={() => navigate('/contact')}
+            >
+              Contact Us
+            </AnimatedButton>
+          </ScrollReveal>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   );
 };
 
