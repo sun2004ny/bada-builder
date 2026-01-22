@@ -136,7 +136,16 @@ router.get('/bookings', authenticate, isAdmin, async (req, res) => {
         let paramIndex = 1;
 
         if (search) {
-            whereConditions.push(`(b.user_email ILIKE $${paramIndex} OR b.property_title ILIKE $${paramIndex} OR b.person1_name ILIKE $${paramIndex})`);
+            whereConditions.push(`(
+                b.user_email ILIKE $${paramIndex} OR 
+                b.property_title ILIKE $${paramIndex} OR 
+                b.person1_name ILIKE $${paramIndex} OR
+                b.person2_name ILIKE $${paramIndex} OR
+                b.person3_name ILIKE $${paramIndex} OR
+                b.property_location ILIKE $${paramIndex} OR
+                u.phone ILIKE $${paramIndex} OR
+                u.name ILIKE $${paramIndex}
+            )`);
             queryParams.push(`%${search}%`);
             paramIndex++;
         }
@@ -173,6 +182,8 @@ router.get('/bookings', authenticate, isAdmin, async (req, res) => {
         const countQuery = `
             SELECT COUNT(*) 
             FROM bookings b
+            LEFT JOIN properties p ON b.property_id = p.id
+            LEFT JOIN users u ON b.user_id = u.id
             ${whereClause}
         `;
         const countResult = await pool.query(countQuery, queryParams);

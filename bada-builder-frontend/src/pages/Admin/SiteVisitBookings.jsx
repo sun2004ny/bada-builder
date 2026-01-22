@@ -16,7 +16,9 @@ import {
     DollarSign,
     CheckCircle,
     XCircle,
-    AlertCircle
+    AlertCircle,
+    X,
+    RefreshCw
 } from 'lucide-react';
 import { adminAPI } from '../../services/adminApi';
 
@@ -26,6 +28,7 @@ const SiteVisitBookings = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [paymentFilter, setPaymentFilter] = useState('');
+    const [appliedSearch, setAppliedSearch] = useState('');
     const [expandedBooking, setExpandedBooking] = useState(null);
     const [pagination, setPagination] = useState({
         page: 1,
@@ -36,7 +39,7 @@ const SiteVisitBookings = () => {
 
     useEffect(() => {
         fetchBookings();
-    }, [pagination.page, statusFilter, paymentFilter]);
+    }, [pagination.page, statusFilter, paymentFilter, appliedSearch]);
 
     const fetchBookings = async () => {
         try {
@@ -44,7 +47,7 @@ const SiteVisitBookings = () => {
             const params = {
                 page: pagination.page,
                 limit: pagination.limit,
-                search: searchQuery,
+                search: appliedSearch,
                 status: statusFilter,
                 payment_status: paymentFilter
             };
@@ -63,8 +66,23 @@ const SiteVisitBookings = () => {
     };
 
     const handleSearch = () => {
+        setAppliedSearch(searchQuery);
         setPagination(prev => ({ ...prev, page: 1 }));
-        fetchBookings();
+    };
+
+    const handleRefresh = () => {
+        const isReset = searchQuery === '' && appliedSearch === '' && statusFilter === '' && paymentFilter === '' && pagination.page === 1;
+
+        setSearchQuery('');
+        setAppliedSearch('');
+        setStatusFilter('');
+        setPaymentFilter('');
+        setPagination(prev => ({ ...prev, page: 1 }));
+
+        // If already at reset state, useEffect won't trigger, so fetch manually
+        if (isReset) {
+            fetchBookings();
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -155,9 +173,10 @@ const SiteVisitBookings = () => {
                     </p>
                 </div>
                 <button
-                    onClick={fetchBookings}
-                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    onClick={handleRefresh}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-all shadow-sm font-medium"
                 >
+                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                     Refresh
                 </button>
             </div>
@@ -171,12 +190,23 @@ const SiteVisitBookings = () => {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search by email, name, or property..."
+                                placeholder="Search by name, phone, email, location..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                                className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                             />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        handleSearch();
+                                    }}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
 
