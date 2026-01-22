@@ -34,6 +34,9 @@ router.post(
         person2_name,
         person3_name,
         pickup_address,
+        location_from_map,
+        latitude,
+        longitude,
         payment_method = 'postvisit',
       } = req.body;
 
@@ -54,8 +57,9 @@ router.post(
         `INSERT INTO bookings (
           property_id, property_title, property_location, user_id, user_email,
           visit_date, visit_time, number_of_people, person1_name, person2_name,
-          person3_name, pickup_address, payment_method
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          person3_name, pickup_address, location_from_map, pickup_latitude, 
+          pickup_longitude, payment_method
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING *`,
         [
           property_id,
@@ -70,6 +74,9 @@ router.post(
           person2_name || null,
           person3_name || null,
           pickup_address || null,
+          location_from_map || null,
+          latitude ? parseFloat(latitude) : null,
+          longitude ? parseFloat(longitude) : null,
           payment_method,
         ]
       );

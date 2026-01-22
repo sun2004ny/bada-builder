@@ -1850,3 +1850,395 @@ button:not([type='submit']):not(.cancel-btn):hover {
   -ms-user-select: none;
   user-select: none;
 }
+/* Address validation styling */
+.address-input-with-maps:invalid {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2) !important;
+}
+
+.address-input-with-maps:valid {
+  border-color: #4ade80 !important;
+}
+
+.address-input-with-maps:focus:invalid {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Enhanced address help text */
+.address-help {
+  display: block;
+  color: #b0b0b0;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Address input character counter (optional visual feedback) */
+.address-input-wrapper {
+  position: relative;
+}
+
+.address-input-with-maps[data-length]:after {
+  content: attr(data-length) " chars";
+  position: absolute;
+  right: 50px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: #888;
+  pointer-events: none;
+}
+/* Structured Address Input Styles */
+.structured-address-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.address-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.map-button-row {
+  display: flex !important;
+  justify-content: center;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #444;
+  width: 100%;
+  visibility: visible !important;
+}
+
+.address-field {
+  flex: 1;
+  background-color: #2a2a3e !important;
+  border: 2px solid #444 !important;
+  color: #ffffff !important;
+  padding: 0.8rem !important;
+  border-radius: 8px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.address-field:focus {
+  border-color: #9e4efb !important;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2) !important;
+  background-color: #323248 !important;
+  outline: none;
+}
+
+.address-field::placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+.address-field:valid {
+  border-color: #4ade80 !important;
+}
+
+.address-field:invalid:not(:placeholder-shown) {
+  border-color: #fbbf24 !important;
+}
+
+/* Specific field styling */
+.house-field {
+  flex: 0.6;
+  min-width: 120px;
+}
+
+.building-field {
+  flex: 1.4;
+}
+
+.area-field {
+  flex: 1.2;
+}
+
+.city-field {
+  flex: 1;
+}
+
+.pincode-field {
+  flex: 0.8;
+  min-width: 100px;
+}
+
+/* Updated maps button for structured layout */
+.structured-address-inputs .maps-button {
+  background-color: #9e4efb !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 0.8rem 1.5rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  white-space: nowrap !important;
+  min-height: 44px !important;
+  justify-content: center !important;
+  min-width: 160px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 10 !important;
+}
+
+.structured-address-inputs .maps-button:hover {
+  background-color: #8a3eeb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(158, 78, 251, 0.3);
+}
+
+.structured-address-inputs .maps-button:active {
+  transform: translateY(0);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .address-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .address-field {
+    width: 100%;
+    flex: none;
+  }
+  
+  .maps-button-inline {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .structured-address-inputs {
+    gap: 0.5rem;
+  }
+}
+
+/* Desktop specific adjustments */
+@media (min-width: 769px) {
+  .map-button-row {
+    justify-content: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+  }
+  
+  .structured-address-inputs .maps-button {
+    margin-top: 0;
+  }
+}
+
+/* Enhanced address help text for structured inputs */
+.structured-address-inputs + input[type="hidden"] + .address-help {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(158, 78, 251, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid #9e4efb;
+}
+/* Inline maps button (perfect position) */
+.maps-button-inline {
+  background-color: #9e4efb !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 0.8rem 1rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.4rem !important;
+  min-height: 44px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 10 !important;
+}
+
+.maps-button-inline:hover {
+  background-color: #8a3eeb !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(158, 78, 251, 0.3) !important;
+}
+
+.maps-button-inline:active {
+  transform: translateY(0) !important;
+}
+
+/* Ensure both buttons are visible */
+.structured-address-inputs {
+  position: relative !important;
+}
+
+.structured-address-inputs * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+/* Location from Map field styling */
+.map-location-row {
+  border-top: 1px solid #444;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.map-location-field {
+  background-color: #1a1a2e !important;
+  border: 2px solid #9e4efb !important;
+  color: #b0b0b0 !important;
+  font-style: italic;
+  cursor: not-allowed;
+}
+
+.map-location-field:focus {
+  border-color: #9e4efb !important;
+  box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2) !important;
+}
+
+.map-location-field::placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+.clear-map-location {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 0.8rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 44px !important;
+  min-width: 44px !important;
+  flex-shrink: 0 !important;
+}
+
+.clear-map-location:hover {
+  background-color: #b91c1c !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+}
+
+/* Required field indicators */
+.address-field:required {
+  border-left: 3px solid #fbbf24;
+}
+
+.address-field:required:valid {
+  border-left: 3px solid #4ade80;
+}
+
+.address-field:required:invalid:not(:placeholder-shown) {
+  border-left: 3px solid #ef4444;
+}
+
+/* Pincode validation styling */
+.pincode-field:invalid:not(:placeholder-shown) {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+.pincode-field:valid {
+  border-color: #4ade80 !important;
+}
+
+/* Mobile adjustments for new field */
+@media (max-width: 768px) {
+  .map-location-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .clear-map-location {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+  }
+}
+/* Booking Loading Overlay */
+.booking-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.booking-loading-content {
+  background: #1a1a2e;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 2px solid #9e4efb;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.booking-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(158, 78, 251, 0.3);
+  border-top: 4px solid #9e4efb;
+  border-radius: 50%;
+  animation: bookingSpinner 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.booking-loading-content p {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes bookingSpinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Performance optimizations */
+.book-visit-container {
+  contain: layout style paint;
+}
+
+.structured-address-inputs {
+  contain: layout style;
+}
+
+.address-field {
+  will-change: border-color;
+}
+
+.maps-button-inline {
+  will-change: transform, box-shadow;
+}
+
+/* Reduce repaints during typing */
+.address-field:focus {
+  contain: layout style paint;
+}
