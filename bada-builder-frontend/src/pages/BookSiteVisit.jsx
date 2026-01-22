@@ -800,6 +800,7 @@ const BookSiteVisit = () => {
               </button>
             </div>
 
+            <div className="map-modal-scrollable-content">
             {/* Map Controls */}
             <div className="map-controls">
               <div className="location-options">
@@ -849,7 +850,7 @@ const BookSiteVisit = () => {
 
               <div className="location-help">
                 <small>
-                  <strong>How to select:</strong> Click on the map, drag the red marker, use your current location, or search for a place above.
+                  <strong>How to select:</strong> Click on map, drag marker, or use "My Location" button.
                 </small>
               </div>
             </div>
@@ -862,11 +863,37 @@ const BookSiteVisit = () => {
                 </div>
               </div>
 
+              <div className="map-loading-overlay" style={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                background: 'rgba(26, 26, 46, 0.8)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                zIndex: 1000,
+                opacity: addressLoading ? 1 : 0,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: addressLoading ? 'auto' : 'none'
+              }}>
+                <div style={{ textAlign: 'center', color: '#ffffff' }}>
+                  <div className="location-spinner" style={{ margin: '0 auto 1rem' }}></div>
+                  <p>Loading address...</p>
+                </div>
+              </div>
+
               <MapContainer
                 center={mapCenter}
                 zoom={13}
-                style={{ width: '100%', height: '450px' }}
+                style={{ width: '100%', height: '100%', minHeight: '500px', zIndex: 1 }}
                 scrollWheelZoom={true}
+                zoomControl={true}
+                doubleClickZoom={true}
+                touchZoom={true}
+                dragging={true}
+                className="leaflet-map-container"
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -902,13 +929,7 @@ const BookSiteVisit = () => {
                 </div>
               ) : (
                 <div className="location-instructions">
-                  <p>📍 Please select your pickup location:</p>
-                  <ul>
-                    <li>🖱️ Click anywhere on the map</li>
-                    <li>🔍 Search for a location above</li>
-                    <li>📱 Use "My Location" button</li>
-                    <li>🎯 Drag the red marker to adjust</li>
-                  </ul>
+                  <p>📍 Select pickup location</p>
                 </div>
               )}
 
@@ -929,6 +950,7 @@ const BookSiteVisit = () => {
                   Confirm Location
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>
