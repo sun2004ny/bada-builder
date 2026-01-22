@@ -45,12 +45,20 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
         <div className="absolute top-3 right-3 z-10">
           <BookmarkButton propertyId={property.id} />
         </div>
+
+        {/* Special Badges */}
         {property.status && (
           <span className={`property-status-badge ${property.status.toLowerCase()}`}>
-            {property.status}
+            {property.status === 'live' ? '🔴 Live Room' : property.status}
           </span>
         )}
-        {property.featured && (
+        {property.discount && (
+          <span className="discount-badge-overlay">{property.discount} OFF</span>
+        )}
+        {property.timeLeft && (
+          <span className="timer-badge-overlay">⏰ {property.timeLeft}</span>
+        )}
+        {property.featured && !property.discount && (
           <span className="featured-badge">Featured</span>
         )}
       </div>
@@ -66,12 +74,27 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
           {property.project_location || property.projectLocation || property.location || 'Location Not Specified'}
         </p>
 
-        {/* Price */}
-        <p className="property-price">
-          {property.price && !property.price.toString().includes('undefined')
-            ? property.price
-            : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.base_price ? `₹${property.base_price}` : (property.price && !property.price.toString().includes('undefined') ? property.price : 'Contact for Price')))}
-        </p>
+        {/* Price Section */}
+        <div className="property-price-container">
+          {property.original_price && property.group_price ? (
+            <div className="group-pricing-display">
+              <div className="price-row regular">
+                <span className="label">Regular:</span>
+                <span className="value strikethrough">{property.original_price}</span>
+              </div>
+              <div className="price-row highlight">
+                <span className="label">Group Price:</span>
+                <span className="value">{property.group_price}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="property-price">
+              {property.price && !property.price.toString().includes('undefined')
+                ? property.price
+                : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.base_price ? `₹${property.base_price}` : (property.price && !property.price.toString().includes('undefined') ? property.price : 'Contact for Price')))}
+            </p>
+          )}
+        </div>
 
         {/* Key Highlights */}
         <div className="property-highlights">
@@ -94,7 +117,7 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
           )}
         </div>
 
-        {/* Progress Bar for Live Grouping */}
+        {/* Progress Bar for Grouping */}
         {(property.total_slots || property.totalSlots || property.min_buyers || property.minBuyers) && (
           <div className="property-progress">
             <div className="progress-info">
@@ -114,15 +137,6 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
           </div>
         )}
 
-        {/* Description (List View Only) */}
-        {viewType === 'list' && property.description && (
-          <p className="property-description">
-            {property.description.length > 150
-              ? `${property.description.substring(0, 150)}...`
-              : property.description}
-          </p>
-        )}
-
         {/* Action Buttons */}
         <div className="property-actions">
           <AnimatedButton
@@ -132,7 +146,7 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
             }}
             className="btn-primary"
           >
-            View Details
+            {property.source === 'live-grouping' ? 'Join Group' : 'View Details'}
           </AnimatedButton>
           <AnimatedButton
             onClick={(e) => {

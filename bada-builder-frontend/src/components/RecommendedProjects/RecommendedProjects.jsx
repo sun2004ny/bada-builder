@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import './RecommendedProjects.css';
 import { Link } from 'react-router-dom';
-import { propertiesAPI, liveGroupingAPI } from '../../services/api';
+import { propertiesAPI, liveGroupingAPI, liveGroupDynamicAPI } from '../../services/api';
 import PropertyCard from '../PropertyCard/PropertyCard';
 import ScrollReveal from '../Motion/ScrollReveal';
 
@@ -20,22 +20,50 @@ const RecommendedProjects = () => {
       try {
         setLoading(true);
 
+        const fallbackBadaBuilder = [
+          {
+            id: 'bb-1',
+            title: "Premium Investment Opportunity",
+            category: "Curated by Bada Builder",
+            location: "Prime Location, Vadodara",
+            price: "₹75 L - ₹1.5 Cr",
+            image: "/placeholder-property.jpg",
+            type: "Mixed Development",
+            verified: true,
+            featured: true
+          }
+        ];
+
         // Fetch properties from API in parallel
         const [individualRes, developerRes, liveGroupingRes] = await Promise.all([
           propertiesAPI.getAll({ user_type: 'individual', status: 'active' }).catch(() => ({ properties: [] })),
           propertiesAPI.getAll({ user_type: 'developer', status: 'active' }).catch(() => ({ properties: [] })),
-          liveGroupingAPI.getAll().catch(() => ({ properties: [] }))
+          liveGroupDynamicAPI.getAll().catch(() => ({ projects: [] }))
         ]);
 
         const individualProperties = individualRes.properties || individualRes || [];
         const developerProperties = developerRes.properties || developerRes || [];
-        const liveGroupingProperties = liveGroupingRes.properties || liveGroupingRes || [];
+        const liveGroupingProperties = liveGroupingRes.projects || [];
+
+        // Fetch Bada Builder properties from localStorage or fallback
+        const storedBB = JSON.parse(localStorage.getItem('badaBuilderProperties') || '[]');
+        const badaBuilderProperties = storedBB.length > 0 ? storedBB : fallbackBadaBuilder;
 
         const results = {
           individual: individualProperties.length > 0 ? individualProperties[0] : null,
           developer: developerProperties.length > 0 ? developerProperties[0] : null,
-          liveGrouping: liveGroupingProperties.length > 0 ? liveGroupingProperties[0] : null,
-          badaBuilder: null // TODO: Add badaBuilder filter to API if needed
+          liveGrouping: liveGroupingProperties.length > 0 ? {
+            ...liveGroupingProperties[0],
+            // Map common fields
+            title: liveGroupingProperties[0].title,
+            image: liveGroupingProperties[0].image,
+            location: liveGroupingProperties[0].location,
+            price: liveGroupingProperties[0].group_price || liveGroupingProperties[0].price,
+            filled_slots: liveGroupingProperties[0].filled_slots,
+            total_slots: liveGroupingProperties[0].total_slots,
+            min_buyers: liveGroupingProperties[0].min_buyers
+          } : null,
+          badaBuilder: badaBuilderProperties.length > 0 ? badaBuilderProperties[0] : null
         };
 
         setFeaturedProperties(results);
@@ -132,10 +160,16 @@ const RecommendedProjects = () => {
                 <PropertyCard
                   property={{
                     ...property,
-                    image: property.image_url,
+                    image: property.image || property.image_url,
                     area: property.area || property.size,
                     status: property.status || 'Available',
-                    badge: category.badge
+                    badge: category.badge,
+                    // Grouping specific fields
+                    discount: property.discount,
+                    timeLeft: property.timeLeft,
+                    original_price: property.original_price,
+                    group_price: property.group_price,
+                    source: category.key === 'liveGrouping' ? 'live-grouping' : category.key
                   }}
                   viewType="grid"
                   source={category.key}
