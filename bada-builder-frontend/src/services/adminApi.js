@@ -262,5 +262,15 @@ export const adminAPI = {
       console.error('Error fetching audit logs:', error);
       throw error;
     }
+  },
+
+  // Site Visit Bookings
+  async getSiteVisitBookings(params = {}) {
+    try {
+      return await apiRequest('/admin/bookings', { params });
+    } catch (error) {
+      console.error('Error fetching site visit bookings:', error);
+      throw error;
+    }
   }
 };
