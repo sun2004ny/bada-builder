@@ -5,6 +5,7 @@ import { FiPhone, FiCheckCircle, FiInfo, FiMap, FiUpload, FiCamera } from 'react
 // We assumes styles are available globally or from imported CSS files in parent
 // Importing PropertyTemplateEditor.css for input-specific overrides
 import './PropertyTemplateEditor.css';
+import '../PropertyForm/PropertyForm.css';
 
 const PropertyTemplateEditor = ({ userType, onCancel, onSubmit, handleImageChange, imagePreview }) => {
     const isDeveloper = userType === 'developer';
@@ -20,8 +21,10 @@ const PropertyTemplateEditor = ({ userType, onCancel, onSubmit, handleImageChang
         // Individual
         title: '',
         price: '',
+        priceUnit: 'Lakh',
         type: '', // Flat/House/etc
         area: '',
+        areaUnit: 'sq.ft',
         bhk: '',
         bathrooms: '',
         furnishing: '',
@@ -33,7 +36,9 @@ const PropertyTemplateEditor = ({ userType, onCancel, onSubmit, handleImageChang
         projectName: '',
         schemeType: '',
         basePrice: '',
+        basePriceUnit: 'Lakh',
         maxPrice: '',
+        maxPriceUnit: 'Lakh',
         projectStats: {
             units: '',
             towers: '',
@@ -287,16 +292,18 @@ const PropertyTemplateEditor = ({ userType, onCancel, onSubmit, handleImageChang
                         disabled={isPublishing}
                     />
 
-                    <div className="flex items-center gap-2 mt-4">
-                        <FiMap className="text-blue-600 text-xl flex-shrink-0" />
-                        <input
-                            type="text"
-                            className={`${inputClass} text-lg font-bold text-gray-700`}
-                            placeholder="Location (City, Area)"
-                            value={formData.location}
-                            onChange={(e) => handleChange('location', e.target.value)}
-                            disabled={isPublishing}
-                        />
+                    <div className="flex items-center gap-4 mt-4">
+                        <div className="flex items-center gap-2 flex-1">
+                            <FiMap className="text-blue-600 text-xl flex-shrink-0" />
+                            <input
+                                type="text"
+                                className={`${inputClass} text-lg font-bold text-gray-700`}
+                                placeholder="Location (City, Area)"
+                                value={formData.location}
+                                onChange={(e) => handleChange('location', e.target.value)}
+                                disabled={isPublishing}
+                            />
+                        </div>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-4">
@@ -327,75 +334,106 @@ const PropertyTemplateEditor = ({ userType, onCancel, onSubmit, handleImageChang
                                 )}
                             </select>
                         </div>
-
-                        {/* Status Tag */}
-                        <div className="flex flex-col w-40">
-                            <label className={labelClass}>Status</label>
-                            <select
-                                className="bg-white text-gray-900 rounded-lg p-2 text-sm font-bold border-2 border-gray-300 outline-none focus:border-blue-500"
-                                value={formData.status}
-                                onChange={(e) => handleChange('status', e.target.value)}
-                                disabled={isPublishing}
-                            >
-                                <option value="">Status</option>
-                                <option value="Ready to Move">Ready to Move</option>
-                                <option value="Under Construction">Under Construction</option>
-                                <option value="New Launch">New Launch</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Price & Stats */}
-            <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 border-2 border-gray-300 bg-white/70 p-8 rounded-2xl shadow-lg flex flex-col justify-center">
+            <div className="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div className="lg:col-span-2 border-2 border-gray-300 bg-white/70 p-8 rounded-2xl shadow-lg flex flex-col justify-center">
                     <label className={labelClass}>Investment / Price</label>
                     {isDeveloper ? (
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                className={`${inputClass} text-2xl font-black`}
-                                placeholder="Min Price"
-                                value={formData.basePrice}
-                                onChange={(e) => handleChange('basePrice', e.target.value)}
-                                disabled={isPublishing}
-                            />
-                            <span className="text-gray-400">-</span>
-                            <input
-                                type="text"
-                                className={`${inputClass} text-2xl font-black`}
-                                placeholder="Max Price"
-                                value={formData.maxPrice}
-                                onChange={(e) => handleChange('maxPrice', e.target.value)}
-                                disabled={isPublishing}
-                            />
+                        <div className="price-range-flex">
+                            <div className="underlined-combined-input">
+                                <input
+                                    type="number"
+                                    className="w-full bg-transparent border-none outline-none font-bold text-lg"
+                                    placeholder="Min"
+                                    value={formData.basePrice}
+                                    onChange={(e) => handleChange('basePrice', e.target.value)}
+                                    disabled={isPublishing}
+                                />
+                                <select
+                                    className="underlined-unit-select"
+                                    value={formData.basePriceUnit}
+                                    onChange={(e) => handleChange('basePriceUnit', e.target.value)}
+                                    disabled={isPublishing}
+                                >
+                                    <option value="Lakh">Lakh</option>
+                                    <option value="Crore">Crore</option>
+                                </select>
+                            </div>
+                            <span className="price-range-separator">-</span>
+                            <div className="underlined-combined-input">
+                                <input
+                                    type="number"
+                                    className="w-full bg-transparent border-none outline-none font-bold text-lg"
+                                    placeholder="Max"
+                                    value={formData.maxPrice}
+                                    onChange={(e) => handleChange('maxPrice', e.target.value)}
+                                    disabled={isPublishing}
+                                />
+                                <select
+                                    className="underlined-unit-select"
+                                    value={formData.maxPriceUnit}
+                                    onChange={(e) => handleChange('maxPriceUnit', e.target.value)}
+                                    disabled={isPublishing}
+                                >
+                                    <option value="Lakh">Lakh</option>
+                                    <option value="Crore">Crore</option>
+                                </select>
+                            </div>
                         </div>
                     ) : (
-                        <input
-                            type="text"
-                            className={`${inputClass} text-3xl font-black`}
-                            placeholder="Price (e.g., 75 Lacs)"
-                            value={formData.price}
-                            onChange={(e) => handleChange('price', e.target.value)}
-                            disabled={isPublishing}
-                        />
+                        <div className="underlined-combined-input">
+                            <input
+                                type="number"
+                                className="w-full bg-transparent border-none outline-none font-bold text-2xl"
+                                placeholder="Price"
+                                value={formData.price}
+                                onChange={(e) => handleChange('price', e.target.value)}
+                                disabled={isPublishing}
+                            />
+                            <select
+                                className="underlined-unit-select"
+                                value={formData.priceUnit}
+                                onChange={(e) => handleChange('priceUnit', e.target.value)}
+                                disabled={isPublishing}
+                            >
+                                <option value="Lakh">Lakh</option>
+                                <option value="Crore">Crore</option>
+                            </select>
+                        </div>
                     )}
-                    <div className="mt-4">
+                    <div className="mt-6">
                         <label className={labelClass}>{isDeveloper ? "Total Project Area" : "Built-up Area"}</label>
-                        <input
-                            type="text"
-                            className={inputClass}
-                            placeholder={isDeveloper ? "e.g. 5 Acres" : "e.g. 1500 sq ft"}
-                            value={isDeveloper ? formData.projectStats.area : formData.area}
-                            onChange={(e) => isDeveloper ? handleStatChange('area', e.target.value) : handleChange('area', e.target.value)}
-                            disabled={isPublishing}
-                        />
+                        <div className="underlined-combined-input">
+                            <input
+                                type="number"
+                                className="w-full bg-transparent border-none outline-none font-bold text-lg"
+                                placeholder="Area"
+                                value={isDeveloper ? formData.projectStats.area : formData.area}
+                                onChange={(e) => isDeveloper ? handleStatChange('area', e.target.value) : handleChange('area', e.target.value)}
+                                disabled={isPublishing}
+                            />
+                            <select
+                                className="underlined-unit-select"
+                                value={formData.areaUnit}
+                                onChange={(e) => handleChange('areaUnit', e.target.value)}
+                                disabled={isPublishing}
+                            >
+                                <option value="sq.ft">sq.ft</option>
+                                <option value="sq.m">sq.m</option>
+                                <option value="sq.yd">sq.yd</option>
+                                <option value="acre">acre</option>
+                                <option value="bigha">bigha</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
                 {isDeveloper ? (
-                    <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {[
                             { label: 'Towers', field: 'towers', ph: '4' },
                             { label: 'Total Floors', field: 'floors', ph: '20' },
@@ -415,7 +453,7 @@ const PropertyTemplateEditor = ({ userType, onCancel, onSubmit, handleImageChang
                         ))}
                     </div>
                 ) : (
-                    <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {[
                             { label: 'Bedrooms (BHK)', field: 'bhk', ph: 'e.g. 3' },
                             { label: 'Bathrooms', field: 'bathrooms', ph: 'e.g. 2' },

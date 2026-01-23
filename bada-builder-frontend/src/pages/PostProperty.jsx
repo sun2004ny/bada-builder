@@ -111,6 +111,8 @@ const PostProperty = () => {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [extraFiles, setExtraFiles] = useState([]);
+  const [extraPreviews, setExtraPreviews] = useState([]);
 
   // Get state from navigation
   const locationState = location.state;
@@ -155,8 +157,10 @@ const PostProperty = () => {
     type: '',
     location: '',
     price: '',
+    priceUnit: 'Lakh',
     bhk: '',
     area: '',
+    areaUnit: 'sq.ft',
     description: '',
     facilities: '',
     // Developer specific fields
@@ -164,7 +168,9 @@ const PostProperty = () => {
     residentialOptions: [], // Bungalows, Flats, etc.
     commercialOptions: [], // Shops, Offices, Both
     basePrice: '',
+    basePriceUnit: 'Lakh',
     maxPrice: '',
+    maxPriceUnit: 'Lakh',
     projectLocation: '',
     amenities: [],
     ownerName: '',
@@ -176,13 +182,12 @@ const PostProperty = () => {
       towers: '',
       floors: '',
       units: '',
-      area: ''
+      area: '' // Legacy area in stats
     },
     contactPhone: '',
     completionDate: ''
   });
 
-  const [projectImages, setProjectImages] = useState([]);
   const [brochureFile, setBrochureFile] = useState(null);
 
   useEffect(() => {
@@ -337,6 +342,34 @@ const PostProperty = () => {
     }
   };
 
+  const handleExtraImagesChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      const currentCount = extraPreviews.length;
+      const remainingSlots = 20 - currentCount;
+
+      if (remainingSlots <= 0) {
+        alert('Maximum 20 additional images allowed.');
+        return;
+      }
+
+      let filesToAdd = files;
+      if (files.length > remainingSlots) {
+        alert(`Only ${remainingSlots} more images can be added. Clipping to 20 images total.`);
+        filesToAdd = files.slice(0, remainingSlots);
+      }
+
+      setExtraFiles(prev => [...prev, ...filesToAdd]);
+      const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
+      setExtraPreviews(prev => [...prev, ...newPreviews]);
+    }
+  };
+
+  const removeExtraImage = (index) => {
+    setExtraFiles(prev => prev.filter((_, i) => i !== index));
+    setExtraPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleEditProperty = (property) => {
     // Double-check if property is still editable
     if (!isEditable(property.created_at)) {
@@ -346,19 +379,56 @@ const PostProperty = () => {
 
     setEditingProperty(property);
     // Populate form with property data for editing
+    // Parse price and unit
+    let priceVal = property.price || '';
+    let priceUnit = 'Lakh';
+    if (priceVal && typeof priceVal === 'string') {
+      const parts = priceVal.split(' ');
+      if (parts.length > 1) {
+        priceVal = parts[0].replace(/[^0-9.]/g, '');
+        priceUnit = parts[1];
+      } else {
+        priceVal = priceVal.replace(/[^0-9.]/g, '');
+      }
+    }
+
+    // Parse Developer Prices
+    let basePriceVal = property.base_price || '';
+    let basePriceUnit = 'Lakh';
+    if (basePriceVal && typeof basePriceVal === 'string') {
+      const cleaned = basePriceVal.replace(/₹/g, '').trim();
+      const parts = cleaned.split(' ');
+      basePriceVal = parts[0].replace(/[^0-9.]/g, '');
+      if (parts.length > 1) basePriceUnit = parts[1];
+    }
+
+    let maxPriceVal = property.max_price || property.maxPrice || '';
+    let maxPriceUnit = 'Lakh';
+    if (maxPriceVal && typeof maxPriceVal === 'string') {
+      const cleaned = maxPriceVal.replace(/₹/g, '').trim();
+      const parts = cleaned.split(' ');
+      maxPriceVal = parts[0].replace(/[^0-9.]/g, '');
+      if (parts.length > 1) maxPriceUnit = parts[1];
+    }
+
     setFormData({
       title: property.title || '',
       type: property.type || '',
       location: property.location || '',
-      price: property.price || '',
+      price: priceVal,
+      priceUnit: priceUnit,
       bhk: property.bhk || '',
+      area: areaVal,
+      areaUnit: areaUnit,
       description: property.description || '',
       facilities: property.facilities ? property.facilities.join(', ') : '',
       schemeType: property.scheme_type || '',
       residentialOptions: property.residential_options || [],
       commercialOptions: property.commercial_options || [],
-      basePrice: property.base_price || '',
-      maxPrice: property.max_price || '',
+      basePrice: basePriceVal,
+      basePriceUnit: basePriceUnit,
+      maxPrice: maxPriceVal,
+      maxPriceUnit: maxPriceUnit,
       projectLocation: property.project_location || '',
       amenities: property.amenities || [],
       ownerName: property.owner_name || '',
@@ -371,6 +441,7 @@ const PostProperty = () => {
       completionDate: property.completion_date || ''
     });
     setImagePreview(property.image_url || '');
+    setExtraPreviews(property.images || []);
     // Note: Multiple images logic would need expansion if editing existing ones
     // Scroll to the form or open a modal for editing
   };
@@ -401,6 +472,27 @@ const PostProperty = () => {
         console.log('✅ New image uploaded successfully:', imageUrl);
       }
 
+      // Upload extra images if any
+      let extraImageUrls = [];
+      if (extraFiles.length > 0) {
+        console.log(`📉 Compressing and uploading ${extraFiles.length} extra images...`);
+        const compressedExtras = await Promise.all(
+          extraFiles.map(async (file) => {
+            try { return await compressImage(file); }
+            catch (e) { return file; }
+          })
+        );
+        extraImageUrls = await Promise.all(
+          compressedExtras.map(file => uploadToCloudinary(file))
+        );
+      }
+
+      // Combine existing URLs with new ones
+      const finalExtraImages = [
+        ...extraPreviews.filter(p => typeof p === 'string' && p.startsWith('http')),
+        ...extraImageUrls
+      ];
+
       // Helper to ensure we have value from any possible key
       const getVal = (keys) => {
         for (const key of keys) {
@@ -414,12 +506,14 @@ const PostProperty = () => {
         type: getVal(['schemeType', 'type']) || (userType === 'developer' ? 'Project' : 'Property'),
         location: getVal(['projectLocation', 'location']) || 'Location Not Specified',
         price: userType === 'developer'
-          ? (formData.basePrice ? `₹${formData.basePrice}${formData.maxPrice ? ` - ₹${formData.maxPrice}` : ''}` : (formData.price || 'Contact for Price'))
-          : (formData.price || 'Contact for Price'),
+          ? (formData.basePrice ? `₹${formData.basePrice} ${formData.basePriceUnit}${formData.maxPrice ? ` - ₹${formData.maxPrice} ${formData.maxPriceUnit}` : ''}` : (formData.price ? `${formData.price} ${formData.priceUnit}` : 'Contact for Price'))
+          : (formData.price ? `${formData.price} ${formData.priceUnit}` : 'Contact for Price'),
         bhk: userType === 'developer' ? null : formData.bhk,
         description: formData.description || '',
         facilities: userType === 'developer' ? (formData.amenities || []) : (formData.facilities ? (Array.isArray(formData.facilities) ? formData.facilities : formData.facilities.split(',').map(f => f.trim()).filter(f => f)) : []),
-        area: formData.area || formData.projectStats?.area || '',
+        area: formData.area ? `${formData.area} ${formData.areaUnit}` : (formData.projectStats?.area || ''),
+        image_url: imageUrl,
+        images: finalExtraImages,
         user_type: userType || 'individual',
         status: 'active',
 
@@ -427,8 +521,8 @@ const PostProperty = () => {
         project_name: getVal(['projectName', 'title']),
         project_location: getVal(['projectLocation', 'location']),
         scheme_type: getVal(['schemeType', 'type']),
-        base_price: formData.basePrice || '',
-        max_price: formData.maxPrice || '',
+        base_price: formData.basePrice ? `₹${formData.basePrice} ${formData.basePriceUnit}` : '',
+        max_price: formData.maxPrice ? `₹${formData.maxPrice} ${formData.maxPriceUnit}` : '',
         owner_name: formData.ownerName || formData.companyName || '',
         company_name: formData.companyName || formData.ownerName || '',
         contact_phone: formData.contactPhone || '',
@@ -512,18 +606,24 @@ const PostProperty = () => {
         return;
       }
 
-      if (formData.contactPhone.length !== 10) {
+      if (formData.contactPhone?.length !== 10) {
         alert('Please enter a valid 10-digit phone number');
         return;
       }
 
-      if (projectImages.length < 5) {
-        alert(`Please upload at least 5 project images (currently ${projectImages.length})`);
+      // --- Image Validation (Mandatory for Everyone) ---
+      if (!imageFile && !imagePreview) {
+        alert('Cover Image (Main Image) is required');
         return;
       }
 
-      if (projectImages.length > 30) {
-        alert(`Maximum 30 images allowed (currently ${projectImages.length})`);
+      if (extraPreviews.length < 5) {
+        alert(`At least 5 Additional Images are required (currently ${extraPreviews.length})`);
+        return;
+      }
+
+      if (extraPreviews.length > 20) {
+        alert(`Maximum 20 additional images allowed (currently ${extraPreviews.length})`);
         return;
       }
 
@@ -558,19 +658,26 @@ const PostProperty = () => {
         return;
       }
 
-      if (!imageFile && !editingProperty) {
-        alert('Please upload a property image');
+      // --- Image Validation (Mandatory for Everyone) ---
+      if (!imageFile && !imagePreview) {
+        alert('Cover Image (Main Image) is required');
         return;
       }
 
-      // For individual, proceed directly or show disclaimer? 
-      // User specifically mentioned Developer Form destination/disclaimer issues.
-      // I'll proceed directly for individual to avoid changing their existing flow,
-      // but developers get the disclaimer.
-    }
+      if (extraPreviews.length < 5) {
+        alert(`At least 5 Additional Images are required (currently ${extraPreviews.length})`);
+        return;
+      }
 
-    // Proceed to final submission (for Individual)
-    handleFinalSubmit();
+      if (extraPreviews.length > 20) {
+        alert(`Maximum 20 additional images allowed (currently ${extraPreviews.length})`);
+        return;
+      }
+
+      // Merge extraFiles into formData before submit
+      const finalData = { ...formData, extraFiles };
+      handleFinalSubmit(finalData);
+    }
   };
 
 
@@ -619,8 +726,6 @@ const PostProperty = () => {
       let filesToUpload = [];
       if (activeData.extraFiles && activeData.extraFiles.length > 0) {
         filesToUpload = activeData.extraFiles;
-      } else if (userType === 'developer') {
-        filesToUpload = projectImages;
       }
 
       let compressedExtraFiles = [];
@@ -683,11 +788,11 @@ const PostProperty = () => {
         type: getVal(['schemeType', 'type']) || (userType === 'developer' ? 'Project' : 'Property'),
         location: getVal(['projectLocation', 'location']) || 'Location Not Specified',
         price: userType === 'developer'
-          ? (activeData.basePrice && activeData.maxPrice ? `₹${activeData.basePrice} - ₹${activeData.maxPrice}` : (activeData.basePrice ? `₹${activeData.basePrice}` : (activeData.price || 'Contact for Price')))
-          : (activeData.price || 'Contact for Price'),
+          ? (activeData.basePrice && activeData.maxPrice ? `₹${activeData.basePrice} ${activeData.basePriceUnit} - ₹${activeData.maxPrice} ${activeData.maxPriceUnit}` : (activeData.basePrice ? `₹${activeData.basePrice} ${activeData.basePriceUnit}` : (activeData.price ? `${activeData.price} ${activeData.priceUnit}` : 'Contact for Price')))
+          : (activeData.price ? `${activeData.price} ${activeData.priceUnit}` : 'Contact for Price'),
         description: activeData.description || '',
         facilities: activeData.facilities ? (Array.isArray(activeData.facilities) ? activeData.facilities : activeData.facilities.split(',').map(f => f.trim()).filter(f => f)) : [],
-        area: activeData.area || activeData.projectStats?.area || '',
+        area: activeData.area ? `${activeData.area} ${activeData.areaUnit}` : (activeData.projectStats?.area || ''),
         user_type: userType || 'individual',
         credit_used: creditUsed || (userType === 'developer' ? 'developer' : 'individual'),
         status: 'active'
@@ -696,13 +801,20 @@ const PostProperty = () => {
       if (showBhkType && formData.bhk) propertyData.bhk = formData.bhk;
 
       // Map images to schema
-      if (extraImageUrls.length > 0) {
-        propertyData.images = extraImageUrls;
-        propertyData.project_images = extraImageUrls; // Maintain compatibility
-        // Fallback for cover if missing
-        if (!imageUrl && extraImageUrls.length > 0) {
-          propertyData.image_url = extraImageUrls[0];
-        }
+      const finalExtraImages = [
+        ...extraPreviews.filter(p => typeof p === 'string' && p.startsWith('http')),
+        ...extraImageUrls
+      ];
+
+      if (finalExtraImages.length > 0) {
+        propertyData.images = finalExtraImages;
+        propertyData.project_images = finalExtraImages; // Maintain compatibility
+      }
+
+      if (imageUrl || activeData.image_url) {
+        propertyData.image_url = imageUrl || activeData.image_url;
+      } else if (finalExtraImages.length > 0) {
+        propertyData.image_url = finalExtraImages[0];
       }
 
       // Developer fields...
@@ -712,8 +824,8 @@ const PostProperty = () => {
         propertyData.project_name = getVal(['projectName', 'title']);
         propertyData.project_location = getVal(['projectLocation', 'location']);
         propertyData.scheme_type = getVal(['schemeType', 'type']);
-        propertyData.base_price = activeData.basePrice || '';
-        propertyData.max_price = activeData.maxPrice || '';
+        propertyData.base_price = activeData.basePrice ? `₹${activeData.basePrice} ${activeData.basePriceUnit}` : '';
+        propertyData.max_price = activeData.maxPrice ? `₹${activeData.maxPrice} ${activeData.maxPriceUnit}` : '';
         propertyData.owner_name = activeData.ownerName || activeData.companyName || '';
         propertyData.company_name = activeData.companyName || activeData.ownerName || '';
         propertyData.possession_status = activeData.possessionStatus || '';
@@ -1039,8 +1151,11 @@ const PostProperty = () => {
               <DeveloperForm
                 formData={formData}
                 setFormData={setFormData}
-                projectImages={projectImages}
-                setProjectImages={setProjectImages}
+                imagePreview={imagePreview}
+                extraPreviews={extraPreviews}
+                handleImageChange={handleImageChange}
+                handleExtraImagesChange={handleExtraImagesChange}
+                removeExtraImage={removeExtraImage}
                 brochureFile={brochureFile}
                 setBrochureFile={setBrochureFile}
                 handleChange={handleChange}
@@ -1054,6 +1169,9 @@ const PostProperty = () => {
                 handleChange={handleChange}
                 handleImageChange={handleImageChange}
                 imagePreview={imagePreview}
+                extraPreviews={extraPreviews}
+                handleExtraImagesChange={handleExtraImagesChange}
+                removeExtraImage={removeExtraImage}
                 handleSubmit={handleSubmit}
                 loading={loading}
                 userType={userType}

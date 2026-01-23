@@ -71,6 +71,159 @@
     box-shadow: 0 0 0 3px rgba(88, 51, 94, 0.1);
 }
 
+.premium-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.premium-label {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    color: #718096 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 2px !important;
+}
+
+.underlined-combined-input {
+    display: flex;
+    align-items: flex-end;
+    border: none !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    transition: all 0.3s ease;
+    padding-bottom: 4px;
+}
+
+.underlined-combined-input:focus-within {
+    border-bottom-color: #58335e !important;
+}
+
+.underlined-combined-input input {
+    flex: 1;
+    border: none !important;
+    background: transparent !important;
+    padding: 8px 0 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #4a5568 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.underlined-combined-input input::placeholder {
+    color: #cbd5e0 !important;
+    font-weight: 400 !important;
+    font-size: 18px !important;
+}
+
+.underlined-unit-select {
+    border: none !important;
+    background: transparent !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #718096 !important;
+    padding: 8px 4px !important;
+    cursor: pointer;
+    outline: none !important;
+    margin-left: 10px;
+}
+
+.price-range-flex {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    width: 100%;
+}
+
+.price-range-flex .underlined-combined-input {
+    flex: 1;
+    min-width: 80px;
+}
+
+.price-range-flex .underlined-combined-input input {
+    font-size: 18px !important;
+    min-width: 40px;
+    width: 100%;
+}
+
+.price-range-flex .underlined-unit-select {
+    font-size: 14px !important;
+    width: auto;
+    min-width: 65px;
+}
+
+.price-range-separator {
+    color: #cbd5e0;
+    font-weight: 700;
+    font-size: 16px;
+    padding-bottom: 8px;
+}
+
+.combined-input {
+    display: flex;
+    align-items: stretch;
+    border: 2.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    overflow: hidden;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.combined-input:focus-within {
+    border-color: #58335e;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(88, 51, 94, 0.1);
+}
+
+.combined-input input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    /* Force it to take available space */
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 12px 16px !important;
+    font-size: 15px;
+}
+
+.unit-select {
+    width: auto !important;
+    min-width: 90px;
+    flex-shrink: 0;
+    border: none !important;
+    border-left: 1.5px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    background: #edf2f7 !important;
+    padding: 0 12px !important;
+    font-weight: 600;
+    color: #4a5568;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+.unit-select:hover {
+    background: #e2e8f0 !important;
+}
+
+/* Hide spin buttons for ALL numeric inputs globally in form-related components */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+input[type=number] {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+}
+
 .form-group input::placeholder,
 .form-group textarea::placeholder {
     color: #a0aec0;
@@ -164,4 +317,57 @@
     color: #718096;
     font-size: 12px;
     margin-top: 4px;
+}
+
+.extra-images-upload {
+    align-items: flex-start !important;
+    text-align: left !important;
+}
+
+.extra-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.extra-image-preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.extra-image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    background: rgba(229, 62, 62, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+.remove-image-btn:hover {
+    background: #c53030;
+    transform: scale(1.1);
 }

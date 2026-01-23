@@ -28,7 +28,9 @@ const PropertyDetails = () => {
   // Prepare dynamic data - declared early to avoid hoisting issues in hooks
   const isDeveloper = property?.user_type === 'developer';
   const propertyTitle = property?.project_name || property?.projectName || property?.title || property?.project_name || 'Untitled Property';
-  const propertyImages = property?.project_images || property?.images || (property?.image_url ? [property.image_url] : []) || [];
+  const coverImage = property?.image_url;
+  const extraImages = property?.images || property?.project_images || [];
+  const propertyImages = (coverImage && !extraImages.includes(coverImage)) ? [coverImage, ...extraImages] : (extraImages.length > 0 ? extraImages : (coverImage ? [coverImage] : []));
 
   // Get owner ID - check multiple possible field names
   const ownerId = property?.userId || property?.user_id || property?.ownerId;
@@ -192,7 +194,7 @@ const PropertyDetails = () => {
   const displayAmenities = propertyFacilities.length > 0 ? propertyFacilities : defaultAmenities;
   const displayPrice = (property.price && !property.price.toString().includes('undefined'))
     ? property.price
-    : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.base_price ? `₹${property.base_price}` : (property.price && !property.price.toString().includes('undefined') ? property.price : 'Contact for Price')));
+    : (property.base_price && property.max_price ? `${property.base_price} - ${property.max_price}` : (property.base_price ? property.base_price : (property.price && !property.price.toString().includes('undefined') ? property.price : 'Contact for Price')));
 
   return (
     <div className="property-details-page">

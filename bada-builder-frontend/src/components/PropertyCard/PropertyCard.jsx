@@ -91,7 +91,7 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
             <p className="property-price">
               {property.price && !property.price.toString().includes('undefined')
                 ? property.price
-                : (property.base_price && property.max_price ? `₹${property.base_price} - ₹${property.max_price}` : (property.base_price ? `₹${property.base_price}` : (property.price && !property.price.toString().includes('undefined') ? property.price : 'Contact for Price')))}
+                : (property?.base_price && property?.max_price ? `${property.base_price} - ${property.max_price}` : (property?.base_price ? property.base_price : (property?.price && !property?.price.toString().includes('undefined') ? property.price : 'Contact for Price')))}
             </p>
           )}
         </div>
@@ -160,7 +160,7 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
           </AnimatedButton>
         </div>
       </div>
-    </motion.div>
+    </motion.div >
   );
 };
 
