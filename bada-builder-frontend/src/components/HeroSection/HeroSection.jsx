@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import './HeroSection.css';
 import { useLocation } from 'react-router-dom';
 import DetailedSearchBar from '../DetailedSearchBar/DetailedSearchBar';
+import heroVideo from '../../assets/hero_background.mp4';
 
 const HeroSection = () => {
   const locationState = useLocation();
@@ -10,6 +11,16 @@ const HeroSection = () => {
 
   return (
     <section className="hero-section">
+      {/* Background Video */}
+      <video
+        className="hero-video"
+        src={heroVideo}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+
       {/* Animated mesh background */}
       <div className="hero-mesh" />
 
