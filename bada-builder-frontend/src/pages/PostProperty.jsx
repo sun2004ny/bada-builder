@@ -538,8 +538,7 @@ const PostProperty = () => {
       };
 
       // Update property via backend API
-      const images = imageFile ? [imageFile] : [];
-      const response = await propertiesAPI.update(editingProperty.id, propertyData, images);
+      const response = await propertiesAPI.update(editingProperty.id, propertyData, []); // Pass empty array as images are already on Cloudinary
 
       alert(`Property updated successfully! You can view it in the ${userType === 'developer' ? 'Developer' : 'Individual'} Exhibition.`);
       setLoading(false);
@@ -850,13 +849,8 @@ const PostProperty = () => {
 
       console.log('💾 Saving to database via API...', propertyData);
 
-      // Prepare files for upload
-      const imagesToUpload = [];
-      if (compressedCoverFile) imagesToUpload.push(compressedCoverFile);
-      imagesToUpload.push(...compressedExtraFiles);
-
-      // Call backend API to create property
-      const response = await propertiesAPI.create(propertyData, imagesToUpload);
+      // Call backend API to create property with Cloudinary URLs in propertyData
+      const response = await propertiesAPI.create(propertyData, []); // Pass empty array as images are already on Cloudinary
       console.log('✅ Property created successfully:', response.property);
 
       setLoading(false);
@@ -1327,7 +1321,7 @@ const PostProperty = () => {
                   </button>
                   <button
                     className="confirm-btn"
-                    onClick={() => handleFinalSubmit()}
+                    onClick={() => handleFinalSubmit({ ...formData, extraFiles, extraPreviews })}
                     disabled={loading}
                   >
                     {loading ? (
