@@ -21,16 +21,9 @@
   z-index: 0;
 }
 
-/* Animated gradient mesh */
+/* Animated gradient mesh - disabled to show pure video */
 .hero-mesh {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 20%, #7c3aed55, transparent 40%),
-    radial-gradient(circle at 80% 30%, #9333ea55, transparent 45%),
-    radial-gradient(circle at 50% 80%, #6d28d955, transparent 50%);
-  animation: meshMove 18s ease-in-out infinite;
-  z-index: 1;
+  display: none;
 }
 
 @keyframes meshMove {
@@ -47,15 +40,9 @@
   }
 }
 
-/* Floating lights */
+/* Floating lights - disabled to show pure video */
 .hero-lights span {
-  position: absolute;
-  width: 280px;
-  height: 280px;
-  background: rgba(255, 255, 255, 0.15);
-  filter: blur(90px);
-  border-radius: 50%;
-  animation: float 14s infinite alternate ease-in-out;
+  display: none;
 }
 
 .hero-lights span:nth-child(1) {
