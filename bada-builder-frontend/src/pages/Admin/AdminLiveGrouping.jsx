@@ -1,15 +1,25 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, TowerControl as Tower, Building2,
   Trash2, Edit, Eye, Save, X, ChevronRight,
   ChevronLeft, LayoutGrid, List, CheckCircle2, AlertCircle,
-  ArrowLeft, Lock, DollarSign
+  ArrowLeft, Lock, DollarSign, Home, Map as MapIcon, Store, Briefcase, ShoppingBag, Box, Car, RefreshCw
 } from 'lucide-react';
 import { liveGroupDynamicAPI } from '../../services/api';
 import TwoDView from '../../pages/Exhibition/TwoDView'; // Import the 2D View component
+import AdminUnitEditModal from './AdminUnitEditModal';
 import './AdminLiveGrouping.css';
+
+const PROPERTY_TYPES = [
+  { id: 'Apartment', label: 'Flat / Apartments', icon: Building2, desc: 'Multi-story residential buildings' },
+  { id: 'Bungalow', label: 'Bungalow', icon: Home, desc: 'Individual luxury houses' },
+  { id: 'Plot', label: 'Land / Plot', icon: MapIcon, desc: 'Open land and sectors' },
+  { id: 'MixedUse', label: 'Mixed Use Complex', icon: LayoutGrid, desc: 'Commercial + Residential projects' },
+  { id: 'Commercial', label: 'Commercial', icon: Store, desc: 'Shops, Offices & Showrooms' }
+];
 
 const AdminLiveGrouping = () => {
   const navigate = useNavigate();
@@ -26,7 +36,9 @@ const AdminLiveGrouping = () => {
 
   // Admin Action Modal State
   const [showUnitActionModal, setShowUnitActionModal] = useState(false);
+  const [showUnitEditModal, setShowUnitEditModal] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState(null);
+  const [editingUnit, setEditingUnit] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Form State
@@ -39,7 +51,7 @@ const AdminLiveGrouping = () => {
     group_price: '',
     discount: '',
     savings: '',
-    type: 'Apartment',
+    type: '', // Empty to force selection in Step 1
     min_buyers: 5,
     area: '',
     possession: '',
@@ -55,6 +67,12 @@ const AdminLiveGrouping = () => {
     areaPerUnit: 1500,
     pricePerUnit: 7500000
   });
+
+  // Mixed Use / Detailed Unit configuration
+  // Structure: { [towerIndex]: { [floorNumber]: [ { unit_number, unit_type, area, price } ] } }
+  const [towerUnits, setTowerUnits] = useState({});
+  // Structure: { [towerIdx]: { [floorNum]: { regular: price_sqft, discount: discount_sqft } } }
+  const [floorPricing, setFloorPricing] = useState({});
 
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -101,20 +119,31 @@ const AdminLiveGrouping = () => {
       const newProject = response.project;
 
       // 2. Add Towers & Generate Units
-      for (const towerInfo of towers) {
+      for (let i = 0; i < towers.length; i++) {
+        const towerInfo = towers[i];
         const towerResponse = await liveGroupDynamicAPI.addTower(newProject.id, {
           tower_name: towerInfo.name,
           total_floors: towerInfo.floors
         });
 
-        await liveGroupDynamicAPI.generateUnits(towerResponse.tower.id, {
-          unitsPerFloor: towerInfo.unitsPerFloor,
-          pricePerUnit: unitSettings.pricePerUnit,
-          unitType: unitSettings.unitType,
-          areaPerUnit: unitSettings.areaPerUnit,
-          hasBasement: !!towerInfo.hasBasement,
-          hasGroundFloor: !!towerInfo.hasGroundFloor
+        // Collect units for this tower
+        const unitsToGenerate = [];
+        const towerConfig = towerUnits[i] || {};
+
+        Object.keys(towerConfig).forEach(floorNum => {
+          towerConfig[floorNum].forEach(unit => {
+            unitsToGenerate.push({
+              ...unit,
+              floor_number: parseInt(floorNum)
+            });
+          });
         });
+
+        if (unitsToGenerate.length > 0) {
+          await liveGroupDynamicAPI.generateUnits(towerResponse.tower.id, {
+            units: unitsToGenerate
+          });
+        }
       }
 
       alert('Project, Towers, and Units created successfully!');
@@ -176,6 +205,19 @@ const AdminLiveGrouping = () => {
     setShowUnitActionModal(true);
   };
 
+  const handleEditClick = (unit) => {
+    setEditingUnit(unit);
+    setShowUnitEditModal(true);
+  };
+
+  const handleUnitUpdate = (updatedUnit) => {
+    // Refresh the whole project to ensure full hierarchy is in sync
+    if (selectedProject) {
+      handleViewProject(selectedProject);
+    }
+    toast.success('Unit updated successfully');
+  };
+
   const handleAdminAction = async (action) => {
     if (!selectedUnit) return;
     setActionLoading(true);
@@ -227,6 +269,180 @@ const AdminLiveGrouping = () => {
       newTowers[index] = updatedTower;
       return newTowers;
     });
+
+    // Initialize towerUnits if empty for this tower
+    if (!towerUnits[index]) {
+      setTowerUnits(prev => ({ ...prev, [index]: {} }));
+    }
+  };
+
+  const addUnitToConfig = (towerIdx, floorNum) => {
+    setTowerUnits(prev => {
+      const towerConfig = { ...(prev[towerIdx] || {}) };
+      const floorUnits = [...(towerConfig[floorNum] || [])];
+
+      const nextNum = floorUnits.length + 1;
+      let label = '';
+      if (floorNum === -1) label = `B-${nextNum}`;
+      else if (floorNum === 0) label = `GF-${nextNum}`;
+      else label = `${floorNum}${String.fromCharCode(64 + nextNum)}`;
+
+      const area = unitSettings.areaPerUnit || 1500;
+      const regularPriceSqft = 0;
+
+      floorUnits.push({
+        unit_number: label,
+        unit_type: projectData.type === 'Commercial' ? 'Shop' : (projectData.type === 'MixedUse' || !projectData.type ? 'Flat' : projectData.type),
+        area: area,
+        carpet_area: null,
+        price: area * regularPriceSqft,
+        price_per_sqft: regularPriceSqft,
+        discount_price_per_sqft: null
+      });
+
+      towerConfig[floorNum] = floorUnits;
+      return { ...prev, [towerIdx]: towerConfig };
+    });
+  };
+
+  const removeUnitFromConfig = (towerIdx, floorNum, unitIdx) => {
+    setTowerUnits(prev => {
+      const towerConfig = { ...prev[towerIdx] };
+      const floorUnits = towerConfig[floorNum].filter((_, i) => i !== unitIdx);
+      towerConfig[floorNum] = floorUnits;
+      return { ...prev, [towerIdx]: towerConfig };
+    });
+  };
+
+  const updateUnitConfig = (towerIdx, floorNum, unitIdx, field, value) => {
+    setTowerUnits(prev => {
+      const towerConfig = { ...prev[towerIdx] };
+      const floorUnits = [...towerConfig[floorNum]];
+
+      if (field === 'sync_floor') {
+        return prev;
+      } else {
+        const unit = { ...floorUnits[unitIdx], [field]: value };
+
+        // Calculate final price automatically ONLY for non-Bungalow projects
+        if (projectData.type !== 'Bungalow') {
+          const area = parseFloat(unit.area) || 0;
+          const reg = parseFloat(unit.price_per_sqft) || 0;
+          const disc = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null)
+            ? parseFloat(unit.discount_price_per_sqft)
+            : null;
+
+          const effective = disc !== null ? disc : reg;
+          unit.price = area * effective;
+        }
+
+        floorUnits[unitIdx] = unit;
+        towerConfig[floorNum] = floorUnits;
+      }
+
+      return { ...prev, [towerIdx]: towerConfig };
+    });
+  };
+
+  const copyFloorConfig = (towerIdx, fromFloor, toFloor) => {
+    setTowerUnits(prev => {
+      const towerConfig = { ...prev[towerIdx] };
+      towerConfig[toFloor] = (towerConfig[fromFloor] || []).map(u => ({ ...u }));
+      return { ...prev, [towerIdx]: towerConfig };
+    });
+  };
+
+  const updateFloorPricing = (towerIdx, floorNum, field, value) => {
+    setFloorPricing(prev => {
+      const newFloorPricing = { ...prev };
+      if (!newFloorPricing[towerIdx]) {
+        newFloorPricing[towerIdx] = {};
+      }
+      if (!newFloorPricing[towerIdx][floorNum]) {
+        newFloorPricing[towerIdx][floorNum] = { regular: 0, discount: null };
+      }
+      newFloorPricing[towerIdx][floorNum][field] = value === '' ? null : parseFloat(value);
+      return newFloorPricing;
+    });
+  };
+
+  const prepopulateTowerUnits = (towerIdx) => {
+    const tower = towers[towerIdx];
+    const newConfig = {};
+
+    const unitsPerFloor = parseInt(tower.unitsPerFloor) || 4;
+    const floors = parseInt(tower.floors) || 0;
+
+    const generateUnitsForFloor = (floorNum) => {
+      const units = [];
+      for (let j = 0; j < unitsPerFloor; j++) {
+        const nextNum = j + 1;
+        let label = '';
+        if (floorNum === -1) label = `B-${nextNum}`;
+        else if (floorNum === 0) label = `GF-${nextNum}`;
+        else label = `${floorNum}${String.fromCharCode(64 + nextNum)}`;
+
+        const area = 1500; // Default
+        const regularPriceSqft = 0;
+
+        units.push({
+          unit_number: label,
+          unit_type: projectData.type === 'Commercial' ? 'Shop' : (projectData.type === 'MixedUse' || !projectData.type ? 'Flat' : projectData.type),
+          area: area,
+          carpet_area: null,
+          price: area * regularPriceSqft,
+          price_per_sqft: regularPriceSqft,
+          discount_price_per_sqft: null
+        });
+      }
+      return units;
+    };
+
+    if (projectData.type === 'Bungalow') {
+      const totalBungalows = parseInt(tower.total_bungalows) || 1;
+      const bungUnits = [];
+
+      for (let k = 0; k < totalBungalows; k++) {
+        bungUnits.push({
+          unit_number: `B-${k + 1}`,
+          unit_type: tower.bungalow_type || 'Villa',
+          area: 2500, // Plot Area
+          super_built_up_area: 2000,
+          carpet_area: 1500,
+          price: 0,
+          discount_price: null,
+          price_per_sqft: 0, // Unused for Bungalow but kept for consistency
+          discount_price_per_sqft: null
+        });
+      }
+      // Store all bungalows under a dummy floor '0' or '1', let's use '0'
+      newConfig[0] = bungUnits;
+    } else {
+      if (tower.hasBasement) newConfig[-1] = generateUnitsForFloor(-1);
+      if (tower.hasGroundFloor) newConfig[0] = generateUnitsForFloor(0);
+      for (let f = 1; f <= floors; f++) {
+        newConfig[f] = generateUnitsForFloor(f);
+      }
+    }
+
+    setTowerUnits(prev => ({ ...prev, [towerIdx]: newConfig }));
+  };
+
+  const getLabel = (type, context) => {
+    switch (type) {
+      case 'Apartment':
+        return context === 'parent' ? 'Tower' : 'Unit';
+      case 'Bungalow':
+        return context === 'parent' ? 'Block' : 'Bungalow';
+      case 'Plot':
+        return context === 'parent' ? 'Sector' : 'Plot';
+      case 'MixedUse':
+        return context === 'parent' ? 'Building' : 'Unit / Shop / Flat';
+      case 'Commercial':
+        return context === 'parent' ? 'Block' : 'Unit';
+      default:
+        return context === 'parent' ? 'Group' : 'Item';
+    }
   };
 
   return (
@@ -285,15 +501,17 @@ const AdminLiveGrouping = () => {
                   <div className="card-body">
                     <h3>{project.title}</h3>
                     <p className="location"><Building2 size={14} /> {project.location}</p>
-                    <div className="stats-row">
-                      <div className="stat">
-                        <span className="label">Towers</span>
-                        <span className="value">{project.tower_count || 'N/A'}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="label">Units</span>
-                        <span className="value">{project.total_slots}</span>
-                      </div>
+                    <div className="stat">
+                      <span className="label">Type</span>
+                      <span className="value font-medium text-blue-600">{project.type}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="label">{getLabel(project.type, 'parent')}s</span>
+                      <span className="value">{project.tower_count || 'N/A'}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="label">{getLabel(project.type, 'child')}s</span>
+                      <span className="value">{project.total_slots}</span>
                     </div>
                     <div className="actions">
                       <button className="icon-btn primary" title="Manage Units" onClick={() => handleViewProject(project)}>
@@ -329,7 +547,12 @@ const AdminLiveGrouping = () => {
               {/* 2D View Container - Dark Mode Wrapper */}
               <div className="flex-1 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-700 relative">
                 {projectHierarchy ? (
-                  <TwoDView project={projectHierarchy} onUnitClick={handleUnitClick} />
+                  <TwoDView
+                    project={projectHierarchy}
+                    onUnitClick={handleUnitClick}
+                    onEditClick={handleEditClick}
+                    isAdminView={true}
+                  />
                 ) : (
                   <div className="flex items-center justify-center h-full text-slate-400">Loading hierarchy...</div>
                 )}
@@ -362,22 +585,59 @@ const AdminLiveGrouping = () => {
               <div className="wizard-stepper">
                 <div className={`step ${wizardStep >= 1 ? 'active' : ''} ${wizardStep > 1 ? 'completed' : ''}`}>
                   <div className="node">1</div>
-                  <span>Basics</span>
+                  <span>Type</span>
                 </div>
                 <div className="line"></div>
                 <div className={`step ${wizardStep >= 2 ? 'active' : ''} ${wizardStep > 2 ? 'completed' : ''}`}>
                   <div className="node">2</div>
-                  <span>Hierarchy</span>
+                  <span>Basics</span>
                 </div>
                 <div className="line"></div>
                 <div className={`step ${wizardStep >= 3 ? 'active' : ''} ${wizardStep > 3 ? 'completed' : ''}`}>
                   <div className="node">3</div>
-                  <span>Units</span>
+                  <span>Hierarchy</span>
+                </div>
+                <div className="line"></div>
+                <div className={`step ${wizardStep >= 4 ? 'active' : ''} ${wizardStep > 4 ? 'completed' : ''}`}>
+                  <div className="node">4</div>
+                  <span>Summary</span>
                 </div>
               </div>
 
               <div className="wizard-content">
                 {wizardStep === 1 && (
+                  <div className="step-pane">
+                    <div className="text-center mb-8">
+                      <h3 className="text-2xl font-bold text-slate-800">Select Property Type</h3>
+                      <p className="text-slate-500">Choose the type of property for this project to customize the creation flow.</p>
+                    </div>
+                    <div className="property-type-grid">
+                      {PROPERTY_TYPES.map((type) => {
+                        const Icon = type.icon;
+                        return (
+                          <div
+                            key={type.id}
+                            className={`type-card ${projectData.type === type.id ? 'active' : ''}`}
+                            onClick={() => setProjectData({ ...projectData, type: type.id })}
+                          >
+                            <div className="type-icon">
+                              <Icon size={32} />
+                            </div>
+                            <div className="type-info">
+                              <h4>{type.label}</h4>
+                              <p>{type.desc}</p>
+                            </div>
+                            <div className="selection-indicator">
+                              <CheckCircle2 size={20} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 2 && (
                   <div className="step-pane">
                     <h3>Project Information</h3>
                     <div className="form-grid">
@@ -388,22 +648,6 @@ const AdminLiveGrouping = () => {
                       <div className="input-group">
                         <label>Location</label>
                         <input type="text" value={projectData.location} onChange={e => setProjectData({ ...projectData, location: e.target.value })} placeholder="e.g. Sector 45, Gurgaon" />
-                      </div>
-                      <div className="input-group">
-                        <label>Regular Price (sq ft)</label>
-                        <input type="text" value={projectData.original_price} onChange={e => setProjectData({ ...projectData, original_price: e.target.value })} placeholder="e.g. ₹5,500" />
-                      </div>
-                      <div className="input-group">
-                        <label>Group Price (sq ft)</label>
-                        <input type="text" value={projectData.group_price} onChange={e => setProjectData({ ...projectData, group_price: e.target.value })} placeholder="e.g. ₹4,800" />
-                      </div>
-                      <div className="input-group">
-                        <label>Discount Label</label>
-                        <input type="text" value={projectData.discount} onChange={e => setProjectData({ ...projectData, discount: e.target.value })} placeholder="e.g. 12.5% OFF" />
-                      </div>
-                      <div className="input-group">
-                        <label>Min. Buyers to Start</label>
-                        <input type="number" value={projectData.min_buyers} onChange={e => setProjectData({ ...projectData, min_buyers: e.target.value })} />
                       </div>
                       <div className="input-group full">
                         <label>Images</label>
@@ -421,77 +665,191 @@ const AdminLiveGrouping = () => {
                   </div>
                 )}
 
-                {wizardStep === 2 && (
+                {wizardStep === 3 && (
                   <div className="step-pane">
                     <div className="pane-header">
-                      <h3>Towers & Floors Configuration</h3>
-                      <button className="add-btn" onClick={addTowerRow}><Plus size={16} /> Add Tower</button>
+                      <h3>{getLabel(projectData.type, 'parent')} Configuration</h3>
+                      <button className="add-btn" onClick={addTowerRow}><Plus size={16} /> Add {getLabel(projectData.type, 'parent')}</button>
                     </div>
                     <table className="wizard-table">
                       <thead>
                         <tr>
-                          <th>Tower Name</th>
-                          <th>Floors</th>
-                          <th>Units / Floor</th>
-                          <th>Extra Levels</th>
+                          <th>{getLabel(projectData.type, 'parent')} Name</th>
+                          {projectData.type === 'Bungalow' ? (
+                            <>
+                              <th>Total Bungalows</th>
+                              <th>Type</th>
+                            </>
+                          ) : (
+                            <>
+                              <th>{projectData.type === 'Plot' ? 'Size/Variant' : 'Floors'}</th>
+                              <th>Units per Floor</th>
+                              <th>Extra Levels</th>
+                            </>
+                          )}
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {towers.map((t, idx) => (
-                          <tr key={idx}>
-                            <td><input type="text" value={t.name} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
-                            <td><input type="number" value={t.floors} onChange={e => updateTowerRow(idx, 'floors', e.target.value)} /></td>
-                            <td><input type="number" value={t.unitsPerFloor} onChange={e => updateTowerRow(idx, 'unitsPerFloor', e.target.value)} /></td>
-                            <td>
-                              <div className="flex flex-col gap-1">
-                                <label className="text-xs flex items-center gap-1 cursor-pointer">
-                                  <input type="checkbox" checked={t.hasGroundFloor || false} onChange={e => updateTowerRow(idx, 'hasGroundFloor', e.target.checked)} /> GF
-                                </label>
-                                <label className="text-xs flex items-center gap-1 cursor-pointer">
-                                  <input type="checkbox" checked={t.hasBasement || false} onChange={e => updateTowerRow(idx, 'hasBasement', e.target.checked)} /> Basement
-                                </label>
-                              </div>
-                            </td>
-                            <td><button className="remove-btn" onClick={() => removeTowerRow(idx)}><Trash2 size={16} /></button></td>
-                          </tr>
+                          <Fragment key={idx}>
+                            <tr>
+                              <td><input type="text" value={t.name} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
+
+                              {projectData.type === 'Bungalow' ? (
+                                <>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      value={t.total_bungalows || ''}
+                                      onChange={e => updateTowerRow(idx, 'total_bungalows', e.target.value)}
+                                      placeholder="e.g. 10"
+                                    />
+                                  </td>
+                                  <td>
+                                    <select
+                                      value={t.bungalow_type || 'Independent'}
+                                      onChange={e => updateTowerRow(idx, 'bungalow_type', e.target.value)}
+                                      className="w-full p-2 border rounded"
+                                    >
+                                      <option value="Independent">Independent Villa</option>
+                                      <option value="Row House">Row House</option>
+                                      <option value="Twin Villa">Twin Villa</option>
+                                    </select>
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td><input type="number" value={t.floors} onChange={e => updateTowerRow(idx, 'floors', e.target.value)} placeholder="" /></td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      value={t.unitsPerFloor || ''}
+                                      onChange={e => updateTowerRow(idx, 'unitsPerFloor', e.target.value)}
+                                      placeholder="e.g. 4"
+                                    />
+                                  </td>
+                                  <td>
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-xs flex items-center gap-1 cursor-pointer">
+                                        <input type="checkbox" checked={t.hasGroundFloor || false} onChange={e => updateTowerRow(idx, 'hasGroundFloor', e.target.checked)} /> GF
+                                      </label>
+                                      <label className="text-xs flex items-center gap-1 cursor-pointer">
+                                        <input type="checkbox" checked={t.hasBasement || false} onChange={e => updateTowerRow(idx, 'hasBasement', e.target.checked)} /> Basement
+                                      </label>
+                                    </div>
+                                  </td>
+                                </>
+                              )}
+                              <td><button className="remove-btn" onClick={() => removeTowerRow(idx)}><Trash2 size={16} /></button></td>
+                            </tr>
+                          </Fragment>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 )}
 
-                {wizardStep === 3 && (
+                {wizardStep === 4 && (
                   <div className="step-pane">
-                    <h3>Unit Generation Defaults</h3>
-                    <p className="hint">These settings apply to all generated units in this project.</p>
-                    <div className="form-grid">
-                      <div className="input-group">
-                        <label>Unit Type</label>
-                        <input type="text" value={unitSettings.unitType} onChange={e => setUnitSettings({ ...unitSettings, unitType: e.target.value })} placeholder="e.g. 3 BHK" />
-                      </div>
-                      <div className="input-group">
-                        <label>Unit Area (sq ft)</label>
-                        <input type="number" value={unitSettings.areaPerUnit} onChange={e => setUnitSettings({ ...unitSettings, areaPerUnit: e.target.value })} />
-                      </div>
-                      <div className="input-group">
-                        <label>Total Price (Approx)</label>
-                        <input type="number" value={unitSettings.pricePerUnit} onChange={e => setUnitSettings({ ...unitSettings, pricePerUnit: e.target.value })} />
+                    <div className="pane-header">
+                      <h3>Building Units Configurator</h3>
+                      <div className="flex gap-2">
+                        <span className="badge bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                          Mixed Use Ready
+                        </span>
                       </div>
                     </div>
 
-                    <div className="summary-box">
-                      <h4>Generation Summary</h4>
-                      <div className="summary-grid">
-                        <div className="s-item">
-                          <span>Total Towers</span>
-                          <strong>{towers.length}</strong>
+                    <div className="unit-configurator-container">
+                      {towers.map((tower, towerIdx) => (
+                        <div key={towerIdx} className="tower-config-block border rounded-xl overflow-hidden mb-6 bg-slate-50">
+                          <div className="tower-name-bar bg-slate-200 px-4 py-2 font-bold flex justify-between items-center text-slate-700">
+                            <div>
+                              {projectData.type === 'Bungalow' ? (
+                                <>
+                                  {tower.name} ({tower.total_bungalows || 0} Bungalows)
+                                  <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
+                                </>
+                              ) : (
+                                <>
+                                  {tower.name} ({tower.floors} Floors)
+                                  <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
+                                </>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => prepopulateTowerUnits(towerIdx)}
+                              className="text-[10px] bg-white text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"
+                            >
+                              {projectData.type === 'Bungalow' ? 'Reset Bungalows' : 'Reset to Defaults (4 per floor)'}
+                            </button>
+                          </div>
+
+
+
+                          {projectData.type === 'Bungalow' ? (
+                            <div className="p-4">
+                              <BungalowGrid
+                                units={(towerUnits[towerIdx]?.[0] || [])}
+                                onUpdate={(uIdx, field, val) => updateUnitConfig(towerIdx, 0, uIdx, field, val)}
+                                onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
+                                onAdd={() => addUnitToConfig(towerIdx, 0)}
+                              />
+                            </div>
+                          ) : (
+                            <div className="tower-floors-list p-4 space-y-4">
+                              {/* Special Floors */}
+                              {tower.hasBasement && (
+                                <FloorRow
+                                  towerIdx={towerIdx}
+                                  floorNum={-1}
+                                  floorName="Basement"
+                                  units={towerUnits[towerIdx]?.[-1] || []}
+                                  onAdd={() => addUnitToConfig(towerIdx, -1)}
+                                  onRemove={(uIdx) => removeUnitFromConfig(towerIdx, -1, uIdx)}
+                                  onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, -1, uIdx, f, v)}
+                                  projectType={projectData.type}
+                                />
+                              )}
+                              {tower.hasGroundFloor && (
+                                <FloorRow
+                                  towerIdx={towerIdx}
+                                  floorNum={0}
+                                  floorName="Ground Floor"
+                                  units={towerUnits[towerIdx]?.[0] || []}
+                                  onAdd={() => addUnitToConfig(towerIdx, 0)}
+                                  onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
+                                  onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, 0, uIdx, f, v)}
+                                  projectType={projectData.type}
+                                />
+                              )}
+                              {/* Regular Floors */}
+                              {[...Array(parseInt(tower.floors) || 0)].map((_, i) => {
+                                const floorNum = i + 1;
+                                return (
+                                  <FloorRow
+                                    key={floorNum}
+                                    towerIdx={towerIdx}
+                                    floorNum={floorNum}
+                                    floorName={`Floor ${floorNum}`}
+                                    units={towerUnits[towerIdx]?.[floorNum] || []}
+                                    onAdd={() => addUnitToConfig(towerIdx, floorNum)}
+                                    onRemove={(uIdx) => removeUnitFromConfig(towerIdx, floorNum, uIdx)}
+                                    onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, floorNum, uIdx, f, v)}
+                                    onCopy={() => {
+                                      const prevFloor = floorNum - 1;
+                                      if (prevFloor >= 1) copyFloorConfig(towerIdx, prevFloor, floorNum);
+                                      else if (tower.hasGroundFloor) copyFloorConfig(towerIdx, 0, floorNum);
+                                    }}
+                                    projectType={projectData.type}
+                                  />
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                        <div className="s-item">
-                          <span>Total Units</span>
-                          <strong>{towers.reduce((acc, t) => acc + ((parseInt(t.floors) || 0) * (parseInt(t.unitsPerFloor) || 0)), 0)}</strong>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -502,8 +860,12 @@ const AdminLiveGrouping = () => {
                   {wizardStep === 1 ? 'Cancel' : 'Back'}
                 </button>
                 <div className="filler"></div>
-                {wizardStep < 3 ? (
-                  <button className="primary-btn" onClick={() => setWizardStep(wizardStep + 1)}>
+                {wizardStep < 4 ? (
+                  <button
+                    className="primary-btn"
+                    onClick={() => setWizardStep(wizardStep + 1)}
+                    disabled={wizardStep === 1 && !projectData.type}
+                  >
                     Next <ChevronRight size={18} />
                   </button>
                 ) : (
@@ -516,6 +878,13 @@ const AdminLiveGrouping = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AdminUnitEditModal
+        isOpen={showUnitEditModal}
+        onClose={() => setShowUnitEditModal(false)}
+        unit={editingUnit}
+        onUpdate={handleUnitUpdate}
+      />
 
       {/* ADMIN ACTION MODAL */}
       <AnimatePresence>
@@ -534,14 +903,78 @@ const AdminLiveGrouping = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Unit {selectedUnit.unit_number}</h3>
-                  <p className="text-sm text-slate-500">Current Status: <span className="font-semibold uppercase">{selectedUnit.status}</span></p>
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex gap-4 items-center">
+                  {(() => {
+                    const type = (selectedUnit.unit_type || '').toLowerCase();
+                    let Icon = LayoutGrid;
+                    let color = 'text-slate-400';
+                    let bg = 'bg-slate-50';
+
+                    if (type.includes('flat')) { Icon = Home; color = 'text-blue-500'; bg = 'bg-blue-50'; }
+                    else if (type.includes('shop')) { Icon = ShoppingBag; color = 'text-orange-500'; bg = 'bg-orange-50'; }
+                    else if (type.includes('office')) { Icon = Briefcase; color = 'text-purple-500'; bg = 'bg-purple-50'; }
+                    else if (type.includes('showroom')) { Icon = Store; color = 'text-rose-500'; bg = 'bg-rose-50'; }
+                    else if (type.includes('basement') || type.includes('storage')) { Icon = Box; color = 'text-slate-500'; bg = 'bg-slate-50'; }
+                    else if (type.includes('parking')) { Icon = Car; color = 'text-emerald-500'; bg = 'bg-emerald-50'; }
+
+                    return (
+                      <div className={`p-3 rounded-2xl ${bg} ${color}`}>
+                        <Icon size={32} />
+                      </div>
+                    );
+                  })()}
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 leading-tight">Unit {selectedUnit.unit_number}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{selectedUnit.unit_type}</span>
+                      <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{selectedUnit.area} SQ FT</span>
+                    </div>
+                  </div>
                 </div>
-                <button onClick={() => setShowUnitActionModal(false)} className="p-1 hover:bg-slate-100 rounded-full">
-                  <X size={20} className="text-slate-400" />
+                <button onClick={() => setShowUnitActionModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <X size={24} className="text-slate-400" />
                 </button>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-4 mb-6 space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500">Status</span>
+                  <span className={`font-bold uppercase tracking-tight ${selectedUnit.status === 'available' ? 'text-emerald-600' : 'text-slate-600'}`}>
+                    {selectedUnit.status}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500">Area</span>
+                  <span className="font-bold text-slate-700">{selectedUnit.area} SQ FT</span>
+                </div>
+                <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
+                  <span className="text-slate-500">Rate (₹/Sqft)</span>
+                  <div className="text-right">
+                    {selectedUnit.discount_price_per_sqft ? (
+                      <>
+                        <span className="text-xs text-slate-400 line-through mr-2">₹{selectedUnit.price_per_sqft}</span>
+                        <span className="font-bold text-emerald-600">₹{selectedUnit.discount_price_per_sqft}</span>
+                      </>
+                    ) : (
+                      <span className="font-bold text-slate-700">₹{selectedUnit.price_per_sqft || 0}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between items-end pt-2 border-t border-slate-100">
+                  <span className="text-slate-500 text-sm">Final Price</span>
+                  <div className="text-right">
+                    {selectedUnit.discount_price_per_sqft && (
+                      <span className="text-xs text-slate-400 line-through block leading-none mb-1">
+                        ₹{((selectedUnit.area * selectedUnit.price_per_sqft) / 100000).toFixed(2)} L
+                      </span>
+                    )}
+                    <span className="font-black text-slate-900 text-xl leading-none">
+                      ₹{(selectedUnit.price / 100000).toFixed(2)} L
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -575,6 +1008,248 @@ const AdminLiveGrouping = () => {
         )}
       </AnimatePresence>
 
+    </div >
+  );
+};
+
+// Helper Component for Unit Configurator
+const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, projectType }) => {
+  const getUnitOptions = () => {
+    if (projectType === 'Commercial') {
+      return ['Shop', 'Office', 'Showroom', 'Commercial Unit', 'Parking', 'Storage'];
+    }
+    return ['Flat', 'Shop', 'Showroom', 'Office', 'Penthouse', 'Villa', 'Plot', 'Parking', 'Storage'];
+  };
+
+  const unitOptions = getUnitOptions();
+
+  return (
+    <div className="floor-row-config border-b pb-4 mb-4 last:border-0 last:pb-0 last:mb-0">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">{floorName}</h4>
+          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">
+            {units.length} Units
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {onCopy && (
+            <button onClick={onCopy} className="text-[10px] text-blue-600 hover:text-blue-800 flex items-center gap-1 font-bold bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-all">
+              <RefreshCw size={10} /> Copy Previous
+            </button>
+          )}
+          <button onClick={onAdd} className="text-[10px] text-emerald-600 hover:text-emerald-800 flex items-center gap-1 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all">
+            <Plus size={10} /> Add Unit
+          </button>
+        </div>
+      </div>
+
+      {units.length === 0 ? (
+        <div className="p-4 bg-white/50 border border-dashed rounded-xl text-center">
+          <p className="text-xs text-slate-400 italic">No units configured for this floor.</p>
+        </div>
+      ) : (
+        <div className="units-sub-grid">
+          {units.map((unit, uIdx) => {
+            const area = parseFloat(unit.area) || 0;
+            const regSqft = parseFloat(unit.price_per_sqft) || 0;
+            const discSqft = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null) ? parseFloat(unit.discount_price_per_sqft) : null;
+            const finalPrice = discSqft !== null ? area * discSqft : area * regSqft;
+
+            return (
+              <div key={uIdx} className="unit-mini-card relative group">
+                <button
+                  onClick={() => onRemove(uIdx)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
+                >
+                  <X size={10} />
+                </button>
+
+                <div className="card-inner-layout">
+                  <div className="unit-card-header">
+                    <input
+                      type="text"
+                      className="unit-card-title bg-transparent border-none p-0 focus:ring-0 w-24"
+                      value={unit.unit_number}
+                      onChange={e => onUpdate(uIdx, 'unit_number', e.target.value)}
+                    />
+                    <select
+                      className="text-[10px] font-bold text-blue-600 bg-blue-50 border-none rounded px-1.5 py-0.5"
+                      value={unit.unit_type}
+                      onChange={e => onUpdate(uIdx, 'unit_type', e.target.value)}
+                    >
+                      {unitOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="unit-card-body">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="input-field-group">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">SBUA (SqFt)</label>
+                        <input
+                          type="number"
+                          className="text-xs border rounded p-1.5 w-full"
+                          value={unit.area}
+                          onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
+                          placeholder="Super Area"
+                        />
+                      </div>
+                      <div className="input-field-group">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Carpet (SqFt)</label>
+                        <input
+                          type="number"
+                          className={`text-xs border rounded p-1.5 w-full ${parseFloat(unit.carpet_area) > parseFloat(unit.area) ? 'border-red-500 bg-red-50' : ''}`}
+                          value={unit.carpet_area || ''}
+                          onChange={e => onUpdate(uIdx, 'carpet_area', e.target.value)}
+                          placeholder="Carpet Area"
+                        />
+                      </div>
+                      <div className="input-field-group">
+                        <label>Reg. Rate</label>
+                        <input
+                          type="number"
+                          className="text-xs border rounded p-1.5 w-full"
+                          value={unit.price_per_sqft || ''}
+                          onChange={e => onUpdate(uIdx, 'price_per_sqft', e.target.value)}
+                          placeholder="e.g. 5000"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="input-field-group">
+                      <label>Discount Rate</label>
+                      <input
+                        type="number"
+                        className="text-xs border border-emerald-200 bg-emerald-50/30 rounded p-1.5 w-full text-emerald-700"
+                        value={unit.discount_price_per_sqft || ''}
+                        onChange={e => onUpdate(uIdx, 'discount_price_per_sqft', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="pricing-row-display flex justify-between items-center mt-2">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-400 font-bold uppercase">Total Price</span>
+                        {discSqft !== null && (
+                          <span className="strikethrough-price text-[8px] text-slate-400 font-bold line-through">₹{((area * regSqft) / 100000).toFixed(2)}L</span>
+                        )}
+                      </div>
+                      <span className="final-price-tag text-indigo-700 font-bold text-sm">₹{(finalPrice / 100000).toFixed(2)}L</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Bungalow Grid Component
+const BungalowGrid = ({ units, onUpdate, onRemove, onAdd }) => {
+  return (
+    <div className="bungalow-grid-container">
+      <div className="flex justify-between items-center mb-4">
+        <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Bungalow Units</h4>
+        <button onClick={onAdd} className="text-[10px] text-emerald-600 hover:text-emerald-800 flex items-center gap-1 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all">
+          <Plus size={10} /> Add Unit
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {units.map((unit, uIdx) => {
+          // Pricing Logic for Display
+          const regularPrice = parseFloat(unit.price) || 0;
+          const discountPrice = parseFloat(unit.discount_price) || 0;
+          const hasDiscount = discountPrice > 0;
+          const finalDisplayPrice = hasDiscount ? discountPrice : regularPrice;
+
+          return (
+            <div key={uIdx} className="unit-mini-card relative group p-3 border rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
+              <button
+                onClick={() => onRemove(uIdx)}
+                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
+              >
+                <X size={10} />
+              </button>
+
+              <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
+                <input
+                  type="text"
+                  className="font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0 w-24"
+                  value={unit.unit_number}
+                  onChange={e => onUpdate(uIdx, 'unit_number', e.target.value)}
+                />
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{unit.unit_type}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                <div>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase block">Plot Area</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded p-1"
+                    value={unit.area || ''}
+                    onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
+                    placeholder="SqFt"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase block">Super Built-Up</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded p-1"
+                    value={unit.super_built_up_area || ''}
+                    onChange={e => onUpdate(uIdx, 'super_built_up_area', e.target.value)}
+                    placeholder="SqFt"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase block">Carpet Area</label>
+                  <input
+                    type="number"
+                    className="w-full border rounded p-1"
+                    value={unit.carpet_area || ''}
+                    onChange={e => onUpdate(uIdx, 'carpet_area', e.target.value)}
+                    placeholder="SqFt"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-50 space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-slate-500">Regular Price</label>
+                  <input
+                    type="number"
+                    className={`w-24 border rounded p-1 text-right font-bold transition-all ${hasDiscount ? 'text-slate-400 line-through bg-slate-50' : 'text-slate-700 border-slate-200'}`}
+                    value={unit.price || ''}
+                    onChange={e => onUpdate(uIdx, 'price', e.target.value)}
+                    placeholder="₹ Total"
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-emerald-600">Discount Price (Opt)</label>
+                  <input
+                    type="number"
+                    className="w-24 border border-emerald-200 bg-emerald-50 rounded p-1 text-right font-bold text-emerald-700 placeholder-emerald-300"
+                    value={unit.discount_price || ''}
+                    onChange={e => onUpdate(uIdx, 'discount_price', e.target.value)}
+                    placeholder="₹ Offer"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-2 text-right">
+                <span className="text-[10px] text-slate-400 mr-1">Final:</span>
+                <span className="text-sm font-black text-slate-800">₹{(finalDisplayPrice / 10000000).toFixed(4)} Cr</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

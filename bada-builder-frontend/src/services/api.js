@@ -452,6 +452,13 @@ export const liveGroupDynamicAPI = {
     });
   },
 
+  updateUnit: async (unitId, unitData) => {
+    return apiRequest(`/live-grouping-dynamic/admin/units/${unitId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(unitData),
+    });
+  },
+
   generateUnits: async (towerId, generationData) => {
     return apiRequest(`/live-grouping-dynamic/admin/towers/${towerId}/generate-units`, {
       method: 'POST',
