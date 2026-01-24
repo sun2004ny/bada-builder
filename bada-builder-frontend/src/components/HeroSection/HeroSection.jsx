@@ -14,37 +14,49 @@ const HeroSection = () => {
     <section className="hero-section">
       <BackgroundVideo
         src={heroVideo}
-        fallbackColor="#1c0f2e"
+        fallbackColor="#0F172A"
         overlay={false}
       >
-        {/* Animated mesh background */}
-        <div className="hero-mesh" />
+        {/* Subtle gradient overlay */}
+        <div className="hero-gradient-overlay" />
 
-        {/* Floating lights */}
-        <div className="hero-lights">
-          <span />
-          <span />
-          <span />
-        </div>
-
-        <motion.div
-          className="hero-content"
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: 'easeOut' }}
-        >
-          <h1>Find Your Dream Property</h1>
-
-          <p>Search from a wide range of properties across India</p>
-
+        <div className="hero-wrapper">
+          {/* Text container with background */}
           <motion.div
-            className="hero-search-wrapper"
-            whileHover={{ y: -4 }}
-            transition={{ type: 'spring', stiffness: 120 }}
+            className="hero-text-container"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+          >
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
+            >
+              Find Your Dream Property
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
+            >
+              Search from a wide range of properties across India
+            </motion.p>
+          </motion.div>
+
+          {/* Search bar - separate, no background */}
+          <motion.div
+            className="hero-search-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
+            whileHover={{ y: -6, scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
           >
             <DetailedSearchBar />
           </motion.div>
-        </motion.div>
+        </div>
       </BackgroundVideo>
     </section>
   );
