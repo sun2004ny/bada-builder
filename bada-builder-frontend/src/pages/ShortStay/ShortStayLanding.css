@@ -8,10 +8,10 @@
 .hero-section {
   position: relative;
   color: white;
-  padding: 100px 20px 120px;
+  padding: 0 20px;
   text-align: center;
   overflow: hidden;
-  min-height: 500px;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,6 +23,8 @@
   margin: 0 auto;
   position: relative;
   z-index: 2;
+  width: 100%;
+  transform: translate(-120px, -40px);
 }
 
 .hero-section h1 {
@@ -30,23 +32,33 @@
   font-weight: 800;
   margin-bottom: 20px;
   line-height: 1.2;
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #000000;
+  text-shadow:
+    2px 2px 4px rgba(211, 20, 20, 0.9),
+    -2px -2px 4px rgba(255, 255, 255, 0.9),
+    2px -2px 4px rgba(181, 24, 24, 0.9),
+    -2px 2px 4px rgba(255, 255, 255, 0.9);
+  -webkit-text-stroke: 1px rgba(212, 40, 40, 0.8);
 }
 
 .hero-subtitle {
   font-size: 22px;
   opacity: 1;
-  color: #ffffff;
+  color: #000000;
   margin-bottom: 50px;
-  font-weight: 500;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  text-shadow:
+    1px 1px 3px rgba(16, 5, 5, 0.9),
+    -1px -1px 3px rgba(8, 8, 8, 0.9),
+    1px -1px 3px rgba(8, 8, 8, 0.9),
+    -1px 1px 3px rgba(6, 6, 6, 0.9);
+  -webkit-text-stroke: 0.5px rgba(11, 11, 11, 0.7);
 }
 
 /* Search Container */
 .search-container {
   background: white;
-  border-radius: 20px;
+  border-radius: 35px;
   padding: 28px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -458,6 +470,10 @@
     /* Requested Purple Gradient */
     padding: 60px 20px 80px;
     text-align: center;
+  }
+
+  .hero-content {
+    transform: translate(0, 0);
   }
 
   .hero-section h1 {

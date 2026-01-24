@@ -18,25 +18,11 @@
     object-fit: cover;
     z-index: 0;
 
-    /* Fallback background color - shown while video loads */
-    background-color: var(--fallback-color, #1c0f2e);
-
-    /* Start invisible to prevent flash */
-    opacity: 0;
-
-    /* Smooth fade-in transition */
-    transition: opacity 0.6s ease-in-out;
+    /* Video visible immediately */
+    opacity: 1;
 
     /* Prevent layout shift */
     display: block;
-
-    /* Performance optimization */
-    will-change: opacity;
-}
-
-/* Video is ready - fade in smoothly */
-.bg-video--ready {
-    opacity: 1;
 }
 
 /* Optional overlay for better text readability */
