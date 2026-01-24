@@ -1,9 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import './Services.css';
-import PageTransition from '../components/Motion/PageTransition';
-import ScrollReveal from '../components/Motion/ScrollReveal';
-import AnimatedButton from '../components/Motion/AnimatedButton';
 
 const services = [
   {
@@ -75,28 +73,95 @@ const Services = () => {
     }
   };
 
-  return (
-    <PageTransition>
-      <div className="services-page">
-        <div className="services-container">
-          <ScrollReveal
-            className="services-header"
-            width="100%"
-          >
-            <h1>Our Services</h1>
-            <p>Comprehensive real estate solutions for all your needs</p>
-          </ScrollReveal>
+  // Refined animation variants - subtle and intentional
+  const containerVariants = {
+    hidden: { opacity: 1 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.06
+      }
+    }
+  };
 
-          <div className="services-grid">
-            {services.map((service, index) => (
-              <ScrollReveal
-                key={service.id}
-                className="service-card"
-                delay={index * 0.1}
-                width="100%"
-              >
+  const headerVariants = {
+    hidden: { opacity: 0, y: 12 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.45,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const ctaVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+        delay: 0.2
+      }
+    }
+  };
+
+  return (
+    <div className="services-page">
+      {/* Subtle background elements */}
+      <div className="floating-bg-blob blob-1"></div>
+      <div className="floating-bg-blob blob-2"></div>
+
+      <div className="services-container">
+        {/* Header Section */}
+        <motion.div
+          className="services-header"
+          variants={headerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+        >
+          <h1>Our Services</h1>
+          <p>Comprehensive real estate solutions tailored for your success</p>
+        </motion.div>
+
+        {/* Services Grid */}
+        <motion.div
+          className="services-grid"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          {services.map((service) => (
+            <motion.div
+              key={service.id}
+              className="service-card"
+              variants={cardVariants}
+            >
+              {/* Card Header */}
+              <div className="service-card-header">
                 <div className="service-icon">{service.icon}</div>
                 <h3>{service.title}</h3>
+              </div>
+
+              {/* Card Body */}
+              <div className="service-card-body">
                 <p className="service-description">{service.description}</p>
                 <ul className="service-features">
                   {service.features.map((feature, idx) => (
@@ -108,33 +173,41 @@ const Services = () => {
                     </li>
                   ))}
                 </ul>
-                <AnimatedButton
+              </div>
+
+              {/* Card Footer */}
+              <div className="service-card-footer">
+                <button
                   className="service-btn"
                   onClick={() => handleServiceClick(service)}
                 >
                   {service.link ? 'Explore Now' : 'Learn More'}
-                </AnimatedButton>
-              </ScrollReveal>
-            ))}
-          </div>
+                  <span className="btn-arrow">→</span>
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-          <ScrollReveal
-            className="cta-section"
-            delay={0.8}
-            width="100%"
+        {/* CTA Section */}
+        <motion.div
+          className="cta-section"
+          variants={ctaVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          <h2>Need Help Choosing?</h2>
+          <p>Our experts are here to guide you through every step</p>
+          <button
+            className="cta-button"
+            onClick={() => navigate('/contact')}
           >
-            <h2>Need Help Choosing?</h2>
-            <p>Our experts are here to guide you through every step</p>
-            <AnimatedButton
-              className="cta-button"
-              onClick={() => navigate('/contact')}
-            >
-              Contact Us
-            </AnimatedButton>
-          </ScrollReveal>
-        </div>
+            Contact Us
+          </button>
+        </motion.div>
       </div>
-    </PageTransition>
+    </div>
   );
 };
 
