@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookingsAPI } from '../services/api';
@@ -66,8 +66,74 @@ const BookSiteVisit = () => {
   });
 
   const [locationData, setLocationData] = useState({
-    address: ''
+    address: '',
+    houseNo: '',
+    building: '',
+    area: '',
+    city: '',
+    pincode: '',
+    locationFromMap: '',
+    latitude: null,
+    longitude: null
   });
+
+  // Function to combine individual address fields into a single string (optimized with useCallback)
+  const updateCombinedAddress = useCallback((newLocationData) => {
+    const { houseNo, building, area, city, pincode } = newLocationData;
+    const addressParts = [
+      houseNo?.trim(),
+      building?.trim(),
+      area?.trim(),
+      city?.trim(),
+      pincode?.trim()
+    ].filter(part => part && part.length > 0);
+    
+    const combinedAddress = addressParts.join(', ');
+    
+    setLocationData({
+      ...newLocationData,
+      address: combinedAddress
+    });
+  }, []);
+
+  // Optimized field handlers
+  const handleHouseNoChange = useCallback((e) => {
+    const newLocationData = { ...locationData, houseNo: e.target.value };
+    updateCombinedAddress(newLocationData);
+  }, [locationData, updateCombinedAddress]);
+
+  const handleBuildingChange = useCallback((e) => {
+    const newLocationData = { ...locationData, building: e.target.value };
+    updateCombinedAddress(newLocationData);
+  }, [locationData, updateCombinedAddress]);
+
+  const handleAreaChange = useCallback((e) => {
+    const newLocationData = { ...locationData, area: e.target.value };
+    updateCombinedAddress(newLocationData);
+  }, [locationData, updateCombinedAddress]);
+
+  const handleCityChange = useCallback((e) => {
+    const newLocationData = { ...locationData, city: e.target.value };
+    updateCombinedAddress(newLocationData);
+  }, [locationData, updateCombinedAddress]);
+
+  const handlePincodeChange = useCallback((e) => {
+    const newLocationData = { ...locationData, pincode: e.target.value };
+    updateCombinedAddress(newLocationData);
+  }, [locationData, updateCombinedAddress]);
+
+  const handleLocationFromMapChange = useCallback((e) => {
+    setLocationData({ ...locationData, locationFromMap: e.target.value });
+  }, [locationData]);
+
+  const clearMapLocation = useCallback(() => {
+    setLocationData(prevData => ({
+      ...prevData,
+      locationFromMap: '',
+      latitude: null,
+      longitude: null
+    }));
+  }, []);
 
   const [loading, setLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -249,8 +315,8 @@ const BookSiteVisit = () => {
     }
   };
 
-  // Get user's current location
-  const getCurrentLocation = () => {
+  // Get user's current location (optimized with useCallback)
+  const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by this browser.');
       return;
@@ -276,7 +342,7 @@ const BookSiteVisit = () => {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
-  };
+  }, []);
 
   // Open map modal
   const openMapModal = () => {
@@ -301,7 +367,13 @@ const BookSiteVisit = () => {
   // Confirm selected location
   const confirmLocation = () => {
     if (selectedLocation) {
-      setLocationData({ address: selectedLocation.address });
+      // Only fill the "Location from Map" field, don't auto-populate manual fields
+      setLocationData(prevData => ({
+        ...prevData,
+        locationFromMap: selectedLocation.address,
+        latitude: selectedLocation.lat,
+        longitude: selectedLocation.lng
+      }));
       setShowMapModal(false);
     }
   };
@@ -451,6 +523,21 @@ const BookSiteVisit = () => {
       return;
     }
 
+    // Light address validation - warn but don't block
+    if (locationData.address.length < 15) {
+      const proceed = window.confirm(
+        'Your address seems incomplete. For better service, please include:\n' +
+        '• House/Flat number\n' +
+        '• Building/Street name\n' +
+        '• Area/Locality\n' +
+        '• City\n\n' +
+        'Do you want to continue anyway?'
+      );
+      if (!proceed) {
+        return;
+      }
+    }
+
     // Prepare booking data
     const bookingData = {
       property_id: property?.id || 'unknown',
@@ -464,6 +551,9 @@ const BookSiteVisit = () => {
       person2_name: formData.person2 || null,
       person3_name: formData.person3 || null,
       pickup_address: locationData.address,
+      location_from_map: locationData.locationFromMap || null,
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
       payment_method: formData.paymentMethod,
       created_at: new Date().toISOString(),
       status: 'pending'
@@ -555,6 +645,16 @@ const BookSiteVisit = () => {
 
   return (
     <div className="book-visit-container">
+      {/* Loading Overlay */}
+      {(loading || paymentLoading) && (
+        <div className="booking-loading-overlay">
+          <div className="booking-loading-content">
+            <div className="booking-loading-spinner"></div>
+            <p>{paymentLoading ? 'Processing Payment...' : 'Creating Booking...'}</p>
+          </div>
+        </div>
+      )}
+      
       <div className="form-section ui-bg">
         <h2>Book a Site Visit</h2>
 
@@ -661,31 +761,109 @@ const BookSiteVisit = () => {
           <div className="pickup-section">
             <h4>📍 Pickup Location</h4>
 
-            {/* Address Input with Maps Integration */}
+            {/* Structured Address Input */}
             <div className="address-input-container">
               <label>
                 Pickup Address:
-                <div className="address-input-wrapper">
-                  <input
-                    type="text"
-                    name="address"
-                    value={locationData.address}
-                    onChange={(e) => setLocationData({ ...locationData, address: e.target.value })}
-                    placeholder="Enter your complete pickup address..."
-                    required
-                    className="address-input-with-maps"
-                  />
-                  <button
-                    type="button"
-                    className="maps-button"
-                    onClick={openMapModal}
-                    title="Select location on map"
-                  >
-                    📍
-                  </button>
+                <div className="structured-address-inputs">
+                  <div className="address-row">
+                    <input
+                      type="text"
+                      name="houseNo"
+                      value={locationData.houseNo || ''}
+                      onChange={handleHouseNoChange}
+                      placeholder="House / Flat No"
+                      className="address-field house-field"
+                      required
+                    />
+                    <input
+                      type="text"
+                      name="building"
+                      value={locationData.building || ''}
+                      onChange={handleBuildingChange}
+                      placeholder="Building / Street"
+                      className="address-field building-field"
+                      required
+                    />
+                  </div>
+                  <div className="address-row">
+                    <input
+                      type="text"
+                      name="area"
+                      value={locationData.area || ''}
+                      onChange={handleAreaChange}
+                      placeholder="Area / Locality"
+                      className="address-field area-field"
+                      required
+                    />
+                    <input
+                      type="text"
+                      name="city"
+                      value={locationData.city || ''}
+                      onChange={handleCityChange}
+                      placeholder="City"
+                      className="address-field city-field"
+                      required
+                    />
+                  </div>
+                  <div className="address-row">
+                    <input
+                      type="text"
+                      name="pincode"
+                      value={locationData.pincode || ''}
+                      onChange={handlePincodeChange}
+                      placeholder="Pincode"
+                      className="address-field pincode-field"
+                      pattern="[0-9]{6}"
+                      maxLength="6"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="maps-button-inline"
+                      onClick={openMapModal}
+                      title="Select location on map"
+                    >
+                      📍 Select on Map
+                    </button>
+                  </div>
+                  
+                  {/* Location from Map field */}
+                  <div className="address-row map-location-row">
+                    <input
+                      type="text"
+                      name="locationFromMap"
+                      value={locationData.locationFromMap || ''}
+                      onChange={handleLocationFromMapChange}
+                      placeholder="Location from Map (Optional)"
+                      className="address-field map-location-field"
+                      readOnly
+                    />
+                    {locationData.locationFromMap && (
+                      <button
+                        type="button"
+                        className="clear-map-location"
+                        onClick={clearMapLocation}
+                        title="Clear map location"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
+                
+                {/* Hidden fields for backend */}
+                <input type="hidden" name="address" value={locationData.address} required />
+                <input type="hidden" name="latitude" value={locationData.latitude || ''} />
+                <input type="hidden" name="longitude" value={locationData.longitude || ''} />
+                
                 <small className="address-help">
-                  Type your address or click the map icon to select location on Google Maps
+                  Fill in your complete address details manually. Use map selection for location reference only.
+                  {locationData.address && locationData.address.length < 15 && (
+                    <span style={{ color: '#fbbf24', display: 'block', marginTop: '0.25rem' }}>
+                      ⚠️ Please provide more address details for better service
+                    </span>
+                  )}
                 </small>
               </label>
             </div>
@@ -800,6 +978,7 @@ const BookSiteVisit = () => {
               </button>
             </div>
 
+            <div className="map-modal-scrollable-content">
             {/* Map Controls */}
             <div className="map-controls">
               <div className="location-options">
@@ -849,7 +1028,7 @@ const BookSiteVisit = () => {
 
               <div className="location-help">
                 <small>
-                  <strong>How to select:</strong> Click on the map, drag the red marker, use your current location, or search for a place above.
+                  <strong>How to select:</strong> Click on map, drag marker, or use "My Location" button.
                 </small>
               </div>
             </div>
@@ -862,11 +1041,37 @@ const BookSiteVisit = () => {
                 </div>
               </div>
 
+              <div className="map-loading-overlay" style={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                background: 'rgba(26, 26, 46, 0.8)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                zIndex: 1000,
+                opacity: addressLoading ? 1 : 0,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: addressLoading ? 'auto' : 'none'
+              }}>
+                <div style={{ textAlign: 'center', color: '#ffffff' }}>
+                  <div className="location-spinner" style={{ margin: '0 auto 1rem' }}></div>
+                  <p>Loading address...</p>
+                </div>
+              </div>
+
               <MapContainer
                 center={mapCenter}
                 zoom={13}
-                style={{ width: '100%', height: '450px' }}
+                style={{ width: '100%', height: '100%', minHeight: '500px', zIndex: 1 }}
                 scrollWheelZoom={true}
+                zoomControl={true}
+                doubleClickZoom={true}
+                touchZoom={true}
+                dragging={true}
+                className="leaflet-map-container"
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -902,13 +1107,7 @@ const BookSiteVisit = () => {
                 </div>
               ) : (
                 <div className="location-instructions">
-                  <p>📍 Please select your pickup location:</p>
-                  <ul>
-                    <li>🖱️ Click anywhere on the map</li>
-                    <li>🔍 Search for a location above</li>
-                    <li>📱 Use "My Location" button</li>
-                    <li>🎯 Drag the red marker to adjust</li>
-                  </ul>
+                  <p>📍 Select pickup location</p>
                 </div>
               )}
 
@@ -929,6 +1128,7 @@ const BookSiteVisit = () => {
                   Confirm Location
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 // import { shortStayAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import './ShortStayLanding.css';
+import shortStayVideo from '../../assets/sort stay video.mp4';
 
 const ShortStayLanding = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const ShortStayLanding = () => {
       // TODO: Implement with shortStayAPI.getAll({ status: 'approved' })
       // For now, using empty array - will fall back to sample data
       const listingsData = [];
-      
+
       // If no data in Firestore, use fallback sample data
       if (listingsData.length === 0) {
         setListings(fallbackListings);
@@ -126,7 +127,7 @@ const ShortStayLanding = () => {
     if (searchParams.checkIn) params.append('checkIn', searchParams.checkIn);
     if (searchParams.checkOut) params.append('checkOut', searchParams.checkOut);
     if (searchParams.guests) params.append('guests', searchParams.guests);
-    
+
     navigate(`/short-stay/search?${params.toString()}`);
   };
 
@@ -137,12 +138,25 @@ const ShortStayLanding = () => {
   return (
     <div className="short-stay-landing">
       {/* Hero Section */}
-      <motion.section 
+      <motion.section
         className="hero-section"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
+        {/* Background Video */}
+        <video
+          className="hero-video"
+          src={shortStayVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+
+        {/* Video Overlay for better text readability */}
+        <div className="hero-overlay" />
+
         <div className="hero-content">
           <motion.h1
             initial={{ y: 30, opacity: 0 }}
@@ -161,7 +175,7 @@ const ShortStayLanding = () => {
           </motion.p>
 
           {/* Search Bar */}
-          <motion.div 
+          <motion.div
             className="search-container"
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -209,19 +223,19 @@ const ShortStayLanding = () => {
           </motion.div>
 
           {/* CTA Buttons */}
-          <motion.div 
+          <motion.div
             className="cta-buttons"
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <button 
+            <button
               className="cta-btn primary"
               onClick={() => navigate('/short-stay/search')}
             >
               Explore Stays
             </button>
-            <button 
+            <button
               className="cta-btn secondary"
               onClick={() => user ? navigate('/short-stay/list-property') : navigate('/login')}
             >
@@ -257,7 +271,7 @@ const ShortStayLanding = () => {
       <section className="featured-section">
         <div className="section-header">
           <h2>Featured Stays</h2>
-          <button 
+          <button
             className="view-all-btn"
             onClick={() => navigate('/short-stay/search')}
           >
@@ -272,7 +286,7 @@ const ShortStayLanding = () => {
         ) : listings.length === 0 ? (
           <div className="empty-state">
             <p>No properties available yet. Be the first to list!</p>
-            <button 
+            <button
               className="list-property-btn"
               onClick={() => user ? navigate('/short-stay/list-property') : navigate('/login')}
             >
@@ -327,7 +341,7 @@ const ShortStayLanding = () => {
       <section className="features-section">
         <h2>Why Choose Bada Builder Short Stay?</h2>
         <div className="features-grid">
-          <motion.div 
+          <motion.div
             className="feature-card"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -338,7 +352,7 @@ const ShortStayLanding = () => {
             <h3>Secure Booking</h3>
             <p>Safe and secure payment gateway with full refund protection</p>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="feature-card"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -349,7 +363,7 @@ const ShortStayLanding = () => {
             <h3>Verified Properties</h3>
             <p>All properties are verified and approved by our team</p>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="feature-card"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -360,7 +374,7 @@ const ShortStayLanding = () => {
             <h3>Best Prices</h3>
             <p>Competitive pricing with no hidden charges</p>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="feature-card"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

@@ -33,6 +33,7 @@ const LocationModal = ({ isOpen, onClose, onConfirm, currentAddress }) => {
                             <button className="close-btn" onClick={onClose}>✕</button>
                         </div>
 
+                        <div className="modal-scrollable-content">
                         <MapPicker
                             onLocationSelect={handleLocationSelect}
                             initialLocation={null} // Can be extended to use current location
@@ -47,6 +48,7 @@ const LocationModal = ({ isOpen, onClose, onConfirm, currentAddress }) => {
                             >
                                 Confirm Selection
                             </button>
+                        </div>
                         </div>
                     </motion.div>
                 </div>

@@ -119,11 +119,17 @@ const MapPicker = ({ onLocationSelect, initialLocation }) => {
 
     return (
         <div className="map-picker-wrapper">
-            <div className="map-container" style={{ height: '450px', position: 'relative' }}>
+            <div className="map-container" style={{ height: '500px', position: 'relative' }}>
                 <MapContainer
                     center={markerPosition}
                     zoom={15}
-                    style={{ width: '100%', height: '100%' }}
+                    style={{ width: '100%', height: '100%', minHeight: '500px', zIndex: 1 }}
+                    scrollWheelZoom={true}
+                    zoomControl={true}
+                    doubleClickZoom={true}
+                    touchZoom={true}
+                    dragging={true}
+                    className="leaflet-map-container"
                 >
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

@@ -100,14 +100,17 @@
     background: #1e1b2e;
     width: 90%;
     max-width: 800px;
+    max-height: 90vh;
     border-radius: 20px;
     overflow: hidden;
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
-    padding: 20px;
+    padding: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -135,16 +138,19 @@
 
 .map-container {
     width: 100%;
-    height: 450px;
+    height: 500px;
     position: relative;
+    flex: 1;
+    min-height: 500px;
 }
 
 .modal-footer {
-    padding: 20px;
+    padding: 15px;
     background: rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
     gap: 16px;
+    flex-shrink: 0;
 }
 
 .address-preview {
@@ -194,5 +200,395 @@
 @keyframes spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+/* Desktop scrollable content wrapper */
+@media (min-width: 769px) {
+  .modal-content {
+    max-height: 85vh;
+  }
+  
+  .modal-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Ensure mobile behavior remains unchanged */
+@media (max-width: 768px) {
+  .modal-scrollable-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+}
+/* Leaflet Map Specific Fixes */
+.leaflet-map-container {
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+.leaflet-container {
+  background: #1e1b2e !important;
+  border-radius: 6px;
+  z-index: 1 !important;
+}
+
+.leaflet-control-container {
+  z-index: 1000 !important;
+}
+
+.leaflet-control-zoom {
+  background: rgba(30, 27, 46, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(30, 27, 46, 0.9) !important;
+  color: #ffffff !important;
+  border: none !important;
+  width: 30px !important;
+  height: 30px !important;
+  line-height: 28px !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(168, 85, 247, 0.8) !important;
+  color: #ffffff !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(30, 27, 46, 0.8) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #a855f7 !important;
+}
+
+/* Prevent map interaction conflicts */
+.modal-overlay {
+  touch-action: none;
+}
+
+.map-container {
+  touch-action: pan-x pan-y;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.leaflet-container {
+  touch-action: pan-x pan-y;
+}
+
+/* Improve map visibility */
+.leaflet-tile {
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* Custom marker styles */
+.leaflet-marker-icon {
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Map loading state */
+.leaflet-container.leaflet-touch-drag {
+  cursor: grabbing !important;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+  cursor: zoom-in !important;
+}
+/* Address validation styling */
+.pickup-input:invalid {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2) !important;
+}
+
+.pickup-input:valid {
+  border-color: #4ade80 !important;
+}
+
+.pickup-input:focus:invalid {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Enhanced helper text */
+.helper-text {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-top: 12px;
+  font-style: italic;
+  line-height: 1.4;
+}
+/* Structured Address Input Styles */
+.structured-address-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.address-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.map-button-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.address-field {
+    flex: 1;
+    background: #1e1b2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #e2e8f0;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.3s ease;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.address-field:focus {
+    border-color: #a855f7;
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+}
+
+.address-field::placeholder {
+    color: #64748b;
+}
+
+.address-field:valid {
+    border-color: #4ade80;
+}
+
+.address-field:invalid:not(:placeholder-shown) {
+    border-color: #fbbf24;
+}
+
+/* Specific field styling */
+.house-field {
+    flex: 0.6;
+    min-width: 120px;
+}
+
+.building-field {
+    flex: 1.4;
+}
+
+.area-field {
+    flex: 1.2;
+}
+
+.city-field {
+    flex: 1;
+}
+
+.pincode-field {
+    flex: 0.8;
+    min-width: 100px;
+}
+
+/* Updated location button for structured layout */
+.structured-address-inputs .location-btn {
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-height: 44px;
+    justify-content: center;
+    min-width: 160px;
+}
+
+.structured-address-inputs .location-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .address-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .address-field {
+        width: 100%;
+        flex: none;
+    }
+    
+    .location-btn-inline {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 14px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .structured-address-inputs {
+        gap: 8px;
+    }
+}
+
+/* Enhanced helper text for structured inputs */
+.structured-address-inputs + .helper-text {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(168, 85, 247, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #a855f7;
+}
+/* Inline location button (perfect position) */
+.location-btn-inline {
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 12px 16px !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    min-height: 44px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 10 !important;
+}
+
+.location-btn-inline:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3) !important;
+}
+
+/* Ensure visibility */
+.map-button-row {
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: 8px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    width: 100% !important;
+    visibility: visible !important;
+}
+
+.structured-address-inputs .location-btn {
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 10 !important;
+}
+/* Location from Map field styling */
+.map-location-row {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 12px;
+    margin-top: 8px;
+}
+
+.map-location-field {
+    background: #16213e !important;
+    border: 2px solid #a855f7 !important;
+    color: #94a3b8 !important;
+    font-style: italic;
+    cursor: not-allowed;
+}
+
+.map-location-field:focus {
+    border-color: #a855f7 !important;
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2) !important;
+}
+
+.map-location-field::placeholder {
+    color: #64748b;
+    font-style: italic;
+}
+
+.clear-map-location {
+    background: #ef4444 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 12px !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
+    flex-shrink: 0 !important;
+}
+
+.clear-map-location:hover {
+    background: #dc2626 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Required field indicators */
+.address-field:required {
+    border-left: 3px solid #fbbf24;
+}
+
+.address-field:required:valid {
+    border-left: 3px solid #4ade80;
+}
+
+.address-field:required:invalid:not(:placeholder-shown) {
+    border-left: 3px solid #ef4444;
+}
+
+/* Pincode validation styling */
+.pincode-field:invalid:not(:placeholder-shown) {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.pincode-field:valid {
+    border-color: #4ade80 !important;
+}
+
+/* Mobile adjustments for new field */
+@media (max-width: 768px) {
+    .map-location-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .clear-map-location {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 14px !important;
     }
 }

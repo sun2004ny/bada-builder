@@ -8,12 +8,11 @@ const { Pool } = pg;
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
-    keepAlive: true,
-    keepAliveInitialDelayMillis: 10000,
-    statement_timeout: 30000, // 30 second query timeout
+    max: 10, // Reduced from 20 to be safer with Neon free tier limits
+    min: 2,  // Minimum number of idle connections
+    idleTimeoutMillis: 10000, // Close idle clients faster (10s instead of 30s)
+    connectionTimeoutMillis: 5000, // Fail faster on connection (5s)
+    maxUses: 7500, // Close connection after 7500 queries to prevent leaks
 });
 
 // Test connection and set query timeout

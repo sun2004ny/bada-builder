@@ -67,7 +67,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 });
 
 // Create property (requires auth and credits)
-router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
+router.post('/', authenticate, upload.array('images', 25), async (req, res) => {
   const client = await pool.connect();
   try {
     const {
@@ -113,28 +113,40 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
     let finalImageUrl = image_url;
     let finalImages = [];
 
-    if (req.files && req.files.length > 0) {
-      if (req.files.length === 1) {
-        finalImageUrl = await uploadImage(req.files[0].buffer, 'properties');
-        finalImages = [finalImageUrl];
+    // Parse existing images from body if provided
+    if (bodyImages) {
+      if (Array.isArray(bodyImages)) {
+        finalImages = bodyImages;
       } else {
-        const buffers = req.files.map(file => file.buffer);
-        finalImages = await uploadMultipleImages(buffers, 'properties');
-        finalImageUrl = finalImages[0];
-      }
-    } else {
-      if (bodyImages) {
-        if (Array.isArray(bodyImages)) finalImages = bodyImages;
-        else {
-          try {
-            const parsed = JSON.parse(bodyImages);
-            finalImages = Array.isArray(parsed) ? parsed : [bodyImages];
-          } catch (e) {
-            finalImages = [bodyImages];
-          }
+        try {
+          const parsed = JSON.parse(bodyImages);
+          finalImages = Array.isArray(parsed) ? parsed : [bodyImages];
+        } catch (e) {
+          finalImages = [bodyImages];
         }
       }
-      if (!finalImageUrl && finalImages.length > 0) finalImageUrl = finalImages[0];
+    }
+
+    // Process uploaded files and merge with body images
+    if (req.files && req.files.length > 0) {
+      const uploadedUrls = [];
+      for (const file of req.files) {
+        const url = await uploadImage(file.buffer, 'properties');
+        uploadedUrls.push(url);
+      }
+
+      // If we have uploaded files, the first one is often intended as cover image 
+      // but only if finalImageUrl wasn't already set to a valid Cloudinary URL by the body
+      if (!finalImageUrl || !finalImageUrl.startsWith('http')) {
+        finalImageUrl = uploadedUrls[0];
+      }
+
+      // Merge with any images already in finalImages (avoiding duplicates)
+      finalImages = [...new Set([...finalImages, ...uploadedUrls])];
+    }
+
+    if (!finalImageUrl && finalImages.length > 0) {
+      finalImageUrl = finalImages[0];
     }
 
     // 4. Insert the property with strict types
@@ -200,7 +212,7 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
 });
 
 // Update property (only within 3 days)
-router.put('/:id', authenticate, upload.array('images', 10), async (req, res) => {
+router.put('/:id', authenticate, upload.array('images', 25), async (req, res) => {
   try {
     // Check if property exists and belongs to user
     const propertyResult = await pool.query(

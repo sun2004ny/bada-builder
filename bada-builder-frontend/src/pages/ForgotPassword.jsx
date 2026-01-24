@@ -1,8 +1,11 @@
-import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import "./Login.css";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
+import bgVideo from "../assets/realestate_video.mp4";
+import MotionBackground from "../components/MotionBackground";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -116,160 +119,203 @@ const ForgotPassword = () => {
 
     return (
         <div className="login-page">
-            {loading && (
-                <motion.div
-                    className="fullscreen-loading-overlay"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                >
-                    <div className="loading-content">
-                        <div className="loading-spinner-large"></div>
-                        <p className="loading-text">Processing...</p>
-                    </div>
-                </motion.div>
-            )}
+            <video autoPlay loop muted playsInline id="bg-video">
+                <source src={bgVideo} type="video/mp4" />
+            </video>
+            <div className="login-overlay" />
+            <MotionBackground />
 
             <motion.div
-                className="login-box"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                className="glass-card"
+                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
             >
-                <motion.h2
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                >
-                    {step === 1 && "Forgot Password"}
-                    {step === 2 && "Verify OTP"}
-                    {step === 3 && "Reset Password"}
-                </motion.h2>
+                <div className="login-header">
+                    <motion.h2
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        {step === 1 && "Forgot Password"}
+                        {step === 2 && "Verify OTP"}
+                        {step === 3 && "Reset Password"}
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                    >
+                        {step === 1 && "Enter your email to receive an OTP"}
+                        {step === 2 && `Enter the OTP sent to ${email}`}
+                        {step === 3 && "Create a new secure password"}
+                    </motion.p>
+                </div>
 
-                {error && <p className="error" style={{ textAlign: "center", marginBottom: "15px" }}>{error}</p>}
-                {success && <p className="success-login" style={{ textAlign: "center", marginBottom: "15px", color: "green" }}>{success}</p>}
+                <AnimatePresence>
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="error-box"
+                            style={{ marginBottom: '20px' }}
+                        >
+                            <i className="fas fa-exclamation-circle"></i>
+                            <span>{error}</span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {success && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="error-box success-login"
+                            style={{
+                                marginBottom: '20px',
+                                background: '#ecfdf5',
+                                borderColor: '#a7f3d0',
+                                color: '#059669'
+                            }}
+                        >
+                            <span>{success}</span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {step === 1 && (
                     <form onSubmit={handleSendOTP} className="login-form">
-                        <p style={{ color: "#666", marginBottom: "20px", fontSize: "14px" }}>
-                            Enter your registered email address and we'll send you an OTP to reset your password.
-                        </p>
-                        <label>Email Address</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter your email"
-                            disabled={loading}
-                            autoFocus
-                        />
-                        <button className="submit-btn" disabled={loading}>
-                            {loading ? "Sending..." : "Send OTP"}
-                        </button>
+                        <div className="floating-label-group">
+                            <input
+                                type="email"
+                                className="floating-input"
+                                placeholder=" "
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={loading}
+                                autoFocus
+                            />
+                            <label className="floating-label">Email Address</label>
+                        </div>
 
-                        <p className="toggle-text">
-                            Remember your password?{" "}
-                            <span onClick={() => navigate("/login")} className="toggle-link">
-                                Login
-                            </span>
-                        </p>
+                        <motion.button
+                            className="submit-btn"
+                            disabled={loading}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            {loading ? <div className="spinner"></div> : "Send OTP"}
+                        </motion.button>
                     </form>
                 )}
 
                 {step === 2 && (
                     <form onSubmit={handleVerifyOTP} className="login-form">
-                        <p style={{ textAlign: "center", marginBottom: "20px", color: "#666" }}>
-                            Enter the 6-digit OTP sent to<br />
-                            <strong>{email}</strong>
-                        </p>
+                        <div className="floating-label-group">
+                            <input
+                                type="text"
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                className="floating-input"
+                                placeholder=" "
+                                maxLength={6}
+                                disabled={loading}
+                                style={{ textAlign: "center", fontSize: "20px", letterSpacing: "5px" }}
+                                autoFocus
+                            />
+                            <label className="floating-label" style={{ left: "50%", transform: "translateX(-50%)" }}>Enter 6-digit OTP</label>
+                        </div>
 
-                        <label>Enter OTP</label>
-                        <input
-                            type="text"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        <motion.button
+                            className="submit-btn"
                             disabled={loading}
-                            placeholder="Min 6 digits"
-                            maxLength={6}
-                            style={{
-                                textAlign: "center",
-                                fontSize: "24px",
-                                letterSpacing: "8px",
-                                fontWeight: "bold",
-                            }}
-                            autoFocus
-                        />
-
-                        <button className="submit-btn" disabled={loading}>
-                            {loading ? "Verifying..." : "Verify OTP"}
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setStep(1)}
-                            disabled={loading}
-                            style={{
-                                marginTop: "10px",
-                                background: "none",
-                                border: "1px solid #ccc",
-                                color: "#666",
-                                padding: "10px",
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                            }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                         >
-                            ← Back
-                        </button>
+                            {loading ? <div className="spinner"></div> : "Verify OTP"}
+                        </motion.button>
+
+                        <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                            <span
+                                onClick={() => setStep(1)}
+                                className="toggle-link"
+                                style={{ fontSize: '14px' }}
+                            >
+                                ← Back
+                            </span>
+                        </div>
                     </form>
                 )}
 
                 {step === 3 && (
                     <form onSubmit={handleResetPassword} className="login-form">
-                        <label>New Password</label>
-                        <div className="password-wrapper">
+                        <div className="floating-label-group password-group">
                             <input
                                 type={showPassword ? "text" : "password"}
+                                className="floating-input"
+                                placeholder=" "
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="password-input"
                                 disabled={loading}
-                                placeholder="At least 6 characters"
                                 autoFocus
                             />
+                            <label className="floating-label">New Password</label>
                             <button
                                 type="button"
-                                className="eye-btn"
+                                className="toggle-password"
                                 onClick={() => setShowPassword(!showPassword)}
                                 disabled={loading}
+                                tabIndex="-1"
                             >
                                 <i className={`far ${showPassword ? "fa-eye" : "fa-eye-slash"}`} />
                             </button>
                         </div>
 
-                        <label>Confirm Password</label>
-                        <div className="password-wrapper">
+                        <div className="floating-label-group password-group">
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
+                                className="floating-input"
+                                placeholder=" "
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="password-input"
                                 disabled={loading}
-                                placeholder="Re-enter password"
                             />
+                            <label className="floating-label">Confirm New Password</label>
                             <button
                                 type="button"
-                                className="eye-btn"
+                                className="toggle-password"
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 disabled={loading}
+                                tabIndex="-1"
                             >
                                 <i className={`far ${showConfirmPassword ? "fa-eye" : "fa-eye-slash"}`} />
                             </button>
                         </div>
 
-                        <button className="submit-btn" disabled={loading}>
-                            {loading ? "Resetting..." : "Reset Password"}
-                        </button>
+                        <motion.button
+                            className="submit-btn"
+                            disabled={loading}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            {loading ? <div className="spinner"></div> : "Reset Password"}
+                        </motion.button>
                     </form>
                 )}
+
+                {step === 1 && (
+                    <div className="register-area" style={{ marginTop: '20px' }}>
+                        Remember your password?{" "}
+                        <span
+                            className="register-link"
+                            onClick={() => navigate("/login")}
+                        >
+                            Login
+                        </span>
+                    </div>
+                )}
+
             </motion.div>
         </div>
     );

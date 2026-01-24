@@ -1,25 +1,37 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import "./Login.css";
 import { authAPI } from "../services/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import bgVideo from "../assets/realestate_video.mp4";
+import MotionBackground from "../components/MotionBackground";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile } = useAuth();
+
+  // State from navigation
   const from = location.state?.from || "/";
   const returnTo = location.state?.returnTo;
   const property = location.state?.property;
   const message = location.state?.message;
 
-  // For registration, always redirect to home page, not back to login
+  // Form State
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  // ------------------ REDIRECT LOGIC ------------------
   const getRedirectPath = (isRegistration = false) => {
     if (isRegistration) {
-      return "/"; // Always go to home after registration
+      return "/";
     }
-
     // If coming from BookSiteVisit, redirect back with property data
     if (returnTo && returnTo.includes('/book-visit')) {
       return {
@@ -27,42 +39,23 @@ const Login = () => {
         state: { property }
       };
     }
-
-    return from === "/login" ? "/" : from; // Don't redirect back to login page
+    return from === "/login" ? "/" : from;
   };
 
-  const [showPassword, setShowPassword] = useState(false);
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  // ------------------ RESET FORM FUNCTION ------------------
+  // ------------------ RESET FORM ------------------
   const resetForm = useCallback(() => {
     setShowPassword(false);
-    setFormData({
-      email: "",
-      password: "",
-    });
+    setFormData({ email: "", password: "" });
     setErrors({});
     setLoading(false);
   }, []);
 
-  // ------------------ HANDLE HEADER LOGIN CLICK ------------------
   useEffect(() => {
     // Check if user clicked login from header while already on login page
     if (location.state?.resetForm) {
       resetForm();
-      // Show brief reset confirmation
       setErrors({ submit: "Form has been reset. Please enter your credentials." });
-      setTimeout(() => {
-        setErrors({});
-      }, 2000); // Reduced from 3000ms to 2000ms
-      // Clear the state to prevent repeated resets
+      setTimeout(() => setErrors({}), 2000);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, resetForm, navigate, location.pathname]);
@@ -71,7 +64,6 @@ const Login = () => {
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear field-specific errors immediately
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -81,7 +73,6 @@ const Login = () => {
   const validate = useMemo(() => {
     return () => {
       const newErrors = {};
-
       if (!formData.email) {
         newErrors.email = "Email is required.";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -99,35 +90,30 @@ const Login = () => {
     };
   }, [formData]);
 
-  // ------------------ LOGIN ------------------
+  // ------------------ LOGIN ACTION ------------------
   const loginUser = useCallback(async (email, password) => {
     setLoading(true);
     setErrors({});
 
     try {
-      const response = await authAPI.login(email, password);
-
-      // Refresh profile in context
+      await authAPI.login(email, password);
       await refreshProfile();
 
-      // Navigate immediately after auth success
       const redirectInfo = getRedirectPath(false);
 
       if (typeof redirectInfo === 'object' && redirectInfo.path) {
-        // Special redirect with state (like BookSiteVisit with property data)
         navigate(redirectInfo.path, {
           state: redirectInfo.state,
           replace: true
         });
       } else {
-        // Normal redirect
         navigate(redirectInfo, { replace: true });
       }
     } catch (error) {
       let msg = "Login failed";
-      if (error.message.includes("not found") || error.message.includes("Invalid")) {
+      if (error.message && (error.message.includes("not found") || error.message.includes("Invalid"))) {
         msg = "Invalid email or password";
-      } else if (error.message.includes("Too many")) {
+      } else if (error.message && error.message.includes("Too many")) {
         msg = "Too many attempts. Try again later";
       } else {
         msg = error.message || "Login failed";
@@ -136,142 +122,174 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, getRedirectPath, refreshProfile]);
+  }, [navigate, refreshProfile]); // removed getRedirectPath from deps as it's defined inside/constant
 
-  // ------------------ SUBMIT ------------------
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-
-    // Prevent submission if already loading
-    if (loading) {
-      e.stopPropagation();
-      return;
-    }
-
+    if (loading) return;
     if (!validate()) return;
-
     loginUser(formData.email, formData.password);
   }, [formData, validate, loginUser, loading]);
 
-  // ------------------ UI ------------------
+  // ------------------ RENDER ------------------
   return (
     <div className="login-page">
-      {/* Full-screen loading overlay */}
-      {loading && (
-        <motion.div
-          className="fullscreen-loading-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          <div className="loading-content">
-            <div className="loading-spinner-large"></div>
-            <p className="loading-text">Signing you in...</p>
-          </div>
-        </motion.div>
-      )}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        id="bg-video"
+      >
+        <source src={bgVideo} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      <div className="login-overlay" />
+      <MotionBackground />
 
       <motion.div
-        className="login-box"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        className="glass-card"
+        initial={{ opacity: 0, x: 50, scale: 0.95 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <motion.h2
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-        >
-          Login
-        </motion.h2>
-
-        {/* Message from redirect (e.g., from BookSiteVisit) */}
-        {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
+        <div className="login-header">
+          <motion.h2
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="redirect-message"
-            style={{
-              backgroundColor: '#fef3c7',
-              color: '#92400e',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              border: '1px solid #fbbf24',
-              fontSize: '14px',
-              textAlign: 'center'
-            }}
+            transition={{ delay: 0.2 }}
           >
-            {message}
-          </motion.div>
-        )}
+            Welcome Back
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            Manage your properties & bookings
+          </motion.p>
+        </div>
 
-        <form onSubmit={handleSubmit} className={`login-form ${loading ? 'form-disabled' : ''}`}>
-          <label>Email</label>
-          <input
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            disabled={loading}
-          />
-          {errors.email && <p className="error">{errors.email}</p>}
+        {/* Redirect Message */}
+        <AnimatePresence>
+          {message && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="error-box"
+              style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#92400e', marginBottom: '20px' }}
+            >
+              {message}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <label>Password</label>
-          <div className="password-wrapper">
+        <form onSubmit={handleSubmit} className="login-form">
+
+          {/* Email Input */}
+          <div className="floating-label-group">
             <input
-              name="password"
+              type="email"
+              name="email"
+              className="floating-input"
+              placeholder=" "
+              value={formData.email}
+              onChange={handleChange}
+              disabled={loading}
+              autoComplete="email"
+            />
+            <label className="floating-label">Email Address</label>
+            {errors.email && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="field-error"
+              >
+                {errors.email}
+              </motion.div>
+            )}
+          </div>
+
+          {/* Password Input */}
+          <div className="floating-label-group password-group">
+            <input
               type={showPassword ? "text" : "password"}
+              name="password"
+              className="floating-input"
+              placeholder=" "
               value={formData.password}
               onChange={handleChange}
-              className="password-input"
               disabled={loading}
+              autoComplete="current-password"
             />
+            <label className="floating-label">Password</label>
             <button
               type="button"
-              className="eye-btn"
-              onClick={() => setShowPassword((prev) => !prev)}
+              className="toggle-password"
+              onClick={() => setShowPassword(!showPassword)}
               disabled={loading}
+              tabIndex="-1"
             >
               <i className={`far ${showPassword ? "fa-eye" : "fa-eye-slash"}`} />
             </button>
+            {errors.password && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="field-error"
+              >
+                {errors.password}
+              </motion.div>
+            )}
           </div>
-          {errors.password && <p className="error">{errors.password}</p>}
 
-          <div className="forgot-password-link" style={{ textAlign: "right", marginTop: "5px" }}>
+          {/* Forgot Password */}
+          <div className="forgot-password">
             <span
               onClick={() => navigate('/forgot-password')}
-              style={{ color: "#2563eb", cursor: "pointer", fontSize: "14px", fontWeight: "500" }}
+              className="forgot-link"
             >
               Forgot Password?
             </span>
           </div>
 
-          {errors.submit && (
-            <p className={`error submit-error ${errors.submit.includes('successful') ? 'success-login' :
-              errors.submit.includes('reset') ? 'info-message' : ''
-              }`}>
-              {errors.submit}
-            </p>
-          )}
+          {/* Submit Error */}
+          <AnimatePresence>
+            {errors.submit && (
+              <motion.div
+                className="error-box"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <i className="fas fa-exclamation-circle"></i>
+                <span>{errors.submit}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <button
+          {/* Login Button */}
+          <motion.button
             className="submit-btn"
             disabled={loading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            {loading ? <span className="spinner"></span> : "Login"}
-          </button>
+            {loading ? <div className="spinner" /> : "Login"}
+          </motion.button>
         </form>
 
-        <p className="toggle-text">
-          Don't have an account?{" "}
+        <div className="register-area">
+          Don't have an account?
           <span
+            className="register-link"
             onClick={() => navigate('/register')}
-            className="toggle-link"
           >
             Register with OTP
           </span>
-        </p>
+        </div>
+
       </motion.div>
     </div>
   );

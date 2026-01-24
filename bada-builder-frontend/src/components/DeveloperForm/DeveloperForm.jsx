@@ -5,8 +5,11 @@ import './DeveloperForm.css';
 const DeveloperForm = ({
     formData,
     setFormData,
-    projectImages,
-    setProjectImages,
+    handleImageChange,
+    imagePreview,
+    extraPreviews,
+    handleExtraImagesChange,
+    removeExtraImage,
     brochureFile,
     setBrochureFile,
     handleChange,
@@ -38,33 +41,6 @@ const DeveloperForm = ({
                 [name]: value
             }
         }));
-    };
-
-    const handleFileArrayChange = (e, setter, currentFiles) => {
-        const files = Array.from(e.target.files);
-        const validFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-
-        const filteredFiles = files.filter(file => validFormats.includes(file.type));
-
-        if (filteredFiles.length !== files.length) {
-            alert('Some files were skipped. Only JPG, JPEG, PNG, and WEBP formats are accepted.');
-        }
-
-        setter(prev => {
-            const updated = [...prev, ...filteredFiles];
-            if (updated.length > 30) {
-                alert('Maximum 30 images allowed. Only the first 30 images will be kept.');
-                return updated.slice(0, 30);
-            }
-            return updated;
-        });
-
-        // Clear input value so same file can be selected again if removed
-        e.target.value = '';
-    };
-
-    const handleRemoveImage = (index) => {
-        setProjectImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSingleFileChange = (e, setter) => {
@@ -161,28 +137,48 @@ const DeveloperForm = ({
             </div>
 
             <div className="form-section">
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>Base Price *</label>
-                        <input
-                            type="number"
-                            name="basePrice"
-                            value={formData.basePrice}
-                            onChange={handleChange}
-                            placeholder="Min Price"
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Max Price *</label>
-                        <input
-                            type="number"
-                            name="maxPrice"
-                            value={formData.maxPrice}
-                            onChange={handleChange}
-                            placeholder="Max Price"
-                            required
-                        />
+                <div className="premium-input-group">
+                    <label className="premium-label">INVESTMENT / PRICE *</label>
+                    <div className="price-range-flex">
+                        <div className="underlined-combined-input">
+                            <input
+                                type="number"
+                                name="basePrice"
+                                value={formData.basePrice}
+                                onChange={handleChange}
+                                placeholder="Min Price"
+                                required
+                            />
+                            <select
+                                name="basePriceUnit"
+                                value={formData.basePriceUnit}
+                                onChange={handleChange}
+                                className="underlined-unit-select"
+                            >
+                                <option value="Lakh">Lakh</option>
+                                <option value="Crore">Crore</option>
+                            </select>
+                        </div>
+                        <span className="price-range-separator">-</span>
+                        <div className="underlined-combined-input">
+                            <input
+                                type="number"
+                                name="maxPrice"
+                                value={formData.maxPrice}
+                                onChange={handleChange}
+                                placeholder="Max Price"
+                                required
+                            />
+                            <select
+                                name="maxPriceUnit"
+                                value={formData.maxPriceUnit}
+                                onChange={handleChange}
+                                className="underlined-unit-select"
+                            >
+                                <option value="Lakh">Lakh</option>
+                                <option value="Crore">Crore</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div className="form-group">
@@ -214,9 +210,29 @@ const DeveloperForm = ({
                         <label>Total Units</label>
                         <input type="number" name="units" value={formData.projectStats.units} onChange={handleStatsChange} placeholder="e.g. 250" />
                     </div>
-                    <div className="form-group">
-                        <label>Area (sq.ft / acres)</label>
-                        <input type="text" name="area" value={formData.projectStats.area} onChange={handleStatsChange} placeholder="e.g. 2.5 Acres" />
+                    <div className="premium-input-group">
+                        <label className="premium-label">TOTAL PROJECT AREA</label>
+                        <div className="underlined-combined-input">
+                            <input
+                                type="number"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleChange}
+                                placeholder="e.g. 1500"
+                            />
+                            <select
+                                name="areaUnit"
+                                value={formData.areaUnit}
+                                onChange={handleChange}
+                                className="underlined-unit-select"
+                            >
+                                <option value="sq.ft">sq.ft</option>
+                                <option value="sq.m">sq.m</option>
+                                <option value="sq.yd">sq.yd</option>
+                                <option value="acre">acre</option>
+                                <option value="bigha">bigha</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -286,38 +302,52 @@ const DeveloperForm = ({
 
             <div className="form-section">
                 <div className="form-group">
-                    <label>Project Images (5-30 images) *</label>
-                    <input
-                        type="file"
-                        multiple
-                        accept=".jpg,.jpeg,.png,.webp"
-                        onChange={(e) => handleFileArrayChange(e, setProjectImages, projectImages)}
-                        required={projectImages.length === 0}
-                    />
-                    <small>{projectImages.length} images selected (Min: 5, Max: 30)</small>
+                    <label>Cover Image * (Main Image)</label>
+                    <div className="image-upload-container">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            disabled={disabled}
+                        />
+                        {imagePreview && (
+                            <div className="image-preview-wrapper">
+                                <img src={imagePreview} alt="Cover Preview" className="preview-image" />
+                                <p>Cover Image Preview</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-                    {projectImages.length > 0 && (
-                        <div className="image-previews-grid">
-                            {projectImages.map((file, index) => (
-                                <div key={index} className="preview-item">
-                                    <img
-                                        src={URL.createObjectURL(file)}
-                                        alt={`Preview ${index + 1}`}
-                                    />
+                <div className="form-group">
+                    <label>Additional Images * (5-20 images)</label>
+                    <div className="image-upload-container extra-images-upload">
+                        <input
+                            type="file"
+                            multiple
+                            accept=".jpg,.jpeg,.png,.webp"
+                            onChange={handleExtraImagesChange}
+                            disabled={disabled}
+                        />
+                        <div className="extra-images-grid">
+                            {extraPreviews && extraPreviews.length > 0 && extraPreviews.map((preview, index) => (
+                                <div key={index} className="extra-image-preview-item">
+                                    <img src={preview} alt={`Extra ${index + 1}`} />
                                     <button
                                         type="button"
                                         className="remove-image-btn"
-                                        onClick={() => handleRemoveImage(index)}
+                                        onClick={() => removeExtraImage(index)}
+                                        title="Remove Image"
                                     >
                                         ×
                                     </button>
                                 </div>
                             ))}
                         </div>
-                    )}
-
-                    {projectImages.length > 0 && projectImages.length < 5 && (
-                        <p className="validation-error">Please upload at least 5 images (currently {projectImages.length})</p>
+                    </div>
+                    <small>{extraPreviews.length} images selected (Min: 5, Max: 20 Mandatory)</small>
+                    {extraPreviews.length > 0 && extraPreviews.length < 5 && (
+                        <p className="validation-error">Please upload at least 5 additional images (currently {extraPreviews.length})</p>
                     )}
                 </div>
 
@@ -327,6 +357,7 @@ const DeveloperForm = ({
                         type="file"
                         accept=".pdf"
                         onChange={(e) => handleSingleFileChange(e, setBrochureFile)}
+                        disabled={disabled}
                     />
                 </div>
             </div>

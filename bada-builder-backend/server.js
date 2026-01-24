@@ -63,7 +63,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Strict limiter for authentication endpoints (prevent brute force)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // 10 attempts per 15 minutes
+    max: 50, // Increased from 10 to 50 for development testing
     message: 'Too many login attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -72,7 +72,7 @@ const authLimiter = rateLimit({
 // Medium limiter for OTP and sensitive operations
 const otpLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 OTP requests per 15 minutes
+    max: 20, // Increased from 5 to 20 for development testing
     message: 'Too many OTP requests, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -123,7 +123,7 @@ app.use('/api/chat', mutationLimiter, chatRoutes);
 app.use('/api/wishlists', mutationLimiter, wishlistRoutes);
 app.use('/api/favorites', mutationLimiter, favoritesRoutes);
 app.use('/api/admin/properties', mutationLimiter, adminPropertiesRoutes);
-app.use('/api/admin', authLimiter, adminRoutes);
+app.use('/api/admin', readLimiter, adminRoutes);
 
 
 // 404 handler

@@ -7,7 +7,8 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  DollarSign
+  DollarSign,
+  Calendar
 } from 'lucide-react';
 import { adminAPI } from '../../services/adminApi';
 
@@ -84,6 +85,7 @@ const AdminDashboard = () => {
         case 'property_approved': return <CheckCircle className="h-4 w-4 text-green-500" />;
         case 'complaint_resolved': return <AlertCircle className="h-4 w-4 text-purple-500" />;
         case 'subscription_purchased': return <DollarSign className="h-4 w-4 text-emerald-500" />;
+        case 'site_visit_booked': return <Calendar className="h-4 w-4 text-orange-500" />;
         default: return <Activity className="h-4 w-4 text-gray-500" />;
       }
     };
@@ -164,6 +166,13 @@ const AdminDashboard = () => {
           icon={DollarSign}
           color="bg-purple-500"
           change={15}
+        />
+        <StatCard
+          title="Total Bookings"
+          value={stats.totalBookings || 0}
+          icon={Calendar}
+          color="bg-orange-500"
+          change={20}
         />
       </div>
 

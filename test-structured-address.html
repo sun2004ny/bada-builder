@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Structured Address Input Test</title>
+    <style>
+        .test-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            border-radius: 12px;
+        }
+        
+        .pickup-section h4 {
+            color: #9e4efb;
+            margin-bottom: 20px;
+        }
+        
+        .structured-address-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .address-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .map-button-row {
+            display: flex !important;
+            justify-content: center;
+            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 1px solid #444;
+            width: 100%;
+            visibility: visible !important;
+        }
+
+        .address-field {
+            flex: 1;
+            background: #2a2a3e;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            box-sizing: border-box;
+        }
+
+        .address-field:focus {
+            border-color: #9e4efb;
+            box-shadow: 0 0 0 3px rgba(158, 78, 251, 0.2);
+        }
+
+        .address-field::placeholder {
+            color: #888;
+            font-style: italic;
+        }
+
+        .address-field:valid {
+            border-color: #4ade80;
+        }
+
+        .house-field { flex: 0.6; min-width: 120px; }
+        .building-field { flex: 1.4; }
+        .area-field { flex: 1.2; }
+        .city-field { flex: 1; }
+        .pincode-field { flex: 0.8; min-width: 100px; }
+
+        /* Location from Map field styling */
+        .map-location-row {
+            border-top: 1px solid #444;
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+
+        .map-location-field {
+            background: #16213e !important;
+            border: 2px solid #9e4efb !important;
+            color: #94a3b8 !important;
+            font-style: italic;
+            cursor: not-allowed;
+            flex: 1;
+        }
+
+        .clear-map-location {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            min-width: 44px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-map-location:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Required field indicators */
+        .address-field:required {
+            border-left: 3px solid #fbbf24;
+        }
+
+        .address-field:required:valid {
+            border-left: 3px solid #4ade80;
+        }
+
+        .address-field:required:invalid:not(:placeholder-shown) {
+            border-left: 3px solid #ef4444;
+        }
+
+        .maps-button {
+            background: #9e4efb;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            min-height: 44px;
+            justify-content: center;
+            min-width: 160px;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .maps-button-inline {
+            background: #9e4efb;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .maps-button:hover {
+            background: #8a3eeb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(158, 78, 251, 0.3);
+        }
+
+        .combined-address {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(158, 78, 251, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #9e4efb;
+        }
+
+        .address-help {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .warning {
+            color: #fbbf24;
+            display: block;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .address-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .address-field {
+                width: 100%;
+                flex: none;
+            }
+            
+            .map-button-row {
+                margin-top: 12px;
+                padding-top: 12px;
+            }
+            
+            .maps-button {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="pickup-section">
+            <h4>📍 Pickup Location</h4>
+            
+            <div class="structured-address-inputs">
+                <div class="address-row">
+                    <input
+                        type="text"
+                        class="address-field house-field"
+                        placeholder="House / Flat No"
+                        id="houseNo"
+                    />
+                    <input
+                        type="text"
+                        class="address-field building-field"
+                        placeholder="Building / Street"
+                        id="building"
+                    />
+                </div>
+                <div class="address-row">
+                    <input
+                        type="text"
+                        class="address-field area-field"
+                        placeholder="Area / Locality"
+                        id="area"
+                        required
+                    />
+                    <input
+                        type="text"
+                        class="address-field city-field"
+                        placeholder="City"
+                        id="city"
+                        required
+                    />
+                </div>
+                <div class="address-row">
+                    <input
+                        type="text"
+                        class="address-field pincode-field"
+                        placeholder="Pincode"
+                        id="pincode"
+                        pattern="[0-9]{6}"
+                        maxLength="6"
+                        required
+                    />
+                    <button
+                        type="button"
+                        class="maps-button-inline"
+                        onclick="simulateMapSelection()"
+                        title="Select location on map"
+                    >
+                        📍 Select on Map
+                    </button>
+                </div>
+                
+                <div class="address-row map-location-row">
+                    <input
+                        type="text"
+                        class="address-field map-location-field"
+                        placeholder="Location from Map (Optional)"
+                        id="locationFromMap"
+                        readonly
+                    />
+                    <button
+                        type="button"
+                        class="clear-map-location"
+                        onclick="clearMapLocation()"
+                        title="Clear map location"
+                        style="display: none;"
+                        id="clearBtn"
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+            
+            <div class="address-help">
+                Fill in your complete address details or use the map to select location
+                <span id="warningText"></span>
+            </div>
+            
+            <div class="combined-address">
+                <strong>Combined Address (sent to backend):</strong>
+                <div id="combinedAddress" style="margin-top: 8px; font-family: monospace; color: #4ade80;">
+                    [Address will appear here as you type]
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fields = {
+            houseNo: document.getElementById('houseNo'),
+            building: document.getElementById('building'),
+            area: document.getElementById('area'),
+            city: document.getElementById('city'),
+            pincode: document.getElementById('pincode'),
+            locationFromMap: document.getElementById('locationFromMap')
+        };
+        
+        const combinedAddressDiv = document.getElementById('combinedAddress');
+        const warningText = document.getElementById('warningText');
+
+        function updateCombinedAddress() {
+            const values = {
+                houseNo: fields.houseNo.value.trim(),
+                building: fields.building.value.trim(),
+                area: fields.area.value.trim(),
+                city: fields.city.value.trim(),
+                pincode: fields.pincode.value.trim()
+            };
+            
+            const addressParts = Object.values(values).filter(part => part.length > 0);
+            const combinedAddress = addressParts.join(', ');
+            
+            combinedAddressDiv.textContent = combinedAddress || '[Address will appear here as you type]';
+            
+            // Show warning if address is too short
+            if (combinedAddress.length > 0 && combinedAddress.length < 15) {
+                warningText.innerHTML = '<span class="warning">⚠️ Please provide more address details for better service</span>';
+            } else {
+                warningText.innerHTML = '';
+            }
+        }
+
+        // Add event listeners to manual address fields only
+        ['houseNo', 'building', 'area', 'city', 'pincode'].forEach(fieldName => {
+            fields[fieldName].addEventListener('input', updateCombinedAddress);
+        });
+
+        function simulateMapSelection() {
+            // Simulate selecting an address from map - ONLY fills the "Location from Map" field
+            const sampleAddresses = [
+                "123 MG Road, Connaught Place, New Delhi, 110001",
+                "45 Brigade Road, Shivaji Nagar, Bangalore, 560001",
+                "78 Park Street, Ballygunge, Kolkata, 700017"
+            ];
+            
+            const selectedAddress = sampleAddresses[Math.floor(Math.random() * sampleAddresses.length)];
+            
+            // ONLY fill the "Location from Map" field - DO NOT auto-populate manual fields
+            fields.locationFromMap.value = selectedAddress;
+            document.getElementById('clearBtn').style.display = 'flex';
+            
+            alert('Map location selected! Notice: Manual address fields are NOT auto-filled.');
+        }
+
+        function clearMapLocation() {
+            fields.locationFromMap.value = '';
+            document.getElementById('clearBtn').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

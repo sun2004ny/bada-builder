@@ -1,46 +1,54 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import './HeroSection.css';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import DetailedSearchBar from '../DetailedSearchBar/DetailedSearchBar';
+import heroVideo from '../../assets/hero_background.mp4';
 
 const HeroSection = () => {
-  const navigate = useNavigate();
   const locationState = useLocation();
 
-  // 🔴 HIDE HERO SECTION ON SEARCH PAGE
-  if (locationState.pathname === '/search') {
-    return null;
-  }
-
-
-
-
+  if (locationState.pathname === '/search') return null;
 
   return (
     <section className="hero-section">
-      {/* Success Message */}
+      {/* Background Video */}
+      <video
+        className="hero-video"
+        src={heroVideo}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
 
+      {/* Animated mesh background */}
+      <div className="hero-mesh" />
 
-      <div className="hero-content">
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          Find Your Dream Property
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          Search from a wide range of properties across India
-        </motion.p>
-
-        <DetailedSearchBar />
+      {/* Floating lights */}
+      <div className="hero-lights">
+        <span />
+        <span />
+        <span />
       </div>
+
+      <motion.div
+        className="hero-content"
+        initial={{ opacity: 0, y: 60 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, ease: 'easeOut' }}
+      >
+        <h1>Find Your Dream Property</h1>
+
+        <p>Search from a wide range of properties across India</p>
+
+        <motion.div
+          className="hero-search-wrapper"
+          whileHover={{ y: -4 }}
+          transition={{ type: 'spring', stiffness: 120 }}
+        >
+          <DetailedSearchBar />
+        </motion.div>
+      </motion.div>
     </section>
   );
 };

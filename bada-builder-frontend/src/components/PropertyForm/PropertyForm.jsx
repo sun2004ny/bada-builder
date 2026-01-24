@@ -7,6 +7,9 @@ const PropertyForm = ({
     handleChange,
     handleImageChange,
     imagePreview,
+    extraPreviews,
+    handleExtraImagesChange,
+    removeExtraImage,
     handleSubmit,
     loading,
     userType,
@@ -53,30 +56,57 @@ const PropertyForm = ({
                     </div>
 
                     <div className="form-row">
-                        <div className="form-group half">
-                            <label htmlFor="price">Price (₹) *</label>
-                            <input
-                                type="text"
-                                id="price"
-                                name="price"
-                                value={formData.price}
-                                onChange={handleChange}
-                                placeholder="e.g. 75,00,000"
-                                required
-                                disabled={disabled}
-                            />
+                        <div className="premium-input-group">
+                            <label className="premium-label">INVESTMENT / PRICE *</label>
+                            <div className="underlined-combined-input">
+                                <input
+                                    type="number"
+                                    id="price"
+                                    name="price"
+                                    value={formData.price}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 75"
+                                    required
+                                    disabled={disabled}
+                                />
+                                <select
+                                    name="priceUnit"
+                                    value={formData.priceUnit}
+                                    onChange={handleChange}
+                                    disabled={disabled}
+                                    className="underlined-unit-select"
+                                >
+                                    <option value="Lakh">Lakh</option>
+                                    <option value="Crore">Crore</option>
+                                </select>
+                            </div>
                         </div>
-                        <div className="form-group half">
-                            <label htmlFor="area">Built-up Area (sq.ft)</label>
-                            <input
-                                type="text"
-                                id="area"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleChange}
-                                placeholder="e.g. 1500"
-                                disabled={disabled}
-                            />
+                        <div className="premium-input-group">
+                            <label className="premium-label">BUILT-UP AREA</label>
+                            <div className="underlined-combined-input">
+                                <input
+                                    type="number"
+                                    id="area"
+                                    name="area"
+                                    value={formData.area}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 1500"
+                                    disabled={disabled}
+                                />
+                                <select
+                                    name="areaUnit"
+                                    value={formData.areaUnit}
+                                    onChange={handleChange}
+                                    disabled={disabled}
+                                    className="underlined-unit-select"
+                                >
+                                    <option value="sq.ft">sq.ft</option>
+                                    <option value="sq.m">sq.m</option>
+                                    <option value="sq.yd">sq.yd</option>
+                                    <option value="acre">acre</option>
+                                    <option value="bigha">bigha</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -150,24 +180,53 @@ const PropertyForm = ({
 
             <div className="form-section">
                 <div className="form-group">
-                    <label htmlFor="propertyImage">Property Image *</label>
+                    <label htmlFor="propertyImage">Cover Image * (Main Image)</label>
                     <div className="image-upload-container">
                         <input
                             type="file"
                             id="propertyImage"
                             accept="image/*"
                             onChange={handleImageChange}
-                            required={!editingProperty && !imagePreview}
                             disabled={disabled}
                         />
                         {imagePreview && (
                             <div className="image-preview-wrapper">
                                 <img src={imagePreview} alt="Property Preview" className="preview-image" />
-                                <p>Selected Image</p>
+                                <p>Cover Image Preview</p>
                             </div>
                         )}
                     </div>
-                    <small>Upload a clear photo of the property to attract more buyers.</small>
+                    <small>This will be the main image shown in listings. (Mandatory)</small>
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="extraImages">Additional Images * (5-20 images)</label>
+                    <div className="image-upload-container extra-images-upload">
+                        <input
+                            type="file"
+                            id="extraImages"
+                            accept="image/*"
+                            onChange={handleExtraImagesChange}
+                            multiple
+                            disabled={disabled}
+                        />
+                        <div className="extra-images-grid">
+                            {extraPreviews && extraPreviews.length > 0 && extraPreviews.map((preview, index) => (
+                                <div key={index} className="extra-image-preview-item">
+                                    <img src={preview} alt={`Extra ${index + 1}`} />
+                                    <button
+                                        type="button"
+                                        className="remove-image-btn"
+                                        onClick={() => removeExtraImage(index)}
+                                        title="Remove Image"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <small>{extraPreviews.length} images selected (Min: 5, Max: 20 Mandatory)</small>
                 </div>
             </div>
 
