@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Calculator, Home, Tag, Layers, Maximize } from 'lucide-react';
 import { liveGroupDynamicAPI } from '../../services/api';
 
-const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate }) => {
+const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) => {
     const [formData, setFormData] = useState({
         unit_number: '',
         unit_type: '',
@@ -22,7 +22,7 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate }) => {
             setFormData({
                 unit_number: unit.unit_number || '',
                 unit_type: unit.unit_type || '',
-                floor_number: unit.floor_number || '',
+                floor_number: (unit.floor_number !== undefined && unit.floor_number !== null) ? unit.floor_number : '',
                 area: unit.area || '',
                 carpet_area: unit.carpet_area || '',
                 price_per_sqft: unit.price_per_sqft || '',
@@ -39,13 +39,24 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate }) => {
 
     const calculateFinalPrice = () => {
         const area = parseFloat(formData.area) || 0;
+
         const reg = parseFloat(formData.price_per_sqft) || 0;
         const disc = (formData.discount_price_per_sqft !== '' && formData.discount_price_per_sqft !== null)
             ? parseFloat(formData.discount_price_per_sqft)
             : null;
 
         const effective = disc !== null ? disc : reg;
-        return (area * effective).toLocaleString('en-IN', {
+        const total = area * effective;
+
+        if (total === 0) return '₹0';
+
+        if (total >= 10000000) {
+            return `₹${(total / 10000000).toFixed(2)} Cr`;
+        } else if (total >= 100000) {
+            return `₹${(total / 100000).toFixed(2)} L`;
+        }
+
+        return total.toLocaleString('en-IN', {
             style: 'currency',
             currency: 'INR',
             maximumFractionDigits: 0
@@ -61,7 +72,15 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate }) => {
             if (parseFloat(formData.carpet_area) > parseFloat(formData.area)) {
                 throw new Error('Carpet Area cannot be greater than SBUA (Super Built-up Area)');
             }
-            const response = await liveGroupDynamicAPI.updateUnit(unit.id, formData);
+
+            const submissionData = { ...formData };
+
+            // Fix for Bungalows: Floor number might be empty string since input is hidden
+            if (projectType === 'Bungalow') {
+                submissionData.floor_number = submissionData.floor_number || 0;
+            }
+
+            const response = await liveGroupDynamicAPI.updateUnit(unit.id, submissionData);
             onUpdate(response.unit);
             onClose();
         } catch (err) {
@@ -142,31 +161,45 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate }) => {
                                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-semibold text-slate-800 text-sm"
                                         required
                                     >
-                                        <option value="Flat">Flat</option>
-                                        <option value="Penthouse">Penthouse</option>
-                                        <option value="Shop">Shop</option>
-                                        <option value="Office">Office</option>
-                                        <option value="Showroom">Showroom</option>
-                                        <option value="Parking">Parking</option>
-                                        <option value="Storage">Storage</option>
+                                        {projectType === 'Bungalow' ? (
+                                            <>
+                                                <option value="Independent Villa">Independent Villa</option>
+                                                <option value="Row House">Row House</option>
+                                                <option value="Twin Villa">Twin Villa</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="Flat">Flat</option>
+                                                <option value="Penthouse">Penthouse</option>
+                                                <option value="Shop">Shop</option>
+                                                <option value="Office">Office</option>
+                                                <option value="Showroom">Showroom</option>
+                                                <option value="Parking">Parking</option>
+                                                <option value="Storage">Storage</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
 
-                                {/* Floor Number */}
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                                        <Layers size={14} className="text-slate-400" />
-                                        Floor Number
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="floor_number"
-                                        value={formData.floor_number}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-semibold text-slate-800 text-sm"
-                                        required
-                                    />
-                                </div>
+                                {/* Floor Number - Hidden for Bungalows */}
+                                {projectType !== 'Bungalow' && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                                            <Layers size={14} className="text-slate-400" />
+                                            Floor Number
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="floor_number"
+                                            value={formData.floor_number}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-semibold text-slate-800 text-sm"
+                                            required
+                                        />
+                                    </div>
+                                )}
+
+
 
                                 {/* Area & Carpet Area */}
                                 <div className="space-y-1.5">
@@ -194,8 +227,8 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate }) => {
                                         value={formData.carpet_area}
                                         onChange={handleChange}
                                         className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all font-semibold text-slate-800 text-sm ${parseFloat(formData.carpet_area) > parseFloat(formData.area)
-                                                ? 'border-rose-300 focus:ring-rose-500 bg-rose-50'
-                                                : 'border-slate-200 focus:ring-blue-500 focus:bg-white'
+                                            ? 'border-rose-300 focus:ring-rose-500 bg-rose-50'
+                                            : 'border-slate-200 focus:ring-blue-500 focus:bg-white'
                                             }`}
                                     />
                                 </div>

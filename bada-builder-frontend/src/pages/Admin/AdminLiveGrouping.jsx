@@ -64,7 +64,7 @@ const AdminLiveGrouping = () => {
 
   const [unitSettings, setUnitSettings] = useState({
     unitType: '3 BHK',
-    areaPerUnit: 1500,
+    areaPerUnit: 0,
     pricePerUnit: 7500000
   });
 
@@ -231,12 +231,20 @@ const AdminLiveGrouping = () => {
           currency: 'INR',
           userName: 'Admin Booking'
         });
+      } else if (action === 'release') {
+        // Release / Unbook Unit
+        await liveGroupDynamicAPI.updateUnit(selectedUnit.id, {
+          status: 'available',
+          booked_by: null, // Clear booking data
+          payment_id: null
+        });
+        toast.success('Unit released successfully');
       }
+
       // Refresh data
       const data = await liveGroupDynamicAPI.getFullHierarchy(selectedProject.id);
       setProjectHierarchy(data.project);
       setShowUnitActionModal(false);
-      // alert(`Unit ${action}ed successfully!`); // Optional feedback
     } catch (error) {
       console.error(`Failed to ${action} unit:`, error);
       alert(`Failed to ${action} unit: ` + error.message);
@@ -287,13 +295,14 @@ const AdminLiveGrouping = () => {
       else if (floorNum === 0) label = `GF-${nextNum}`;
       else label = `${floorNum}${String.fromCharCode(64 + nextNum)}`;
 
-      const area = unitSettings.areaPerUnit || 1500;
+      const area = unitSettings.areaPerUnit || 0;
       const regularPriceSqft = 0;
 
       floorUnits.push({
         unit_number: label,
         unit_type: projectData.type === 'Commercial' ? 'Shop' : (projectData.type === 'MixedUse' || !projectData.type ? 'Flat' : projectData.type),
         area: area,
+        pricing_area: null,
         carpet_area: null,
         price: area * regularPriceSqft,
         price_per_sqft: regularPriceSqft,
@@ -324,17 +333,19 @@ const AdminLiveGrouping = () => {
       } else {
         const unit = { ...floorUnits[unitIdx], [field]: value };
 
-        // Calculate final price automatically ONLY for non-Bungalow projects
-        if (projectData.type !== 'Bungalow') {
-          const area = parseFloat(unit.area) || 0;
-          const reg = parseFloat(unit.price_per_sqft) || 0;
-          const disc = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null)
-            ? parseFloat(unit.discount_price_per_sqft)
-            : null;
-
-          const effective = disc !== null ? disc : reg;
-          unit.price = area * effective;
+        // Calculate final price automatically
+        let calcArea = parseFloat(unit.area) || 0;
+        if (projectData.type === 'Bungalow') {
+          calcArea = parseFloat(unit.super_built_up_area) || 0;
         }
+
+        const reg = parseFloat(unit.price_per_sqft) || 0;
+        const disc = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null)
+          ? parseFloat(unit.discount_price_per_sqft)
+          : null;
+
+        const effective = disc !== null ? disc : reg;
+        unit.price = calcArea * effective;
 
         floorUnits[unitIdx] = unit;
         towerConfig[floorNum] = floorUnits;
@@ -382,13 +393,14 @@ const AdminLiveGrouping = () => {
         else if (floorNum === 0) label = `GF-${nextNum}`;
         else label = `${floorNum}${String.fromCharCode(64 + nextNum)}`;
 
-        const area = 1500; // Default
+        const area = 0; // Default changed from 1500
         const regularPriceSqft = 0;
 
         units.push({
           unit_number: label,
           unit_type: projectData.type === 'Commercial' ? 'Shop' : (projectData.type === 'MixedUse' || !projectData.type ? 'Flat' : projectData.type),
           area: area,
+          pricing_area: null, // New Independent Area Field
           carpet_area: null,
           price: area * regularPriceSqft,
           price_per_sqft: regularPriceSqft,
@@ -884,6 +896,7 @@ const AdminLiveGrouping = () => {
         onClose={() => setShowUnitEditModal(false)}
         unit={editingUnit}
         onUpdate={handleUnitUpdate}
+        projectType={selectedProject?.type}
       />
 
       {/* ADMIN ACTION MODAL */}
@@ -997,9 +1010,17 @@ const AdminLiveGrouping = () => {
                   </>
                 )}
                 {selectedUnit.status !== 'available' && (
-                  <div className="p-4 bg-slate-50 rounded-xl text-center text-slate-500 text-sm">
-                    This unit is currently <strong>{selectedUnit.status}</strong>.
-                    <br />Unlock/Release functionality coming soon.
+                  <div className="space-y-3">
+                    <div className="p-3 bg-slate-100 rounded-xl text-center text-slate-500 text-xs mb-2">
+                      Unit is currently <strong>{selectedUnit.status}</strong>
+                    </div>
+                    <button
+                      className="w-full py-3 rounded-xl bg-orange-50 text-orange-600 font-bold border border-orange-200 hover:bg-orange-100 transition-colors flex items-center justify-center gap-2"
+                      onClick={() => handleAdminAction('release')}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? 'Releasing...' : 'Release / Unbook Unit'} <Trash2 size={18} />
+                    </button>
                   </div>
                 )}
               </div>
@@ -1052,9 +1073,10 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
         <div className="units-sub-grid">
           {units.map((unit, uIdx) => {
             const area = parseFloat(unit.area) || 0;
+            const pricingArea = (unit.pricing_area && parseFloat(unit.pricing_area) > 0) ? parseFloat(unit.pricing_area) : area;
             const regSqft = parseFloat(unit.price_per_sqft) || 0;
             const discSqft = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null) ? parseFloat(unit.discount_price_per_sqft) : null;
-            const finalPrice = discSqft !== null ? area * discSqft : area * regSqft;
+            const finalPrice = discSqft !== null ? pricingArea * discSqft : pricingArea * regSqft;
 
             return (
               <div key={uIdx} className="unit-mini-card relative group">
@@ -1085,6 +1107,7 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
                   </div>
 
                   <div className="unit-card-body">
+
                     <div className="grid grid-cols-2 gap-3">
                       <div className="input-field-group">
                         <label className="text-[10px] font-bold text-slate-500 uppercase">SBUA (SqFt)</label>
@@ -1132,10 +1155,25 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
                       <div className="flex flex-col">
                         <span className="text-[8px] text-slate-400 font-bold uppercase">Total Price</span>
                         {discSqft !== null && (
-                          <span className="strikethrough-price text-[8px] text-slate-400 font-bold line-through">₹{((area * regSqft) / 100000).toFixed(2)}L</span>
+                          <span className="strikethrough-price text-[8px] text-slate-400 font-bold line-through">
+                            {(() => {
+                              const val = area * regSqft;
+                              if (val === 0) return '₹0';
+                              if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
+                              if (val >= 100000) return `₹${(val / 100000).toFixed(2)} L`;
+                              return `₹${val.toLocaleString('en-IN')}`;
+                            })()}
+                          </span>
                         )}
                       </div>
-                      <span className="final-price-tag text-indigo-700 font-bold text-sm">₹{(finalPrice / 100000).toFixed(2)}L</span>
+                      <span className="final-price-tag text-indigo-700 font-bold text-sm">
+                        {(() => {
+                          if (finalPrice === 0) return '₹0';
+                          if (finalPrice >= 10000000) return `₹${(finalPrice / 10000000).toFixed(2)} Cr`;
+                          if (finalPrice >= 100000) return `₹${(finalPrice / 100000).toFixed(2)} L`;
+                          return `₹${finalPrice.toLocaleString('en-IN')}`;
+                        })()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1221,13 +1259,13 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd }) => {
 
               <div className="pt-2 border-t border-slate-50 space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-slate-500">Regular Price</label>
+                  <label className="text-[10px] font-bold text-slate-500">Regular Rate / Sqft</label>
                   <input
                     type="number"
                     className={`w-24 border rounded p-1 text-right font-bold transition-all ${hasDiscount ? 'text-slate-400 line-through bg-slate-50' : 'text-slate-700 border-slate-200'}`}
-                    value={unit.price || ''}
-                    onChange={e => onUpdate(uIdx, 'price', e.target.value)}
-                    placeholder="₹ Total"
+                    value={unit.price_per_sqft || ''}
+                    onChange={e => onUpdate(uIdx, 'price_per_sqft', e.target.value)}
+                    placeholder="₹ Rate"
                   />
                 </div>
                 <div className="flex justify-between items-center">
@@ -1244,7 +1282,14 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd }) => {
 
               <div className="mt-2 text-right">
                 <span className="text-[10px] text-slate-400 mr-1">Final:</span>
-                <span className="text-sm font-black text-slate-800">₹{(finalDisplayPrice / 10000000).toFixed(4)} Cr</span>
+                <span className="text-sm font-black text-slate-800">
+                  {(() => {
+                    if (finalDisplayPrice === 0) return '₹0';
+                    if (finalDisplayPrice >= 10000000) return `₹${(finalDisplayPrice / 10000000).toFixed(2)} Cr`;
+                    if (finalDisplayPrice >= 100000) return `₹${(finalDisplayPrice / 100000).toFixed(2)} L`;
+                    return `₹${finalDisplayPrice.toLocaleString('en-IN')}`;
+                  })()}
+                </span>
               </div>
             </div>
           );
