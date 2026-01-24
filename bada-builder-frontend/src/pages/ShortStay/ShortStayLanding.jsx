@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 // TODO: Implement short stay listings API endpoint
 // import { shortStayAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import BackgroundVideo from '../../components/BackgroundVideo/BackgroundVideo';
 import './ShortStayLanding.css';
 import shortStayVideo from '../../assets/sort stay video.mp4';
 
@@ -144,105 +145,99 @@ const ShortStayLanding = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Background Video */}
-        <video
-          className="hero-video"
+        <BackgroundVideo
           src={shortStayVideo}
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-
-        {/* Video Overlay for better text readability */}
-        <div className="hero-overlay" />
-
-        <div className="hero-content">
-          <motion.h1
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            Find Your Perfect Short Stay
-          </motion.h1>
-          <motion.p
-            className="hero-subtitle"
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            Discover comfortable stays for your next trip
-          </motion.p>
-
-          {/* Search Bar */}
-          <motion.div
-            className="search-container"
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <div className="search-field">
-              <label>📍 Location</label>
-              <input
-                type="text"
-                placeholder="Where are you going?"
-                value={searchParams.location}
-                onChange={(e) => setSearchParams({ ...searchParams, location: e.target.value })}
-              />
-            </div>
-            <div className="search-field">
-              <label>📅 Check-in</label>
-              <input
-                type="date"
-                value={searchParams.checkIn}
-                onChange={(e) => setSearchParams({ ...searchParams, checkIn: e.target.value })}
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-            <div className="search-field">
-              <label>📅 Check-out</label>
-              <input
-                type="date"
-                value={searchParams.checkOut}
-                onChange={(e) => setSearchParams({ ...searchParams, checkOut: e.target.value })}
-                min={searchParams.checkIn || new Date().toISOString().split('T')[0]}
-              />
-            </div>
-            <div className="search-field">
-              <label>👥 Guests</label>
-              <input
-                type="number"
-                min="1"
-                value={searchParams.guests}
-                onChange={(e) => setSearchParams({ ...searchParams, guests: parseInt(e.target.value) })}
-              />
-            </div>
-            <button className="search-btn" onClick={handleSearch}>
-              Search
-            </button>
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            className="cta-buttons"
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
-            <button
-              className="cta-btn primary"
-              onClick={() => navigate('/short-stay/search')}
+          fallbackColor="#5a3671"
+          overlay={true}
+          overlayOpacity={0.35}
+        >
+          <div className="hero-content">
+            <motion.h1
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
-              Explore Stays
-            </button>
-            <button
-              className="cta-btn secondary"
-              onClick={() => user ? navigate('/short-stay/list-property') : navigate('/login')}
+              Find Your Perfect Short Stay
+            </motion.h1>
+            <motion.p
+              className="hero-subtitle"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
             >
-              List Your Property
-            </button>
-          </motion.div>
-        </div>
+              Discover comfortable stays for your next trip
+            </motion.p>
+
+            {/* Search Bar */}
+            <motion.div
+              className="search-container"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              <div className="search-field">
+                <label>📍 Location</label>
+                <input
+                  type="text"
+                  placeholder="Where are you going?"
+                  value={searchParams.location}
+                  onChange={(e) => setSearchParams({ ...searchParams, location: e.target.value })}
+                />
+              </div>
+              <div className="search-field">
+                <label>📅 Check-in</label>
+                <input
+                  type="date"
+                  value={searchParams.checkIn}
+                  onChange={(e) => setSearchParams({ ...searchParams, checkIn: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div className="search-field">
+                <label>📅 Check-out</label>
+                <input
+                  type="date"
+                  value={searchParams.checkOut}
+                  onChange={(e) => setSearchParams({ ...searchParams, checkOut: e.target.value })}
+                  min={searchParams.checkIn || new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div className="search-field">
+                <label>👥 Guests</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={searchParams.guests}
+                  onChange={(e) => setSearchParams({ ...searchParams, guests: parseInt(e.target.value) })}
+                />
+              </div>
+              <button className="search-btn" onClick={handleSearch}>
+                Search
+              </button>
+            </motion.div>
+
+            {/* CTA Buttons */}
+            <motion.div
+              className="cta-buttons"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <button
+                className="cta-btn primary"
+                onClick={() => navigate('/short-stay/search')}
+              >
+                Explore Stays
+              </button>
+              <button
+                className="cta-btn secondary"
+                onClick={() => user ? navigate('/short-stay/list-property') : navigate('/login')}
+              >
+                List Your Property
+              </button>
+            </motion.div>
+          </div>
+        </BackgroundVideo>
       </motion.section>
 
       {/* Categories Section */}
