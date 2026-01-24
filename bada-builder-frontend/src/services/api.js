@@ -432,6 +432,13 @@ export const liveGroupDynamicAPI = {
     });
   },
 
+  createBookingOrder: async (bookingData) => {
+    return apiRequest('/live-grouping-dynamic/create-booking-order', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+  },
+
   // Admin
   createProject: async (projectData, images = [], brochure = null) => {
     const formData = new FormData();

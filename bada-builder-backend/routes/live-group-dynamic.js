@@ -178,6 +178,39 @@ router.post('/units/:id/book', authenticate, async (req, res) => {
     }
 });
 
+// Create Razorpay Order for Unit Booking
+router.post('/create-booking-order', authenticate, async (req, res) => {
+    try {
+        const { unit_id, amount } = req.body;
+
+        if (!unit_id || !amount) {
+            return res.status(400).json({ error: 'Unit ID and amount are required' });
+        }
+
+        // Import Razorpay service
+        const { createOrder } = await import('../services/razorpay.js');
+
+        // Create Razorpay order
+        const order = await createOrder(
+            amount,
+            'INR',
+            `unit_booking_${unit_id}_${Date.now()}`
+        );
+
+        console.log('✅ Razorpay order created for unit booking:', order.id);
+
+        res.json({
+            orderId: order.id,
+            amount: amount,
+            currency: order.currency,
+            unit_id: unit_id
+        });
+    } catch (error) {
+        console.error('❌ Create booking order error:', error);
+        res.status(500).json({ error: error.message || 'Failed to create booking order' });
+    }
+});
+
 // --- ADMIN ROUTES ---
 
 // Create Project
