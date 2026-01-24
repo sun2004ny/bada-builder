@@ -432,6 +432,13 @@ export const liveGroupDynamicAPI = {
     });
   },
 
+  createBookingOrder: async (bookingData) => {
+    return apiRequest('/live-grouping-dynamic/create-booking-order', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+  },
+
   // Admin
   createProject: async (projectData, images = [], brochure = null) => {
     const formData = new FormData();
@@ -449,6 +456,13 @@ export const liveGroupDynamicAPI = {
     return apiRequest(`/live-grouping-dynamic/admin/projects/${projectId}/towers`, {
       method: 'POST',
       body: JSON.stringify(towerData),
+    });
+  },
+
+  updateUnit: async (unitId, unitData) => {
+    return apiRequest(`/live-grouping-dynamic/admin/units/${unitId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(unitData),
     });
   },
 

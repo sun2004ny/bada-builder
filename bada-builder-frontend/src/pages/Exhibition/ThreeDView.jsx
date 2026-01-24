@@ -195,6 +195,7 @@ const ThreeDView = () => {
     const [loading, setLoading] = useState(true);
     const [selectedUnit, setSelectedUnit] = useState(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
+    const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
     // View Mode State
     const [viewMode, setViewMode] = useState('3d'); // '3d' | '2d'
@@ -236,6 +237,34 @@ const ThreeDView = () => {
         }
     }, [property, fetchHierarchy]);
 
+    // Load Razorpay Script
+    useEffect(() => {
+        const loadRazorpay = () => {
+            return new Promise((resolve) => {
+                if (window.Razorpay) {
+                    setRazorpayLoaded(true);
+                    resolve(true);
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.onload = () => {
+                    setRazorpayLoaded(true);
+                    console.log('✅ Razorpay script loaded successfully');
+                    resolve(true);
+                };
+                script.onerror = () => {
+                    console.error('❌ Failed to load Razorpay script');
+                    resolve(false);
+                };
+                document.head.appendChild(script);
+            });
+        };
+
+        loadRazorpay();
+    }, []);
+
     const handleUnitClick = (unit) => {
         // If booked by someone else
         if (unit.status === 'booked') {
@@ -273,26 +302,106 @@ const ThreeDView = () => {
         }
     };
 
-    const handleBookNow = async () => {
-        if (!selectedUnit) return;
-        setPaymentLoading(true);
+    // Razorpay Payment Handler
+    const handleRazorpayPayment = async (unit) => {
+        if (!window.Razorpay) {
+            alert('Payment gateway is loading. Please try again in a moment.');
+            return false;
+        }
 
         try {
-            // In real production, this would trigger Razorpay
-            // On success, we call the book API
-            alert('Payment Success (Mock)! Finalizing booking...');
+            const bookingAmount = (unit.price * 0.005); // 0.5% of unit price
+            console.log('📝 Creating Razorpay order for unit:', unit.unit_number, 'Amount:', bookingAmount);
 
-            await liveGroupDynamicAPI.bookUnit(selectedUnit.id, {
-                amount: (selectedUnit.price * 0.5) / 100,
-                payment_id: 'PAY-' + Math.random().toString(36).substr(2, 9)
+            // Step 1: Create Razorpay order on backend
+            const orderResponse = await liveGroupDynamicAPI.createBookingOrder({
+                unit_id: unit.id,
+                amount: bookingAmount
             });
+            console.log('✅ Order created:', orderResponse);
 
-            alert('Unit booked successfully! Redirecting...');
-            setSelectedUnit(null);
-            await fetchHierarchy();
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: orderResponse.amount * 100, // Amount in paise
+                currency: orderResponse.currency || 'INR',
+                name: 'Bada Builder',
+                description: `Unit Booking - ${unit.unit_number} (${unit.unit_type})`,
+                order_id: orderResponse.orderId,
+                handler: async function (response) {
+                    console.log('✅ Payment successful:', response);
+
+                    try {
+                        // Book the unit with payment details
+                        await liveGroupDynamicAPI.bookUnit(unit.id, {
+                            amount: bookingAmount,
+                            currency: 'INR',
+                            payment_id: response.razorpay_payment_id,
+                            order_id: response.razorpay_order_id,
+                            signature: response.razorpay_signature,
+                            userName: 'Customer' // Will be replaced by backend with actual user
+                        });
+
+                        console.log('✅ Unit booked successfully');
+                        alert('🎉 Payment successful! Unit booked.');
+                        setPaymentLoading(false);
+                        setSelectedUnit(null);
+                        await fetchHierarchy();
+
+                    } catch (error) {
+                        console.error('Error booking unit:', error);
+                        alert('Payment successful but booking failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
+                        setPaymentLoading(false);
+                    }
+                },
+                prefill: {
+                    name: '',
+                    email: '',
+                    contact: ''
+                },
+                notes: {
+                    unit_id: unit.id,
+                    unit_number: unit.unit_number,
+                    unit_type: unit.unit_type,
+                    floor_number: unit.floor_number,
+                    booking_amount: bookingAmount,
+                    booking_type: 'unit_booking'
+                },
+                theme: {
+                    color: '#ef4444'
+                },
+                modal: {
+                    ondismiss: function () {
+                        console.log('Payment cancelled by user');
+                        setPaymentLoading(false);
+                    }
+                }
+            };
+
+            const razorpay = new window.Razorpay(options);
+            razorpay.open();
+            return true;
+
         } catch (error) {
-            alert('Booking failed: ' + error.message);
-        } finally {
+            console.error('❌ Error creating order:', error);
+            alert(error.response?.data?.error || 'Failed to initiate payment. Please try again.');
+            return false;
+        }
+    };
+
+    const handleBookNow = async () => {
+        if (!selectedUnit) return;
+
+        if (!razorpayLoaded) {
+            alert('Payment gateway is still loading. Please try again in a moment.');
+            return;
+        }
+
+        setPaymentLoading(true);
+        console.log('🚀 Starting payment for unit:', selectedUnit.unit_number);
+
+        // Initiate Razorpay payment
+        const paymentSuccess = await handleRazorpayPayment(selectedUnit);
+        if (!paymentSuccess) {
             setPaymentLoading(false);
         }
     };
@@ -462,13 +571,13 @@ const ThreeDView = () => {
                                         </button>
 
                                         <button
-                                            className="flex-[1.2] py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xl shadow-rose-200/40 text-[10px] uppercase tracking-widest"
+                                            className="flex-[1.2] py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xl shadow-rose-200/40 text-[10px] uppercase tracking-widest disabled:opacity-50"
                                             style={{ backgroundColor: '#ef4444' }} // Solid Red
                                             onClick={handleBookNow}
-                                            disabled={paymentLoading}
+                                            disabled={paymentLoading || !razorpayLoaded}
                                         >
                                             <CreditCard size={14} strokeWidth={3} />
-                                            {paymentLoading ? 'Wait' : 'Book'}
+                                            {paymentLoading ? 'Processing...' : !razorpayLoaded ? 'Loading...' : 'Book'}
                                         </button>
                                     </div>
 

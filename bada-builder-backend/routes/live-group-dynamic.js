@@ -178,6 +178,39 @@ router.post('/units/:id/book', authenticate, async (req, res) => {
     }
 });
 
+// Create Razorpay Order for Unit Booking
+router.post('/create-booking-order', authenticate, async (req, res) => {
+    try {
+        const { unit_id, amount } = req.body;
+
+        if (!unit_id || !amount) {
+            return res.status(400).json({ error: 'Unit ID and amount are required' });
+        }
+
+        // Import Razorpay service
+        const { createOrder } = await import('../services/razorpay.js');
+
+        // Create Razorpay order
+        const order = await createOrder(
+            amount,
+            'INR',
+            `unit_booking_${unit_id}_${Date.now()}`
+        );
+
+        console.log('✅ Razorpay order created for unit booking:', order.id);
+
+        res.json({
+            orderId: order.id,
+            amount: amount,
+            currency: order.currency,
+            unit_id: unit_id
+        });
+    } catch (error) {
+        console.error('❌ Create booking order error:', error);
+        res.status(500).json({ error: error.message || 'Failed to create booking order' });
+    }
+});
+
 // --- ADMIN ROUTES ---
 
 // Create Project
@@ -240,74 +273,44 @@ router.post('/admin/projects/:id/towers', authenticate, isAdmin, async (req, res
     }
 });
 
-// Bulk Generate Units
+// Bulk Generate Units (Enhanced for Mixed-Use)
 router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (req, res) => {
     try {
         const towerId = req.params.id;
-        let { unitsPerFloor, pricePerUnit, unitType, areaPerUnit, hasBasement, hasGroundFloor } = req.body;
+        const { units } = req.body; // Expecting an array of unit objects
 
-        // Force boolean conversion
-        hasBasement = String(hasBasement) === 'true' || hasBasement === true;
-        hasGroundFloor = String(hasGroundFloor) === 'true' || hasGroundFloor === true;
+        if (!units || !Array.isArray(units) || units.length === 0) {
+            return res.status(400).json({ error: 'Units data is required and must be an array' });
+        }
 
-        // Get tower floors
-        const towerResult = await pool.query('SELECT total_floors FROM live_group_towers WHERE id = $1', [towerId]);
+        // Get tower details for validation
+        const towerResult = await pool.query('SELECT project_id FROM live_group_towers WHERE id = $1', [towerId]);
         if (towerResult.rows.length === 0) return res.status(404).json({ error: 'Tower not found' });
 
-        const floors = towerResult.rows[0].total_floors;
-        const unitsData = [];
-        const unitChars = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        const projectId = towerResult.rows[0].project_id;
 
-        // Helper to add units for a specific floor
-        const addUnitsForFloor = (floorNum, prefix = '') => {
-            for (let u = 0; u < unitsPerFloor; u++) {
-                const unitChar = unitChars[u] || u;
-                // e.g. B-1A or GF-1A if you want prefixes, OR just B-A?
-                // Standard convention: 
-                // Floor 1: 1A, 1B
-                // GF: GF-A, GF-B
-                // Basement: B-A, B-B (or B1-A if multiple basements, but let's stick to B for single)
-
-                let unitLabel = '';
-                if (floorNum === -1) unitLabel = `B-${unitChar}`;
-                else if (floorNum === 0) unitLabel = `GF-${unitChar}`;
-                else unitLabel = `${floorNum}${unitChar}`;
-
-                unitsData.push({
-                    tower_id: towerId,
-                    floor_number: floorNum,
-                    unit_number: unitLabel,
-                    unit_type: unitType,
-                    area: areaPerUnit,
-                    price: pricePerUnit,
-                    status: 'available'
-                });
-            }
-        };
-
-        // 1. Basement (Floor -1)
-        if (hasBasement) {
-            addUnitsForFloor(-1);
-        }
-
-        // 2. Ground Floor (Floor 0)
-        if (hasGroundFloor) {
-            addUnitsForFloor(0);
-        }
-
-        // 3. Regular Floors (1 to N)
-        for (let f = 1; f <= floors; f++) {
-            addUnitsForFloor(f);
-        }
-
-        // Bulk insert
+        // Bulk insert units
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            for (let unit of unitsData) {
+            for (let unit of units) {
                 await client.query(
-                    'INSERT INTO live_group_units (tower_id, floor_number, unit_number, unit_type, area, price, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                    [unit.tower_id, unit.floor_number, unit.unit_number, unit.unit_type, unit.area, unit.price, unit.status]
+                    `INSERT INTO live_group_units (
+                        tower_id, floor_number, unit_number, unit_type, 
+                        area, carpet_area, price, price_per_sqft, discount_price_per_sqft, status
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                    [
+                        towerId,
+                        unit.floor_number,
+                        unit.unit_number,
+                        unit.unit_type || 'Unit',
+                        unit.area || 0,
+                        unit.carpet_area || null,
+                        unit.price || 0,
+                        unit.price_per_sqft || 0,
+                        unit.discount_price_per_sqft || null,
+                        unit.status || 'available'
+                    ]
                 );
             }
             await client.query('COMMIT');
@@ -320,19 +323,82 @@ router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (re
 
         // Update Project total_slots
         await pool.query(`
-      UPDATE live_group_projects 
-      SET total_slots = (
-        SELECT COUNT(*) FROM live_group_units u 
-        JOIN live_group_towers t ON u.tower_id = t.id 
-        WHERE t.project_id = live_group_projects.id
-      )
-      WHERE id = (SELECT project_id FROM live_group_towers WHERE id = $1)
-    `, [towerId]);
+            UPDATE live_group_projects 
+            SET total_slots = (
+                SELECT COUNT(*) FROM live_group_units u 
+                JOIN live_group_towers t ON u.tower_id = t.id 
+                WHERE t.project_id = live_group_projects.id
+            )
+            WHERE id = $1
+        `, [projectId]);
 
-        res.json({ message: `Successfully generated ${unitsData.length} units` });
+        res.json({ message: `Successfully generated ${units.length} units` });
     } catch (error) {
         console.error('Admin generate units error:', error);
         res.status(500).json({ error: 'Failed to generate units' });
+    }
+});
+
+// Update a single unit's details
+router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
+    try {
+        const unitId = req.params.id;
+        const {
+            unit_number, unit_type, floor_number, area, carpet_area,
+            price_per_sqft, discount_price_per_sqft, status
+        } = req.body;
+
+        // Get existing unit to ensure it exists and get fallback values if needed
+        const existingResult = await pool.query('SELECT * FROM live_group_units WHERE id = $1', [unitId]);
+        if (existingResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Unit not found' });
+        }
+        const existingUnit = existingResult.rows[0];
+
+        // Recalculate price and parse inputs
+        // Use provided values or fallback to existing ones
+        const finalUnitNumber = unit_number !== undefined ? unit_number : existingUnit.unit_number;
+        const finalUnitType = unit_type !== undefined ? unit_type : existingUnit.unit_type;
+        const finalFloorNumber = floor_number !== undefined ? parseInt(floor_number) : existingUnit.floor_number;
+        const finalArea = area !== undefined ? parseFloat(area) : parseFloat(existingUnit.area);
+        const finalCarpetArea = carpet_area !== undefined ? (carpet_area ? parseFloat(carpet_area) : null) : existingUnit.carpet_area;
+        const finalPricePerSqft = price_per_sqft !== undefined ? parseFloat(price_per_sqft) : parseFloat(existingUnit.price_per_sqft);
+
+        let finalDiscountPricePerSqft = existingUnit.discount_price_per_sqft;
+        if (discount_price_per_sqft !== undefined) {
+            finalDiscountPricePerSqft = (discount_price_per_sqft !== '' && discount_price_per_sqft !== null)
+                ? parseFloat(discount_price_per_sqft)
+                : null;
+        }
+
+        const finalStatus = status !== undefined ? status : existingUnit.status;
+
+        const effectiveRate = finalDiscountPricePerSqft !== null ? finalDiscountPricePerSqft : finalPricePerSqft;
+        const totalPrice = finalArea * effectiveRate;
+
+        const result = await pool.query(
+            `UPDATE live_group_units SET 
+                unit_number = $1,
+                unit_type = $2,
+                floor_number = $3,
+                area = $4,
+                price_per_sqft = $5,
+                discount_price_per_sqft = $6,
+                status = $7,
+                price = $8,
+                carpet_area = $9
+            WHERE id = $10 RETURNING *`,
+            [
+                finalUnitNumber, finalUnitType, finalFloorNumber, finalArea,
+                finalPricePerSqft, finalDiscountPricePerSqft, finalStatus,
+                totalPrice, finalCarpetArea, unitId
+            ]
+        );
+
+        res.json({ message: 'Unit updated successfully', unit: result.rows[0] });
+    } catch (error) {
+        console.error('Admin update unit error:', error);
+        res.status(500).json({ error: `Failed to update unit: ${error.message}` });
     }
 });
 
