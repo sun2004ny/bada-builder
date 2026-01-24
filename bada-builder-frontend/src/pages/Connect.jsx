@@ -1,590 +1,353 @@
-
-
-
 import { useState, useRef, useEffect } from 'react'
-
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import PageTransition from '../components/Motion/PageTransition';
-
 import { sendForm, init } from '@emailjs/browser'
-
-import { ChevronDownIcon } from '@heroicons/react/20/solid'
-
-import { Switch } from '@headlessui/react'
-
-
-
-//icons
-
-import { RiInstagramFill, RiFacebookFill, RiTwitterFill, RiYoutubeFill } from 'react-icons/ri';
-
-
+import {
+    RiInstagramFill,
+    RiFacebookFill,
+    RiTwitterFill,
+    RiYoutubeFill,
+    RiSendPlaneFill,
+    RiCheckLine,
+    RiErrorWarningLine
+} from 'react-icons/ri';
 
 function classNames(...classes) {
-
     return classes.filter(Boolean).join(' ')
-
 }
 
+const BackgroundGraphics = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+            {/* Dynamic Blob 1 */}
+            <motion.div
+                animate={{
+                    x: [0, 100, 0],
+                    y: [0, 50, 0],
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 90, 0]
+                }}
+                transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: "linear"
+                }}
+                className="absolute -top-20 -left-20 w-96 h-96 bg-primary/20 blur-[100px] rounded-full"
+            />
+            {/* Dynamic Blob 2 */}
+            <motion.div
+                animate={{
+                    x: [0, -100, 0],
+                    y: [0, 100, 0],
+                    scale: [1, 1.1, 1],
+                    rotate: [0, -45, 0]
+                }}
+                transition={{
+                    duration: 25,
+                    repeat: Infinity,
+                    ease: "linear"
+                }}
+                className="absolute top-1/2 -right-20 w-80 h-80 bg-purple-500/10 blur-[100px] rounded-full"
+            />
+            {/* Dynamic Blob 3 */}
+            <motion.div
+                animate={{
+                    y: [0, -150, 0],
+                    x: [0, 50, 0],
+                    scale: [1, 1.3, 1]
+                }}
+                transition={{
+                    duration: 18,
+                    repeat: Infinity,
+                    ease: "linear"
+                }}
+                className="absolute -bottom-20 left-1/4 w-72 h-72 bg-blue-400/10 blur-[80px] rounded-full"
+            />
+        </div>
+    );
+};
 
+const FloatingInput = ({ label, id, type = "text", required = false, name, value, onChange, textarea = false }) => {
+    const [isFocused, setIsFocused] = useState(false);
+    const hasValue = value && value.length > 0;
+
+    const InputComponent = textarea ? 'textarea' : 'input';
+
+    return (
+        <motion.div
+            variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+            }}
+            className="relative mb-6 group w-full"
+        >
+            <InputComponent
+                id={id}
+                name={name}
+                type={type}
+                required={required}
+                value={value}
+                onChange={onChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                rows={textarea ? 4 : undefined}
+                className={classNames(
+                    "block w-full px-4 pt-6 pb-2 text-neutral-900 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm border-2 rounded-2xl appearance-none focus:outline-none focus:ring-0 transition-all duration-300",
+                    isFocused || hasValue ? "border-primary shadow-lg shadow-primary/5" : "border-neutral-200 dark:border-neutral-800",
+                    textarea ? "resize-none" : ""
+                )}
+                placeholder=" "
+            />
+            <label
+                htmlFor={id}
+                className={classNames(
+                    "absolute left-4 top-4 z-10 origin-[0] transform transition-all duration-300 pointer-events-none",
+                    isFocused || hasValue
+                        ? "scale-75 -translate-y-3.5 text-primary font-bold"
+                        : "scale-100 translate-y-0 text-neutral-500"
+                )}
+            >
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
+
+            <AnimatePresence>
+                {isFocused && (
+                    <motion.div
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        exit={{ scaleX: 0 }}
+                        className="absolute bottom-0 left-0 h-0.5 bg-primary w-full origin-left rounded-full z-20"
+                    />
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
 
 const Connect = () => {
-
     const navigate = useNavigate();
-
     const [agreed, setAgreed] = useState(false);
-
     const [sending, setSending] = useState(false);
-
-    const [message, setMessage] = useState('');
-
+    const [status, setStatus] = useState(null);
+    const [statusMessage, setStatusMessage] = useState('');
     const formRef = useRef(null);
 
-
+    const [formData, setFormData] = useState({
+        first_name: '',
+        last_name: '',
+        company: '',
+        user_email: '',
+        phone: '',
+        message: ''
+    });
 
     useEffect(() => {
-
         const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
-
         if (publicKey) init(publicKey);
-
     }, []);
 
-
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = (e) => {
-
         e.preventDefault();
+        if (sending) return;
 
-        if (sending) {
-            e.stopPropagation();
-            return;
-        }
-
-
-
-        // Clear previous messages
-
-        setMessage('');
-
-
-
-        // Basic form validation
-
-        const formData = new FormData(formRef.current);
-
-        const firstName = formData.get('first_name');
-
-        const lastName = formData.get('last_name');
-
-        const email = formData.get('user_email');
-
-        const phone = formData.get('phone');
-
-        const messageText = formData.get('message');
-
-
-
-        if (!firstName || !lastName || !email || !phone || !messageText) {
-
-            setMessage('Please fill in all required fields.');
-
-            return;
-
-        }
-
-
+        setStatus(null);
+        setStatusMessage('');
 
         if (!agreed) {
-
-            setMessage('Please agree to allow us to contact you via phone.');
-
+            setStatus('error');
+            setStatusMessage('Please agree to allow us to contact you.');
             return;
-
         }
-
-
 
         setSending(true);
 
-
-
         const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
-
         const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
-
         const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
 
-
-
         if (!serviceId || !templateId || !publicKey) {
-
-            setMessage('EmailJS not configured. Please contact support.');
-
+            setStatus('error');
+            setStatusMessage('System configuration error.');
             setSending(false);
-
             return;
-
         }
-
-
-
-        console.log('📧 Sending contact form with EmailJS...');
-
-        console.log('Service ID:', serviceId);
-
-        console.log('Template ID:', templateId);
-
-
-
-        // Log form data being sent
-
-        const formDataForLog = new FormData(formRef.current);
-
-        console.log('📋 Form data being sent:');
-
-        for (let [key, value] of formDataForLog.entries()) {
-
-            console.log(`  ${key}: ${value}`);
-
-        }
-
-
 
         sendForm(serviceId, templateId, formRef.current, publicKey)
-
-            .then((response) => {
-
-                console.log('✅ Contact form sent successfully:', response.text);
-
-                navigate('/');
-
+            .then(() => {
+                setStatus('success');
+                setStatusMessage('Message sent! Returning soon.');
+                setTimeout(() => navigate('/'), 3000);
             })
-
-            .catch((error) => {
-
-                console.error('❌ Failed to send contact form:', error);
-
-                setMessage('Failed to send message. Please try again later or contact us directly.');
-
+            .catch(() => {
+                setStatus('error');
+                setStatusMessage('Failed to send message.');
             })
-
             .finally(() => {
-
                 setSending(false);
-
             });
-
     };
 
-
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
 
     return (
         <PageTransition>
-            <div className="isolate mt-44 mb-36 p-6 mx-auto max-w-sm sm:max-w-xl md:max-w-full lg:max-w-screen-xl">
+            <div className="relative min-h-screen pt-2 pb-16 px-6 overflow-hidden bg-neutral-50 dark:bg-black">
+                <BackgroundGraphics />
 
-                {sending && (
+                <div className="relative mx-auto max-w-2xl text-center mb-7 z-10">
+                    <motion.h2
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-6xl md:text-9xl font-black text-black dark:text-white tracking-tighter"
+                    >
+                        Let's <span className="text-black dark:text-neutral-100">Connect</span>
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                        className="mt-4 text-lg text-neutral-500 dark:text-neutral-400"
+                    >
+                        Our team is here to help you secure your legacy.
+                    </motion.p>
+                </div>
 
-                    <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-
-                        <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center">
-
-                            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-
-                            <p className="mt-4 text-lg font-semibold text-gray-700">Sending your message...</p>
-
-                        </div>
-
-                    </div>
-
-                )}
-
-                <div
-
-                    className="absolute inset-x-0 top-[-10rem] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[-20rem]"
-
-                    aria-hidden="true"
-
+                <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", damping: 20, stiffness: 100 }}
+                    whileHover={{ y: -5 }}
+                    className="relative mx-auto max-w-xl p-[2px] rounded-[2.6rem] bg-gradient-to-br from-primary via-purple-500 to-blue-500 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] z-10 overflow-hidden"
                 >
-
-                    <div
-
-                        className="relative left-1/2 -z-10 aspect-[1155/678] w-[36.125rem] max-w-none -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%-40rem)] sm:w-[72.1875rem]"
-
-                        style={{
-
-                            clipPath:
-
-                                'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
-
-                        }}
-
-                    />
-
-                </div>
-
-
-
-                <div className="mx-auto text-center">
-
-                    <h2 className="title">Contact Us</h2>
-
-                </div>
-
-
-
-                {message && (
-
-                    <div className="mx-auto mt-8 max-w-xl p-4 rounded-lg border bg-red-50 border-red-200 text-red-800">
-
-                        <div className="flex items-center">
-
-                            <svg className="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-
-                            </svg>
-
-                            <p className="text-sm font-medium">{message}</p>
-
-                            <button
-
-                                onClick={() => setMessage('')}
-
-                                className="ml-auto text-gray-400 hover:text-gray-600"
-
-                            >
-
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-
-                                </svg>
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                )}
-
-
-
-                <form ref={formRef} onSubmit={handleSubmit} className="mx-auto mt-16 max-w-xl sm:mt-20">
-
-                    <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
-
-                        <div>
-
-                            <label htmlFor="first_name" className="block text-sm font-semibold leading-6 text-gray-600">
-
-                                First name
-
-                            </label>
-
-                            <div className="mt-2.5">
-
-                                <input
-
-                                    type="text"
-
-                                    name="first_name"
-
-                                    id="first_name"
-
-                                    autoComplete="given-name"
-
-                                    required
-
-                                    className="block w-full rounded-md border-0 px-3.5 py-2 text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-
-                                />
-
-                            </div>
-
-                        </div>
-
-                        <div>
-
-                            <label htmlFor="last_name" className="block text-sm font-semibold leading-6 text-gray-600">
-
-                                Last name
-
-                            </label>
-
-                            <div className="mt-2.5">
-
-                                <input
-
-                                    type="text"
-
-                                    name="last_name"
-
-                                    id="last_name"
-
-                                    autoComplete="family-name"
-
-                                    required
-
-                                    className="block w-full rounded-md border-0 px-3.5 py-2 text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-
-                                />
-
-                            </div>
-
-                        </div>
-
-                        <div className="sm:col-span-2">
-
-                            <label htmlFor="company" className="block text-sm font-semibold leading-6 text-gray-600">
-
-                                Company
-
-                            </label>
-
-                            <div className="mt-2.5">
-
-                                <input
-
-                                    type="text"
-
-                                    name="company"
-
-                                    id="company"
-
-                                    autoComplete="organization"
-
-                                    className="block w-full rounded-md border-0 px-3.5 py-2 text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-
-                                />
-
-                            </div>
-
-                        </div>
-
-                        <div className="sm:col-span-2">
-
-                            <label htmlFor="user_email" className="block text-sm font-semibold leading-6 text-gray-600">
-
-                                Email
-
-                            </label>
-
-                            <div className="mt-2.5">
-
-                                <input
-
-                                    type="email"
-
-                                    name="user_email"
-
-                                    id="user_email"
-
-                                    autoComplete="email"
-
-                                    required
-
-                                    className="block w-full rounded-md border-0 px-3.5 py-2 text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-
-                                />
-
-                            </div>
-
-                        </div>
-
-                        <div className="sm:col-span-2">
-                            <label htmlFor="phone-number" className="block text-sm font-semibold leading-6 text-gray-600">
-                                Phone number
-                            </label>
-                            <div className="relative mt-2.5">
-                                <span className="absolute inset-y-0 left-0 flex items-center px-4 text-gray-600">
-                                    IND
-                                </span>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    id="phone"
-                                    autoComplete="tel"
-                                    required
-                                    className="block w-full rounded-md border-0 px-3.5 py-2 pl-16 text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                            </div>
-                        </div>
-
-
-                        <div className="sm:col-span-2">
-
-                            <label htmlFor="message" className="block text-sm font-semibold leading-6 text-gray-600">
-
-                                Message
-
-                            </label>
-
-                            <div className="mt-2.5">
-
-                                <textarea
-
-                                    name="message"
-
-                                    id="message"
-
-                                    rows={4}
-
-                                    required
-
-                                    placeholder="Tell us about your inquiry..."
-
-                                    className="block w-full rounded-md border-0 px-3.5 py-2 text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-
-                                    defaultValue={''}
-
-                                />
-
-                            </div>
-
-                        </div>
-
-                        <Switch.Group as="div" className="flex gap-x-4 sm:col-span-2 justify-center">
-
-                            <div className="flex h-6 items-center">
-
-                                <Switch
-
-                                    checked={agreed}
-
-                                    onChange={setAgreed}
-
+                    <div className="relative bg-white/90 dark:bg-neutral-950/90 backdrop-blur-3xl p-8 md:p-12 rounded-[2.5rem] h-full w-full overflow-hidden">
+                        {/* Vibrant Mesh Gradient Effects */}
+                        <div className="absolute -top-32 -left-32 w-80 h-80 bg-purple-500/20 blur-[80px] rounded-full pointer-events-none animate-pulse" />
+                        <div className="absolute -top-32 -right-32 w-80 h-80 bg-primary/20 blur-[80px] rounded-full pointer-events-none animate-pulse" />
+                        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none animate-pulse" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+
+                        <AnimatePresence mode="wait">
+                            {status && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                    exit={{ opacity: 0, height: 0, scale: 0.95 }}
                                     className={classNames(
-
-                                        agreed ? 'bg-primary' : 'bg-gray-200',
-
-                                        'flex w-8 flex-none cursor-pointer rounded-full p-px ring-1 ring-inset ring-gray-900/5 transition-colors duration-200 ease-in-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-
+                                        "mb-8 p-4 rounded-2xl flex items-center gap-3 border",
+                                        status === 'success' ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
                                     )}
-
                                 >
+                                    {status === 'success' ? <RiCheckLine className="text-xl" /> : <RiErrorWarningLine className="text-xl" />}
+                                    <span className="text-sm font-medium">{statusMessage}</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                                    <span className="sr-only">Agree to policies</span>
-
-                                    <span
-
-                                        aria-hidden="true"
-
-                                        className={classNames(
-
-                                            agreed ? 'translate-x-3.5' : 'translate-x-0',
-
-                                            'h-4 w-4 transform rounded-full bg-white shadow-sm ring-1 ring-gray-900/5 transition duration-200 ease-in-out'
-
-                                        )}
-
-                                    />
-
-                                </Switch>
-
+                        <motion.form
+                            ref={formRef}
+                            onSubmit={handleSubmit}
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                            className="space-y-2"
+                        >
+                            <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                                <FloatingInput label="First name" id="first_name" name="first_name" required value={formData.first_name} onChange={handleChange} />
+                                <FloatingInput label="Last name" id="last_name" name="last_name" required value={formData.last_name} onChange={handleChange} />
                             </div>
 
-                            <Switch.Label className="text-sm leading-6 text-gray-700">
+                            <FloatingInput label="Company (Optional)" id="company" name="company" value={formData.company} onChange={handleChange} />
+                            <FloatingInput label="Email Address" id="user_email" name="user_email" type="email" required value={formData.user_email} onChange={handleChange} />
 
-                                By selecting this, you agree to allow us to contact you via phone
+                            <div className="relative">
+                                <FloatingInput label="Phone Number" id="phone" name="phone" type="tel" required value={formData.phone} onChange={handleChange} />
+                                <span className="absolute top-5 right-4 text-xs font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-lg">IND</span>
+                            </div>
 
-                            </Switch.Label>
+                            <FloatingInput label="Your Message" id="message" name="message" textarea required value={formData.message} onChange={handleChange} />
 
-                        </Switch.Group>
+                            <motion.label
+                                variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+                                className="flex items-start gap-4 py-6 group cursor-pointer w-fit"
+                            >
+                                <div className="relative flex items-center justify-center mt-0.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={agreed}
+                                        onChange={(e) => setAgreed(e.target.checked)}
+                                        className="peer h-7 w-7 cursor-pointer appearance-none rounded-lg border-2 border-neutral-300 dark:border-neutral-700 transition-all duration-300 checked:bg-primary checked:border-primary"
+                                    />
+                                    <RiCheckLine className={classNames("absolute text-black transition-all duration-300 pointer-events-none text-xl", agreed ? "opacity-100 scale-100" : "opacity-0 scale-75")} />
+                                    <div className="absolute inset-0 rounded-lg peer-focus:ring-2 peer-focus:ring-primary/30 peer-focus:ring-offset-2 transition-all duration-300 shadow-sm" />
+                                </div>
+                                <span className="text-base text-neutral-700 dark:text-neutral-300 select-none leading-tight font-medium">
+                                    Agree to allow us to contact you via phone or email.
+                                </span>
+                            </motion.label>
 
+                            <motion.button
+                                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="submit"
+                                disabled={sending || !agreed}
+                                className="group relative w-full overflow-hidden rounded-2xl bg-primary py-4 px-6 text-white font-bold transition-all duration-300 hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
+                            >
+                                <AnimatePresence mode="wait">
+                                    {sending ? (
+                                        <motion.div key="loader" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-2">
+                                            <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Sending...
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
+                                            Let's talk
+                                            <RiSendPlaneFill className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.button>
+                        </motion.form>
                     </div>
+                </motion.div>
 
-                    <div className="mt-10">
-
-                        <button
-
-                            type="submit"
-
-                            disabled={sending || !agreed}
-
-                            className="block w-full rounded-xl bg-primary px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-xl hover:bg-primary-hover focus:bg-primary-hover duration-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-
-                        >
-
-                            {sending ? (
-
-                                <>
-
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-
-                                    Sending Message...
-
-                                </>
-
-                            ) : (
-
-                                "Let's talk"
-
-                            )}
-
-                        </button>
-
+                {/* Footer Info */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    className="relative mt-10 flex flex-col items-center z-10"
+                >
+                    <div className="flex gap-6 mb-8 text-neutral-400 dark:text-neutral-600">
+                        {[RiFacebookFill, RiTwitterFill, RiInstagramFill, RiYoutubeFill].map((Icon, i) => (
+                            <motion.a key={i} whileHover={{ y: -3, color: 'var(--primary)' }} href="#" className="transition-colors duration-300">
+                                <Icon className="text-2xl" />
+                            </motion.a>
+                        ))}
                     </div>
-
-                </form>
-
-
-
-                <div className="p-2 w-full pt-8 mt-8 border-t border-gray-200 text-center">
-
-                    <a href="mailto:info@headstart.co.in" className="text-primary font-semibold hover:text-gray-500 duration-300 transition-colors">info@headstart.co.in</a>
-
-                    <p className="leading-normal my-5 text-gray-700 ">
-
-                        <a href="https://goo.gl/maps/Rko9qVf1rBpS9qe2A" className='hover:text-gray-500 duration-300 transition-colors'>
-
-                            608-A, Pinnacle Business Park
-
-                            <br />Corporate Road, Prahladnagar, Ahmedabad
-
-                        </a>
-
-                    </p>
-
-                    <span className="inline-flex">
-
-                        <a className="text-gray-500 hover:text-[#3b5998] cursor-pointer text-xl duration-300 transition-colors">
-
-                            <RiFacebookFill />
-
-                        </a>
-
-                        <a className="ml-4 text-gray-500 hover:text-[#26a7de] cursor-pointer text-xl duration-300 transition-colors">
-
-                            <RiTwitterFill />
-
-                        </a>
-
-                        <a className="ml-4 text-gray-500 hover:text-[#e2457a] cursor-pointer text-xl duration-300 transition-colors">
-
-                            <RiInstagramFill />
-
-                        </a>
-
-                        <a className="ml-4 text-gray-500 hover:text-[#CD201F] cursor-pointer text-xl duration-300 transition-colors">
-
-                            <RiYoutubeFill />
-
-                        </a>
-
-                    </span>
-
-                </div>
-
-
-
+                    <div className="text-center space-y-2">
+                        <p className="text-primary font-bold">info@headstart.co.in</p>
+                        <p className="text-sm text-neutral-500 max-w-xs leading-relaxed">
+                            608-A, Pinnacle Business Park, Ahmedabad
+                        </p>
+                    </div>
+                </motion.div>
             </div>
         </PageTransition>
     )
-
 }
-
-
 
 export default Connect
