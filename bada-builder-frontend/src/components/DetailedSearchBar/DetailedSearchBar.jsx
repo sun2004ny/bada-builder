@@ -219,6 +219,13 @@ const DetailedSearchBar = () => {
                         initialValue={location}
                         searchHistory={searchHistory}
                         onDeleteHistory={deleteHistoryItem}
+                        propertyOptions={propertyOptions}
+                        selectedProperties={selectedProperties}
+                        onToggleProperty={toggleProperty}
+                        filterConfigs={filterConfigs}
+                        filters={filters}
+                        onFilterChange={handleFilterChange}
+                        onClearAll={clearAll}
                     />
                 )}
             </AnimatePresence>
@@ -419,7 +426,9 @@ const DetailedSearchBar = () => {
                                         whileHover={{ scale: 1.02 }}
                                         whileFocus={{ scale: 1.02 }}
                                     >
-                                        <option value="">Select {key.charAt(0).toUpperCase() + key.slice(1)}</option>
+                                        <option value="">
+                                            {key === 'postedBy' ? 'Listed By' : `Select ${key === 'bedrooms' ? 'BHK' : key.toUpperCase()}`}
+                                        </option>
                                         {filterConfigs[key].map(opt => (
                                             <option key={opt} value={opt}>{opt}</option>
                                         ))}

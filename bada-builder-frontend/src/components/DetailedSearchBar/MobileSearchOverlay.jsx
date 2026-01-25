@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 import './MobileSearchOverlay.css';
 
-const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "", searchHistory = [], onDeleteHistory }) => {
+const MobileSearchOverlay = ({
+    isOpen,
+    onClose,
+    onSearch,
+    initialValue = "",
+    searchHistory = [],
+    onDeleteHistory,
+    propertyOptions = [],
+    selectedProperties = [],
+    onToggleProperty,
+    filterConfigs = {},
+    filters = {},
+    onFilterChange,
+    onClearAll
+}) => {
     const [searchTerm, setSearchTerm] = useState(initialValue);
-
-    // Popular localities as per reference
-    const popularLocalities = [
-        "Vasna Bhayli Road, Vadodara",
-        "Gotri Road, Vadodara",
-        "New Alkapuri, Vadodara",
-        "Bhayli, Vadodara"
-    ];
-
-    const recentLocalities = [
-        "Vasna Bhayli Road, Vadodara",
-        "Bhayli"
-    ];
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -73,7 +75,7 @@ const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "", sea
             <div className="mobile-search-top-bar">
                 <button className="mobile-search-close-btn" onClick={onClose} aria-label="Close search">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M20 4L4 20M4 4l16 16" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </button>
                 <div className="mobile-search-input-box">
@@ -97,62 +99,99 @@ const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "", sea
                 </div>
             </div>
 
+            <div className="mobile-filter-toggle-container">
+                <button
+                    className={`mobile-filter-trigger-btn ${isFiltersOpen ? 'active' : ''}`}
+                    onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                >
+                    <div className="trigger-left">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                        </svg>
+                        <span>Filters</span>
+                    </div>
+                    <svg
+                        className={`chevron-icon ${isFiltersOpen ? 'rotate' : ''}`}
+                        viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3"
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+            </div>
+
             <div className="mobile-search-body">
-                {searchHistory.length > 0 && (
-                    <div className="mobile-search-card history-card">
-                        <div className="history-header">
-                            <h4 className="card-title">Recent Searches</h4>
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#64748b" strokeWidth="2.5">
-                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div className="mobile-history-chips">
-                            {searchHistory.map((item, index) => (
-                                <div key={item.id || index} className="m-history-chip-wrapper">
-                                    <button
-                                        className="m-history-chip"
-                                        onClick={() => handleSearchSubmit(item)}
-                                    >
-                                        {item.display || item}
-                                    </button>
-                                    <button
-                                        className="m-delete-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDeleteHistory(item.id, e);
-                                        }}
-                                    >
-                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4">
-                                            <path d="M18 6L6 18M6 6l12 12" />
-                                        </svg>
-                                    </button>
+                <AnimatePresence>
+                    {isFiltersOpen && (
+                        <motion.div
+                            className="mobile-all-options-container"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            style={{ overflow: 'hidden' }}
+                        >
+                            <div className="mobile-body-header">
+                                <button className="mobile-clear-all" onClick={onClearAll}>
+                                    CLEAR ALL
+                                </button>
+                            </div>
+
+                            <div className="mobile-search-card">
+                                <div className="card-header-with-icon">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#4f46e5" strokeWidth="2.5">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                                        <polyline points="9 22 9 12 15 12 15 22" />
+                                    </svg>
+                                    <h4 className="card-title">PROPERTY TYPE</h4>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                                <div className="chip-container property-grid">
+                                    {propertyOptions.map((option) => (
+                                        <button
+                                            key={option}
+                                            className={`search-chip property-chip ${selectedProperties.includes(option) ? 'selected' : ''}`}
+                                            onClick={() => onToggleProperty(option)}
+                                        >
+                                            {selectedProperties.includes(option) && <span className="check-mark">✓</span>}
+                                            {option}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                <div className="mobile-search-card">
-                    <h4 className="card-title">Recently Searched Localities in Vadodara</h4>
-                    <div className="chip-container">
-                        {recentLocalities.map((l, i) => (
-                            <button key={i} className="search-chip" onClick={() => handleSearchSubmit(l)}>
-                                <span className="plus-sign">+</span> {l}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="mobile-search-card">
-                    <h4 className="card-title">Popular Localities in Vadodara</h4>
-                    <div className="chip-container">
-                        {popularLocalities.map((l, i) => (
-                            <button key={i} className="search-chip" onClick={() => handleSearchSubmit(l)}>
-                                <span className="plus-sign">+</span> {l}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                            <div className="mobile-search-card">
+                                <div className="card-header-with-icon">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#4f46e5" strokeWidth="2.5">
+                                        <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                                    </svg>
+                                    <h4 className="card-title">ADVANCED FILTERS</h4>
+                                </div>
+                                <div className="mobile-filters-grid">
+                                    {Object.keys(filterConfigs).map((key) => (
+                                        <div key={key} className="mobile-filter-item">
+                                            <label className="mobile-filter-label">
+                                                {key === 'bedrooms' ? 'BHK' : key === 'postedBy' ? 'LISTED BY' : key.toUpperCase()}
+                                            </label>
+                                            <div className="custom-select-wrapper">
+                                                <select
+                                                    className="mobile-filter-select"
+                                                    value={filters[key]}
+                                                    onChange={(e) => onFilterChange(key, e.target.value)}
+                                                >
+                                                    <option value="">
+                                                        {key === 'postedBy' ? 'Listed By' : `Select ${key === 'bedrooms' ? 'BHK' : key.toUpperCase()}`}
+                                                    </option>
+                                                    {filterConfigs[key].map(opt => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </motion.div>
     );
