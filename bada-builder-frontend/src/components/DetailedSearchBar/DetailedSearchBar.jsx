@@ -1,163 +1,220 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import './DetailedSearchBar.css';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import "./DetailedSearchBar.css";
+
+const propertyOptions = [
+    "Flat/Apartment",
+    "Independent/Builder Floor",
+    "Independent House/Villa",
+    "Residential Land",
+    "1 RK/Studio Apartment",
+    "Farm House",
+    "Serviced Apartments",
+    "Other",
+];
+
+const filterOptions = ["Budget", "Bedroom", "Construction Status", "Posted By"];
 
 const DetailedSearchBar = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const [location, setLocation] = useState('');
-    const [propertyType, setPropertyType] = useState('');
-    const [bhkType, setBhkType] = useState('');
-    const [area, setArea] = useState('');
-    const [possession, setPossession] = useState('');
+    const [location, setLocation] = useState("");
+    const [selectedProperties, setSelectedProperties] = useState([]);
+    const [possession, setPossession] = useState("");
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
-    // Initialize state from URL params
+    // Initialize from URL params
     useEffect(() => {
-        const loc = searchParams.get('location');
-        const type = searchParams.get('type');
-        const bhk = searchParams.get('bhk');
-        const ar = searchParams.get('area');
-        const poss = searchParams.get('possession');
-
+        const loc = searchParams.get("location");
+        const type = searchParams.get("type")?.split(",") || [];
         if (loc) setLocation(loc);
-        if (type) setPropertyType(type);
-        if (bhk) setBhkType(bhk);
-        if (ar) setArea(ar);
-        if (poss) setPossession(poss);
+        if (type.length) setSelectedProperties(type);
     }, [searchParams]);
 
-    const showBhkType = ['Flat', 'House', 'Villa'].includes(propertyType);
-    const showArea = !!propertyType;
+    // Close dropdown if clicked outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
-    const handlePropertyTypeChange = (e) => {
-        const newType = e.target.value;
-        setPropertyType(newType);
-        setArea('');
-
-        if (!['Flat', 'House', 'Villa'].includes(newType)) {
-            setBhkType('');
-        }
+    const toggleProperty = (option) => {
+        setSelectedProperties((prev) =>
+            prev.includes(option)
+                ? prev.filter((item) => item !== option)
+                : [...prev, option]
+        );
     };
+
+    const clearProperties = () => setSelectedProperties([]);
 
     const handleSearch = () => {
         const params = new URLSearchParams();
-
-        if (location) params.append('location', location);
-        if (propertyType) params.append('type', propertyType);
-        if (bhkType && showBhkType) params.append('bhk', bhkType);
-        if (area) params.append('area', area);
-        if (possession) params.append('possession', possession);
-
+        if (location) params.append("location", location);
+        if (selectedProperties.length) params.append("type", selectedProperties.join(","));
+        if (possession) params.append("possession", possession);
         navigate(`/search?${params.toString()}`);
     };
 
     return (
-        <motion.div
-            className="search-bar"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-        >
-            {/* Location */}
-            <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="search-input"
-                placeholder="Enter or Select Location"
-                list="location-suggestions"
-            />
-
-            <datalist id="location-suggestions">
-                <option value="PAN India" />
-                <option value="Mumbai" />
-                <option value="Delhi" />
-                <option value="Bangalore" />
-                <option value="Hyderabad" />
-                <option value="Ahmedabad" />
-                <option value="Pune" />
-                <option value="Surat" />
-                <option value="Vadodara" />
-                <option value="Rajkot" />
-            </datalist>
-
-            {/* Property Type */}
-            <select
-                value={propertyType}
-                onChange={handlePropertyTypeChange}
-                className="search-select"
+        <div className="search-bar-wrapper">
+            {/* Title and Subtitle with Animations */}
+            <motion.div
+                className="search-bar-header"
+                initial={{ opacity: 0, y: -30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
             >
-                <option value="">Property Type</option>
-                <option value="Flat">Flat / Apartment</option>
-                <option value="House">Independent House</option>
-                <option value="Villa">Villa</option>
-                <option value="Plot">Plot / Land</option>
-                <option value="Commercial">Commercial</option>
-                <option value="Shop">Shop</option>
-                <option value="Office">Office</option>
-                <option value="Warehouse">Warehouse</option>
-                <option value="Showroom">Showroom</option>
-            </select>
-
-            {/* BHK */}
-            {showBhkType && (
-                <motion.select
-                    value={bhkType}
-                    onChange={(e) => setBhkType(e.target.value)}
-                    className="search-select"
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    transition={{ duration: 0.3 }}
+                <motion.h2
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                 >
-                    <option value="">BHK</option>
-                    <option value="1RK">1 RK</option>
-                    <option value="1BHK">1 BHK</option>
-                    <option value="2BHK">2 BHK</option>
-                    <option value="3BHK">3 BHK</option>
-                    <option value="4BHK">4 BHK</option>
-                    <option value="5BHK">5 BHK</option>
-                    <option value="6BHK">6+ BHK</option>
-                </motion.select>
-            )}
-
-            {/* Area */}
-            {showArea && (
-                <motion.select
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    className="search-select"
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    transition={{ duration: 0.3 }}
+                    Find Your Dream Property
+                </motion.h2>
+                <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
                 >
-                    <option value="">Area Size</option>
-                    <option value="Under 500 Sq Ft">Under 500 Sq Ft</option>
-                    <option value="500-1000 Sq Ft">500 - 1000 Sq Ft</option>
-                    <option value="1000-1500 Sq Ft">1000 - 1500 Sq Ft</option>
-                    <option value="1500-2000 Sq Ft">1500 - 2000 Sq Ft</option>
-                    <option value="Above 2000 Sq Ft">Above 2000 Sq Ft</option>
-                </motion.select>
-            )}
+                    Search from a wide range of properties across India
+                </motion.p>
+            </motion.div>
 
-            {/* Possession */}
-            <select
-                value={possession}
-                onChange={(e) => setPossession(e.target.value)}
-                className="search-select"
+            <motion.div
+                className="redesign-search-bar"
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                whileHover={{
+                    y: -4,
+                    transition: { duration: 0.3 }
+                }}
+                ref={dropdownRef}
             >
-                <option value="">Possession</option>
-                <option value="Just Launched">Just Launched</option>
-                <option value="Under Construction">Under Construction</option>
-                <option value="Ready to Move">Ready to Move</option>
-            </select>
+                {/* Animated shimmer effect */}
+                <div className="shimmer-overlay" />
 
-            <button onClick={handleSearch} className="search-button">
-                🔍 Search
-            </button>
-        </motion.div>
+                {/* Main Search Row */}
+                <div className="search-main">
+                    <motion.div
+                        className="property-dropdown-toggle"
+                        onClick={() => setDropdownOpen((prev) => !prev)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        All Residential ▾
+                    </motion.div>
+
+                    <motion.input
+                        type="text"
+                        className="search-input"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder='Search "Flats for rent in sector 77 Noida"'
+                        whileFocus={{ scale: 1.01 }}
+                    />
+
+                    <motion.button
+                        className="search-button"
+                        onClick={handleSearch}
+                        whileHover={{
+                            scale: 1.05,
+                            boxShadow: "0 8px 30px rgba(139, 92, 246, 0.5)"
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <svg className="search-icon" viewBox="0 0 24 24" fill="none">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
+                            <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                        <span>Search</span>
+                    </motion.button>
+                </div>
+
+                {/* Dropdown Panel */}
+                <AnimatePresence>
+                    {dropdownOpen && (
+                        <motion.div
+                            className="dropdown-panel"
+                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                        >
+                            <div className="dropdown-top">
+                                <motion.div
+                                    className="checkbox-grid"
+                                    initial="hidden"
+                                    animate="visible"
+                                    variants={{
+                                        visible: {
+                                            transition: {
+                                                staggerChildren: 0.03
+                                            }
+                                        }
+                                    }}
+                                >
+                                    {propertyOptions.map((option, index) => (
+                                        <motion.label
+                                            key={option}
+                                            className="checkbox-item"
+                                            variants={{
+                                                hidden: { opacity: 0, x: -20 },
+                                                visible: { opacity: 1, x: 0 }
+                                            }}
+                                            whileHover={{ scale: 1.03, x: 4 }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedProperties.includes(option)}
+                                                onChange={() => toggleProperty(option)}
+                                            />
+                                            {option}
+                                        </motion.label>
+                                    ))}
+                                </motion.div>
+                                <motion.div
+                                    className="clear-btn"
+                                    onClick={clearProperties}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Clear
+                                </motion.div>
+                            </div>
+
+                            <div className="filters-row">
+                                {filterOptions.map((filter) => (
+                                    <motion.select
+                                        key={filter}
+                                        className="filter-select"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileFocus={{ scale: 1.02 }}
+                                    >
+                                        <option value="">{filter}</option>
+                                    </motion.select>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </div>
     );
 };
 
 export default DetailedSearchBar;
+
+
