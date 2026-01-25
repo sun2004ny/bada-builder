@@ -51,15 +51,16 @@ html.dark a:hover {
   color: #a78bfa;
 }
 
+html,
 body {
   margin: 0;
   padding: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* background managed by :root/dark override */
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
   box-sizing: border-box;
+  position: relative;
 }
 
 *,

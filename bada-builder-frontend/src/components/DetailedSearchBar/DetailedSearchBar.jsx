@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import MobileSearchOverlay from "./MobileSearchOverlay";
 import "./DetailedSearchBar.css";
 
 const propertyOptions = [
@@ -35,6 +36,7 @@ const DetailedSearchBar = () => {
     });
     const [isListening, setIsListening] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
     const dropdownRef = useRef(null);
 
     // Initialize from URL params
@@ -55,6 +57,15 @@ const DetailedSearchBar = () => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // Side effect to handle body scroll lock when mobile search is open
+    useEffect(() => {
+        if (isMobileSearchOpen) {
+            document.body.classList.add('mobile-search-open');
+        } else {
+            document.body.classList.remove('mobile-search-open');
+        }
+    }, [isMobileSearchOpen]);
 
     const toggleProperty = (option) => {
         setSelectedProperties((prev) =>
@@ -114,9 +125,20 @@ const DetailedSearchBar = () => {
         recognition.start();
     };
 
-    const handleSearch = () => {
+    const handleInputClick = (e) => {
+        // Detect mobile by viewport width - matches CSS media query
+        if (window.innerWidth <= 1024) {
+            e.preventDefault();
+            e.target.blur(); // Prevent keyboard from popping up on the main screen
+            setIsMobileSearchOpen(true);
+        }
+    };
+
+    const handleSearch = (term) => {
+        // term is optional (used by mobile overlay)
+        const finalLocation = term || location;
         const params = new URLSearchParams();
-        if (location) params.append("location", location);
+        if (finalLocation) params.append("location", finalLocation);
         if (selectedProperties.length) params.append("type", selectedProperties.join(","));
         Object.keys(filters).forEach(key => {
             if (filters[key]) params.append(key, filters[key]);
@@ -126,9 +148,20 @@ const DetailedSearchBar = () => {
 
     return (
         <div className="search-bar-wrapper">
-            {/* Title and Subtitle with Animations */}
+            <AnimatePresence>
+                {isMobileSearchOpen && (
+                    <MobileSearchOverlay
+                        isOpen={isMobileSearchOpen}
+                        onClose={() => setIsMobileSearchOpen(false)}
+                        onSearch={handleSearch}
+                        initialValue={location}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Title and Subtitle with Animations - Hidden on mobile to match reference focus */}
             <motion.div
-                className="search-bar-header"
+                className="search-bar-header lg:block hidden"
                 initial={{ opacity: 0, y: -30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -164,74 +197,96 @@ const DetailedSearchBar = () => {
                 }}
                 ref={dropdownRef}
             >
-                {/* Animated shimmer effect */}
-                <div className="shimmer-overlay" />
+                <div className="search-bar-inner">
+                    {/* Animated shimmer effect */}
+                    <div className="shimmer-overlay" />
 
-                {/* Main Search Row */}
-                <div className="search-main">
-                    <motion.div
-                        className="property-dropdown-toggle"
-                        onClick={() => setDropdownOpen((prev) => !prev)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        {selectedProperties.length > 0
-                            ? `${selectedProperties.length} Selected`
-                            : "All Residential"} ▾
-                    </motion.div>
-
-                    <div className="search-input-container">
-                        <motion.input
-                            type="text"
-                            className="search-input"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            placeholder='Search "3 BHK for sale in Mumbai"'
-                            whileFocus={{ scale: 1.01 }}
-                        />
-                        <div className="input-action-icons">
-                            <motion.button
-                                className="action-icon-btn geo-btn"
-                                onClick={handleGeoLocation}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                title="Use Current Location"
-                            >
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                                    <circle cx="12" cy="10" r="3" />
+                    {/* MOBILE ONLY UI - Redesigned per reference */}
+                    <div className="mobile-search-ui-container">
+                        <div className="mobile-search-box-trigger" onClick={handleInputClick}>
+                            <div className="m-search-left">
+                                <svg className="m-search-icon" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
                                 </svg>
-                            </motion.button>
-                            <motion.button
-                                className={`action-icon-btn mic-btn ${isListening ? 'listening' : ''}`}
-                                onClick={handleVoiceSearch}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                title="Voice Search"
-                            >
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                <span className="m-search-placeholder">Search anyyyy......</span>
+                            </div>
+                            <div className="m-search-right">
+                                <svg className="m-mic-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
                                     <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
                                     <path d="M19 10v2a7 7 0 01-14 0v-2M12 18v5M8 23h8" />
                                 </svg>
-                            </motion.button>
+                            </div>
                         </div>
                     </div>
 
-                    <motion.button
-                        className="search-button"
-                        onClick={handleSearch}
-                        whileHover={{
-                            scale: 1.05,
-                            boxShadow: "0 8px 30px rgba(11, 240, 23, 0.4)"
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <svg className="search-icon" viewBox="0 0 24 24" fill="none">
-                            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
-                            <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                        <span>Search</span>
-                    </motion.button>
+                    {/* Desktop Search Row - Content hidden on mobile via CSS */}
+                    <div className="search-main">
+                        <motion.div
+                            className="property-dropdown-toggle"
+                            onClick={() => setDropdownOpen((prev) => !prev)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            {selectedProperties.length > 0
+                                ? `${selectedProperties.length} Selected`
+                                : "All Residential"} ▾
+                        </motion.div>
+
+                        <div className="search-input-container" onClick={handleInputClick}>
+                            <motion.input
+                                type="text"
+                                className="search-input"
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
+                                placeholder='Search "3 BHK for sale in Mumbai"'
+                                whileFocus={{ scale: 1.01 }}
+                                readOnly={window.innerWidth <= 1024} // Only allow interaction via overlay on mobile
+                            />
+                            <div className="input-action-icons">
+                                <motion.button
+                                    className="action-icon-btn geo-btn"
+                                    onClick={handleGeoLocation}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    title="Use Current Location"
+                                >
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                        <circle cx="12" cy="10" r="3" />
+                                    </svg>
+                                </motion.button>
+                                <motion.button
+                                    className={`action-icon-btn mic-btn ${isListening ? 'listening' : ''}`}
+                                    onClick={handleVoiceSearch}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    title="Voice Search"
+                                >
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                                        <path d="M19 10v2a7 7 0 01-14 0v-2M12 18v5M8 23h8" />
+                                    </svg>
+                                </motion.button>
+                            </div>
+                        </div>
+
+                        <motion.button
+                            className="search-button"
+                            onClick={() => handleSearch()}
+                            whileHover={{
+                                scale: 1.05,
+                                boxShadow: "0 8px 30px rgba(11, 240, 23, 0.4)"
+                            }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <svg className="search-icon" viewBox="0 0 24 24" fill="none">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
+                                <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            </svg>
+                            <span>Search</span>
+                        </motion.button>
+                    </div>
                 </div>
 
                 {/* Dropdown Panel */}

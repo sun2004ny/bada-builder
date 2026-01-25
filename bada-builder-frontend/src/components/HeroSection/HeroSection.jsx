@@ -11,22 +11,22 @@ const HeroSection = () => {
   if (locationState.pathname === '/search') return null;
 
   return (
-    <section className="hero-section">
+    <section className="home-hero-section">
       <BackgroundVideo
         src={heroVideo}
         fallbackColor="#0F172A"
         overlay={false}
       >
         {/* Subtle gradient overlay */}
-        <div className="hero-gradient-overlay" />
+        <div className="home-hero-gradient-overlay" />
 
-        <div className="hero-wrapper">
+        <div className="home-hero-wrapper">
 
 
           {/* Search bar - separate, no background */}
-          <div className="hero-search-positioner">
+          <div className="home-hero-search-positioner">
             <motion.div
-              className="hero-search-container"
+              className="home-hero-search-container"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}

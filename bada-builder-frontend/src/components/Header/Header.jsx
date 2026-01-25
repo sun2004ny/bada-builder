@@ -94,10 +94,16 @@ const Header = () => {
   // ... existing effects ...
 
   useEffect(() => {
+    const handleOpenMenu = () => {
+      setIsMobileMenuOpen(true);
+    };
+    window.addEventListener('open-mobile-menu', handleOpenMenu);
+
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (calctimeoutRef.current) clearTimeout(calctimeoutRef.current);
       if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
+      window.removeEventListener('open-mobile-menu', handleOpenMenu);
     };
   }, []);
 

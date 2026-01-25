@@ -81,7 +81,7 @@ const ShortStayLanding = () => {
     <div className="short-stay-page">
       {/* Hero Section */}
       <motion.section
-        className="ss-hero-section"
+        className="short-stay-hero-section"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -92,11 +92,11 @@ const ShortStayLanding = () => {
           overlay={false}
         >
           {/* Custom scoped overlay to prevent leakage */}
-          <div className="ss-hero-overlay" />
+          <div className="short-stay-hero-overlay" />
 
-          <div className="ss-hero-container">
-            <div className="ss-hero-content">
-              <div className="ss-hero-text-box">
+          <div className="short-stay-hero-container">
+            <div className="short-stay-hero-content">
+              <div className="short-stay-hero-text-box">
                 <motion.h1
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -105,7 +105,7 @@ const ShortStayLanding = () => {
                   Find Your Perfect Short Stay
                 </motion.h1>
                 <motion.p
-                  className="ss-hero-subtitle"
+                  className="short-stay-hero-subtitle"
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.7, delay: 0.3 }}
@@ -116,15 +116,15 @@ const ShortStayLanding = () => {
 
               {/* Modern Airbnb-Style Search Card */}
               <motion.div
-                className="ss-search-card"
+                className="short-stay-search-card"
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.4 }}
                 whileHover={{ y: -5, scale: 1.01 }}
                 whileTap={{ scale: 0.995 }}
               >
-                <div className="ss-search-row">
-                  <div className="ss-search-field">
+                <div className="short-stay-search-row">
+                  <div className="short-stay-search-field">
                     <label>Location</label>
                     <input
                       type="text"
@@ -133,8 +133,8 @@ const ShortStayLanding = () => {
                       onChange={(e) => setSearchParams({ ...searchParams, location: e.target.value })}
                     />
                   </div>
-                  <div className="ss-divider" />
-                  <div className="ss-search-field">
+                  <div className="short-stay-divider" />
+                  <div className="short-stay-search-field">
                     <label>Check-in</label>
                     <input
                       type="date"
@@ -143,8 +143,8 @@ const ShortStayLanding = () => {
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
-                  <div className="ss-divider" />
-                  <div className="ss-search-field">
+                  <div className="short-stay-divider" />
+                  <div className="short-stay-search-field">
                     <label>Check-out</label>
                     <input
                       type="date"
@@ -153,8 +153,8 @@ const ShortStayLanding = () => {
                       min={searchParams.checkIn || new Date().toISOString().split('T')[0]}
                     />
                   </div>
-                  <div className="ss-divider" />
-                  <div className="ss-search-field">
+                  <div className="short-stay-divider" />
+                  <div className="short-stay-search-field">
                     <label>Guests</label>
                     <input
                       type="number"
@@ -164,12 +164,12 @@ const ShortStayLanding = () => {
                     />
                   </div>
                   <motion.button
-                    className="ss-search-submit"
+                    className="short-stay-search-submit"
                     onClick={handleSearch}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <span className="ss-search-icon">🔍</span>
+                    <span className="short-stay-search-icon">🔍</span>
                     Search
                   </motion.button>
                 </div>
@@ -177,13 +177,13 @@ const ShortStayLanding = () => {
 
               {/* Quick Actions */}
               <motion.div
-                className="ss-quick-actions"
+                className="short-stay-quick-actions"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
               >
                 <motion.button
-                  className="ss-btn ss-btn-primary"
+                  className="short-stay-btn short-stay-btn-primary"
                   onClick={() => navigate('/short-stay/search')}
                   whileHover={{ y: -4, scale: 1.05 }}
                   whileTap={{ scale: 0.98 }}
@@ -191,7 +191,7 @@ const ShortStayLanding = () => {
                   Explore Stays
                 </motion.button>
                 <motion.button
-                  className="ss-btn ss-btn-outline"
+                  className="short-stay-btn short-stay-btn-outline"
                   onClick={() => user ? navigate('/short-stay/list-property') : navigate('/login')}
                   whileHover={{ y: -4, scale: 1.05, background: 'rgba(255, 255, 255, 0.2)' }}
                   whileTap={{ scale: 0.98 }}
@@ -204,18 +204,18 @@ const ShortStayLanding = () => {
         </BackgroundVideo>
       </motion.section>
 
-      <div className="ss-content-wrapper">
+      <div className="short-stay-content-wrapper">
         {/* Categories Section */}
-        <section className="ss-categories-section">
-          <div className="ss-section-header">
+        <section className="short-stay-categories-section">
+          <div className="short-stay-section-header">
             <h2>Browse by Property Type</h2>
             <p>Find the exact style of stay you're looking for</p>
           </div>
-          <div className="ss-categories-grid">
+          <div className="short-stay-categories-grid">
             {categories.map((category, index) => (
               <motion.div
                 key={category.id}
-                className="ss-category-card"
+                className="short-stay-category-card"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -223,7 +223,7 @@ const ShortStayLanding = () => {
                 onClick={() => handleCategoryClick(category.id)}
                 whileHover={{ y: -6, scale: 1.02 }}
               >
-                <div className="ss-category-icon">{category.icon}</div>
+                <div className="short-stay-category-icon">{category.icon}</div>
                 <h3>{category.name}</h3>
                 <p>{listings.filter(l => l.propertyType === category.id).length} properties</p>
               </motion.div>
@@ -232,14 +232,14 @@ const ShortStayLanding = () => {
         </section>
 
         {/* Featured Listings */}
-        <section className="ss-featured-section">
-          <div className="ss-section-header-flex">
+        <section className="short-stay-featured-section">
+          <div className="short-stay-section-header-flex">
             <div>
               <h2>Featured Stays</h2>
               <p>Top-rated properties across the country</p>
             </div>
             <button
-              className="ss-view-all-link"
+              className="short-stay-view-all-link"
               onClick={() => navigate('/short-stay/search')}
             >
               View all stays →
@@ -247,16 +247,16 @@ const ShortStayLanding = () => {
           </div>
 
           {loading ? (
-            <div className="ss-loading-state">
-              <div className="ss-spinner"></div>
+            <div className="short-stay-loading-state">
+              <div className="short-stay-spinner"></div>
               <p>Finding the best properties for you...</p>
             </div>
           ) : (
-            <div className="ss-listings-grid">
+            <div className="short-stay-listings-grid">
               {listings.slice(0, 6).map((listing, index) => (
                 <motion.div
                   key={listing.id}
-                  className="ss-property-card"
+                  className="short-stay-property-card"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -264,29 +264,29 @@ const ShortStayLanding = () => {
                   onClick={() => navigate(`/short-stay/${listing.id}`)}
                   whileHover={{ y: -8 }}
                 >
-                  <div className="ss-property-image">
+                  <div className="short-stay-property-image">
                     <img src={listing.images[0] || '/placeholder-property.jpg'} alt={listing.title} />
-                    <div className="ss-property-badge">{listing.propertyType.replace('_', ' ')}</div>
+                    <div className="short-stay-property-badge">{listing.propertyType.replace('_', ' ')}</div>
                   </div>
-                  <div className="ss-property-info">
-                    <div className="ss-property-header">
+                  <div className="short-stay-property-info">
+                    <div className="short-stay-property-header">
                       <h3>{listing.title}</h3>
                       {listing.rating && (
-                        <div className="ss-property-rating">
+                        <div className="short-stay-property-rating">
                           ⭐ <span>{listing.rating}</span>
                         </div>
                       )}
                     </div>
-                    <p className="ss-property-location">📍 {listing.location.city}, {listing.location.area}</p>
-                    <div className="ss-property-specs">
+                    <p className="short-stay-property-location">📍 {listing.location.city}, {listing.location.area}</p>
+                    <div className="short-stay-property-specs">
                       <span>{listing.capacity.bedrooms} Bedrooms</span>
-                      <span className="ss-dot">·</span>
+                      <span className="short-stay-dot">·</span>
                       <span>{listing.capacity.maxGuests} Guests</span>
                     </div>
-                    <div className="ss-property-footer">
-                      <div className="ss-property-price">
-                        <span className="ss-price-amount">₹{listing.pricing.nightlyRate.toLocaleString()}</span>
-                        <span className="ss-price-unit">/ night</span>
+                    <div className="short-stay-property-footer">
+                      <div className="short-stay-property-price">
+                        <span className="short-stay-price-amount">₹{listing.pricing.nightlyRate.toLocaleString()}</span>
+                        <span className="short-stay-price-unit">/ night</span>
                       </div>
                     </div>
                   </div>
@@ -297,42 +297,42 @@ const ShortStayLanding = () => {
         </section>
 
         {/* Features / Why Choose Us */}
-        <section className="ss-features-section">
-          <div className="ss-section-header">
+        <section className="short-stay-features-section">
+          <div className="short-stay-section-header">
             <h2>Why Book With Us?</h2>
             <p>Experience excellence and security in every stay</p>
           </div>
-          <div className="ss-features-grid">
+          <div className="short-stay-features-grid">
             <motion.div
-              className="ss-feature-item"
+              className="short-stay-feature-item"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <div className="ss-feature-icon">🛡️</div>
+              <div className="short-stay-feature-icon">🛡️</div>
               <h3>Secure Booking</h3>
               <p>Your safety and security are our top priorities with verified payments.</p>
             </motion.div>
             <motion.div
-              className="ss-feature-item"
+              className="short-stay-feature-item"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <div className="ss-feature-icon">✨</div>
+              <div className="short-stay-feature-icon">✨</div>
               <h3>Handpicked Homes</h3>
               <p>We personally verify properties to ensure they meet our quality standards.</p>
             </motion.div>
             <motion.div
-              className="ss-feature-item"
+              className="short-stay-feature-item"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <div className="ss-feature-icon">💎</div>
+              <div className="short-stay-feature-icon">💎</div>
               <h3>Premium Support</h3>
               <p>Our dedicated team is here to help you 24/7 during your stay.</p>
             </motion.div>

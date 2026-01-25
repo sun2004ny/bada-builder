@@ -1,8 +1,8 @@
 /* ===========================
-   HERO SECTION - COMPACT & MODERN
+   HOME HERO SECTION - COMPACT & MODERN
    =========================== */
 
-.hero-section {
+.home-hero-section {
   position: relative;
   height: 65vh !important;
   min-height: 500px !important;
@@ -19,7 +19,7 @@
 }
 
 /* Subtle gradient overlay - very light */
-.hero-gradient-overlay {
+.home-hero-gradient-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg,
@@ -31,7 +31,7 @@
 }
 
 /* Wrapper for all content */
-.hero-wrapper {
+.home-hero-wrapper {
   position: relative;
   z-index: 2;
   text-align: center;
@@ -49,7 +49,7 @@
 
 
 /* Search bar positioner - handles the overlap */
-.hero-search-positioner {
+.home-hero-search-positioner {
   position: absolute;
   bottom: 17%;
   left: 50%;
@@ -62,7 +62,7 @@
 }
 
 /* Search container */
-.hero-search-container {
+.home-hero-search-container {
   position: relative;
   width: 100%;
 }
@@ -87,16 +87,16 @@
 
 /* Tablet */
 @media (max-width: 1024px) {
-  .hero-section {
+  .home-hero-section {
     height: 45vh !important;
     min-height: 350px !important;
   }
 
-  .hero-content h1 {
+  .home-hero-content h1 {
     font-size: 44px;
   }
 
-  .hero-content p {
+  .home-hero-content p {
     font-size: 17px;
     margin-bottom: 28px;
   }
@@ -104,30 +104,32 @@
 
 /* Mobile */
 @media (max-width: 768px) {
-  .hero-section {
-    height: 40vh !important;
-    min-height: 320px !important;
-    max-height: 450px !important;
+  .home-hero-section {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
   }
 
-  .hero-content {
+  .home-hero-content {
     padding: 0 20px;
   }
 
-  .hero-content h1 {
+  .home-hero-content h1 {
     font-size: 36px;
     margin-bottom: 12px;
     letter-spacing: -0.01em;
   }
 
-  .hero-content p {
+  .home-hero-content p {
     font-size: 16px;
     margin-bottom: 24px;
     line-height: 1.4;
   }
 
   /* Lighter overlay on mobile */
-  .hero-gradient-overlay {
+  .home-hero-gradient-overlay {
     background: linear-gradient(180deg,
         rgba(0, 0, 0, 0.2) 0%,
         rgba(0, 0, 0, 0.05) 50%,
@@ -137,16 +139,16 @@
 
 /* Small Mobile */
 @media (max-width: 480px) {
-  .hero-section {
-    height: 45vh;
-    min-height: 380px;
+  .home-hero-section {
+    height: auto !important;
+    min-height: 0 !important;
   }
 
-  .hero-content h1 {
+  .home-hero-content h1 {
     font-size: 30px;
   }
 
-  .hero-content p {
+  .home-hero-content p {
     font-size: 15px;
     margin-bottom: 20px;
   }
@@ -154,16 +156,16 @@
 
 /* Landscape mobile */
 @media (max-width: 768px) and (orientation: landscape) {
-  .hero-section {
+  .home-hero-section {
     height: 70vh;
     min-height: 350px;
   }
 
-  .hero-content h1 {
+  .home-hero-content h1 {
     font-size: 32px;
   }
 
-  .hero-content p {
+  .home-hero-content p {
     font-size: 15px;
     margin-bottom: 20px;
   }
@@ -171,15 +173,15 @@
 
 /* High resolution displays */
 @media (min-width: 1920px) {
-  .hero-section {
+  .home-hero-section {
     max-height: 650px;
   }
 
-  .hero-content h1 {
+  .home-hero-content h1 {
     font-size: 60px;
   }
 
-  .hero-content p {
+  .home-hero-content p {
     font-size: 20px;
   }
 }
@@ -187,13 +189,13 @@
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
 
-  .hero-content,
-  .hero-search-container {
+  .home-hero-content,
+  .home-hero-search-container {
     animation: none;
     transition: none;
   }
 
-  .hero-search-container::before {
+  .home-hero-search-container::before {
     animation: none;
   }
 }

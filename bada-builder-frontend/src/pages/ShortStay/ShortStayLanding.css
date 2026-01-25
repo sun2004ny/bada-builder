@@ -3,21 +3,21 @@
    ========================================================================== */
 
 .short-stay-page {
-  --ss-primary: #FF385C;
+  --short-stay-primary: #FF385C;
   /* Airbnb-style rose color */
-  --ss-secondary: #0F172A;
-  --ss-accent: #008489;
-  --ss-bg: #FFFFFF;
-  --ss-bg-soft: #F7F7F7;
-  --ss-text: #222222;
-  --ss-text-muted: #717171;
-  --ss-border: #DDDDDD;
-  --ss-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
-  --ss-radius: 20px;
+  --short-stay-secondary: #0F172A;
+  --short-stay-accent: #008489;
+  --short-stay-bg: #FFFFFF;
+  --short-stay-bg-soft: #F7F7F7;
+  --short-stay-text: #222222;
+  --short-stay-text-muted: #717171;
+  --short-stay-border: #DDDDDD;
+  --short-stay-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
+  --short-stay-radius: 20px;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: var(--ss-text);
-  background: var(--ss-bg);
+  color: var(--short-stay-text);
+  background: var(--short-stay-bg);
   min-height: 100vh;
 }
 
@@ -25,7 +25,7 @@
    HERO SECTION
    -------------------------------------------------------------------------- */
 
-.ss-hero-section {
+.short-stay-hero-section {
   position: relative;
   height: 65vh !important;
   min-height: 500px !important;
@@ -38,7 +38,7 @@
 }
 
 /* Custom overlay to avoid global leakage */
-.ss-hero-overlay {
+.short-stay-hero-overlay {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -46,7 +46,7 @@
   pointer-events: none;
 }
 
-.ss-search-positioner {
+.short-stay-search-positioner {
   position: absolute;
   bottom: 0;
   left: 50%;
@@ -59,7 +59,7 @@
   align-items: center;
 }
 
-.ss-hero-container {
+.short-stay-hero-container {
   position: relative;
   z-index: 2;
   width: 100%;
@@ -71,7 +71,7 @@
   align-items: center;
 }
 
-.ss-hero-content {
+.short-stay-hero-content {
   text-align: center;
   margin-bottom: 40px;
   width: 100%;
@@ -80,7 +80,7 @@
   align-items: center;
 }
 
-.ss-hero-text-box {
+.short-stay-hero-text-box {
   background: rgba(15, 23, 42, 0.3);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
@@ -93,7 +93,7 @@
   width: 100%;
 }
 
-.ss-hero-content h1 {
+.short-stay-hero-content h1 {
   font-size: 56px !important;
   font-weight: 900 !important;
   color: #FFFFFF !important;
@@ -105,7 +105,7 @@
   background: none !important;
 }
 
-.ss-hero-subtitle {
+.short-stay-hero-subtitle {
   font-size: 20px;
   color: #e0f2fe;
   font-weight: 500;
@@ -119,7 +119,7 @@
    SEARCH CARD (AIRBNB-STYLE)
    -------------------------------------------------------------------------- */
 
-.ss-search-card {
+.short-stay-search-card {
   background: rgba(15, 23, 42, 0.4);
   /* Better visibility glassmorphism */
   backdrop-filter: blur(25px);
@@ -140,7 +140,7 @@
 }
 
 /* Redesigned Perimeter Beam for Square Shape */
-.ss-search-card::before {
+.short-stay-search-card::before {
   content: '';
   position: absolute;
   inset: -1px;
@@ -150,7 +150,7 @@
   border-radius: inherit;
   z-index: -1;
   opacity: 0.5;
-  animation: ss-beam-move 3s linear infinite;
+  animation: short-stay-beam-move 3s linear infinite;
   mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -163,12 +163,12 @@
   pointer-events: none;
 }
 
-.ss-search-card:hover {
+.short-stay-search-card:hover {
   background: rgba(15, 23, 42, 0.5);
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
 }
 
-@keyframes ss-beam-move {
+@keyframes short-stay-beam-move {
   0% {
     background-position: 0% 50%;
   }
@@ -178,12 +178,12 @@
   }
 }
 
-.ss-search-row {
+.short-stay-search-row {
   display: flex;
   align-items: center;
 }
 
-.ss-search-field {
+.short-stay-search-field {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -194,23 +194,23 @@
   margin: 4px;
 }
 
-.ss-search-field:last-of-type {
+.short-stay-search-field:last-of-type {
   flex: 0.8;
   min-width: 100px;
 }
 
-.ss-search-field:hover {
+.short-stay-search-field:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.ss-search-field:focus-within {
+.short-stay-search-field:focus-within {
   background: rgba(255, 255, 255, 0.15);
-  border-color: var(--ss-primary);
+  border-color: var(--short-stay-primary);
   box-shadow: 0 0 15px rgba(255, 56, 92, 0.2);
 }
 
-.ss-search-field label {
+.short-stay-search-field label {
   font-size: 11px;
   font-weight: 900;
   color: #FF385C;
@@ -221,12 +221,12 @@
   transition: all 0.2s ease;
 }
 
-.ss-search-field:focus-within label {
+.short-stay-search-field:focus-within label {
   color: #FFFFFF;
   transform: scale(1.05);
 }
 
-.ss-search-field input {
+.short-stay-search-field input {
   border: 2px solid #00A2FF !important;
   /* The always-visible blue box inside */
   background: rgba(255, 255, 255, 0.05);
@@ -242,24 +242,24 @@
   transition: all 0.2s ease;
 }
 
-.ss-search-field input:focus {
+.short-stay-search-field input:focus {
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 10px rgba(0, 162, 255, 0.3);
 }
 
-.ss-search-field input::placeholder {
+.short-stay-search-field input::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
 
-.ss-divider {
+.short-stay-divider {
   width: 1px;
   height: 32px;
   background: #DDDDDD;
   margin: 0 8px;
 }
 
-.ss-search-submit {
-  background: var(--ss-primary);
+.short-stay-search-submit {
+  background: var(--short-stay-primary);
   color: #FFFFFF;
   border: none;
   padding: 16px 24px;
@@ -273,13 +273,13 @@
   transition: all 0.3s;
 }
 
-.ss-search-submit:hover {
+.short-stay-search-submit:hover {
   background: #E31C5F;
   /* Darker rose */
   transform: scale(1.02);
 }
 
-.ss-search-icon {
+.short-stay-search-icon {
   font-size: 18px;
 }
 
@@ -287,14 +287,14 @@
    QUICK ACTIONS
    -------------------------------------------------------------------------- */
 
-.ss-quick-actions {
+.short-stay-quick-actions {
   display: flex;
   gap: 16px;
   justify-content: center;
   margin-top: 40px;
 }
 
-.ss-btn {
+.short-stay-btn {
   position: relative;
   padding: 16px 36px;
   border-radius: 12px;
@@ -316,7 +316,7 @@
 }
 
 /* Button Motion Graphic: Flowing Border */
-.ss-btn::before {
+.short-stay-btn::before {
   content: '';
   position: absolute;
   inset: -1px;
@@ -327,7 +327,7 @@
   z-index: -1;
   opacity: 0;
   transition: opacity 0.3s ease;
-  animation: ss-btn-flow 2s linear infinite;
+  animation: short-stay-btn-flow 2s linear infinite;
   mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -340,17 +340,17 @@
   pointer-events: none;
 }
 
-.ss-btn:hover {
+.short-stay-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   letter-spacing: 0.5px;
 }
 
-.ss-btn:hover::before {
+.short-stay-btn:hover::before {
   opacity: 1;
 }
 
-@keyframes ss-btn-flow {
+@keyframes short-stay-btn-flow {
   0% {
     background-position: 0% 50%;
   }
@@ -360,18 +360,18 @@
   }
 }
 
-.ss-btn-primary {
+.short-stay-btn-primary {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.ss-btn-outline {
+.short-stay-btn-outline {
   background: #FFFFFF !important;
   color: #0F172A !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-.ss-btn-outline:hover {
+.short-stay-btn-outline:hover {
   background: #F1F5F9 !important;
   color: #0F172A !important;
 }
@@ -380,52 +380,52 @@
    CONTENT WRAPPER
    -------------------------------------------------------------------------- */
 
-.ss-content-wrapper {
+.short-stay-content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
   padding: 60px 24px;
 }
 
-.ss-section-header {
+.short-stay-section-header {
   text-align: center;
   margin-bottom: 48px;
 }
 
-.ss-section-header h2 {
+.short-stay-section-header h2 {
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 12px;
 }
 
-.ss-section-header p {
+.short-stay-section-header p {
   font-size: 18px;
-  color: var(--ss-text-muted);
+  color: var(--short-stay-text-muted);
 }
 
-.ss-section-header-flex {
+.short-stay-section-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 48px;
 }
 
-.ss-section-header-flex h2 {
+.short-stay-section-header-flex h2 {
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 8px;
 }
 
-.ss-section-header-flex p {
+.short-stay-section-header-flex p {
   font-size: 18px;
-  color: var(--ss-text-muted);
+  color: var(--short-stay-text-muted);
 }
 
-.ss-view-all-link {
+.short-stay-view-all-link {
   background: transparent;
   border: none;
   font-size: 16px;
   font-weight: 700;
-  color: var(--ss-text);
+  color: var(--short-stay-text);
   text-decoration: underline;
   cursor: pointer;
   padding-bottom: 4px;
@@ -435,61 +435,61 @@
    CATEGORIES
    -------------------------------------------------------------------------- */
 
-.ss-categories-grid {
+.short-stay-categories-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 24px;
   margin-bottom: 80px;
 }
 
-.ss-category-card {
+.short-stay-category-card {
   background: #FFFFFF;
-  border: 1px solid var(--ss-border);
-  border-radius: var(--ss-radius);
+  border: 1px solid var(--short-stay-border);
+  border-radius: var(--short-stay-radius);
   padding: 32px 24px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
 }
 
-.ss-category-card:hover {
-  border-color: var(--ss-primary);
-  box-shadow: var(--ss-shadow);
+.short-stay-category-card:hover {
+  border-color: var(--short-stay-primary);
+  box-shadow: var(--short-stay-shadow);
 }
 
-.ss-category-icon {
+.short-stay-category-icon {
   font-size: 44px;
   margin-bottom: 16px;
 }
 
-.ss-category-card h3 {
+.short-stay-category-card h3 {
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 8px;
 }
 
-.ss-category-card p {
+.short-stay-category-card p {
   font-size: 14px;
-  color: var(--ss-text-muted);
+  color: var(--short-stay-text-muted);
 }
 
 /* --------------------------------------------------------------------------
    PROPERTY CARDS
    -------------------------------------------------------------------------- */
 
-.ss-listings-grid {
+.short-stay-listings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 32px;
   margin-bottom: 80px;
 }
 
-.ss-property-card {
+.short-stay-property-card {
   cursor: pointer;
   transition: all 0.3s;
 }
 
-.ss-property-image {
+.short-stay-property-image {
   position: relative;
   aspect-ratio: 4 / 3;
   border-radius: 12px;
@@ -497,18 +497,18 @@
   margin-bottom: 16px;
 }
 
-.ss-property-image img {
+.short-stay-property-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.ss-property-card:hover .ss-property-image img {
+.short-stay-property-card:hover .short-stay-property-image img {
   transform: scale(1.05);
 }
 
-.ss-property-badge {
+.short-stay-property-badge {
   position: absolute;
   top: 12px;
   left: 12px;
@@ -518,17 +518,17 @@
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  color: var(--ss-text);
+  color: var(--short-stay-text);
 }
 
-.ss-property-header {
+.short-stay-property-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 4px;
 }
 
-.ss-property-header h3 {
+.short-stay-property-header h3 {
   font-size: 17px;
   font-weight: 700;
   white-space: nowrap;
@@ -538,7 +538,7 @@
   margin-right: 12px;
 }
 
-.ss-property-rating {
+.short-stay-property-rating {
   font-size: 14px;
   font-weight: 500;
   display: flex;
@@ -546,31 +546,31 @@
   gap: 4px;
 }
 
-.ss-property-location {
+.short-stay-property-location {
   font-size: 15px;
-  color: var(--ss-text-muted);
+  color: var(--short-stay-text-muted);
   margin-bottom: 8px;
 }
 
-.ss-property-specs {
+.short-stay-property-specs {
   font-size: 14px;
-  color: var(--ss-text-muted);
+  color: var(--short-stay-text-muted);
   margin-bottom: 12px;
 }
 
-.ss-dot {
+.short-stay-dot {
   margin: 0 4px;
 }
 
-.ss-property-price {
+.short-stay-property-price {
   font-size: 16px;
 }
 
-.ss-price-amount {
+.short-stay-price-amount {
   font-weight: 800;
 }
 
-.ss-price-unit {
+.short-stay-price-unit {
   font-weight: 400;
   margin-left: 4px;
 }
@@ -579,30 +579,30 @@
    FEATURES SECTION
    -------------------------------------------------------------------------- */
 
-.ss-features-grid {
+.short-stay-features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 48px;
   padding: 40px 0;
 }
 
-.ss-feature-item {
+.short-stay-feature-item {
   text-align: center;
 }
 
-.ss-feature-icon {
+.short-stay-feature-icon {
   font-size: 48px;
   margin-bottom: 20px;
 }
 
-.ss-feature-item h3 {
+.short-stay-feature-item h3 {
   font-size: 22px;
   font-weight: 800;
   margin-bottom: 12px;
 }
 
-.ss-feature-item p {
-  color: var(--ss-text-muted);
+.short-stay-feature-item p {
+  color: var(--short-stay-text-muted);
   line-height: 1.6;
 }
 
@@ -611,38 +611,38 @@
    -------------------------------------------------------------------------- */
 
 @media (max-width: 1024px) {
-  .ss-hero-text-box {
+  .short-stay-hero-text-box {
     padding: 24px;
     margin-bottom: 28px;
     border-radius: 12px;
   }
 
-  .ss-hero-content h1 {
+  .short-stay-hero-content h1 {
     font-size: clamp(28px, 5vw, 42px);
   }
 
-  .ss-search-card {
+  .short-stay-search-card {
     border-radius: 12px;
     /* Consistent rectangular look */
     padding: 12px;
   }
 
-  .ss-search-row {
+  .short-stay-search-row {
     flex-wrap: wrap;
     gap: 12px;
   }
 
-  .ss-search-field {
+  .short-stay-search-field {
     flex: 1 1 45%;
     min-width: 150px;
     padding: 8px;
   }
 
-  .ss-divider {
+  .short-stay-divider {
     display: none;
   }
 
-  .ss-search-submit {
+  .short-stay-search-submit {
     flex: 1 1 100%;
     margin-top: 10px;
     justify-content: center;
@@ -650,13 +650,13 @@
 }
 
 @media (max-width: 768px) {
-  .ss-hero-section {
+  .short-stay-hero-section {
     height: auto !important;
     padding: 60px 0 40px !important;
     min-height: auto !important;
   }
 
-  .ss-hero-text-box {
+  .short-stay-hero-text-box {
     padding: 16px 14px;
     margin-bottom: 20px;
     border-radius: 12px;
@@ -666,7 +666,7 @@
     box-sizing: border-box;
   }
 
-  .ss-hero-content h1 {
+  .short-stay-hero-content h1 {
     font-size: clamp(20px, 6vw, 24px) !important;
     line-height: 1.2;
     margin-bottom: 5px;
@@ -677,12 +677,12 @@
     max-width: 90vw;
   }
 
-  .ss-hero-subtitle {
+  .short-stay-hero-subtitle {
     font-size: 15px;
     line-height: 1.4;
   }
 
-  .ss-search-card {
+  .short-stay-search-card {
     border-radius: 12px;
     padding: 10px;
     width: 95%;
@@ -691,11 +691,11 @@
     margin: 0 auto;
   }
 
-  .ss-search-row {
+  .short-stay-search-row {
     gap: 12px;
   }
 
-  .ss-search-field {
+  .short-stay-search-field {
     flex: 1 1 100%;
     padding: 10px 16px;
     background: rgba(255, 255, 255, 0.05);
@@ -703,17 +703,17 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .ss-search-field label {
+  .short-stay-search-field label {
     font-size: 10px;
     margin-bottom: 0;
   }
 
-  .ss-search-field input {
+  .short-stay-search-field input {
     font-size: 14px;
     height: 32px;
   }
 
-  .ss-search-submit {
+  .short-stay-search-submit {
     padding: 12px;
     font-size: 15px;
     height: 48px;
@@ -721,22 +721,22 @@
     margin-top: 4px;
   }
 
-  .ss-quick-actions {
+  .short-stay-quick-actions {
     margin-top: 24px;
     gap: 12px;
   }
 
-  .ss-btn {
+  .short-stay-btn {
     padding: 12px 24px;
     font-size: 15px;
     border-radius: 12px;
   }
 
-  .ss-property-card {
+  .short-stay-property-card {
     max-width: 100%;
   }
 
-  .ss-section-header-flex {
+  .short-stay-section-header-flex {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
@@ -744,27 +744,27 @@
 }
 
 @media (max-width: 480px) {
-  .ss-hero-content h1 {
+  .short-stay-hero-content h1 {
     font-size: 18px !important;
     /* Extra small for tiny devices */
   }
 
-  .ss-hero-text-box {
+  .short-stay-hero-text-box {
     padding: 12px 8px;
     width: 98%;
   }
 
-  .ss-search-card {
+  .short-stay-search-card {
     padding: 8px;
     width: 98%;
   }
 
-  .ss-quick-actions {
+  .short-stay-quick-actions {
     flex-direction: column;
     width: 95%;
   }
 
-  .ss-btn {
+  .short-stay-btn {
     width: 100%;
   }
 }
