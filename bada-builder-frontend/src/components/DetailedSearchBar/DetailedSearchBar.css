@@ -76,7 +76,7 @@
 }
 
 /* Mobile Search Positioner */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .home-hero-search-positioner {
     width: 95%;
     max-width: 100%;
@@ -529,10 +529,10 @@
 }
 
 /* =====================================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN - BREAKPOINTS
    ===================================================== */
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .redesign-search-bar {
     padding: 16px;
     border-radius: 20px;

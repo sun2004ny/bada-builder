@@ -126,12 +126,8 @@ const DetailedSearchBar = () => {
     };
 
     const handleInputClick = (e) => {
-        // Detect mobile by viewport width - matches CSS media query
-        if (window.innerWidth <= 1024) {
-            e.preventDefault();
-            e.target.blur(); // Prevent keyboard from popping up on the main screen
-            setIsMobileSearchOpen(true);
-        }
+        // Overlay is triggered by the mobile-only UI container visible only on small screens via CSS
+        setIsMobileSearchOpen(true);
     };
 
     const handleSearch = (term) => {
@@ -233,7 +229,7 @@ const DetailedSearchBar = () => {
                                 : "All Residential"} ▾
                         </motion.div>
 
-                        <div className="search-input-container" onClick={handleInputClick}>
+                        <div className="search-input-container">
                             <motion.input
                                 type="text"
                                 className="search-input"
@@ -241,7 +237,7 @@ const DetailedSearchBar = () => {
                                 onChange={(e) => setLocation(e.target.value)}
                                 placeholder='Search "3 BHK for sale in Mumbai"'
                                 whileFocus={{ scale: 1.01 }}
-                                readOnly={window.innerWidth <= 1024} // Only allow interaction via overlay on mobile
+                                readOnly={false} // Allow direct input on desktop; mobile uses overlay trigger
                             />
                             <div className="input-action-icons">
                                 <motion.button
