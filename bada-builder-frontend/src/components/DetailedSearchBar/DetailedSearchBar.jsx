@@ -37,7 +37,6 @@ const DetailedSearchBar = () => {
         postedBy: ""
     });
     const [searchHistory, setSearchHistory] = useState([]);
-    const [isListening, setIsListening] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -70,7 +69,7 @@ const DetailedSearchBar = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Side effect to handle body scroll lock when mobile search is open
+    // Side effect to handle body scroll lock- [x] Phase 23: Remove Voice Search Functionality
     useEffect(() => {
         if (isMobileSearchOpen) {
             document.body.classList.add('mobile-search-open');
@@ -110,43 +109,8 @@ const DetailedSearchBar = () => {
         localStorage.setItem("searchHistory", JSON.stringify(newHistory));
     };
 
-    const handleGeoLocation = () => {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const { latitude, longitude } = position.coords;
-                try {
-                    // Simple reverse geocoding using a free API or just setting a placeholder
-                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                    const data = await response.json();
-                    if (data.address) {
-                        const city = data.address.city || data.address.town || data.address.state;
-                        setLocation(city);
-                    }
-                } catch (err) {
-                    console.error("Geo search failed", err);
-                }
-            });
-        }
-    };
-
-    const handleVoiceSearch = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Voice search is not supported in this browser.");
-            return;
-        }
-        const recognition = new SpeechRecognition();
-        recognition.onstart = () => setIsListening(true);
-        recognition.onend = () => setIsListening(false);
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            setLocation(transcript);
-        };
-        recognition.start();
-    };
-
     const handleInputClick = (e) => {
-        // Overlay is triggered by the mobile-only UI container visible only on small screens via CSS
+        // Overlay is triggered by the mobile-only UI container visible
         setIsMobileSearchOpen(true);
     };
 
@@ -280,13 +244,7 @@ const DetailedSearchBar = () => {
                                     <circle cx="11" cy="11" r="8" />
                                     <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
                                 </svg>
-                                <span className="m-search-placeholder">Search anyyyy......</span>
-                            </div>
-                            <div className="m-search-right">
-                                <svg className="m-mic-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
-                                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                                    <path d="M19 10v2a7 7 0 01-14 0v-2M12 18v5M8 23h8" />
-                                </svg>
+                                <span className="m-search-placeholder">Find Your Dream Property</span>
                             </div>
                         </div>
                     </div>
@@ -310,35 +268,11 @@ const DetailedSearchBar = () => {
                                 className="search-input"
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
-                                placeholder='Search "3 BHK for sale in Mumbai"'
+                                placeholder='Search from a wide range of properties across India"'
                                 whileFocus={{ scale: 1.01 }}
                                 readOnly={false} // Allow direct input on desktop; mobile uses overlay trigger
                             />
                             <div className="input-action-icons">
-                                <motion.button
-                                    className="action-icon-btn geo-btn"
-                                    onClick={handleGeoLocation}
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    title="Use Current Location"
-                                >
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                                        <circle cx="12" cy="10" r="3" />
-                                    </svg>
-                                </motion.button>
-                                <motion.button
-                                    className={`action-icon-btn mic-btn ${isListening ? 'listening' : ''}`}
-                                    onClick={handleVoiceSearch}
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    title="Voice Search"
-                                >
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                                        <path d="M19 10v2a7 7 0 01-14 0v-2M12 18v5M8 23h8" />
-                                    </svg>
-                                </motion.button>
                             </div>
                         </div>
 

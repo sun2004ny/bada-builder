@@ -30,7 +30,11 @@ const MobileSearchOverlay = ({
     }, [isOpen, initialValue]);
 
     const handleSearchSubmit = (item) => {
-        const finalTerm = typeof item === 'object' ? item : (item || searchTerm);
+        // Check if item is a history object (has a location or display property)
+        // rather than just any object (like a React Event)
+        const isHistoryObject = item && typeof item === 'object' && ('location' in item || 'display' in item);
+        const finalTerm = isHistoryObject ? item : searchTerm;
+
         if (typeof finalTerm === 'string' && !finalTerm.trim()) return;
 
         onSearch(finalTerm);
@@ -89,10 +93,10 @@ const MobileSearchOverlay = ({
                         onKeyPress={(e) => e.key === 'Enter' && handleSearchSubmit()}
                     />
                     <div className="mobile-search-tools">
-                        <button className="tool-btn location-tool">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563eb" strokeWidth="2">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                                <circle cx="12" cy="10" r="3" />
+                        <button className="mobile-search-btn-active" onClick={() => handleSearchSubmit()}>
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" strokeWidth="3.5">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
                             </svg>
                         </button>
                     </div>
@@ -192,6 +196,43 @@ const MobileSearchOverlay = ({
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {searchHistory.length > 0 && (
+                    <div className="mobile-search-card history-card">
+                        <div className="history-header">
+                            <div className="card-header-with-icon">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#4f46e5" strokeWidth="2.5">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                <h4 className="card-title">RECENT SEARCHES</h4>
+                            </div>
+                        </div>
+                        <div className="mobile-history-chips">
+                            {searchHistory.map((item, index) => (
+                                <div key={item.id || index} className="m-history-chip-wrapper">
+                                    <button
+                                        className="m-history-chip"
+                                        onClick={() => handleSearchSubmit(item)}
+                                    >
+                                        {item.display || item}
+                                    </button>
+                                    <button
+                                        className="m-delete-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeleteHistory(item.id, e);
+                                        }}
+                                    >
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="5">
+                                            <path d="M18 6L6 18M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </motion.div>
     );
