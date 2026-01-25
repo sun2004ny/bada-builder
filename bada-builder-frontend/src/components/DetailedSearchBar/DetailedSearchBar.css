@@ -431,6 +431,114 @@
 }
 
 /* =====================================================
+   SEARCH HISTORY STYLES
+   ===================================================== */
+
+.search-history-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 20px auto 0;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  /* More solid white for visibility */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-width: 1100px;
+  width: 100%;
+}
+
+.history-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #4f46e5;
+  /* Stronger indigo for visibility on white */
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.history-label svg {
+  color: #4f46e5;
+  filter: none;
+}
+
+.history-chips {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.history-chip {
+  background: rgba(139, 92, 246, 0.1);
+  /* Lighter purple tint */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 50px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: #1a1a1a;
+  /* Blackish text for legibility */
+  font-weight: 700;
+  /* Bold for clarity */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.history-chip:hover {
+  border-color: #818cf8;
+  background: rgba(139, 92, 246, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+.delete-history-btn {
+  background: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: #000000 !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 !important;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.delete-history-btn:hover {
+  color: #ff0000 !important;
+  transform: scale(1.2);
+}
+
+.delete-history-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke: #000000 !important;
+  stroke-width: 4px !important;
+  display: block;
+}
+
+.delete-history-btn:hover svg {
+  stroke: #ff0000 !important;
+}
+
+/* =====================================================
    MOBILE ONLY UI - REDESIGN (Reference matched)
    ===================================================== */
 
@@ -533,6 +641,11 @@
    ===================================================== */
 
 @media (max-width: 768px) {
+  .search-history-container {
+    display: none !important;
+    /* Hide search history on mobile devices */
+  }
+
   .redesign-search-bar {
     padding: 16px;
     border-radius: 20px;
@@ -551,7 +664,6 @@
     /* Hide desktop main row */
   }
 
-  /* ... rest of existing mobile styles ... */
   .checkbox-grid {
     grid-template-columns: 1fr;
   }

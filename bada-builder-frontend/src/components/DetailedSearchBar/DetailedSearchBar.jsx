@@ -18,6 +18,7 @@ const propertyOptions = [
 const filterConfigs = {
     budget: ["Under 20 Lac", "20-40 Lac", "40-60 Lac", "60-80 Lac", "80 Lac - 1 Cr", "1-1.5 Cr", "1.5-2 Cr", "Above 2 Cr"],
     bedrooms: ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "5+ BHK"],
+    area: ["Under 1000 sq.ft", "1000-2000 sq.ft", "2000-3000 sq.ft", "3000-5000 sq.ft", "Above 5000 sq.ft"],
     status: ["Ready to Move", "Under Construction"],
     postedBy: ["Owner", "Dealer", "Builder"]
 };
@@ -31,20 +32,31 @@ const DetailedSearchBar = () => {
     const [filters, setFilters] = useState({
         budget: "",
         bedrooms: "",
+        area: "",
         status: "",
         postedBy: ""
     });
+    const [searchHistory, setSearchHistory] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
     const dropdownRef = useRef(null);
 
-    // Initialize from URL params
+    // Initialize from URL params and localStorage
     useEffect(() => {
         const loc = searchParams.get("location");
         const type = searchParams.get("type")?.split(",") || [];
         if (loc) setLocation(loc);
         if (type.length) setSelectedProperties(type);
+
+        const savedHistory = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+        const normalizedHistory = savedHistory.map(item => {
+            if (typeof item === 'string') {
+                return { display: item, location: item, types: [], filters: {}, id: Date.now() + Math.random() };
+            }
+            return item;
+        });
+        setSearchHistory(normalizedHistory);
     }, [searchParams]);
 
     // Close dropdown if clicked outside
@@ -85,9 +97,17 @@ const DetailedSearchBar = () => {
         setFilters({
             budget: "",
             bedrooms: "",
+            area: "",
             status: "",
             postedBy: ""
         });
+    };
+
+    const deleteHistoryItem = (id, e) => {
+        e.stopPropagation();
+        const newHistory = searchHistory.filter((item) => item.id !== id);
+        setSearchHistory(newHistory);
+        localStorage.setItem("searchHistory", JSON.stringify(newHistory));
     };
 
     const handleGeoLocation = () => {
@@ -130,14 +150,60 @@ const DetailedSearchBar = () => {
         setIsMobileSearchOpen(true);
     };
 
-    const handleSearch = (term) => {
-        // term is optional (used by mobile overlay)
-        const finalLocation = term || location;
+    const handleSearch = (historyItem = null) => {
+        let finalLocation, finalTypes, finalFilters;
+
+        if (historyItem && typeof historyItem === 'object') { // Check if it's a history object
+            // Restore from history
+            finalLocation = historyItem.location;
+            finalTypes = historyItem.types;
+            finalFilters = historyItem.filters;
+
+            // Optionally update current state to match history (good for UX)
+            setLocation(finalLocation);
+            setSelectedProperties(finalTypes);
+            setFilters(finalFilters);
+        } else { // This branch handles new searches (from desktop button or mobile overlay string)
+            // Use current state
+            finalLocation = historyItem || location; // If historyItem is a string (from mobile overlay), use it as location
+            finalTypes = selectedProperties;
+            finalFilters = filters;
+
+            // Save to history if location is not empty
+            if (finalLocation.trim()) {
+                const typesLabel = finalTypes.length > 0 ? finalTypes.join(", ") : "All Residential";
+                const filterLabels = Object.keys(finalFilters)
+                    .filter(key => finalFilters[key])
+                    .map(key => finalFilters[key]);
+
+                let displayLabel = finalLocation;
+                if (finalTypes.length > 0) {
+                    displayLabel += ` | ${typesLabel}`;
+                }
+                if (filterLabels.length > 0) {
+                    displayLabel += ` | ${filterLabels.join(", ")}`;
+                }
+
+                const newEntry = {
+                    display: displayLabel,
+                    location: finalLocation,
+                    types: finalTypes,
+                    filters: finalFilters,
+                    id: Date.now()
+                };
+
+                // Remove duplicates based on display label and move to top
+                const updatedHistory = [newEntry, ...searchHistory.filter(h => h.display !== displayLabel)].slice(0, 5);
+                setSearchHistory(updatedHistory);
+                localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
+            }
+        }
+
         const params = new URLSearchParams();
         if (finalLocation) params.append("location", finalLocation);
-        if (selectedProperties.length) params.append("type", selectedProperties.join(","));
-        Object.keys(filters).forEach(key => {
-            if (filters[key]) params.append(key, filters[key]);
+        if (finalTypes.length) params.append("type", finalTypes.join(","));
+        Object.keys(finalFilters).forEach(key => {
+            if (finalFilters[key]) params.append(key, finalFilters[key]);
         });
         navigate(`/search?${params.toString()}`);
     };
@@ -151,6 +217,8 @@ const DetailedSearchBar = () => {
                         onClose={() => setIsMobileSearchOpen(false)}
                         onSearch={handleSearch}
                         initialValue={location}
+                        searchHistory={searchHistory}
+                        onDeleteHistory={deleteHistoryItem}
                     />
                 )}
             </AnimatePresence>
@@ -362,6 +430,50 @@ const DetailedSearchBar = () => {
                     )}
                 </AnimatePresence>
             </motion.div>
+
+            {/* Modern Search History - Desktop & Mobile */}
+            <AnimatePresence>
+                {searchHistory.length > 0 && (
+                    <motion.div
+                        className="search-history-container"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.4, delay: 0.4 }}
+                    >
+                        <div className="history-label">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Recent Searches</span>
+                        </div>
+                        <div className="history-chips">
+                            {searchHistory.map((item, index) => (
+                                <motion.div
+                                    key={item.id || index}
+                                    className="history-chip"
+                                    onClick={() => handleSearch(item)}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    whileHover={{ y: -2, backgroundColor: "rgba(139, 92, 246, 0.15)" }}
+                                    layout
+                                >
+                                    <span>{item.display || item}</span>
+                                    <button
+                                        className="delete-history-btn"
+                                        onClick={(e) => deleteHistoryItem(item.id, e)}
+                                    >
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3">
+                                            <path d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

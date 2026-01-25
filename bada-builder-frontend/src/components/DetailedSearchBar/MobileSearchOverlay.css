@@ -35,27 +35,46 @@
 }
 
 .mobile-search-top-bar {
-    background-color: #0F172A;
-    padding: 12px 12px;
+    background-color: #f8fafc;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     position: sticky;
     top: 56px;
-    /* Below site header */
     z-index: 100;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .mobile-search-close-btn {
-    background: transparent;
+    background: #f1f5f9;
     border: none;
-    color: white;
-    padding: 8px;
+    color: #334155;
+    width: 42px;
+    /* Fixed size */
+    height: 42px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
+    padding: 0 !important;
+    /* OVERRIDE global button padding */
+    transition: all 0.2s ease;
+}
+
+.mobile-search-close-btn svg {
+    width: 28px !important;
+    /* Large, clear icon */
+    height: 28px !important;
+    stroke-width: 4.5px !important;
+    /* Bold X */
+    display: block;
+}
+
+.mobile-search-close-btn:active {
+    background: #e2e8f0;
 }
 
 .mobile-search-input-box {
@@ -72,13 +91,14 @@
 
 .mobile-search-field {
     flex: 1;
-    border: none;
+    border: none !important;
     padding: 10px 0;
     font-size: 14px;
     color: #334155;
-    outline: none;
+    outline: none !important;
     width: 100%;
     background: transparent;
+    box-shadow: none !important;
 }
 
 .mobile-search-tools {
@@ -121,11 +141,86 @@
 }
 
 .card-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
-    color: #64748b;
-    margin-bottom: 12px;
-    margin-top: 0;
+    color: #475569;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.mobile-history-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.m-history-chip-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(139, 92, 246, 0.1);
+    /* Match desktop purple tint */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 50px;
+    /* Pill shape like desktop */
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding-right: 4px;
+}
+
+.m-history-chip-wrapper:active {
+    transform: scale(0.96);
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.m-history-chip {
+    background: transparent;
+    border: none;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #1a1a1a;
+    font-weight: 700;
+    /* Bolder for desktop match */
+    cursor: pointer;
+    text-align: left;
+}
+
+.m-delete-btn {
+    background: transparent;
+    /* Remove background */
+    border: none;
+    padding: 8px;
+    color: #000000;
+    /* Black cross like desktop */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.m-delete-btn:active {
+    color: #ef4444;
+}
+
+.m-delete-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    stroke-width: 4px;
+}
+
+.m-delete-btn:active {
+    background: #fee2e2;
 }
 
 .recent-list {

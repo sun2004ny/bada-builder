@@ -5,9 +5,8 @@ import { Link } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 import './MobileSearchOverlay.css';
 
-const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "" }) => {
+const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "", searchHistory = [], onDeleteHistory }) => {
     const [searchTerm, setSearchTerm] = useState(initialValue);
-    const [recentSearches, setRecentSearches] = useState([]);
 
     // Popular localities as per reference
     const popularLocalities = [
@@ -24,21 +23,13 @@ const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "" }) =
 
     useEffect(() => {
         if (isOpen) {
-            const saved = localStorage.getItem('recent_searches');
-            if (saved) {
-                setRecentSearches(JSON.parse(saved));
-            }
             setSearchTerm(initialValue);
         }
     }, [isOpen, initialValue]);
 
-    const handleSearchSubmit = (term) => {
-        const finalTerm = term || searchTerm;
-        if (!finalTerm.trim()) return;
-
-        const updated = [finalTerm, ...recentSearches.filter(s => s !== finalTerm)].slice(0, 5);
-        setRecentSearches(updated);
-        localStorage.setItem('recent_searches', JSON.stringify(updated));
+    const handleSearchSubmit = (item) => {
+        const finalTerm = typeof item === 'object' ? item : (item || searchTerm);
+        if (typeof finalTerm === 'string' && !finalTerm.trim()) return;
 
         onSearch(finalTerm);
         onClose();
@@ -81,8 +72,8 @@ const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "" }) =
 
             <div className="mobile-search-top-bar">
                 <button className="mobile-search-close-btn" onClick={onClose} aria-label="Close search">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M18 6L6 18M6 6l12 12" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </button>
                 <div className="mobile-search-input-box">
@@ -102,29 +93,39 @@ const MobileSearchOverlay = ({ isOpen, onClose, onSearch, initialValue = "" }) =
                                 <circle cx="12" cy="10" r="3" />
                             </svg>
                         </button>
-                        <div className="tool-divider" />
-                        <button className="tool-btn mic-tool">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                                <path d="M19 10v2a7 7 0 01-14 0v-2M12 18v5M8 23h8" />
-                            </svg>
-                        </button>
                     </div>
                 </div>
             </div>
 
             <div className="mobile-search-body">
-                {recentSearches.length > 0 && (
-                    <div className="mobile-search-card">
-                        <h4 className="card-title">Last searched..</h4>
-                        <div className="recent-list">
-                            {recentSearches.map((s, i) => (
-                                <div key={i} className="recent-item" onClick={() => handleSearchSubmit(s)}>
-                                    <div className="recent-left">
-                                        <span className="icon-clock">🕒</span>
-                                        <span className="text-val">{s}</span>
-                                    </div>
-                                    <span className="icon-arrow">↗</span>
+                {searchHistory.length > 0 && (
+                    <div className="mobile-search-card history-card">
+                        <div className="history-header">
+                            <h4 className="card-title">Recent Searches</h4>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#64748b" strokeWidth="2.5">
+                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div className="mobile-history-chips">
+                            {searchHistory.map((item, index) => (
+                                <div key={item.id || index} className="m-history-chip-wrapper">
+                                    <button
+                                        className="m-history-chip"
+                                        onClick={() => handleSearchSubmit(item)}
+                                    >
+                                        {item.display || item}
+                                    </button>
+                                    <button
+                                        className="m-delete-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeleteHistory(item.id, e);
+                                        }}
+                                    >
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="4">
+                                            <path d="M18 6L6 18M6 6l12 12" />
+                                        </svg>
+                                    </button>
                                 </div>
                             ))}
                         </div>
