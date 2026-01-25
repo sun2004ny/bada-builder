@@ -14,7 +14,12 @@ const propertyOptions = [
     "Other",
 ];
 
-const filterOptions = ["Budget", "Bedroom", "Construction Status", "Posted By"];
+const filterConfigs = {
+    budget: ["Under 20 Lac", "20-40 Lac", "40-60 Lac", "60-80 Lac", "80 Lac - 1 Cr", "1-1.5 Cr", "1.5-2 Cr", "Above 2 Cr"],
+    bedrooms: ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "5+ BHK"],
+    status: ["Ready to Move", "Under Construction"],
+    postedBy: ["Owner", "Dealer", "Builder"]
+};
 
 const DetailedSearchBar = () => {
     const navigate = useNavigate();
@@ -22,7 +27,13 @@ const DetailedSearchBar = () => {
 
     const [location, setLocation] = useState("");
     const [selectedProperties, setSelectedProperties] = useState([]);
-    const [possession, setPossession] = useState("");
+    const [filters, setFilters] = useState({
+        budget: "",
+        bedrooms: "",
+        status: "",
+        postedBy: ""
+    });
+    const [isListening, setIsListening] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -53,13 +64,63 @@ const DetailedSearchBar = () => {
         );
     };
 
-    const clearProperties = () => setSelectedProperties([]);
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    const clearAll = () => {
+        setSelectedProperties([]);
+        setLocation("");
+        setFilters({
+            budget: "",
+            bedrooms: "",
+            status: "",
+            postedBy: ""
+        });
+    };
+
+    const handleGeoLocation = () => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    // Simple reverse geocoding using a free API or just setting a placeholder
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    const data = await response.json();
+                    if (data.address) {
+                        const city = data.address.city || data.address.town || data.address.state;
+                        setLocation(city);
+                    }
+                } catch (err) {
+                    console.error("Geo search failed", err);
+                }
+            });
+        }
+    };
+
+    const handleVoiceSearch = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Voice search is not supported in this browser.");
+            return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            setLocation(transcript);
+        };
+        recognition.start();
+    };
 
     const handleSearch = () => {
         const params = new URLSearchParams();
         if (location) params.append("location", location);
         if (selectedProperties.length) params.append("type", selectedProperties.join(","));
-        if (possession) params.append("possession", possession);
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) params.append(key, filters[key]);
+        });
         navigate(`/search?${params.toString()}`);
     };
 
@@ -114,24 +175,54 @@ const DetailedSearchBar = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                     >
-                        All Residential ▾
+                        {selectedProperties.length > 0
+                            ? `${selectedProperties.length} Selected`
+                            : "All Residential"} ▾
                     </motion.div>
 
-                    <motion.input
-                        type="text"
-                        className="search-input"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder='Search "Flats for rent in sector 77 Noida"'
-                        whileFocus={{ scale: 1.01 }}
-                    />
+                    <div className="search-input-container">
+                        <motion.input
+                            type="text"
+                            className="search-input"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            placeholder='Search "3 BHK for sale in Mumbai"'
+                            whileFocus={{ scale: 1.01 }}
+                        />
+                        <div className="input-action-icons">
+                            <motion.button
+                                className="action-icon-btn geo-btn"
+                                onClick={handleGeoLocation}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                title="Use Current Location"
+                            >
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg>
+                            </motion.button>
+                            <motion.button
+                                className={`action-icon-btn mic-btn ${isListening ? 'listening' : ''}`}
+                                onClick={handleVoiceSearch}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                title="Voice Search"
+                            >
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                                    <path d="M19 10v2a7 7 0 01-14 0v-2M12 18v5M8 23h8" />
+                                </svg>
+                            </motion.button>
+                        </div>
+                    </div>
 
                     <motion.button
                         className="search-button"
                         onClick={handleSearch}
                         whileHover={{
                             scale: 1.05,
-                            boxShadow: "0 8px 30px rgba(139, 92, 246, 0.5)"
+                            boxShadow: "0 8px 30px rgba(11, 240, 23, 0.4)"
                         }}
                         whileTap={{ scale: 0.95 }}
                     >
@@ -153,6 +244,18 @@ const DetailedSearchBar = () => {
                             exit={{ opacity: 0, y: -20, scale: 0.95 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
                         >
+                            <div className="dropdown-header">
+                                <h3 className="dropdown-title">Property Type</h3>
+                                <motion.div
+                                    className="clear-btn"
+                                    onClick={clearAll}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Clear
+                                </motion.div>
+                            </div>
+
                             <div className="dropdown-top">
                                 <motion.div
                                     className="checkbox-grid"
@@ -185,25 +288,22 @@ const DetailedSearchBar = () => {
                                         </motion.label>
                                     ))}
                                 </motion.div>
-                                <motion.div
-                                    className="clear-btn"
-                                    onClick={clearProperties}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    Clear
-                                </motion.div>
                             </div>
 
                             <div className="filters-row">
-                                {filterOptions.map((filter) => (
+                                {Object.keys(filterConfigs).map((key) => (
                                     <motion.select
-                                        key={filter}
+                                        key={key}
                                         className="filter-select"
+                                        value={filters[key]}
+                                        onChange={(e) => handleFilterChange(key, e.target.value)}
                                         whileHover={{ scale: 1.02 }}
                                         whileFocus={{ scale: 1.02 }}
                                     >
-                                        <option value="">{filter}</option>
+                                        <option value="">Select {key.charAt(0).toUpperCase() + key.slice(1)}</option>
+                                        {filterConfigs[key].map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
                                     </motion.select>
                                 ))}
                             </div>
