@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookingsAPI } from '../services/api';
@@ -286,21 +286,34 @@ const BookSiteVisit = () => {
   const reverseGeocode = async (lat, lng) => {
     setAddressLoading(true);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`);
       const data = await response.json();
 
-      if (data && data.display_name) {
+      if (data && data.address) {
+        // Extract granular address details
+        const addr = data.address;
+        const details = {
+          houseNo: addr.house_number || '',
+          building: addr.road || addr.building || '',
+          area: addr.suburb || addr.neighbourhood || addr.residential || '',
+          city: addr.city || addr.town || addr.village || '',
+          pincode: addr.postcode || '',
+          fullAddress: data.display_name
+        };
+
         setSelectedLocation({
           lat,
           lng,
-          address: data.display_name
+          address: data.display_name,
+          details: details // Store details for auto-fill
         });
         setSearchQuery(data.display_name);
       } else {
         setSelectedLocation({
           lat,
           lng,
-          address: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          address: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          details: null
         });
       }
     } catch (error) {
@@ -308,7 +321,8 @@ const BookSiteVisit = () => {
       setSelectedLocation({
         lat,
         lng,
-        address: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+        address: `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        details: null
       });
     } finally {
       setAddressLoading(false);
@@ -349,7 +363,20 @@ const BookSiteVisit = () => {
     setShowMapModal(true);
     setSelectedLocation(null);
     setSearchQuery('');
+    getCurrentLocation(); // Auto-fetch location
   };
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (showMapModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showMapModal]);
 
   const handleMapClick = (latlng) => {
     const pos = [latlng.lat, latlng.lng];
@@ -367,13 +394,34 @@ const BookSiteVisit = () => {
   // Confirm selected location
   const confirmLocation = () => {
     if (selectedLocation) {
-      // Only fill the "Location from Map" field, don't auto-populate manual fields
-      setLocationData(prevData => ({
-        ...prevData,
+      const newData = {
+        ...locationData,
         locationFromMap: selectedLocation.address,
         latitude: selectedLocation.lat,
         longitude: selectedLocation.lng
-      }));
+      };
+
+      // Auto-fill manual fields if details are available
+      if (selectedLocation.details) {
+        if (selectedLocation.details.houseNo) newData.houseNo = selectedLocation.details.houseNo;
+        if (selectedLocation.details.building) newData.building = selectedLocation.details.building;
+        if (selectedLocation.details.area) newData.area = selectedLocation.details.area;
+        if (selectedLocation.details.city) newData.city = selectedLocation.details.city;
+        if (selectedLocation.details.pincode) newData.pincode = selectedLocation.details.pincode;
+      }
+
+      // Update combined address immediately
+      const addressParts = [
+        newData.houseNo?.trim(),
+        newData.building?.trim(),
+        newData.area?.trim(),
+        newData.city?.trim(),
+        newData.pincode?.trim()
+      ].filter(part => part && part.length > 0);
+      
+      newData.address = addressParts.join(', ');
+
+      setLocationData(newData);
       setShowMapModal(false);
     }
   };
@@ -766,89 +814,136 @@ const BookSiteVisit = () => {
               <label>
                 Pickup Address:
                 <div className="structured-address-inputs">
-                  <div className="address-row">
-                    <input
-                      type="text"
-                      name="houseNo"
-                      value={locationData.houseNo || ''}
-                      onChange={handleHouseNoChange}
-                      placeholder="House / Flat No"
-                      className="address-field house-field"
-                      required
-                    />
-                    <input
-                      type="text"
-                      name="building"
-                      value={locationData.building || ''}
-                      onChange={handleBuildingChange}
-                      placeholder="Building / Street"
-                      className="address-field building-field"
-                      required
-                    />
+                  <div className="address-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="text"
+                        name="houseNo"
+                        value={locationData.houseNo || ''}
+                        onChange={handleHouseNoChange}
+                        placeholder="House / Flat No"
+                        className="address-field house-field"
+                        style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="text"
+                        name="building"
+                        value={locationData.building || ''}
+                        onChange={handleBuildingChange}
+                        placeholder="Building / Street"
+                        className="address-field building-field"
+                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="address-row">
-                    <input
-                      type="text"
-                      name="area"
-                      value={locationData.area || ''}
-                      onChange={handleAreaChange}
-                      placeholder="Area / Locality"
-                      className="address-field area-field"
-                      required
-                    />
-                    <input
-                      type="text"
-                      name="city"
-                      value={locationData.city || ''}
-                      onChange={handleCityChange}
-                      placeholder="City"
-                      className="address-field city-field"
-                      required
-                    />
+
+                  <div className="address-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="text"
+                        name="area"
+                        value={locationData.area || ''}
+                        onChange={handleAreaChange}
+                        placeholder="Area / Locality"
+                        className="address-field area-field"
+                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="text"
+                        name="city"
+                        value={locationData.city || ''}
+                        onChange={handleCityChange}
+                        placeholder="City"
+                        className="address-field city-field"
+                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="address-row">
-                    <input
-                      type="text"
-                      name="pincode"
-                      value={locationData.pincode || ''}
-                      onChange={handlePincodeChange}
-                      placeholder="Pincode"
-                      className="address-field pincode-field"
-                      pattern="[0-9]{6}"
-                      maxLength="6"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="maps-button-inline"
-                      onClick={openMapModal}
-                      title="Select location on map"
-                    >
-                      📍 Select on Map
-                    </button>
+
+                  <div className="address-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="text"
+                        name="pincode"
+                        value={locationData.pincode || ''}
+                        onChange={handlePincodeChange}
+                        placeholder="Pincode"
+                        className="address-field pincode-field"
+                        pattern="[0-9]{6}"
+                        maxLength="6"
+                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <button
+                        type="button"
+                        className="maps-button-inline"
+                        onClick={openMapModal}
+                        title="Select location on map"
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.8rem', 
+                          backgroundColor: '#9e4efb', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        📍 Select on Map
+                      </button>
+                    </div>
                   </div>
                   
                   {/* Location from Map field */}
-                  <div className="address-row map-location-row">
-                    <input
-                      type="text"
-                      name="locationFromMap"
-                      value={locationData.locationFromMap || ''}
-                      onChange={handleLocationFromMapChange}
-                      placeholder="Location from Map (Optional)"
-                      className="address-field map-location-field"
-                      readOnly
-                    />
-                    {locationData.locationFromMap && (
-                      <button
-                        type="button"
-                        className="clear-map-location"
-                        onClick={clearMapLocation}
-                        title="Clear map location"
-                      >
-                        ✕
-                      </button>
-                    )}
+                  <div className="address-row map-location-row" style={{ marginBottom: '1rem' }}>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        name="locationFromMap"
+                        value={locationData.locationFromMap || ''}
+                        onChange={handleLocationFromMapChange}
+                        placeholder="Location from Map (Optional)"
+                        className="address-field map-location-field"
+                        style={{ width: '100%', padding: '0.8rem', backgroundColor: '#1a1a2e', border: '2px dashed #444', color: '#aaa', borderRadius: '8px' }}
+                        readOnly
+                      />
+                      {locationData.locationFromMap && (
+                        <button
+                          type="button"
+                          className="clear-map-location"
+                          onClick={clearMapLocation}
+                          title="Clear map location"
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            color: '#fb7185',
+                            cursor: 'pointer',
+                            fontSize: '1.2rem'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -1098,7 +1193,7 @@ const BookSiteVisit = () => {
                     <strong>Location Selected</strong>
                   </div>
                   <div className="selected-address">
-                    <strong>📍 Selected Address:</strong>
+                    <strong>Selected Address:</strong>
                     <p>{selectedLocation.address}</p>
                     <span className="coordinates-info">
                       Coordinates: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
