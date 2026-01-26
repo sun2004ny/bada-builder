@@ -73,7 +73,11 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
                                     <Building2 className="w-6 h-6 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold tracking-tight !text-white">{tower.tower_name}</h2>
+                                    <h2 className="text-xl font-bold tracking-tight !text-white">
+                                        {(project.type === 'Bungalow' || project.type === 'Colony')
+                                            ? project.title
+                                            : tower.tower_name}
+                                    </h2>
                                     <p className="text-sm !text-slate-300 flex items-center gap-2">
                                         <Layers size={14} />
                                         {project.type === 'Bungalow'
