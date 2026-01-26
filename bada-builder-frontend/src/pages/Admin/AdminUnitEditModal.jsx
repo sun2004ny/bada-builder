@@ -163,9 +163,11 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) =>
                                     >
                                         {projectType === 'Bungalow' ? (
                                             <>
-                                                <option value="Independent Villa">Independent Villa</option>
+                                                <option value="Villa">Villa</option>
+                                                <option value="Bungalow">Bungalow</option>
                                                 <option value="Row House">Row House</option>
                                                 <option value="Twin Villa">Twin Villa</option>
+                                                <option value="Plot">Plot</option>
                                             </>
                                         ) : (
                                             <>

@@ -120,32 +120,44 @@ const AdminLiveGrouping = () => {
   }, []);
 
   // Sync global defaults to non-custom units
-  useEffect(() => {
+  // --- PERF FIX: Manual Apply instead of Laggy useEffect ---
+  const handleApplyDefaultsToAll = () => {
+    if (!window.confirm("This will overwrite configuration for all units that are NOT customizing. Continue?")) return;
+
     setTowerUnits(prev => {
-      const updated = { ...prev };
+      // Deep clone to avoid mutation
+      const updated = structuredClone(prev);
+
       Object.keys(updated).forEach(tIdx => {
-        const towerConfig = { ...updated[tIdx] };
+        const towerConfig = updated[tIdx];
+        if (!towerConfig) return;
+
         Object.keys(towerConfig).forEach(fNum => {
+          if (!towerConfig[fNum]) return;
+
           towerConfig[fNum] = towerConfig[fNum].map(unit => {
-            if (!unit.isCustom) {
-              return {
-                ...unit,
-                unit_type: globalUnitDefaults.unitType,
-                area: globalUnitDefaults.sbua,
-                carpet_area: globalUnitDefaults.carpetArea,
-                price_per_sqft: globalUnitDefaults.baseRate,
-                discount_price_per_sqft: globalUnitDefaults.discountRate,
-                price: globalUnitDefaults.sbua * (globalUnitDefaults.discountRate || globalUnitDefaults.baseRate)
-              };
-            }
-            return unit;
+            // Skip custom units
+            if (unit.isCustom) return unit;
+
+            // Update standard units
+            return {
+              ...unit,
+              unit_type: globalUnitDefaults.unitType,
+              area: parseFloat(globalUnitDefaults.sbua) || 0,
+              carpet_area: parseFloat(globalUnitDefaults.carpetArea) || 0,
+              price_per_sqft: parseFloat(globalUnitDefaults.baseRate) || 0,
+              discount_price_per_sqft: parseFloat(globalUnitDefaults.discountRate) || null,
+              // Recalculate Total Price
+              price: (parseFloat(globalUnitDefaults.sbua) || 0) * (parseFloat(globalUnitDefaults.discountRate) || parseFloat(globalUnitDefaults.baseRate) || 0)
+            };
           });
         });
-        updated[tIdx] = towerConfig;
       });
+
+      toast.success("Global defaults applied to all standard units.");
       return updated;
     });
-  }, [globalUnitDefaults]);
+  };
 
   const fetchProjects = async () => {
     try {
@@ -178,45 +190,50 @@ const AdminLiveGrouping = () => {
     try {
       setSaving(true);
 
-      // 1. Create Project
-      const response = await liveGroupDynamicAPI.createProject(projectData, imageFiles, brochureFile);
-      const newProject = response.project;
-
-      // 2. Add Towers & Generate Units
-      for (let i = 0; i < towers.length; i++) {
-        const towerInfo = towers[i];
-        const towerResponse = await liveGroupDynamicAPI.addTower(newProject.id, {
-          tower_name: towerInfo.name,
-          total_floors: towerInfo.floors
-        });
-
-        // Collect units for this tower
-        const unitsToGenerate = [];
-        const towerConfig = towerUnits[i] || {};
+      // --- ATOMIC SAVE LOGIC ---
+      // 1. Construct Full Hierarchy Object (Towers + Nested Units)
+      const hierarchy = towers.map((tower, idx) => {
+        const towerConfig = towerUnits[idx] || {};
+        const compiledUnits = [];
 
         Object.keys(towerConfig).forEach(floorNum => {
+          if (!towerConfig[floorNum]) return;
+
           towerConfig[floorNum].forEach(unit => {
-            unitsToGenerate.push({
+            // Sanitize numeric fields before sending
+            const sanitizedUnit = {
               ...unit,
-              floor_number: parseInt(floorNum)
-            });
+              floor_number: parseInt(floorNum),
+              area: parseFloat(unit.area) || 0,
+              carpet_area: parseFloat(unit.carpet_area) || 0,
+              super_built_up_area: parseFloat(unit.super_built_up_area) || 0,
+              price: parseFloat(unit.price) || 0,
+              price_per_sqft: parseFloat(unit.price_per_sqft) || 0,
+              discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null
+            };
+            compiledUnits.push(sanitizedUnit);
           });
         });
 
-        if (unitsToGenerate.length > 0) {
-          await liveGroupDynamicAPI.generateUnits(towerResponse.tower.id, {
-            units: unitsToGenerate
-          });
-        }
-      }
+        return {
+          tower_name: tower.name, // API expects snake_case usually? Check addTower payload: { tower_name }
+          total_floors: parseInt(tower.floors) || (projectData.type === 'Bungalow' ? 1 : 0),
+          units: compiledUnits
+        };
+      });
 
-      alert('Project, Towers, and Units created successfully!');
+      console.log('🚀 Submitting Partial Hierarchy:', hierarchy);
+
+      // 2. Send Single Bulk Request
+      await liveGroupDynamicAPI.createProjectWithHierarchy(projectData, hierarchy, imageFiles, brochureFile);
+
+      toast.success('Project and complete hierarchy created successfully!');
       setShowWizard(false);
       setWizardStep(1);
       fetchProjects();
     } catch (error) {
       console.error('Wizard submission error:', error);
-      alert('Failed to complete setup: ' + error.message);
+      alert('Failed to create project: ' + (error.response?.data?.error || error.message));
     } finally {
       setSaving(false);
     }
@@ -384,33 +401,53 @@ const AdminLiveGrouping = () => {
 
   const updateUnitConfig = (towerIdx, floorNum, unitIdx, field, value) => {
     setTowerUnits(prev => {
-      const towerConfig = { ...prev[towerIdx] };
-      const floorUnits = [...towerConfig[floorNum]];
-
-      if (field === 'sync_floor') {
+      // Defensive: Check if path exists
+      if (!prev[towerIdx] || !prev[towerIdx][floorNum] || !prev[towerIdx][floorNum][unitIdx]) {
+        console.warn('Attempted to update non-existent unit:', { towerIdx, floorNum, unitIdx });
         return prev;
-      } else {
-        const unit = { ...floorUnits[unitIdx], [field]: value };
-
-        // Calculate final price automatically
-        let calcArea = parseFloat(unit.area) || 0;
-        if (projectData.type === 'Bungalow') {
-          calcArea = parseFloat(unit.super_built_up_area) || 0;
-        }
-
-        const reg = parseFloat(unit.price_per_sqft) || 0;
-        const disc = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null)
-          ? parseFloat(unit.discount_price_per_sqft)
-          : null;
-
-        const effective = disc !== null ? disc : reg;
-        unit.price = calcArea * effective;
-
-        floorUnits[unitIdx] = unit;
-        towerConfig[floorNum] = floorUnits;
       }
 
-      return { ...prev, [towerIdx]: towerConfig };
+      // Deep clone only the necessary parts or full object for safety
+      const nextState = structuredClone(prev);
+      const unit = nextState[towerIdx][floorNum][unitIdx];
+
+      if (field === 'sync_floor') {
+        // Special logic for sync if needed, otherwise ignore
+        return prev;
+      }
+
+      // Update Field
+      // If updating numeric fields, ensure we don't set NaN? 
+      // User might want to type empty string, so allow string if needed, 
+      // but calculations need valid numbers.
+      unit[field] = value;
+
+      // Auto-mark as Custom if user manually edits it
+      if (!unit.isCustom) {
+        unit.isCustom = true;
+      }
+
+      // Recalculate Price Logic
+      let calcArea = parseFloat(unit.area) || 0;
+      if (projectData.type === 'Bungalow') {
+        // For Bungalow, usually Plot Area (area) or SBUA is used? 
+        // Let's stick to 'area' if that's the primary, or SBUA.
+        // The wizard initialized 'area' as 2500 (Plot Area).
+        calcArea = parseFloat(unit.area) || parseFloat(unit.super_built_up_area) || 0;
+      }
+
+      const reg = parseFloat(unit.price_per_sqft) || 0;
+      const disc = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null && unit.discount_price_per_sqft !== undefined)
+        ? parseFloat(unit.discount_price_per_sqft)
+        : null;
+
+      const effectiveRate = disc !== null ? disc : reg;
+
+      // Update Price ONLY if it's not a manually overridden fixed price (unless we want auto-calc)
+      // Usually in this wizard, we auto-calc.
+      unit.price = calcArea * effectiveRate;
+
+      return nextState;
     });
   };
 
@@ -773,13 +810,15 @@ const AdminLiveGrouping = () => {
                                   </td>
                                   <td>
                                     <select
-                                      value={t.bungalow_type || 'Independent'}
+                                      value={t.bungalow_type || 'Villa'}
                                       onChange={e => updateTowerRow(idx, 'bungalow_type', e.target.value)}
                                       className="w-full p-2 border rounded"
                                     >
-                                      <option value="Independent">Independent Villa</option>
+                                      <option value="Villa">Villa</option>
+                                      <option value="Bungalow">Bungalow</option>
                                       <option value="Row House">Row House</option>
                                       <option value="Twin Villa">Twin Villa</option>
+                                      <option value="Plot">Plot</option>
                                     </select>
                                   </td>
                                 </>
@@ -1505,6 +1544,7 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, genera
                         <option value="Villa">Villa</option>
                         <option value="Bungalow">Bungalow</option>
                         <option value="Row House">Row House</option>
+                        <option value="Twin Villa">Twin Villa</option>
                         <option value="Plot">Plot</option>
                       </select>
                     </div>

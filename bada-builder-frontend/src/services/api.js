@@ -452,6 +452,27 @@ export const liveGroupDynamicAPI = {
     return uploadFile('/live-grouping-dynamic/admin/projects', formData);
   },
 
+  // NEW: Atomic Bulk Create
+  createProjectWithHierarchy: async (projectData, hierarchy, images = [], brochure = null) => {
+    const formData = new FormData();
+
+    // Append Project Basics
+    Object.keys(projectData).forEach(key => {
+      if (projectData[key] !== undefined && projectData[key] !== null) {
+        formData.append(key, projectData[key]);
+      }
+    });
+
+    // Append Hierarchy (Towers + Units) as JSON string
+    formData.append('hierarchy', JSON.stringify(hierarchy));
+
+    // Append Files
+    images.forEach(image => formData.append('images', image));
+    if (brochure) formData.append('brochure', brochure);
+
+    return uploadFile('/live-grouping-dynamic/admin/projects/bulk', formData);
+  },
+
   addTower: async (projectId, towerData) => {
     return apiRequest(`/live-grouping-dynamic/admin/projects/${projectId}/towers`, {
       method: 'POST',
