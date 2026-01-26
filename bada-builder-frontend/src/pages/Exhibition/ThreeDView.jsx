@@ -79,6 +79,361 @@ const UnitBox = ({ unit, position, size, onClick, specialColor, rotation = [0, 0
     );
 };
 
+// Bungalow Colony Component - Multiple independent bungalows in a residential layout
+const BungalowColony = ({ position, propertyData, project, onUnitClick }) => {
+    // Collect and Sort units numerically for a logical sequence
+    const rawUnits = project?.towers?.reduce((units, tower) => {
+        return [...units, ...(tower.units || [])];
+    }, []) || [];
+
+    const allUnits = [...rawUnits].sort((a, b) => {
+        const numA = parseInt(a.unit_number.match(/\d+/)?.[0] || 0);
+        const numB = parseInt(b.unit_number.match(/\d+/)?.[0] || 0);
+        return numA - numB;
+    });
+
+    const totalBungalows = allUnits.length || 6;
+
+    // Colony configuration
+    const BUNGALOW_WIDTH = 12;
+    const BUNGALOW_HEIGHT = 3.5;
+    const BUNGALOW_DEPTH = 10;
+    const ROOF_HEIGHT = 1.5;
+    const ROOF_OVERHANG = 0.8;
+    const SPACING_X = 18; // Horizontal spacing between bungalows
+    const SPACING_Z = 16; // Vertical spacing between rows
+    const ROAD_WIDTH = 4;
+
+    // Colors
+    const WALL_COLORS = ['#f5f5dc', '#faf0e6', '#fff8dc', '#f0e68c']; // Cream variations
+    const ROOF_COLORS = ['#4a5568', '#5a6978', '#6b7280']; // Dark grey variations
+    const DOOR_COLOR = '#8b4513';
+    const WINDOW_COLOR = '#87ceeb';
+    const GROUND_COLOR = '#a8d5ba';
+    const ROAD_COLOR = '#6b7280';
+    const GREEN_SPACE_COLOR = '#7cb342';
+    const COLOR_SELECTED = '#3b82f6'; // Blue for hover
+
+    // Arrange bungalows in rows
+    const bungalowsPerRow = Math.ceil(Math.sqrt(totalBungalows));
+    const rows = Math.ceil(totalBungalows / bungalowsPerRow);
+
+    // Calculate colony dimensions
+    const colonyWidth = bungalowsPerRow * SPACING_X + ROAD_WIDTH * 2;
+    const colonyDepth = rows * SPACING_Z + ROAD_WIDTH * 2;
+
+    // Single Extremely Detailed Bungalow Unit Component
+    const BungalowUnit = ({ position, index, unit }) => {
+        const [hovered, setHovered] = useState(false);
+
+        // --- Per-Unit Randomization Seed (based on index) ---
+        const seed = (index * 77) % 100;
+
+        // --- Structural Constants ---
+        const PLINTH_HEIGHT = 0.6;
+        const P_WIDTH = BUNGALOW_WIDTH;
+        const P_DEPTH = BUNGALOW_DEPTH;
+
+        const WALL_W = BUNGALOW_WIDTH * 0.94;
+        const WALL_D = BUNGALOW_DEPTH * 0.94;
+        const WALL_H = BUNGALOW_HEIGHT;
+
+        const ROOF_SLAB_W = BUNGALOW_WIDTH + ROOF_OVERHANG;
+        const ROOF_SLAB_D = BUNGALOW_DEPTH + ROOF_OVERHANG;
+        const ROOF_SLAB_H = 0.3;
+
+        // --- Visual Variants (6+ Randomized) ---
+        const variants = [
+            { wall: '#fefcf0', roof: '#2d3748', door: '#4a2c0a', accent: '#e2e8f0', steps: '#718096' }, // Ivory & Charcoal
+            { wall: '#fdfbf7', roof: '#4a5568', door: '#5d3c1e', accent: '#cbd5e0', steps: '#a0aec0' }, // Classic Beige
+            { wall: '#f7fafc', roof: '#1a202c', door: '#3e2723', accent: '#edf2f7', steps: '#4a5568' }, // Modern Cool
+            { wall: '#fff5f5', roof: '#334155', door: '#5c4033', accent: '#f1f5f9', steps: '#64748b' }, // Subtle Rose
+            { wall: '#f0fff4', roof: '#4a5568', door: '#2c3e50', accent: '#e6fffa', steps: '#718096' }, // Mint Tint
+            { wall: '#fffaf0', roof: '#2d3748', door: '#3d2b1f', accent: '#f7fafc', steps: '#8a8d91' }, // Warm Silk
+        ];
+        const v = variants[seed % variants.length];
+
+        // --- Randomized Porch Logic ---
+        const porchWidth = 4 + (seed % 15) / 10; // 4.0 to 5.5
+        const porchDepth = 2.5 + (seed % 10) / 10; // 2.5 to 3.5
+
+        // --- Interaction State ---
+        const isBooked = unit?.status === 'booked';
+        const isLocked = unit?.status === 'locked';
+        const isAvailable = unit?.status === 'available';
+
+        let buildingColor = v.wall;
+        if (isBooked) buildingColor = COLOR_BOOKED;
+        else if (isLocked) buildingColor = COLOR_LOCKED;
+        else if (hovered && isAvailable) buildingColor = COLOR_SELECTED;
+
+        return (
+            <group position={position}>
+                {/* 1. Foundation Plinth (Beveled effect via layered boxes) */}
+                <group position={[0, PLINTH_HEIGHT / 2, 0]} pointerEvents="none">
+                    <mesh receiveShadow castShadow>
+                        <boxGeometry args={[P_WIDTH, PLINTH_HEIGHT, P_DEPTH]} />
+                        <meshStandardMaterial color={v.steps} roughness={0.9} />
+                    </mesh>
+                    <mesh position={[0, 0.05, 0]}> {/* Subtle top bevel slab */}
+                        <boxGeometry args={[P_WIDTH + 0.1, 0.1, P_DEPTH + 0.1]} />
+                        <meshStandardMaterial color={v.accent} roughness={0.7} />
+                    </mesh>
+                </group>
+
+                {/* 2. Main Building Body (Walls) - Primary Interaction Target */}
+                <mesh
+                    position={[0, PLINTH_HEIGHT + WALL_H / 2, 0]}
+                    receiveShadow
+                    castShadow
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Only allow click for interactive units (available or locked)
+                        if (!isBooked && unit) {
+                            onUnitClick(unit);
+                        }
+                    }}
+                    onPointerOver={(e) => {
+                        e.stopPropagation();
+                        // Only show hover for available units
+                        if (isAvailable && !isBooked) {
+                            setHovered(true);
+                            document.body.style.cursor = 'pointer';
+                        }
+                    }}
+                    onPointerOut={() => {
+                        setHovered(false);
+                        document.body.style.cursor = 'default';
+                    }}
+                >
+                    <boxGeometry args={[WALL_W, WALL_H, WALL_D]} />
+                    <meshStandardMaterial
+                        color={buildingColor}
+                        roughness={0.7}
+                        transparent
+                        opacity={isBooked ? 0.9 : 0.98}
+                    />
+                </mesh>
+
+                {/* Decorative Elements - Non-Clickable (pointerEvents="none") */}
+                <group pointerEvents="none">
+                    {/* Corner Moldings */}
+                    {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
+                        <mesh key={`corner-${i}`} position={[(WALL_W / 2) * x, PLINTH_HEIGHT + WALL_H / 2, (WALL_D / 2) * z]} castShadow>
+                            <boxGeometry args={[0.2, WALL_H, 0.2]} />
+                            <meshStandardMaterial color={v.accent} />
+                        </mesh>
+                    ))}
+
+                    {/* 3. Roof System */}
+                    <group position={[0, PLINTH_HEIGHT + WALL_H, 0]}>
+                        <mesh position={[0, ROOF_SLAB_H / 2, 0]} castShadow>
+                            <boxGeometry args={[ROOF_SLAB_W, ROOF_SLAB_H, ROOF_SLAB_D]} />
+                            <meshStandardMaterial color={v.accent} roughness={0.5} />
+                        </mesh>
+                        <mesh
+                            position={[0, ROOF_SLAB_H + ROOF_HEIGHT / 2, 0]}
+                            scale={[1, 1, ROOF_SLAB_D / ROOF_SLAB_W]}
+                            rotation={[0, Math.PI / 4, 0]}
+                            castShadow
+                        >
+                            <coneGeometry args={[ROOF_SLAB_W / Math.sqrt(2), ROOF_HEIGHT, 4]} />
+                            <meshStandardMaterial color={v.roof} roughness={0.4} flatShading={true} />
+                        </mesh>
+                    </group>
+
+                    {/* 4. Porch & Entrance Assembly */}
+                    <group position={[0, PLINTH_HEIGHT, WALL_D / 2]}>
+                        <mesh position={[0, -0.05, porchDepth / 2]} receiveShadow castShadow>
+                            <boxGeometry args={[porchWidth, 0.2, porchDepth]} />
+                            <meshStandardMaterial color={v.accent} />
+                        </mesh>
+
+                        {[0, 1, 2, 3].map((step) => (
+                            <mesh key={`step-${step}`} position={[0, -0.2 - (step * 0.12), porchDepth + (step * 0.3)]} castShadow>
+                                <boxGeometry args={[porchWidth * 0.8, 0.12, 0.4]} />
+                                <meshStandardMaterial color={v.steps} roughness={0.9} />
+                            </mesh>
+                        ))}
+
+                        {[-(porchWidth / 2 - 0.2), (porchWidth / 2 - 0.2)].map((x, i) => (
+                            <group key={`col-grp-${i}`} position={[x, 0, porchDepth - 0.3]}>
+                                <mesh position={[0, 0.1, 0]} castShadow>
+                                    <boxGeometry args={[0.4, 0.2, 0.4]} />
+                                    <meshStandardMaterial color={v.steps} />
+                                </mesh>
+                                <mesh position={[0, WALL_H / 2, 0]} castShadow>
+                                    <boxGeometry args={[0.2, WALL_H, 0.2]} />
+                                    <meshStandardMaterial color={v.accent} />
+                                </mesh>
+                            </group>
+                        ))}
+
+                        <group position={[0, 1.1, 0.05]}>
+                            <mesh castShadow>
+                                <boxGeometry args={[1.8, 2.4, 0.2]} />
+                                <meshStandardMaterial color={v.accent} />
+                            </mesh>
+                            <group position={[0, 0, 0.08]}>
+                                <mesh>
+                                    <boxGeometry args={[1.5, 2.1, 0.1]} />
+                                    <meshStandardMaterial color={v.door} roughness={0.5} />
+                                </mesh>
+                                <mesh position={[0, 0.6, 0.02]} scale={[0.7, 0.3, 1]}>
+                                    <boxGeometry args={[1.3, 2.0, 0.02]} />
+                                    <meshStandardMaterial color={v.door} roughness={0.7} />
+                                </mesh>
+                                <mesh position={[0.5, 0, 0.06]}>
+                                    <sphereGeometry args={[0.04, 8, 8]} />
+                                    <meshStandardMaterial color="#ECC94B" metalness={0.8} />
+                                </mesh>
+                            </group>
+                        </group>
+                    </group>
+
+                    {/* 5. Window Assemblies */}
+                    {[-3.2, 3.2].map((x, i) => (
+                        <group key={`win-f-${i}`} position={[x, PLINTH_HEIGHT + WALL_H * 0.55, WALL_D / 2 + 0.05]}>
+                            <mesh castShadow>
+                                <boxGeometry args={[1.5, 1.8, 0.2]} />
+                                <meshStandardMaterial color="white" />
+                            </mesh>
+                            <mesh position={[0, -0.9, 0.1]}>
+                                <boxGeometry args={[1.7, 0.1, 0.3]} />
+                                <meshStandardMaterial color={v.accent} />
+                            </mesh>
+                            <mesh position={[0, 0.9, 0.1]}>
+                                <boxGeometry args={[1.6, 0.15, 0.25]} />
+                                <meshStandardMaterial color={v.accent} />
+                            </mesh>
+                            <mesh position={[0, 0, 0.06]}>
+                                <boxGeometry args={[1.2, 1.5, 0.05]} />
+                                <meshStandardMaterial color="#87ceeb" transparent opacity={0.6} metalness={0.6} />
+                            </mesh>
+                        </group>
+                    ))}
+
+                    {/* Side Windows */}
+                    {[-2.5, 2.5].map((z, i) => (
+                        <group key={`win-s-${i}`}>
+                            <group position={[WALL_W / 2 + 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, Math.PI / 2, 0]}>
+                                <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                                <mesh position={[0, -0.75, 0.1]}><boxGeometry args={[1.6, 0.08, 0.25]} /><meshStandardMaterial color={v.accent} /></mesh>
+                                <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                            </group>
+                            <group position={[-WALL_W / 2 - 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, -Math.PI / 2, 0]}>
+                                <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                                <mesh position={[0, -0.75, 0.1]}><boxGeometry args={[1.6, 0.08, 0.25]} /><meshStandardMaterial color={v.accent} /></mesh>
+                                <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                            </group>
+                        </group>
+                    ))}
+                </group>
+
+                {/* 6. High Visibility Unit Label */}
+                {unit && (
+                    <group position={[0, PLINTH_HEIGHT + WALL_H * 0.8, WALL_D / 2 + 0.2]}>
+                        <Text
+                            fontSize={0.6}
+                            color={hovered ? "#3b82f6" : "#1a202c"} // Solid black/dark charcoal
+                            anchorX="center"
+                            anchorY="middle"
+                        >
+                            {unit.unit_number}
+                        </Text>
+                    </group>
+                )}
+            </group>
+        );
+    };
+
+    return (
+        <group position={position}>
+            {/* Colony Ground Base */}
+            <mesh position={[0, -0.5, 0]} receiveShadow>
+                <boxGeometry args={[colonyWidth + 10, 0.3, colonyDepth + 10]} />
+                <meshStandardMaterial color={GROUND_COLOR} roughness={0.9} />
+            </mesh>
+
+            {/* Compound Boundary Wall */}
+            <lineSegments position={[0, 1, 0]}>
+                <edgesGeometry args={[new THREE.BoxGeometry(colonyWidth + 8, 2, colonyDepth + 8)]} />
+                <lineBasicMaterial color="#8b7355" linewidth={3} />
+            </lineSegments>
+
+            {/* Internal Roads - Horizontal */}
+            {Array.from({ length: rows + 1 }).map((_, i) => {
+                const zPos = -colonyDepth / 2 + i * SPACING_Z;
+                return (
+                    <mesh key={`road-h-${i}`} position={[0, -0.35, zPos]} receiveShadow>
+                        <boxGeometry args={[colonyWidth, 0.1, ROAD_WIDTH]} />
+                        <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                    </mesh>
+                );
+            })}
+
+            {/* Internal Roads - Vertical */}
+            {Array.from({ length: bungalowsPerRow + 1 }).map((_, i) => {
+                const xPos = -colonyWidth / 2 + i * SPACING_X;
+                return (
+                    <mesh key={`road-v-${i}`} position={[xPos, -0.35, 0]} receiveShadow>
+                        <boxGeometry args={[ROAD_WIDTH, 0.1, colonyDepth]} />
+                        <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                    </mesh>
+                );
+            })}
+
+            {/* Green Spaces (between some bungalows) */}
+            {Array.from({ length: Math.floor(totalBungalows / 3) }).map((_, i) => {
+                const row = Math.floor((i * 2) / bungalowsPerRow);
+                const col = (i * 2) % bungalowsPerRow;
+                const xPos = -colonyWidth / 2 + col * SPACING_X + SPACING_X / 2;
+                const zPos = -colonyDepth / 2 + row * SPACING_Z + SPACING_Z / 2;
+
+                return (
+                    <mesh key={`green-${i}`} position={[xPos, -0.3, zPos]} receiveShadow>
+                        <boxGeometry args={[6, 0.15, 6]} />
+                        <meshStandardMaterial color={GREEN_SPACE_COLOR} roughness={0.8} />
+                    </mesh>
+                );
+            })}
+
+            {/* Render Individual Bungalows */}
+            {Array.from({ length: totalBungalows }).map((_, index) => {
+                const row = Math.floor(index / bungalowsPerRow);
+                const col = index % bungalowsPerRow;
+
+                const xPos = -colonyWidth / 2 + col * SPACING_X + SPACING_X / 2;
+                // Reverse row mapping: row 0 (index 0) is now at the front
+                const visualRow = (rows - 1) - row;
+                const zPos = -colonyDepth / 2 + visualRow * SPACING_Z + SPACING_Z / 2;
+
+                const unit = allUnits[index]; // Get the actual unit data
+
+                return (
+                    <BungalowUnit
+                        key={`bungalow-${index}`}
+                        position={[xPos, 0, zPos]}
+                        index={index}
+                        unit={unit}
+                        onUnitClick={onUnitClick}
+                    />
+                );
+            })}
+
+            {/* Colony Name Label */}
+            <Text
+                position={[0, BUNGALOW_HEIGHT + ROOF_HEIGHT + 4, -colonyDepth / 2 - 8]}
+                fontSize={3}
+                color="#1e293b"
+                anchorX="center"
+            >
+                {propertyData?.title || propertyData?.project_name || 'Bungalow Colony'}
+            </Text>
+        </group>
+    );
+};
+
 const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
     const BASEMENT_HEIGHT = 4.0;
     const UNIT_HEIGHT = FLOOR_HEIGHT * 0.9;
@@ -184,6 +539,103 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
 // --- Main Page ---
 
 import TwoDView from './TwoDView';
+
+// --- Helper: Calculate Effective Unit Price (Unit > Project Default) ---
+// NOTE: This helper is only for display + payment calculation, not for updating database.
+const getEffectiveUnitDetails = (unit, project) => {
+    if (!unit) return { finalPrice: 0, bookingAmount: 0, area: 0, isDiscounted: false };
+
+    // 1. Resolve Area
+    let area = (unit.area !== null && unit.area !== undefined) ? parseFloat(unit.area) : 0;
+    if (area === 0) {
+        area = parseFloat(unit.super_built_up_area) || parseFloat(unit.carpet_area) || 0;
+    }
+
+    // 2. Resolve Rates
+    // Regular Rate Priority: Unit > Project > 0
+    let regularRate = parseFloat(unit.price_per_sqft);
+
+    // Treat 0, NaN, null, undefined as "Invalid/Not Set" -> Fallback to project defaults
+    // We check multiple keys because 'original_price' might be saved differently or named differently.
+    const projectDefaults = [
+        parseFloat(project?.base_rate),
+        parseFloat(project?.price_per_sqft),
+        parseFloat(project?.original_price),
+        parseFloat(project?.group_price),
+        parseFloat(project?.starting_price),
+        parseFloat(project?.price)
+    ];
+
+    let fallbackValue = 0;
+    if (!regularRate || regularRate === 0) {
+        fallbackValue = projectDefaults.find(val => !isNaN(val) && val > 0) || 0;
+    }
+
+    // Discount Rate Priority: Unit > Project
+    let discountRate = unit.discount_price_per_sqft;
+    if (discountRate === null || discountRate === undefined || discountRate === '') {
+        const projDisc = project?.discount_rate || project?.discount_price;
+        if (projDisc !== null && projDisc !== undefined && projDisc !== '') {
+            discountRate = projDisc;
+        }
+    }
+
+    const validDiscount = (discountRate !== null && discountRate !== undefined && discountRate !== '')
+        ? parseFloat(discountRate)
+        : null;
+
+    // 3. Calculate Final Price
+    let finalPrice = 0;
+
+    // Heuristic: If fallbackValue is huge (e.g. > 50,000), it's likely a Total Price, not a Rate.
+    // Unless area is very small? 
+    // Typical Rate: 3000 - 20000. Typical Price: 20L - 5Cr.
+    // Threshold: 50000? 
+
+    const isFallbackTotal = fallbackValue > 50000;
+
+    if (validDiscount !== null && validDiscount > 0) {
+        finalPrice = area * validDiscount;
+    } else {
+        if (!regularRate || regularRate === 0) {
+            // Using fallback
+            if (isFallbackTotal) {
+                finalPrice = fallbackValue; // Use directly as Total
+                regularRate = finalPrice / (area || 1); // Reverse calc rate for display if needed
+            } else {
+                finalPrice = area * fallbackValue;
+                regularRate = fallbackValue;
+            }
+        } else {
+            // Using Unit Rate
+            finalPrice = area * regularRate;
+        }
+    }
+
+    // Fallback: If calculation yielded 0 but unit has a direct fixed price, use it
+    if ((!finalPrice || finalPrice === 0) && unit.price && parseFloat(unit.price) > 0) {
+        finalPrice = parseFloat(unit.price);
+    }
+
+    // Last Resort: If still 0, trying to use "original_price" as Total if it wasn't caught above
+    if ((!finalPrice || finalPrice === 0) && fallbackValue > 0) {
+        finalPrice = fallbackValue;
+    }
+
+    const bookingAmount = finalPrice * 0.005; // 0.5%
+    const isDiscounted = validDiscount !== null && validDiscount > 0;
+
+    // console.log('EffectiveDetails:', { unitRate: unit.price_per_sqft, fallbackValue, area, finalPrice });
+
+    return {
+        area,
+        finalPrice,
+        bookingAmount,
+        regularRate,
+        discountRate: validDiscount,
+        isDiscounted
+    };
+};
 
 const ThreeDView = () => {
     const navigate = useNavigate();
@@ -310,8 +762,10 @@ const ThreeDView = () => {
         }
 
         try {
-            const bookingAmount = (unit.price * 0.005); // 0.5% of unit price
-            console.log('📝 Creating Razorpay order for unit:', unit.unit_number, 'Amount:', bookingAmount);
+            // Use effective details for booking amount
+            const { bookingAmount, finalPrice } = getEffectiveUnitDetails(unit, project);
+
+            console.log('📝 Creating Razorpay order for unit:', unit.unit_number, 'Amount:', bookingAmount, 'Total Price:', finalPrice);
 
             // Step 1: Create Razorpay order on backend
             const orderResponse = await liveGroupDynamicAPI.createBookingOrder({
@@ -519,37 +973,60 @@ const ThreeDView = () => {
                             </div>
 
                             {/* Main Info Card */}
-                            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 mb-4 space-y-3">
-                                <div className="flex justify-between items-center border-b border-slate-200/50 pb-2.5">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
-                                    <span className="text-xl font-black text-slate-900">₹{(selectedUnit.price / 100000).toFixed(2)} L</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
-                                            {selectedUnit.floor_number === -1 ? 'Area' : 'Carpet Area'}
-                                        </p>
-                                        <p className="text-base font-black text-slate-700">{selectedUnit.area} sq ft</p>
+                            {(() => {
+                                const { finalPrice, bookingAmount, area } = getEffectiveUnitDetails(selectedUnit, project);
+
+                                return (
+                                    <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 mb-4 space-y-3">
+                                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-2.5">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
+                                            <span className="text-xl font-black text-slate-900">
+                                                {finalPrice >= 100000
+                                                    ? `₹${(finalPrice / 100000).toFixed(2)} L`
+                                                    : `₹${finalPrice.toLocaleString('en-IN')}`}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
+                                                    {selectedUnit.floor_number === -1 ? 'Area' : 'Carpet Area'}
+                                                </p>
+                                                <p className="text-base font-black text-slate-700">{area} sq ft</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Booking (0.5%)</p>
+                                                <p className="text-base font-black text-emerald-600">
+                                                    {bookingAmount >= 1000
+                                                        ? `₹${(bookingAmount / 1000).toFixed(2)} K`
+                                                        : `₹${bookingAmount.toLocaleString('en-IN')}`}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Booking (0.5%)</p>
-                                        <p className="text-base font-black text-emerald-600">₹{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</p>
-                                    </div>
-                                </div>
-                            </div>
+                                );
+                            })()}
 
                             {/* Action Area */}
                             {!showHoldOptions ? (
                                 <div className="space-y-4">
                                     {/* Real-time Status Disclaimer */}
-                                    <div className="bg-emerald-50 border border-emerald-100/50 p-2.5 rounded-xl flex items-center gap-2.5">
-                                        <div className="bg-emerald-500 rounded-full p-1 text-white shrink-0">
-                                            <Info size={10} strokeWidth={3} />
-                                        </div>
-                                        <p className="text-[11px] font-bold text-emerald-800 leading-tight">
-                                            Pay ₹<span className="text-sm font-black text-emerald-950">{(selectedUnit.price * 0.005 / 1000).toFixed(2)} K</span> (0.5%) right now to secure this unit instantly.
-                                        </p>
-                                    </div>
+                                    {(() => {
+                                        const { bookingAmount } = getEffectiveUnitDetails(selectedUnit, project);
+                                        return (
+                                            <div className="bg-emerald-50 border border-emerald-100/50 p-2.5 rounded-xl flex items-center gap-2.5">
+                                                <div className="bg-emerald-500 rounded-full p-1 text-white shrink-0">
+                                                    <Info size={10} strokeWidth={3} />
+                                                </div>
+                                                <p className="text-[11px] font-bold text-emerald-800 leading-tight">
+                                                    Pay ₹<span className="text-sm font-black text-emerald-950">
+                                                        {bookingAmount >= 1000
+                                                            ? `${(bookingAmount / 1000).toFixed(2)} K`
+                                                            : bookingAmount.toFixed(0)}
+                                                    </span> (0.5%) right now to secure this unit instantly.
+                                                </p>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Action Buttons Row */}
                                     <div className="flex items-center gap-2">
@@ -624,7 +1101,11 @@ const ThreeDView = () => {
             {/* 3D Canvas */}
             {viewMode === '3d' && (
                 <Canvas shadows className="w-full h-full">
-                    <PerspectiveCamera makeDefault position={[50, 50, 100]} fov={40} />
+                    <PerspectiveCamera
+                        makeDefault
+                        position={property?.type === 'Bungalow' ? [30, 15, 40] : [50, 50, 100]}
+                        fov={40}
+                    />
                     <Sky sunPosition={[100, 20, 50]} />
                     <ambientLight intensity={0.7} />
                     <directionalLight
@@ -633,28 +1114,41 @@ const ThreeDView = () => {
                         castShadow
                         shadow-mapSize={[2048, 2048]}
                     />
-                    <OrbitControls target={[0, (project.towers[0]?.total_floors || 5) * 1.25, 0]} maxPolarAngle={Math.PI / 2.1} />
+                    <OrbitControls
+                        target={property?.type === 'Bungalow' ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
+                        maxPolarAngle={Math.PI / 2.1}
+                    />
 
-                    <group>
-                        {project.towers.map((tower, idx) => {
-                            const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                    {/* Conditional Rendering: Bungalow vs Tower/Flat */}
+                    {property?.type === 'Bungalow' ? (
+                        <BungalowColony
+                            position={[0, 0, 0]}
+                            propertyData={property}
+                            project={project}
+                            onUnitClick={handleUnitClick}
+                        />
+                    ) : (
+                        <group>
+                            {project.towers.map((tower, idx) => {
+                                const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
 
-                            const towerUnits = tower.units || [];
-                            const lowestFloor = towerUnits.length > 0
-                                ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
-                                : 1;
+                                const towerUnits = tower.units || [];
+                                const lowestFloor = towerUnits.length > 0
+                                    ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
+                                    : 1;
 
-                            return (
-                                <Tower
-                                    key={tower.id}
-                                    tower={tower}
-                                    position={[posX, 0, 0]}
-                                    onUnitClick={handleUnitClick}
-                                    lowestFloor={lowestFloor}
-                                />
-                            );
-                        })}
-                    </group>
+                                return (
+                                    <Tower
+                                        key={tower.id}
+                                        tower={tower}
+                                        position={[posX, 0, 0]}
+                                        onUnitClick={handleUnitClick}
+                                        lowestFloor={lowestFloor}
+                                    />
+                                );
+                            })}
+                        </group>
+                    )}
 
                     {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
                     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>

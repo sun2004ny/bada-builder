@@ -1441,9 +1441,27 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, genera
 
       <div className="units-sub-grid">
         {units.map((unit, uIdx) => {
-          const area = parseFloat(unit.area) || 0;
-          const regSqft = parseFloat(unit.price_per_sqft) || 0;
-          const discSqft = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null) ? parseFloat(unit.discount_price_per_sqft) : null;
+          // Determine Effective Values: specific if custom, global default if default
+          const area = unit.isCustom
+            ? (parseFloat(unit.area) || 0)
+            : (parseFloat(globalDefaults.sbua) || 0);
+
+          const regSqft = unit.isCustom
+            ? (parseFloat(unit.price_per_sqft) || 0)
+            : (parseFloat(globalDefaults.baseRate) || 0);
+
+          let discSqft = null;
+          if (unit.isCustom) {
+            discSqft = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null)
+              ? parseFloat(unit.discount_price_per_sqft)
+              : null;
+          } else {
+            discSqft = (globalDefaults.discountRate !== '' && globalDefaults.discountRate !== null)
+              ? parseFloat(globalDefaults.discountRate)
+              : null;
+          }
+
+          // fallback to regular price if discount is not set (null)
           const finalPrice = discSqft !== null ? area * discSqft : area * regSqft;
 
           return (
@@ -1500,6 +1518,28 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, genera
                         disabled={!unit.isCustom}
                       />
                     </div>
+                    <div className="input-field-group">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase">Regular Price</label>
+                      <input
+                        type="number"
+                        className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                        value={unit.price_per_sqft || ''}
+                        onChange={e => onUpdate(uIdx, 'price_per_sqft', e.target.value)}
+                        placeholder={!unit.isCustom ? globalDefaults.baseRate : ''}
+                        disabled={!unit.isCustom}
+                      />
+                    </div>
+                    <div className="input-field-group">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase">Discount Price</label>
+                      <input
+                        type="number"
+                        className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                        value={unit.discount_price_per_sqft || ''}
+                        onChange={e => onUpdate(uIdx, 'discount_price_per_sqft', e.target.value)}
+                        placeholder={!unit.isCustom ? globalDefaults.discountRate : ''}
+                        disabled={!unit.isCustom}
+                      />
+                    </div>
                   </div>
 
                   <div className="action-buttons flex justify-between items-center">
@@ -1517,6 +1557,8 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, genera
                             onUpdate(uIdx, 'isCustom', false);
                             onUpdate(uIdx, 'unit_type', globalDefaults.unitType);
                             onUpdate(uIdx, 'area', globalDefaults.sbua);
+                            onUpdate(uIdx, 'price_per_sqft', globalDefaults.baseRate);
+                            onUpdate(uIdx, 'discount_price_per_sqft', globalDefaults.discountRate);
                           }
                         }}
                         className="text-[9px] font-bold text-green-600 hover:text-green-700 underline underline-offset-2"
