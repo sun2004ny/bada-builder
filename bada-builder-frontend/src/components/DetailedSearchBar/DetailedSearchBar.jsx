@@ -12,6 +12,11 @@ const propertyOptions = [
     "1 RK/Studio Apartment",
     "Farm House",
     "Serviced Apartments",
+    "Shops",
+    "Offices",
+    "Showrooms",
+    "Godowns",
+    "Warehouses",
     "Other",
 ];
 
@@ -115,6 +120,9 @@ const DetailedSearchBar = () => {
     };
 
     const handleSearch = (historyItem = null) => {
+        // Close dropdown on search (Desktop)
+        setDropdownOpen(false);
+
         let finalLocation, finalTypes, finalFilters;
 
         if (historyItem && typeof historyItem === 'object') { // Check if it's a history object
@@ -302,7 +310,7 @@ const DetailedSearchBar = () => {
                             initial={{ opacity: 0, y: -20, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                         >
                             <div className="dropdown-header">
                                 <h3 className="dropdown-title">Property Type</h3>

@@ -8,7 +8,6 @@ import heroVideo from '../../assets/hero_background.mp4';
 const HeroSection = () => {
   const locationState = useLocation();
 
-  if (locationState.pathname === '/search') return null;
 
   return (
     <section className="home-hero-section">

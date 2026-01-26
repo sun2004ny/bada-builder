@@ -66,11 +66,24 @@ const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const resultsRef = React.useRef(null);
 
   const query = searchParams.get('q') || '';
   const category = searchParams.get('category') || '';
   const type = searchParams.get('type') || '';
   const location = searchParams.get('location') || '';
+
+  useEffect(() => {
+    // Only auto-scroll on desktop to avoid disrupting mobile UX
+    const isDesktop = window.innerWidth > 1024;
+
+    if (isDesktop && resultsRef.current) {
+      resultsRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Simulate API call
@@ -121,16 +134,8 @@ const SearchResults = () => {
 
   return (
     <div className="search-results-page">
-      {/* Search Bar Section */}
-      <div className="search-section">
-        <div className="search-container">
-          <h1>Find Your Dream Property</h1>
-          <DetailedSearchBar />
-        </div>
-      </div>
-
       {/* Results Section */}
-      <div className="results-section">
+      <div className="results-section" ref={resultsRef}>
         <div className="results-container">
           {/* Search Info */}
           <div className="search-info">

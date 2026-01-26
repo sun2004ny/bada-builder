@@ -140,6 +140,7 @@ function AppContent() {
       {!isMessagesPage && !isAdminPanel && <GlobalSearchBar />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
       {!isMessagesPage && !isAdminPanel && <Chatbot />}
+      {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
       <main style={{ minHeight: isMessagesPage || isAdminPanel ? '100vh' : '60vh' }}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
@@ -160,12 +161,7 @@ function AppContent() {
               <Route path="live-grouping-management" element={<AdminLiveGrouping />} />
             </Route>
 
-            <Route path="/" element={
-              <>
-                <HeroSection />
-                <RecommendedProjects />
-              </>
-            } />
+            <Route path="/" element={<RecommendedProjects />} />
             {/* <Route path="/projects" element={<Projects />} /> */}
             <Route path="/services" element={<Services />} />
             <Route path="/investments" element={<Investments />} />
