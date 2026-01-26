@@ -1,7 +1,8 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import toast from 'react-hot-toast';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+
 import {
   Plus, Search, TowerControl as Tower, Building2,
   Trash2, Edit, Eye, Save, X, ChevronRight, ChevronDown,
@@ -22,7 +23,7 @@ const PROPERTY_TYPES = [
 ];
 
 const AdminLiveGrouping = () => {
-  const navigate = useNavigate();
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
@@ -62,17 +63,13 @@ const AdminLiveGrouping = () => {
     { name: 'Tower A', floors: 10, unitsPerFloor: 4 }
   ]);
 
-  const [unitSettings, setUnitSettings] = useState({
-    unitType: '3 BHK',
-    areaPerUnit: 0,
-    pricePerUnit: 7500000
-  });
+
 
   // Mixed Use / Detailed Unit configuration
   // Structure: { [towerIndex]: { [floorNumber]: [ { unit_number, unit_type, area, price } ] } }
   const [towerUnits, setTowerUnits] = useState({});
   // Structure: { [towerIdx]: { [floorNum]: { regular: price_sqft, discount: discount_sqft } } }
-  const [floorPricing, setFloorPricing] = useState({});
+
 
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -119,45 +116,7 @@ const AdminLiveGrouping = () => {
     fetchProjects();
   }, []);
 
-  // Sync global defaults to non-custom units
-  // --- PERF FIX: Manual Apply instead of Laggy useEffect ---
-  const handleApplyDefaultsToAll = () => {
-    if (!window.confirm("This will overwrite configuration for all units that are NOT customizing. Continue?")) return;
 
-    setTowerUnits(prev => {
-      // Deep clone to avoid mutation
-      const updated = structuredClone(prev);
-
-      Object.keys(updated).forEach(tIdx => {
-        const towerConfig = updated[tIdx];
-        if (!towerConfig) return;
-
-        Object.keys(towerConfig).forEach(fNum => {
-          if (!towerConfig[fNum]) return;
-
-          towerConfig[fNum] = towerConfig[fNum].map(unit => {
-            // Skip custom units
-            if (unit.isCustom) return unit;
-
-            // Update standard units
-            return {
-              ...unit,
-              unit_type: globalUnitDefaults.unitType,
-              area: parseFloat(globalUnitDefaults.sbua) || 0,
-              carpet_area: parseFloat(globalUnitDefaults.carpetArea) || 0,
-              price_per_sqft: parseFloat(globalUnitDefaults.baseRate) || 0,
-              discount_price_per_sqft: parseFloat(globalUnitDefaults.discountRate) || null,
-              // Recalculate Total Price
-              price: (parseFloat(globalUnitDefaults.sbua) || 0) * (parseFloat(globalUnitDefaults.discountRate) || parseFloat(globalUnitDefaults.baseRate) || 0)
-            };
-          });
-        });
-      });
-
-      toast.success("Global defaults applied to all standard units.");
-      return updated;
-    });
-  };
 
   const fetchProjects = async () => {
     try {
@@ -291,7 +250,7 @@ const AdminLiveGrouping = () => {
     setShowUnitEditModal(true);
   };
 
-  const handleUnitUpdate = (updatedUnit) => {
+  const handleUnitUpdate = () => {
     // Refresh the whole project to ensure full hierarchy is in sync
     if (selectedProject) {
       handleViewProject(selectedProject);
@@ -459,19 +418,7 @@ const AdminLiveGrouping = () => {
     });
   };
 
-  const updateFloorPricing = (towerIdx, floorNum, field, value) => {
-    setFloorPricing(prev => {
-      const newFloorPricing = { ...prev };
-      if (!newFloorPricing[towerIdx]) {
-        newFloorPricing[towerIdx] = {};
-      }
-      if (!newFloorPricing[towerIdx][floorNum]) {
-        newFloorPricing[towerIdx][floorNum] = { regular: 0, discount: null };
-      }
-      newFloorPricing[towerIdx][floorNum][field] = value === '' ? null : parseFloat(value);
-      return newFloorPricing;
-    });
-  };
+
 
   const prepopulateTowerUnits = (towerIdx) => {
     const tower = towers[towerIdx];
@@ -480,7 +427,7 @@ const AdminLiveGrouping = () => {
     const unitsPerFloor = parseInt(tower.unitsPerFloor) || 4;
     const floors = parseInt(tower.floors) || 0;
 
-    const generateUnitsForFloor = (floorNum) => {
+    const generateUnitsForFloor = () => {
       const units = [];
       for (let j = 0; j < unitsPerFloor; j++) {
         const label = `Flat ${String.fromCharCode(65 + j)}`;
@@ -520,10 +467,10 @@ const AdminLiveGrouping = () => {
       // Store all bungalows under a dummy floor '0' or '1', let's use '0'
       newConfig[0] = bungUnits;
     } else {
-      if (tower.hasBasement) newConfig[-1] = generateUnitsForFloor(-1);
-      if (tower.hasGroundFloor) newConfig[0] = generateUnitsForFloor(0);
+      if (tower.hasBasement) newConfig[-1] = generateUnitsForFloor();
+      if (tower.hasGroundFloor) newConfig[0] = generateUnitsForFloor();
       for (let f = 1; f <= floors; f++) {
-        newConfig[f] = generateUnitsForFloor(f);
+        newConfig[f] = generateUnitsForFloor();
       }
     }
 
@@ -1000,7 +947,7 @@ const AdminLiveGrouping = () => {
                                       onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
                                       onAdd={() => addUnitToConfig(towerIdx, 0)}
                                       globalDefaults={globalUnitDefaults}
-                                      generateFlatLabels={generateFlatLabels}
+
                                     />
                                   </div>
                                 ) : (
@@ -1461,8 +1408,8 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
 };
 
 // Bungalow Grid Component
-const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, generateFlatLabels }) => {
-  const flatLabelOptions = generateFlatLabels(Math.max(units.length + 5, 10));
+const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults }) => {
+
 
   return (
     <div className="bungalow-grid-container">
