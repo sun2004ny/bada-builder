@@ -5,26 +5,12 @@ import { useAuth } from '../context/AuthContext';
 import { subscriptionsAPI } from '../services/api';
 import './SubscriptionPlans.css';
 
-/* ---------- DEVELOPER / BUILDER PLAN (ONLY ONE PLAN) ---------- */
-const developerPlan = [
-  {
-    id: 'dev_12m',
-    duration: '12 Months',
-    price: 20000,
-    features: [
-      'Post 20 properties',
-      'Featured listing for 1 year',
-      'Priority support',
-      'RERA verification assistance',
-      'Project showcase'
-    ],
-    bestValue: true
-  }
-];
-
 const DeveloperPlan = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, userProfile } = useAuth();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
@@ -32,8 +18,25 @@ const DeveloperPlan = () => {
   // User role is always developer for this component
   const userRole = 'developer';
 
-  /* ---------- LOAD RAZORPAY ---------- */
+  /* ---------- LOAD PLANS & RAZORPAY ---------- */
   useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setLoading(true);
+        const response = await subscriptionsAPI.getPlans();
+        const allPlans = response.plans || response || [];
+        // Filter for developer plans
+        const filteredPlans = allPlans.filter(plan => plan.type === 'developer' || plan.plan_type === 'developer');
+        
+        setPlans(filteredPlans);
+      } catch (err) {
+        console.error('Error fetching plans:', err);
+        setError('Failed to load subscription plans. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const loadRazorpay = () => {
       return new Promise((resolve) => {
         if (window.Razorpay) {
@@ -57,6 +60,7 @@ const DeveloperPlan = () => {
       });
     };
 
+    fetchPlans();
     loadRazorpay();
   }, []);
 
@@ -178,6 +182,31 @@ const DeveloperPlan = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="subscription-page">
+        <div className="subscription-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div className="spinner"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="subscription-page">
+        <div className="subscription-container">
+          <div className="error-message" style={{ textAlign: 'center', color: 'red', marginTop: '50px' }}>
+            <h3>{error}</h3>
+            <button className="retry-btn" onClick={() => window.location.reload()} style={{ marginTop: '20px' }}>
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="subscription-page">
       <div className="subscription-container">
@@ -195,7 +224,7 @@ const DeveloperPlan = () => {
         </motion.div>
 
         <div className="plans-grid">
-          {developerPlan.map((plan, index) => (
+          {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
               className={`plan-card ${plan.bestValue ? 'best-value' : ''}`}
@@ -207,15 +236,15 @@ const DeveloperPlan = () => {
               {plan.bestValue && <div className="badge best">Developer Plan</div>}
 
               <div className="plan-header">
-                <h3>{plan.duration}</h3>
+                <h3>{plan.duration || plan.name}</h3>
                 <div className="price">
                   <span className="currency">₹</span>
-                  <span className="amount">{plan.price.toLocaleString()}</span>
+                  <span className="amount">{plan.price?.toLocaleString()}</span>
                 </div>
               </div>
 
               <ul className="features-list">
-                {plan.features.map((feature, featureIndex) => (
+                {plan.features?.map((feature, featureIndex) => (
                   <li key={featureIndex}>
                     <svg className="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

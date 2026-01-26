@@ -1,50 +1,45 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { subscriptionsAPI } from '../services/api';
 import './SubscriptionPlans.css';
 
-/* ---------- INDIVIDUAL PLANS (ONLY THESE 3 PLANS) ---------- */
-const individualPlans = [
-  {
-    id: 'ind_1m',
-    duration: '1 Month',
-    price: 100,
-    features: ['Post 1 property', 'Featured listing for 1 month', 'Email support']
-  },
-  {
-    id: 'ind_6m',
-    duration: '6 Months',
-    price: 400,
-    features: ['Post 1 property', 'Featured listing for 6 month', 'Email support'],
-    popular: true
-  },
-  {
-    id: 'ind_12m',
-    duration: '12 Months',
-    price: 700,
-    features: ['Post 1 property', 'Featured listing for 1 year', 'Email support']
-  }
-];
-
 const IndividualPlan = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { currentUser, isAuthenticated, userProfile } = useAuth();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
-  // Get return path from location state
-  const returnTo = location.state?.returnTo || '/post-property';
-  const userType = location.state?.userType || 'individual';
-
   // User role is always individual for this component
   const userRole = 'individual';
 
-  /* ---------- LOAD RAZORPAY ---------- */
+  /* ---------- LOAD PLANS & RAZORPAY ---------- */
   useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setLoading(true);
+        const response = await subscriptionsAPI.getPlans();
+        const allPlans = response.plans || response || [];
+        // Filter for individual plans
+        const filteredPlans = allPlans.filter(plan => plan.type === 'individual' || plan.plan_type === 'individual');
+        
+        // Sort by price (ascending)
+        filteredPlans.sort((a, b) => a.price - b.price);
+        
+        setPlans(filteredPlans);
+      } catch (err) {
+        console.error('Error fetching plans:', err);
+        setError('Failed to load subscription plans. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const loadRazorpay = () => {
       return new Promise((resolve) => {
         if (window.Razorpay) {
@@ -68,6 +63,7 @@ const IndividualPlan = () => {
       });
     };
 
+    fetchPlans();
     loadRazorpay();
   }, []);
 
@@ -188,6 +184,31 @@ const IndividualPlan = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="subscription-page">
+        <div className="subscription-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div className="spinner"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="subscription-page">
+        <div className="subscription-container">
+          <div className="error-message" style={{ textAlign: 'center', color: 'red', marginTop: '50px' }}>
+            <h3>{error}</h3>
+            <button className="retry-btn" onClick={() => window.location.reload()} style={{ marginTop: '20px' }}>
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="subscription-page">
       <div className="subscription-container">
@@ -205,7 +226,7 @@ const IndividualPlan = () => {
         </motion.div>
 
         <div className="plans-grid">
-          {individualPlans.map((plan, index) => (
+          {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
               className={`plan-card ${plan.popular ? 'popular' : ''} ${plan.bestValue ? 'best-value' : ''}`}
@@ -218,15 +239,15 @@ const IndividualPlan = () => {
               {plan.bestValue && <div className="badge best">Best Value</div>}
 
               <div className="plan-header">
-                <h3>{plan.duration}</h3>
+                <h3>{plan.duration || plan.name}</h3>
                 <div className="price">
                   <span className="currency">₹</span>
-                  <span className="amount">{plan.price.toLocaleString()}</span>
+                  <span className="amount">{plan.price?.toLocaleString()}</span>
                 </div>
               </div>
 
               <ul className="features-list">
-                {plan.features.map((feature, featureIndex) => (
+                {plan.features?.map((feature, featureIndex) => (
                   <li key={featureIndex}>
                     <svg className="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
