@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, TowerControl as Tower, Building2,
-  Trash2, Edit, Eye, Save, X, ChevronRight,
+  Trash2, Edit, Eye, Save, X, ChevronRight, ChevronDown,
   ChevronLeft, LayoutGrid, List, CheckCircle2, AlertCircle,
   ArrowLeft, Lock, DollarSign, Home, Map as MapIcon, Store, Briefcase, ShoppingBag, Box, Car, RefreshCw
 } from 'lucide-react';
@@ -79,9 +79,73 @@ const AdminLiveGrouping = () => {
   const [brochureFile, setBrochureFile] = useState(null);
   const [brochurePreview, setBrochurePreview] = useState('');
 
+  // -- Global Defaults Enhancement --
+  const [globalUnitDefaults, setGlobalUnitDefaults] = useState({
+    unitType: 'Flat',
+    sbua: 1500,
+    carpetArea: 1200,
+    baseRate: 5000,
+    discountRate: 4500
+  });
+
+  // Collapsible Sections State
+  const [collapsedTowers, setCollapsedTowers] = useState([]); // Array of tower indices
+  const [collapsedFloors, setCollapsedFloors] = useState({}); // Object keyed by "towerIdx-floorNum"
+  const [isGlobalDefaultsCollapsed, setIsGlobalDefaultsCollapsed] = useState(false);
+
+  const toggleTowerCollapse = (towerIdx) => {
+    setCollapsedTowers(prev =>
+      prev.includes(towerIdx) ? prev.filter(idx => idx !== towerIdx) : [...prev, towerIdx]
+    );
+  };
+
+  const toggleFloorCollapse = (towerIdx, floorNum) => {
+    const key = `${towerIdx}-${floorNum}`;
+    setCollapsedFloors(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const generateFlatLabels = (count) => {
+    const labels = [];
+    for (let i = 0; i < count; i++) {
+      labels.push(`Flat ${String.fromCharCode(65 + i)}`);
+    }
+    return labels;
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  // Sync global defaults to non-custom units
+  useEffect(() => {
+    setTowerUnits(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(tIdx => {
+        const towerConfig = { ...updated[tIdx] };
+        Object.keys(towerConfig).forEach(fNum => {
+          towerConfig[fNum] = towerConfig[fNum].map(unit => {
+            if (!unit.isCustom) {
+              return {
+                ...unit,
+                unit_type: globalUnitDefaults.unitType,
+                area: globalUnitDefaults.sbua,
+                carpet_area: globalUnitDefaults.carpetArea,
+                price_per_sqft: globalUnitDefaults.baseRate,
+                discount_price_per_sqft: globalUnitDefaults.discountRate,
+                price: globalUnitDefaults.sbua * (globalUnitDefaults.discountRate || globalUnitDefaults.baseRate)
+              };
+            }
+            return unit;
+          });
+        });
+        updated[tIdx] = towerConfig;
+      });
+      return updated;
+    });
+  }, [globalUnitDefaults]);
 
   const fetchProjects = async () => {
     try {
@@ -289,24 +353,19 @@ const AdminLiveGrouping = () => {
       const towerConfig = { ...(prev[towerIdx] || {}) };
       const floorUnits = [...(towerConfig[floorNum] || [])];
 
-      const nextNum = floorUnits.length + 1;
-      let label = '';
-      if (floorNum === -1) label = `B-${nextNum}`;
-      else if (floorNum === 0) label = `GF-${nextNum}`;
-      else label = `${floorNum}${String.fromCharCode(64 + nextNum)}`;
-
-      const area = unitSettings.areaPerUnit || 0;
-      const regularPriceSqft = 0;
+      const nextIdx = floorUnits.length;
+      const label = `Flat ${String.fromCharCode(65 + nextIdx)}`;
 
       floorUnits.push({
         unit_number: label,
-        unit_type: projectData.type === 'Commercial' ? 'Shop' : (projectData.type === 'MixedUse' || !projectData.type ? 'Flat' : projectData.type),
-        area: area,
-        pricing_area: null,
-        carpet_area: null,
-        price: area * regularPriceSqft,
-        price_per_sqft: regularPriceSqft,
-        discount_price_per_sqft: null
+        flat_label: label,
+        unit_type: globalUnitDefaults.unitType,
+        area: globalUnitDefaults.sbua,
+        carpet_area: globalUnitDefaults.carpetArea,
+        price_per_sqft: globalUnitDefaults.baseRate,
+        discount_price_per_sqft: globalUnitDefaults.discountRate,
+        isCustom: false,
+        price: globalUnitDefaults.sbua * (globalUnitDefaults.discountRate || globalUnitDefaults.baseRate)
       });
 
       towerConfig[floorNum] = floorUnits;
@@ -387,24 +446,18 @@ const AdminLiveGrouping = () => {
     const generateUnitsForFloor = (floorNum) => {
       const units = [];
       for (let j = 0; j < unitsPerFloor; j++) {
-        const nextNum = j + 1;
-        let label = '';
-        if (floorNum === -1) label = `B-${nextNum}`;
-        else if (floorNum === 0) label = `GF-${nextNum}`;
-        else label = `${floorNum}${String.fromCharCode(64 + nextNum)}`;
-
-        const area = 0; // Default changed from 1500
-        const regularPriceSqft = 0;
+        const label = `Flat ${String.fromCharCode(65 + j)}`;
 
         units.push({
           unit_number: label,
-          unit_type: projectData.type === 'Commercial' ? 'Shop' : (projectData.type === 'MixedUse' || !projectData.type ? 'Flat' : projectData.type),
-          area: area,
-          pricing_area: null, // New Independent Area Field
-          carpet_area: null,
-          price: area * regularPriceSqft,
-          price_per_sqft: regularPriceSqft,
-          discount_price_per_sqft: null
+          flat_label: label,
+          unit_type: globalUnitDefaults.unitType,
+          area: globalUnitDefaults.sbua,
+          carpet_area: globalUnitDefaults.carpetArea,
+          price_per_sqft: globalUnitDefaults.baseRate,
+          discount_price_per_sqft: globalUnitDefaults.discountRate,
+          isCustom: false,
+          price: globalUnitDefaults.sbua * (globalUnitDefaults.discountRate || globalUnitDefaults.baseRate)
         });
       }
       return units;
@@ -774,94 +827,211 @@ const AdminLiveGrouping = () => {
                     </div>
 
                     <div className="unit-configurator-container">
-                      {towers.map((tower, towerIdx) => (
-                        <div key={towerIdx} className="tower-config-block border rounded-xl overflow-hidden mb-6 bg-slate-50">
-                          <div className="tower-name-bar bg-slate-200 px-4 py-2 font-bold flex justify-between items-center text-slate-700">
-                            <div>
-                              {projectData.type === 'Bungalow' ? (
-                                <>
-                                  {tower.name} ({tower.total_bungalows || 0} Bungalows)
-                                  <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
-                                </>
-                              ) : (
-                                <>
-                                  {tower.name} ({tower.floors} Floors)
-                                  <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
-                                </>
-                              )}
+                      <div className="global-defaults-wrapper mb-8">
+                        {/* GLOBAL DEFAULTS SECTION */}
+                        <div className={`global-defaults-panel bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${isGlobalDefaultsCollapsed ? 'max-h-14' : 'max-h-96'}`}>
+                          <div
+                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                            onClick={() => setIsGlobalDefaultsCollapsed(!isGlobalDefaultsCollapsed)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <Tower size={20} />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-slate-800 text-sm">Default Unit Configuration (Global)</h4>
+                                {!isGlobalDefaultsCollapsed && <p className="text-[10px] text-slate-500 uppercase font-semibold">Applied to all default units</p>}
+                              </div>
                             </div>
-                            <button
-                              onClick={() => prepopulateTowerUnits(towerIdx)}
-                              className="text-[10px] bg-white text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"
-                            >
-                              {projectData.type === 'Bungalow' ? 'Reset Bungalows' : 'Reset to Defaults (4 per floor)'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {isGlobalDefaultsCollapsed && (
+                                <div className="hidden md:flex gap-3 mr-4">
+                                  <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.unitType}</span>
+                                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.sbua} SqFt</span>
+                                  <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">₹{globalUnitDefaults.baseRate}</span>
+                                </div>
+                              )}
+                              <button className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
+                                {isGlobalDefaultsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                              </button>
+                            </div>
                           </div>
 
-
-
-                          {projectData.type === 'Bungalow' ? (
-                            <div className="p-4">
-                              <BungalowGrid
-                                units={(towerUnits[towerIdx]?.[0] || [])}
-                                onUpdate={(uIdx, field, val) => updateUnitConfig(towerIdx, 0, uIdx, field, val)}
-                                onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
-                                onAdd={() => addUnitToConfig(towerIdx, 0)}
-                              />
-                            </div>
-                          ) : (
-                            <div className="tower-floors-list p-4 space-y-4">
-                              {/* Special Floors */}
-                              {tower.hasBasement && (
-                                <FloorRow
-                                  towerIdx={towerIdx}
-                                  floorNum={-1}
-                                  floorName="Basement"
-                                  units={towerUnits[towerIdx]?.[-1] || []}
-                                  onAdd={() => addUnitToConfig(towerIdx, -1)}
-                                  onRemove={(uIdx) => removeUnitFromConfig(towerIdx, -1, uIdx)}
-                                  onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, -1, uIdx, f, v)}
-                                  projectType={projectData.type}
-                                />
-                              )}
-                              {tower.hasGroundFloor && (
-                                <FloorRow
-                                  towerIdx={towerIdx}
-                                  floorNum={0}
-                                  floorName="Ground Floor"
-                                  units={towerUnits[towerIdx]?.[0] || []}
-                                  onAdd={() => addUnitToConfig(towerIdx, 0)}
-                                  onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
-                                  onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, 0, uIdx, f, v)}
-                                  projectType={projectData.type}
-                                />
-                              )}
-                              {/* Regular Floors */}
-                              {[...Array(parseInt(tower.floors) || 0)].map((_, i) => {
-                                const floorNum = i + 1;
-                                return (
-                                  <FloorRow
-                                    key={floorNum}
-                                    towerIdx={towerIdx}
-                                    floorNum={floorNum}
-                                    floorName={`Floor ${floorNum}`}
-                                    units={towerUnits[towerIdx]?.[floorNum] || []}
-                                    onAdd={() => addUnitToConfig(towerIdx, floorNum)}
-                                    onRemove={(uIdx) => removeUnitFromConfig(towerIdx, floorNum, uIdx)}
-                                    onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, floorNum, uIdx, f, v)}
-                                    onCopy={() => {
-                                      const prevFloor = floorNum - 1;
-                                      if (prevFloor >= 1) copyFloorConfig(towerIdx, prevFloor, floorNum);
-                                      else if (tower.hasGroundFloor) copyFloorConfig(towerIdx, 0, floorNum);
-                                    }}
-                                    projectType={projectData.type}
+                          {!isGlobalDefaultsCollapsed && (
+                            <div className="p-6 pt-2 bg-gradient-to-r from-white to-blue-50/30">
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div className="input-field-group">
+                                  <label>Default Type</label>
+                                  <select
+                                    className="text-xs border rounded p-2 w-full"
+                                    value={globalUnitDefaults.unitType}
+                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, unitType: e.target.value })}
+                                  >
+                                    <option value="Flat">Flat</option>
+                                    <option value="Shop">Shop</option>
+                                    <option value="Office">Office</option>
+                                    <option value="Showroom">Showroom</option>
+                                  </select>
+                                </div>
+                                <div className="input-field-group">
+                                  <label>SBUA (SQFT)</label>
+                                  <input
+                                    type="number"
+                                    className="text-xs border rounded p-2 w-full"
+                                    value={globalUnitDefaults.sbua}
+                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, sbua: parseFloat(e.target.value) || 0 })}
                                   />
-                                );
-                              })}
+                                </div>
+                                <div className="input-field-group">
+                                  <label>Carpet (SQFT)</label>
+                                  <input
+                                    type="number"
+                                    className="text-xs border rounded p-2 w-full"
+                                    value={globalUnitDefaults.carpetArea}
+                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, carpetArea: parseFloat(e.target.value) || 0 })}
+                                  />
+                                </div>
+                                <div className="input-field-group">
+                                  <label>Base Rate (₹)</label>
+                                  <input
+                                    type="number"
+                                    className="text-xs border rounded p-2 w-full"
+                                    value={globalUnitDefaults.baseRate}
+                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, baseRate: parseFloat(e.target.value) || 0 })}
+                                  />
+                                </div>
+                                <div className="input-field-group">
+                                  <label>Discount Rate (₹)</label>
+                                  <input
+                                    type="number"
+                                    className="text-xs border rounded p-2 w-full"
+                                    value={globalUnitDefaults.discountRate}
+                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, discountRate: parseFloat(e.target.value) || 0 })}
+                                  />
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
-                      ))}
+                      </div>
+                      {towers.map((tower, towerIdx) => {
+                        const isTowerCollapsed = collapsedTowers.includes(towerIdx);
+                        return (
+                          <div key={towerIdx} className="tower-config-block border rounded-xl overflow-hidden mb-6 bg-slate-50">
+                            <div className="tower-name-bar bg-slate-200 px-4 py-2 font-bold flex justify-between items-center text-slate-700">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => toggleTowerCollapse(towerIdx)}
+                                  className="p-1 hover:bg-slate-300 rounded-md transition-colors"
+                                >
+                                  {isTowerCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                                </button>
+                                <div>
+                                  {projectData.type === 'Bungalow' ? (
+                                    <>
+                                      {tower.name} ({tower.total_bungalows || 0} Bungalows)
+                                      <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {tower.name} ({tower.floors} Floors)
+                                      <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => prepopulateTowerUnits(towerIdx)}
+                                className="text-[10px] bg-white text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"
+                              >
+                                {projectData.type === 'Bungalow' ? 'Reset Bungalows' : 'Reset to Defaults (4 per floor)'}
+                              </button>
+                            </div>
+
+                            {!isTowerCollapsed && (
+                              <>
+
+
+
+                                {projectData.type === 'Bungalow' ? (
+                                  <div className="p-4">
+                                    <BungalowGrid
+                                      units={(towerUnits[towerIdx]?.[0] || [])}
+                                      onUpdate={(uIdx, field, val) => updateUnitConfig(towerIdx, 0, uIdx, field, val)}
+                                      onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
+                                      onAdd={() => addUnitToConfig(towerIdx, 0)}
+                                      globalDefaults={globalUnitDefaults}
+                                      generateFlatLabels={generateFlatLabels}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="tower-floors-list p-4 space-y-4">
+                                    {/* Special Floors */}
+                                    {tower.hasBasement && (
+                                      <FloorRow
+                                        towerIdx={towerIdx}
+                                        floorNum={-1}
+                                        floorName="Basement"
+                                        units={towerUnits[towerIdx]?.[-1] || []}
+                                        onAdd={() => addUnitToConfig(towerIdx, -1)}
+                                        onRemove={(uIdx) => removeUnitFromConfig(towerIdx, -1, uIdx)}
+                                        onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, -1, uIdx, f, v)}
+                                        projectType={projectData.type}
+                                        globalDefaults={globalUnitDefaults}
+                                        generateFlatLabels={generateFlatLabels}
+                                        isCollapsed={collapsedFloors[`${towerIdx}--1`]}
+                                        onToggle={() => toggleFloorCollapse(towerIdx, -1)}
+                                      />
+                                    )}
+                                    {tower.hasGroundFloor && (
+                                      <FloorRow
+                                        towerIdx={towerIdx}
+                                        floorNum={0}
+                                        floorName="Ground Floor"
+                                        units={towerUnits[towerIdx]?.[0] || []}
+                                        onAdd={() => addUnitToConfig(towerIdx, 0)}
+                                        onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
+                                        onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, 0, uIdx, f, v)}
+                                        projectType={projectData.type}
+                                        globalDefaults={globalUnitDefaults}
+                                        generateFlatLabels={generateFlatLabels}
+                                        isCollapsed={collapsedFloors[`${towerIdx}-0`]}
+                                        onToggle={() => toggleFloorCollapse(towerIdx, 0)}
+                                      />
+                                    )}
+                                    {/* Regular Floors */}
+                                    {[...Array(parseInt(tower.floors) || 0)].map((_, i) => {
+                                      const floorNum = i + 1;
+                                      return (
+                                        <FloorRow
+                                          key={floorNum}
+                                          towerIdx={towerIdx}
+                                          floorNum={floorNum}
+                                          floorName={`Floor ${floorNum}`}
+                                          units={towerUnits[towerIdx]?.[floorNum] || []}
+                                          onAdd={() => addUnitToConfig(towerIdx, floorNum)}
+                                          onRemove={(uIdx) => removeUnitFromConfig(towerIdx, floorNum, uIdx)}
+                                          onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, floorNum, uIdx, f, v)}
+                                          onCopy={() => {
+                                            const prevFloor = floorNum - 1;
+                                            if (prevFloor >= 1) copyFloorConfig(towerIdx, prevFloor, floorNum);
+                                            else if (tower.hasGroundFloor) copyFloorConfig(towerIdx, 0, floorNum);
+                                          }}
+                                          projectType={projectData.type}
+                                          globalDefaults={globalUnitDefaults}
+                                          generateFlatLabels={generateFlatLabels}
+                                          isCollapsed={collapsedFloors[`${towerIdx}-${floorNum}`]}
+                                          onToggle={() => toggleFloorCollapse(towerIdx, floorNum)}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1034,7 +1204,7 @@ const AdminLiveGrouping = () => {
 };
 
 // Helper Component for Unit Configurator
-const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, projectType }) => {
+const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, projectType, globalDefaults, generateFlatLabels, isCollapsed, onToggle }) => {
   const getUnitOptions = () => {
     if (projectType === 'Commercial') {
       return ['Shop', 'Office', 'Showroom', 'Commercial Unit', 'Parking', 'Storage'];
@@ -1043,11 +1213,18 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
   };
 
   const unitOptions = getUnitOptions();
+  const flatLabelOptions = generateFlatLabels(Math.max(units.length + 5, 10)); // Provide more options than current units
 
   return (
     <div className="floor-row-config border-b pb-4 mb-4 last:border-0 last:pb-0 last:mb-0">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggle}
+            className="p-1 hover:bg-slate-100 rounded-md transition-colors"
+          >
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+          </button>
           <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">{floorName}</h4>
           <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">
             {units.length} Units
@@ -1065,121 +1242,179 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
         </div>
       </div>
 
-      {units.length === 0 ? (
-        <div className="p-4 bg-white/50 border border-dashed rounded-xl text-center">
-          <p className="text-xs text-slate-400 italic">No units configured for this floor.</p>
-        </div>
-      ) : (
-        <div className="units-sub-grid">
-          {units.map((unit, uIdx) => {
-            const area = parseFloat(unit.area) || 0;
-            const pricingArea = (unit.pricing_area && parseFloat(unit.pricing_area) > 0) ? parseFloat(unit.pricing_area) : area;
-            const regSqft = parseFloat(unit.price_per_sqft) || 0;
-            const discSqft = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null) ? parseFloat(unit.discount_price_per_sqft) : null;
-            const finalPrice = discSqft !== null ? pricingArea * discSqft : pricingArea * regSqft;
+      {!isCollapsed && (
+        <div className="floor-row-units-content">
+          {units.length === 0 ? (
+            <div className="p-4 bg-white/50 border border-dashed rounded-xl text-center">
+              <p className="text-xs text-slate-400 italic">No units configured for this floor.</p>
+            </div>
+          ) : (
+            <div className="units-sub-grid">
+              {units.map((unit, uIdx) => {
+                const area = parseFloat(unit.area) || 0;
+                const pricingArea = (unit.pricing_area && parseFloat(unit.pricing_area) > 0) ? parseFloat(unit.pricing_area) : area;
+                const regSqft = parseFloat(unit.price_per_sqft) || 0;
+                const discSqft = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null) ? parseFloat(unit.discount_price_per_sqft) : null;
+                const finalPrice = discSqft !== null ? pricingArea * discSqft : pricingArea * regSqft;
 
-            return (
-              <div key={uIdx} className="unit-mini-card relative group">
-                <button
-                  onClick={() => onRemove(uIdx)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
-                >
-                  <X size={10} />
-                </button>
-
-                <div className="card-inner-layout">
-                  <div className="unit-card-header">
-                    <input
-                      type="text"
-                      className="unit-card-title bg-transparent border-none p-0 focus:ring-0 w-24"
-                      value={unit.unit_number}
-                      onChange={e => onUpdate(uIdx, 'unit_number', e.target.value)}
-                    />
-                    <select
-                      className="text-[10px] font-bold text-blue-600 bg-blue-50 border-none rounded px-1.5 py-0.5"
-                      value={unit.unit_type}
-                      onChange={e => onUpdate(uIdx, 'unit_type', e.target.value)}
-                    >
-                      {unitOptions.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="unit-card-body">
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="input-field-group">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">SBUA (SqFt)</label>
-                        <input
-                          type="number"
-                          className="text-xs border rounded p-1.5 w-full"
-                          value={unit.area}
-                          onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
-                          placeholder="Super Area"
-                        />
-                      </div>
-                      <div className="input-field-group">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">Carpet (SqFt)</label>
-                        <input
-                          type="number"
-                          className={`text-xs border rounded p-1.5 w-full ${parseFloat(unit.carpet_area) > parseFloat(unit.area) ? 'border-red-500 bg-red-50' : ''}`}
-                          value={unit.carpet_area || ''}
-                          onChange={e => onUpdate(uIdx, 'carpet_area', e.target.value)}
-                          placeholder="Carpet Area"
-                        />
-                      </div>
-                      <div className="input-field-group">
-                        <label>Reg. Rate</label>
-                        <input
-                          type="number"
-                          className="text-xs border rounded p-1.5 w-full"
-                          value={unit.price_per_sqft || ''}
-                          onChange={e => onUpdate(uIdx, 'price_per_sqft', e.target.value)}
-                          placeholder="e.g. 5000"
-                        />
-                      </div>
+                return (
+                  <div key={uIdx} className={`unit-mini-card relative group ${unit.isCustom ? 'is-custom border-blue-400' : 'is-default opacity-90'}`}>
+                    <div className="status-badge-container absolute top-2 right-2 flex gap-1 z-10">
+                      <span className={`status-indicator text-[8px] font-bold px-1.5 py-0.5 rounded-full ${unit.isCustom ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                        {unit.isCustom ? 'Custom' : 'Default'}
+                      </span>
+                      <button
+                        onClick={() => onRemove(uIdx)}
+                        className="bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                      >
+                        <X size={10} />
+                      </button>
                     </div>
 
-                    <div className="input-field-group">
-                      <label>Discount Rate</label>
-                      <input
-                        type="number"
-                        className="text-xs border border-emerald-200 bg-emerald-50/30 rounded p-1.5 w-full text-emerald-700"
-                        value={unit.discount_price_per_sqft || ''}
-                        onChange={e => onUpdate(uIdx, 'discount_price_per_sqft', e.target.value)}
-                      />
-                    </div>
+                    <div className="card-inner-layout p-3">
+                      <div className="unit-card-header border-b border-slate-100 pb-2 mb-2">
+                        <div className="flex flex-col gap-1 w-full">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Flat Label</label>
+                          <select
+                            className={`text-xs font-bold p-1 rounded border transition-colors ${!unit.isCustom ? 'bg-slate-50 border-transparent cursor-not-allowed text-slate-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400 outline-none'}`}
+                            value={unit.flat_label}
+                            onChange={e => {
+                              const val = e.target.value;
+                              const isConflict = units.some((u, idx) => idx !== uIdx && u.flat_label === val);
+                              if (isConflict) {
+                                alert("This flat label is already used on this floor.");
+                                return;
+                              }
+                              onUpdate(uIdx, 'flat_label', val);
+                              onUpdate(uIdx, 'unit_number', val);
+                            }}
+                            disabled={!unit.isCustom}
+                          >
+                            {flatLabelOptions.map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
 
-                    <div className="pricing-row-display flex justify-between items-center mt-2">
-                      <div className="flex flex-col">
-                        <span className="text-[8px] text-slate-400 font-bold uppercase">Total Price</span>
-                        {discSqft !== null && (
-                          <span className="strikethrough-price text-[8px] text-slate-400 font-bold line-through">
+                      <div className="unit-card-body space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="input-field-group">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">Unit Type</label>
+                            <select
+                              className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                              value={unit.unit_type}
+                              onChange={e => onUpdate(uIdx, 'unit_type', e.target.value)}
+                              disabled={!unit.isCustom}
+                            >
+                              {unitOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                          </div>
+                          <div className="input-field-group">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">SBUA (SqFt)</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                              value={unit.area}
+                              onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
+                              disabled={!unit.isCustom}
+                            />
+                          </div>
+                          <div className="input-field-group">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">Carpet (SqFt)</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                              value={unit.carpet_area || ''}
+                              onChange={e => onUpdate(uIdx, 'carpet_area', e.target.value)}
+                              disabled={!unit.isCustom}
+                            />
+                          </div>
+                          <div className="input-field-group">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">Reg. Rate</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                              value={unit.price_per_sqft || ''}
+                              onChange={e => onUpdate(uIdx, 'price_per_sqft', e.target.value)}
+                              disabled={!unit.isCustom}
+                            />
+                          </div>
+                          <div className="input-field-group col-span-2">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">Discount Rate</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                              value={unit.discount_price_per_sqft || ''}
+                              onChange={e => onUpdate(uIdx, 'discount_price_per_sqft', e.target.value)}
+                              disabled={!unit.isCustom}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="action-buttons flex justify-between items-center">
+                          {!unit.isCustom ? (
+                            <button
+                              onClick={() => onUpdate(uIdx, 'isCustom', true)}
+                              className="text-[9px] font-bold text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                            >
+                              Customize / Edit
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                if (window.confirm("Reset this unit to global defaults?")) {
+                                  onUpdate(uIdx, 'isCustom', false);
+                                  // Revert to defaults
+                                  onUpdate(uIdx, 'unit_type', globalDefaults.unitType);
+                                  onUpdate(uIdx, 'area', globalDefaults.sbua);
+                                  onUpdate(uIdx, 'carpet_area', globalDefaults.carpetArea);
+                                  onUpdate(uIdx, 'price_per_sqft', globalDefaults.baseRate);
+                                  onUpdate(uIdx, 'discount_price_per_sqft', globalDefaults.discountRate);
+
+                                  const label = `Flat ${String.fromCharCode(65 + uIdx)}`;
+                                  onUpdate(uIdx, 'flat_label', label);
+                                  onUpdate(uIdx, 'unit_number', label);
+                                }
+                              }}
+                              className="text-[9px] font-bold text-green-600 hover:text-green-700 underline underline-offset-2"
+                            >
+                              Use Default
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="pricing-row-display flex justify-between items-center mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] text-slate-400 font-bold uppercase">Total Price</span>
+                            {discSqft !== null && (
+                              <span className="strikethrough-price text-[8px] text-slate-400 font-bold line-through">
+                                {(() => {
+                                  const val = area * regSqft;
+                                  if (val === 0) return '₹0';
+                                  if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
+                                  if (val >= 100000) return `₹${(val / 100000).toFixed(2)} L`;
+                                  return `₹${val.toLocaleString('en-IN')}`;
+                                })()}
+                              </span>
+                            )}
+                          </div>
+                          <span className="final-price-tag text-indigo-700 font-bold text-xs">
                             {(() => {
-                              const val = area * regSqft;
-                              if (val === 0) return '₹0';
-                              if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
-                              if (val >= 100000) return `₹${(val / 100000).toFixed(2)} L`;
-                              return `₹${val.toLocaleString('en-IN')}`;
+                              if (finalPrice <= 0) return '₹0';
+                              if (finalPrice >= 10000000) return `₹${(finalPrice / 10000000).toFixed(2)} Cr`;
+                              if (finalPrice >= 100000) return `₹${(finalPrice / 100000).toFixed(2)} L`;
+                              return `₹${finalPrice.toLocaleString('en-IN')}`;
                             })()}
                           </span>
-                        )}
+                        </div>
                       </div>
-                      <span className="final-price-tag text-indigo-700 font-bold text-sm">
-                        {(() => {
-                          if (finalPrice === 0) return '₹0';
-                          if (finalPrice >= 10000000) return `₹${(finalPrice / 10000000).toFixed(2)} Cr`;
-                          if (finalPrice >= 100000) return `₹${(finalPrice / 100000).toFixed(2)} L`;
-                          return `₹${finalPrice.toLocaleString('en-IN')}`;
-                        })()}
-                      </span>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1187,109 +1422,119 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
 };
 
 // Bungalow Grid Component
-const BungalowGrid = ({ units, onUpdate, onRemove, onAdd }) => {
+const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, generateFlatLabels }) => {
+  const flatLabelOptions = generateFlatLabels(Math.max(units.length + 5, 10));
+
   return (
     <div className="bungalow-grid-container">
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Bungalow Units</h4>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Bungalow Units</h4>
+          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">
+            {units.length} Units
+          </span>
+        </div>
         <button onClick={onAdd} className="text-[10px] text-emerald-600 hover:text-emerald-800 flex items-center gap-1 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all">
           <Plus size={10} /> Add Unit
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="units-sub-grid">
         {units.map((unit, uIdx) => {
-          // Pricing Logic for Display
-          const regularPrice = parseFloat(unit.price) || 0;
-          const discountPrice = parseFloat(unit.discount_price) || 0;
-          const hasDiscount = discountPrice > 0;
-          const finalDisplayPrice = hasDiscount ? discountPrice : regularPrice;
+          const area = parseFloat(unit.area) || 0;
+          const regSqft = parseFloat(unit.price_per_sqft) || 0;
+          const discSqft = (unit.discount_price_per_sqft !== '' && unit.discount_price_per_sqft !== null) ? parseFloat(unit.discount_price_per_sqft) : null;
+          const finalPrice = discSqft !== null ? area * discSqft : area * regSqft;
 
           return (
-            <div key={uIdx} className="unit-mini-card relative group p-3 border rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-              <button
-                onClick={() => onRemove(uIdx)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
-              >
-                <X size={10} />
-              </button>
-
-              <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
-                <input
-                  type="text"
-                  className="font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0 w-24"
-                  value={unit.unit_number}
-                  onChange={e => onUpdate(uIdx, 'unit_number', e.target.value)}
-                />
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{unit.unit_type}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase block">Plot Area</label>
-                  <input
-                    type="number"
-                    className="w-full border rounded p-1"
-                    value={unit.area || ''}
-                    onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
-                    placeholder="SqFt"
-                  />
-                </div>
-                <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase block">Super Built-Up</label>
-                  <input
-                    type="number"
-                    className="w-full border rounded p-1"
-                    value={unit.super_built_up_area || ''}
-                    onChange={e => onUpdate(uIdx, 'super_built_up_area', e.target.value)}
-                    placeholder="SqFt"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase block">Carpet Area</label>
-                  <input
-                    type="number"
-                    className="w-full border rounded p-1"
-                    value={unit.carpet_area || ''}
-                    onChange={e => onUpdate(uIdx, 'carpet_area', e.target.value)}
-                    placeholder="SqFt"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-50 space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-slate-500">Regular Rate / Sqft</label>
-                  <input
-                    type="number"
-                    className={`w-24 border rounded p-1 text-right font-bold transition-all ${hasDiscount ? 'text-slate-400 line-through bg-slate-50' : 'text-slate-700 border-slate-200'}`}
-                    value={unit.price_per_sqft || ''}
-                    onChange={e => onUpdate(uIdx, 'price_per_sqft', e.target.value)}
-                    placeholder="₹ Rate"
-                  />
-                </div>
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-emerald-600">Discount Price (Opt)</label>
-                  <input
-                    type="number"
-                    className="w-24 border border-emerald-200 bg-emerald-50 rounded p-1 text-right font-bold text-emerald-700 placeholder-emerald-300"
-                    value={unit.discount_price || ''}
-                    onChange={e => onUpdate(uIdx, 'discount_price', e.target.value)}
-                    placeholder="₹ Offer"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-2 text-right">
-                <span className="text-[10px] text-slate-400 mr-1">Final:</span>
-                <span className="text-sm font-black text-slate-800">
-                  {(() => {
-                    if (finalDisplayPrice === 0) return '₹0';
-                    if (finalDisplayPrice >= 10000000) return `₹${(finalDisplayPrice / 10000000).toFixed(2)} Cr`;
-                    if (finalDisplayPrice >= 100000) return `₹${(finalDisplayPrice / 100000).toFixed(2)} L`;
-                    return `₹${finalDisplayPrice.toLocaleString('en-IN')}`;
-                  })()}
+            <div key={uIdx} className={`unit-mini-card relative group ${unit.isCustom ? 'is-custom border-blue-400' : 'is-default opacity-90'}`}>
+              <div className="status-badge-container absolute top-2 right-2 flex gap-1 z-10">
+                <span className={`status-indicator text-[8px] font-bold px-1.5 py-0.5 rounded-full ${unit.isCustom ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                  {unit.isCustom ? 'Custom' : 'Default'}
                 </span>
+                <button
+                  onClick={() => onRemove(uIdx)}
+                  className="bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+
+              <div className="card-inner-layout p-3">
+                <div className="unit-card-header border-b border-slate-100 pb-2 mb-2">
+                  <div className="flex flex-col gap-1 w-full">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase">Unit Label</label>
+                    <input
+                      type="text"
+                      className={`text-xs font-bold p-1 rounded border transition-colors ${!unit.isCustom ? 'bg-slate-50 border-transparent cursor-not-allowed text-slate-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400 outline-none'}`}
+                      value={unit.unit_number}
+                      onChange={e => onUpdate(uIdx, 'unit_number', e.target.value)}
+                      disabled={!unit.isCustom}
+                    />
+                  </div>
+                </div>
+
+                <div className="unit-card-body space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="input-field-group">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase">Unit Type</label>
+                      <select
+                        className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                        value={unit.unit_type}
+                        onChange={e => onUpdate(uIdx, 'unit_type', e.target.value)}
+                        disabled={!unit.isCustom}
+                      >
+                        <option value="Villa">Villa</option>
+                        <option value="Bungalow">Bungalow</option>
+                        <option value="Row House">Row House</option>
+                        <option value="Plot">Plot</option>
+                      </select>
+                    </div>
+                    <div className="input-field-group">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase">Area (SqFt)</label>
+                      <input
+                        type="number"
+                        className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                        value={unit.area}
+                        onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
+                        disabled={!unit.isCustom}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="action-buttons flex justify-between items-center">
+                    {!unit.isCustom ? (
+                      <button
+                        onClick={() => onUpdate(uIdx, 'isCustom', true)}
+                        className="text-[9px] font-bold text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                      >
+                        Customize / Edit
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (window.confirm("Reset this bungalow to global defaults?")) {
+                            onUpdate(uIdx, 'isCustom', false);
+                            onUpdate(uIdx, 'unit_type', globalDefaults.unitType);
+                            onUpdate(uIdx, 'area', globalDefaults.sbua);
+                          }
+                        }}
+                        className="text-[9px] font-bold text-green-600 hover:text-green-700 underline underline-offset-2"
+                      >
+                        Use Default
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="pricing-row-display flex justify-between items-center mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase">Total Price</span>
+                      <span className="final-price-tag text-indigo-700 font-bold text-sm">
+                        ₹{(finalPrice / 100000).toFixed(2)} L
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           );
