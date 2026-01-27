@@ -606,45 +606,66 @@
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
+.range-limits-labels {
+  display: flex !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  font-size: 11px;
+  margin-top: 4px;
+  box-sizing: border-box !important;
+}
+
 /* Mobile Responsiveness for Pricing */
 @media screen and (max-width: 480px) {
   .price-box-v2 {
-    padding: 20px 15px !important;
-    min-height: 130px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    gap: 12px !important;
+    padding: 15px 12px !important;
+    min-height: 100px !important;
+    gap: 4px !important;
+    /* Minimal gap */
   }
 
   .group-price-row .label,
   .regular-price-row .label,
   .savings-box .label {
-    font-size: 14px !important;
-    letter-spacing: 1px !important;
+    font-size: 13px !important;
+    letter-spacing: 0.5px !important;
     font-weight: 950 !important;
     display: block !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 2px !important;
+    /* Reduced bottom margin */
     color: #1e293b !important;
   }
 
   .group-price-row .value,
   .regular-price-row .value {
-    font-size: 20px !important;
+    font-size: 18px !important;
     font-weight: 900 !important;
   }
 
   .range-limits-labels {
-    font-size: 15px !important;
+    font-size: 13px !important;
     font-weight: 900 !important;
-    margin-top: 10px !important;
+    margin-top: 0 !important;
+    /* Zero gap between bar and labels */
+    padding-top: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+
+  .range-limits-labels span {
+    white-space: nowrap !important;
+    /* Force single line for Lakhs */
+    display: inline-block !important;
   }
 
   .range-bar-orange,
   .range-bar-green,
   .range-bar-blue {
-    height: 14px !important;
-    margin-bottom: 10px !important;
+    height: 10px !important;
+    margin-bottom: 0 !important;
+    /* Zero bottom margin for bar */
+    margin-top: 4px !important;
   }
 }
 

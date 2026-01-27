@@ -382,7 +382,10 @@ const LiveGrouping = () => {
                         {/* Row 1 & 2: Regular Price Range Box */}
                         <div className="price-box-v2 regular-price-box">
                           <div className="regular-price-row">
-                            <span className="label">REGULAR PRICE RANGE (per unit):</span>
+                            <div className="label-col">
+                              <span className="icon">🏠</span>
+                              <span className="label">REGULAR PRICE RANGE (per unit):</span>
+                            </div>
                             <span className="value" style={{ display: 'none' }}>
                               {group.regular_price_min
                                 ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
@@ -398,7 +401,7 @@ const LiveGrouping = () => {
 
                           {/* Row 2: Orange Range Bar */}
                           <div className="range-bar-orange"></div>
-                          <div className="range-limits-labels text-slate-500" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
+                          <div className="range-limits-labels text-slate-500">
                             <span style={{ textDecoration: 'line-through' }}>
                               {group.regular_price_min
                                 ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
@@ -436,7 +439,7 @@ const LiveGrouping = () => {
 
                           {/* Green Range Bar */}
                           <div className="range-bar-green"></div>
-                          <div className="range-limits-labels text-emerald-700" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px', fontWeight: '600' }}>
+                          <div className="range-limits-labels text-emerald-700">
                             <span>
                               {group.discounted_total_price_min
                                 ? `₹${(parseFloat(group.discounted_total_price_min) / 100000).toFixed(2)} Lakhs`
@@ -470,7 +473,7 @@ const LiveGrouping = () => {
 
                             {/* Blue Range Bar */}
                             <div className="range-bar-blue"></div>
-                            <div className="range-limits-labels text-blue-700" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px', fontWeight: '600' }}>
+                            <div className="range-limits-labels text-blue-700">
                               <span>
                                 {group.totalSavingsMin ? `₹${group.totalSavingsMin.toLocaleString()}` : ''}
                               </span>
