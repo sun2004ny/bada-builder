@@ -304,8 +304,18 @@ const LiveGrouping = () => {
 
                         {/* Regular Price Box (Top) */}
                         <div className="regular-price-box" style={{ marginBottom: '16px', padding: '10px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Regular Price</div>
-                          <div style={{ fontSize: '18px', fontWeight: '700', color: '#64748b', textDecoration: 'line-through', marginBottom: '8px' }}>
+                          <div style={{
+                            fontSize: '11px',
+                            fontWeight: '800',
+                            color: '#94a3b8',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            marginBottom: '4px'
+                          }}>
+                            Regular Price (per sq ft)
+                          </div>
+                          {/* Price hidden to fix spacing as requested */}
+                          <div style={{ display: 'none' }}>
                             {group.pricePerSqFtMax
                               ? `₹${group.pricePerSqFt?.toLocaleString()} - ₹${group.pricePerSqFtMax?.toLocaleString()} / sq ft`
                               : `₹${group.pricePerSqFt?.toLocaleString() || 'N/A'} / sq ft`
@@ -314,8 +324,8 @@ const LiveGrouping = () => {
                           {/* Orange Bar for Regular Price */}
                           <div className="range-bar-orange" style={{ height: '8px', marginBottom: '2px' }}></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>
-                            <span>{group.pricePerSqFt ? `₹${group.pricePerSqFt.toLocaleString()}` : ''}</span>
-                            <span>{group.pricePerSqFtMax ? `₹${group.pricePerSqFtMax.toLocaleString()}` : ''}</span>
+                            <span style={{ textDecoration: 'line-through' }}>{group.pricePerSqFt ? `₹${group.pricePerSqFt.toLocaleString()} / sq ft` : ''}</span>
+                            <span style={{ textDecoration: 'line-through' }}>{group.pricePerSqFtMax ? `₹${group.pricePerSqFtMax.toLocaleString()} / sq ft` : ''}</span>
                           </div>
                         </div>
 
@@ -346,16 +356,9 @@ const LiveGrouping = () => {
                             whiteSpace: 'nowrap',
                             border: '1px solid #86efac'
                           }}>
-                            <span>🏠</span> LIVE GROUP PRICE RANGE
+                            <span>🏠</span> LIVE GROUP PRICE RANGE (per sq ft)
                           </div>
-                          <div className="price-value" style={{
-                            fontSize: '21px',
-                            fontWeight: '800',
-                            color: '#166534',
-                            marginBottom: '10px',
-                            lineHeight: '1.2',
-                            whiteSpace: 'nowrap'
-                          }}>
+                          <div className="price-value" style={{ display: 'none' }}>
                             {group.groupPricePerSqFtMax
                               ? `₹${group.groupPricePerSqFt?.toLocaleString()} - ₹${group.groupPricePerSqFtMax?.toLocaleString()} / sq ft`
                               : `₹${group.groupPricePerSqFt?.toLocaleString() || 'N/A'} / sq ft`
@@ -365,8 +368,8 @@ const LiveGrouping = () => {
                           {/* Green Bar for Group Price */}
                           <div className="range-bar-green" style={{ height: '10px', marginBottom: '4px' }}></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#166534', fontWeight: '700' }}>
-                            <span>{group.groupPricePerSqFt ? `₹${group.groupPricePerSqFt.toLocaleString()}` : ''}</span>
-                            <span>{group.groupPricePerSqFtMax ? `₹${group.groupPricePerSqFtMax.toLocaleString()}` : ''}</span>
+                            <span>{group.groupPricePerSqFt ? `₹${group.groupPricePerSqFt.toLocaleString()} / sq ft` : ''}</span>
+                            <span>{group.groupPricePerSqFtMax ? `₹${group.groupPricePerSqFtMax.toLocaleString()} / sq ft` : ''}</span>
                           </div>
                         </div>
                       </div>
@@ -378,9 +381,9 @@ const LiveGrouping = () => {
 
                         {/* Row 1 & 2: Regular Price Range Box */}
                         <div className="regular-price-box">
-                          <div className="regular-price-row">
-                            <span className="label">REGULAR PRICE RANGE:</span>
-                            <span className="value" style={{ textDecoration: 'line-through', opacity: 0.7 }}>
+                          <div className="regular-price-row" style={{ display: 'block', textAlign: 'left', marginBottom: '4px' }}>
+                            <span className="label" style={{ whiteSpace: 'nowrap', display: 'block' }}>REGULAR PRICE RANGE (per sq ft):</span>
+                            <span className="value" style={{ display: 'none' }}>
                               {group.regular_price_min
                                 ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
                                 : (group.original_price ? group.original_price : '₹62.06 Lakhs')
@@ -396,13 +399,13 @@ const LiveGrouping = () => {
                           {/* Row 2: Orange Range Bar */}
                           <div className="range-bar-orange"></div>
                           <div className="range-limits-labels text-slate-500" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
-                            <span>
+                            <span style={{ textDecoration: 'line-through' }}>
                               {group.regular_price_min
                                 ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
                                 : (group.original_price ? group.original_price : '₹62.06 Lakhs')
                               }
                             </span>
-                            <span>
+                            <span style={{ textDecoration: 'line-through' }}>
                               {group.regular_price_max
                                 ? `₹${(parseFloat(group.regular_price_max) / 100000).toFixed(2)} Lakhs`
                                 : '₹85.34 Lakhs'
@@ -414,11 +417,11 @@ const LiveGrouping = () => {
                         {/* Row 3: Group Price Box (Green) */}
                         <div className="group-price-box">
                           <div className="group-price-row">
-                            <div className="label-col">
+                            <div className="label-col" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                               <span className="icon">🎯</span>
-                              <span className="label">LIVE GROUP PRICE RANGE:</span>
+                              <span className="label" style={{ whiteSpace: 'nowrap' }}>LIVE GROUP PRICE RANGE (per sq ft):</span>
                             </div>
-                            <span className="value">
+                            <span className="value" style={{ display: 'none' }}>
                               {group.discounted_total_price_min
                                 ? `₹${(parseFloat(group.discounted_total_price_min) / 100000).toFixed(2)} Lakhs`
                                 : '₹56.28 Lakhs'
@@ -453,11 +456,11 @@ const LiveGrouping = () => {
                         {(group.totalSavingsMin || group.totalSavingsMax) && (
                           <div className="savings-box">
                             <div className="group-price-row">
-                              <div className="label-col">
+                              <div className="label-col" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                                 <span className="icon">💰</span>
-                                <span className="label" style={{ color: '#1e40af' }}>TOTAL SAVINGS:</span>
+                                <span className="label" style={{ color: '#1e40af', whiteSpace: 'nowrap' }}>TOTAL SAVINGS:</span>
                               </div>
-                              <span className="value" style={{ color: '#1d4ed8' }}>
+                              <span className="value" style={{ display: 'none' }}>
                                 {group.totalSavingsMax
                                   ? `₹${group.totalSavingsMin?.toLocaleString()} - ₹${group.totalSavingsMax?.toLocaleString()}`
                                   : `Up to ₹${(group.totalSavingsMin || group.totalSavingsMax)?.toLocaleString()}`
