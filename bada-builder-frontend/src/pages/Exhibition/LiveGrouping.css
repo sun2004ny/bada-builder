@@ -1006,6 +1006,20 @@
   line-height: 1.3;
 }
 
+.live-group-card .property-info .owner {
+  color: #334155 !important;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.live-group-card .property-info .location {
+  color: #475569 !important;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .how-it-works {

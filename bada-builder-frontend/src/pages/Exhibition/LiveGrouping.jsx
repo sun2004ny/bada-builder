@@ -248,12 +248,7 @@ const LiveGrouping = () => {
                   <div className="property-image">
                     <img src={group.image} alt={group.title} />
 
-                    {/* NEW: Extended Offer Badge */}
-                    {group.offer_type && (
-                      <div className="extended-offer-badge">
-                        {group.offer_type}
-                      </div>
-                    )}
+
 
                     <div className="property-badge live">🔴 Live Group</div>
                     <div className="discount-badge">{group.discount_label || group.discount}</div>
@@ -272,9 +267,9 @@ const LiveGrouping = () => {
 
                   <div className="property-info">
                     <h3>{group.title}</h3>
-                    <p className="owner">🏢 {group.developer}</p>
+                    <p className="owner">🏢 {group.developer || group.builder_name || 'Verified Builder'}</p>
                     <p className="location">📍 {group.location}</p>
-                    <p className="type-info">{group.type}</p>
+                    <p className="type-info">{group.property_type || group.type}</p>
 
                     {/* Progress Bar */}
                     <div className="group-progress">
@@ -299,14 +294,11 @@ const LiveGrouping = () => {
                     <div className="pricing-section">
 
                       {/* 1. Top Section: Regular Total Price */}
-                      <div className="price-comparison">
+                      <div className="price-comparison" style={{ marginBottom: '8px' }}>
                         <div className="regular-price-top">
                           <span className="label">Regular Price</span>
                           <span className="value">
-                            {group.regular_total_price
-                              ? `₹${(parseFloat(group.regular_total_price) / 100000).toFixed(2)} Lakhs`
-                              : 'Price on Request'
-                            }
+                            ₹{group.pricePerSqFt?.toLocaleString() || 'N/A'} / sq ft
                           </span>
                         </div>
                       </div>
@@ -329,7 +321,7 @@ const LiveGrouping = () => {
                         {/* Row 1: Regular Price Range Title & Value */}
                         <div className="regular-price-row">
                           <span className="label">REGULAR PRICE RANGE:</span>
-                          <span className="value">
+                          <span className="value" style={{ textDecoration: 'line-through', opacity: 0.7 }}>
                             {group.regular_price_min
                               ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
                               : (group.original_price ? group.original_price : '₹62.06 Lakhs')
@@ -344,7 +336,7 @@ const LiveGrouping = () => {
 
                         {/* Row 2: Orange Range Bar */}
                         <div className="range-bar-orange"></div>
-                        <div className="range-limits-labels text-slate-500 mb-4">
+                        <div className="range-limits-labels text-slate-500 mb-4" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
                           <span>
                             {group.regular_price_min
                               ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
@@ -381,7 +373,7 @@ const LiveGrouping = () => {
 
                           {/* Green Range Bar */}
                           <div className="range-bar-green"></div>
-                          <div className="range-limits-labels text-emerald-700">
+                          <div className="range-limits-labels text-emerald-700" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px', fontWeight: '600' }}>
                             <span>
                               {group.discounted_total_price_min
                                 ? `₹${(parseFloat(group.discounted_total_price_min) / 100000).toFixed(2)} Lakhs`
@@ -402,7 +394,7 @@ const LiveGrouping = () => {
 
                         {/* Row 5: Available Units */}
                         <div className="available-units-section">
-                          <div className="section-label">AVAILABLE UNITS:</div>
+                          <div className="section-label">Types of Units:</div>
                           <div className="units-grid">
                             {/* Parse unit configuration into pills if possible, else show dummies/fallbacks */}
                             {group.unit_configuration && group.unit_configuration.includes(',') ? (
@@ -424,17 +416,25 @@ const LiveGrouping = () => {
 
                       </div>
 
+                      <div className="final-price-disclaimer" style={{
+                        marginTop: '8px',
+                        padding: '8px 12px',
+                        background: '#eff6ff',
+                        border: '1px dashed #bfdbfe',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        fontSize: '12px',
+                        color: '#64748b',
+                        fontStyle: 'italic'
+                      }}>
+                        <span style={{ fontSize: '13px' }}>💡</span>Final price depends on unit & area selected
+                      </div>
+
                       {/* Secondary Info Clean */}
-                      {(group.unit_configuration || group.project_level) && (
-                        <div className="secondary-info-clean">
-                          {group.unit_configuration && (
-                            <div className="info-pill">{group.unit_configuration}</div>
-                          )}
-                          {group.project_level && (
-                            <div className="info-pill">{group.project_level}</div>
-                          )}
-                        </div>
-                      )}
+
 
                     </div>
 
@@ -443,9 +443,9 @@ const LiveGrouping = () => {
                     <div className="benefits-list">
                       <h4>Group Benefits:</h4>
                       <ul>
-                        {group.benefits.map((benefit, idx) => (
-                          <li key={idx}>✓ {benefit}</li>
-                        ))}
+                        <li><span style={{ color: '#666' }}></span> Private Terrace</li>
+                        <li><span style={{ color: '#666' }}></span> Smart Home System</li>
+                        <li><span style={{ color: '#666' }}></span> Concierge Service</li>
                       </ul>
                     </div>
 
