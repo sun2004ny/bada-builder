@@ -56,8 +56,32 @@ const AdminLiveGrouping = () => {
     min_buyers: 5,
     area: '',
     possession: '',
-    rera_number: ''
+    rera_number: '',
+    // New optional fields
+    project_name: '',
+    builder_name: '',
+    property_type: '',
+    unit_configuration: '',
+    project_level: '',
+    offer_type: '',
+    discount_percentage: '',
+    discount_label: '',
+    offer_expiry_datetime: '',
+    regular_price_per_sqft: '',
+    group_price_per_sqft: '',
+    price_unit: 'sq ft',
+    currency: 'INR',
+    regular_total_price: '',
+    discounted_total_price_min: '',
+    discounted_total_price_max: '',
+    total_savings_min: '',
+    total_savings_max: '',
+    regular_price_min: '',
+    regular_price_max: ''
+
+
   });
+
 
   const [towers, setTowers] = useState([
     { name: 'Tower A', floors: 10, unitsPerFloor: 4 }
@@ -710,6 +734,90 @@ const AdminLiveGrouping = () => {
                         <input type="file" onChange={handleBrochureChange} accept=".pdf" />
                         {brochurePreview && <p className="text-sm text-green-600 mt-1">✓ {brochurePreview}</p>}
                       </div>
+
+                      {/* --- EXTENDED OPTIONAL FIELDS --- */}
+                      <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">Extended Information (Optional)</div>
+
+                      <div className="input-group">
+                        <label>Project Name</label>
+                        <input type="text" value={projectData.project_name} onChange={e => setProjectData({ ...projectData, project_name: e.target.value })} placeholder="Project Branding Name" />
+                      </div>
+                      <div className="input-group">
+                        <label>Builder Name</label>
+                        <input type="text" value={projectData.builder_name} onChange={e => setProjectData({ ...projectData, builder_name: e.target.value })} placeholder="Company Name" />
+                      </div>
+                      <div className="input-group">
+                        <label>Property Type (Detail)</label>
+                        <input type="text" value={projectData.property_type} onChange={e => setProjectData({ ...projectData, property_type: e.target.value })} placeholder="e.g. Luxury Apartment" />
+                      </div>
+                      <div className="input-group">
+                        <label>Unit Configuration</label>
+                        <input type="text" value={projectData.unit_configuration} onChange={e => setProjectData({ ...projectData, unit_configuration: e.target.value })} placeholder="e.g. 3BHK + Study" />
+                      </div>
+                      <div className="input-group">
+                        <label>Project Level</label>
+                        <input type="text" value={projectData.project_level} onChange={e => setProjectData({ ...projectData, project_level: e.target.value })} placeholder="e.g. Ultra Premium" />
+                      </div>
+
+                      <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">Offer & Pricing (Optional)</div>
+
+                      <div className="input-group">
+                        <label>Offer Type</label>
+                        <input type="text" value={projectData.offer_type} onChange={e => setProjectData({ ...projectData, offer_type: e.target.value })} placeholder="e.g. Festival Offer" />
+                      </div>
+                      <div className="input-group">
+                        <label>Discount %</label>
+                        <input type="number" value={projectData.discount_percentage} onChange={e => setProjectData({ ...projectData, discount_percentage: e.target.value })} placeholder="e.g. 15" />
+                      </div>
+                      <div className="input-group">
+                        <label>Discount Label</label>
+                        <input type="text" value={projectData.discount_label} onChange={e => setProjectData({ ...projectData, discount_label: e.target.value })} placeholder="e.g. Early Bird" />
+                      </div>
+                      <div className="input-group">
+                        <label>Offer Expiry</label>
+                        <input type="datetime-local" value={projectData.offer_expiry_datetime} onChange={e => setProjectData({ ...projectData, offer_expiry_datetime: e.target.value })} />
+                      </div>
+
+                      <div className="input-group">
+                        <label>Regular Price/SqFt</label>
+                        <input type="number" value={projectData.regular_price_per_sqft} onChange={e => setProjectData({ ...projectData, regular_price_per_sqft: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Group Price/SqFt</label>
+                        <input type="number" value={projectData.group_price_per_sqft} onChange={e => setProjectData({ ...projectData, group_price_per_sqft: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Regular Total Price</label>
+                        <input type="number" value={projectData.regular_total_price} onChange={e => setProjectData({ ...projectData, regular_total_price: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Discounted Total (Min)</label>
+                        <input type="number" value={projectData.discounted_total_price_min} onChange={e => setProjectData({ ...projectData, discounted_total_price_min: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Discounted Total (Max)</label>
+                        <input type="number" value={projectData.discounted_total_price_max} onChange={e => setProjectData({ ...projectData, discounted_total_price_max: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Regular Price (Min)</label>
+                        <input type="number" value={projectData.regular_price_min} onChange={e => setProjectData({ ...projectData, regular_price_min: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Regular Price (Max)</label>
+                        <input type="number" value={projectData.regular_price_max} onChange={e => setProjectData({ ...projectData, regular_price_max: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Savings (Min)</label>
+                        <input type="number" value={projectData.total_savings_min} onChange={e => setProjectData({ ...projectData, total_savings_min: e.target.value })} />
+                      </div>
+                      <div className="input-group">
+                        <label>Savings (Max)</label>
+                        <input type="number" value={projectData.total_savings_max} onChange={e => setProjectData({ ...projectData, total_savings_max: e.target.value })} />
+                      </div>
+
+
+
+
                     </div>
                   </div>
                 )}

@@ -7,9 +7,39 @@ import PropertyCard from '../../components/PropertyCard/PropertyCard';
 import useViewPreference from '../../hooks/useViewPreference';
 import { calculateTokenAmount, formatCurrency, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
 import './Exhibition.css';
+import './Exhibition.css';
 import './LiveGrouping.css';
 
+const Countdown = ({ targetDate }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const difference = new Date(targetDate) - new Date();
+      if (difference <= 0) return 'Expired';
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((difference / 1000 / 60) % 60);
+
+      const parts = [];
+      if (days > 0) parts.push(`${days}d`);
+      if (hours > 0) parts.push(`${hours}h`);
+      if (minutes > 0) parts.push(`${minutes}m`);
+
+      return parts.length > 0 ? parts.join(' ') : 'Ending soon';
+    };
+
+    setTimeLeft(calculateTime());
+    const timer = setInterval(() => setTimeLeft(calculateTime()), 60000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return <span>{timeLeft}</span>;
+};
+
 const LiveGrouping = () => {
+
   const navigate = useNavigate();
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [liveGroups, setLiveGroups] = useState([]);
@@ -37,16 +67,34 @@ const LiveGrouping = () => {
       const response = await liveGroupDynamicAPI.getAll();
       const groupsData = response.projects || [];
 
-      const processedGroups = groupsData.map(group => ({
-        ...group,
-        timeLeft: group.status === 'live' ? 'Limited Time' : 'Closed',
-        benefits: group.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
-        pricePerSqFt: parseFloat(group.original_price?.replace(/[^0-9.]/g, '') || 4500),
-        groupPricePerSqFt: parseFloat(group.group_price?.replace(/[^0-9.]/g, '') || 4000),
-        filledSlots: group.filled_slots || 0,
-        totalSlots: group.total_slots || 0,
-        minBuyers: group.min_buyers || 0,
-      }));
+      const processedGroups = groupsData.map(group => {
+        let benefits = ["Group Discount", "Premium Location", "Verified Builder"];
+        if (group.benefits) {
+          try {
+            benefits = typeof group.benefits === 'string' ? JSON.parse(group.benefits) : group.benefits;
+            if (!Array.isArray(benefits)) throw new Error('Not an array');
+          } catch (e) {
+            // Fallback to comma separated string handling if it's not JSON
+            if (typeof group.benefits === 'string' && group.benefits.includes(',')) {
+              benefits = group.benefits.split(',').map(b => b.trim()).filter(Boolean);
+            } else if (typeof group.benefits === 'string') {
+              benefits = [group.benefits];
+            }
+          }
+        }
+
+        return {
+          ...group,
+          timeLeft: group.status === 'live' ? 'Limited Time' : 'Closed',
+          benefits: benefits,
+          pricePerSqFt: parseFloat(group.regular_price_per_sqft) || parseFloat(group.original_price?.replace(/[^0-9.]/g, '') || 4500),
+          groupPricePerSqFt: parseFloat(group.group_price_per_sqft) || parseFloat(group.group_price?.replace(/[^0-9.]/g, '') || 4000),
+          filledSlots: group.filled_slots || 0,
+          totalSlots: group.total_slots || 0,
+          minBuyers: group.min_buyers || 0,
+        };
+      });
+
 
       setLiveGroups(processedGroups);
     } catch (error) {
@@ -199,10 +247,28 @@ const LiveGrouping = () => {
                 >
                   <div className="property-image">
                     <img src={group.image} alt={group.title} />
+
+                    {/* NEW: Extended Offer Badge */}
+                    {group.offer_type && (
+                      <div className="extended-offer-badge">
+                        {group.offer_type}
+                      </div>
+                    )}
+
                     <div className="property-badge live">🔴 Live Group</div>
-                    <div className="discount-badge">{group.discount}</div>
-                    <div className="timer-badge">⏰ {group.timeLeft}</div>
+                    <div className="discount-badge">{group.discount_label || group.discount}</div>
+
+                    {/* NEW: Offer Countdown */}
+                    {group.offer_expiry_datetime ? (
+                      <div className="offer-countdown">
+                        <span>⏳ Ends in:</span>
+                        <Countdown targetDate={group.offer_expiry_datetime} />
+                      </div>
+                    ) : (
+                      <div className="timer-badge">⏰ {group.timeLeft}</div>
+                    )}
                   </div>
+
 
                   <div className="property-info">
                     <h3>{group.title}</h3>
@@ -229,83 +295,149 @@ const LiveGrouping = () => {
                       </div>
                     </div>
 
-                    {/* Pricing - Per Sq Ft & Price Range */}
+                    {/* Pricing Section - Redesigned */}
                     <div className="pricing-section">
+
+                      {/* 1. Top Section: Regular Total Price */}
                       <div className="price-comparison">
-                        <div className="original-price">
+                        <div className="regular-price-top">
                           <span className="label">Regular Price</span>
-                          <span className="amount strikethrough">₹{group.pricePerSqFt?.toLocaleString() || 'N/A'} / sq ft</span>
-                        </div>
-                        <div className="group-price">
-                          <span className="label">🎯 Live Grouping Price</span>
-                          <span className="amount group-highlight">₹{group.groupPricePerSqFt?.toLocaleString() || 'N/A'} / sq ft</span>
+                          <span className="value">
+                            {group.regular_total_price
+                              ? `₹${(parseFloat(group.regular_total_price) / 100000).toFixed(2)} Lakhs`
+                              : 'Price on Request'
+                            }
+                          </span>
                         </div>
                       </div>
 
-                      {/* Price Range for Multiple Units */}
-                      {group.units && group.units.length > 0 && (
-                        <div className="price-range-section">
-                          <div className="range-item">
-                            <span className="range-label">Regular Price Range:</span>
-                            <span className="range-value">
-                              {formatPriceRange(calculatePriceRange(group.pricePerSqFt, group.units))}
+                      {/* 2. Main Highlight: Price Per Sq Ft */}
+                      <div className="main-price-highlight">
+                        <div className="label-floating">
+                          <span className="icon">🏠</span> Live Group Price
+                        </div>
+                        <div className="amount">
+                          ₹{group.groupPricePerSqFt?.toLocaleString() || 'N/A'} / sq ft
+                        </div>
+                      </div>
+
+                      {/* 3. Yellow Pricing Container */}
+                      {/* 3. Yellow Pricing Container - STRICT IMPLEMENTATION */}
+                      {/* V2 Yellow Pricing Container */}
+                      <div className="yellow-pricing-container-v2">
+
+                        {/* Row 1: Regular Price Range Title & Value */}
+                        <div className="regular-price-row">
+                          <span className="label">REGULAR PRICE RANGE:</span>
+                          <span className="value">
+                            {group.regular_price_min
+                              ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
+                              : (group.original_price ? group.original_price : '₹62.06 Lakhs')
+                            }
+                            {' - '}
+                            {group.regular_price_max
+                              ? `₹${(parseFloat(group.regular_price_max) / 100000).toFixed(2)} Lakhs`
+                              : '₹85.34 Lakhs'
+                            }
+                          </span>
+                        </div>
+
+                        {/* Row 2: Orange Range Bar */}
+                        <div className="range-bar-orange"></div>
+                        <div className="range-limits-labels text-slate-500 mb-4">
+                          <span>
+                            {group.regular_price_min
+                              ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
+                              : (group.original_price ? group.original_price : '₹62.06 Lakhs')
+                            }
+                          </span>
+                          <span>
+                            {group.regular_price_max
+                              ? `₹${(parseFloat(group.regular_price_max) / 100000).toFixed(2)} Lakhs`
+                              : '₹85.34 Lakhs'
+                            }
+                          </span>
+                        </div>
+
+                        {/* Row 3: Group Price Box (Green) */}
+                        <div className="group-price-box">
+                          <div className="group-price-row">
+                            <div className="label-col">
+                              <span className="icon">🎯</span>
+                              <span className="label">GROUP PRICE RANGE:</span>
+                            </div>
+                            <span className="value">
+                              {group.discounted_total_price_min
+                                ? `₹${(parseFloat(group.discounted_total_price_min) / 100000).toFixed(2)} Lakhs`
+                                : '₹56.28 Lakhs'
+                              }
+                              {' - '}
+                              {group.discounted_total_price_max
+                                ? `₹${(parseFloat(group.discounted_total_price_max) / 100000).toFixed(2)} Lakhs`
+                                : '₹77.39 Lakhs'
+                              }
                             </span>
                           </div>
 
-                          {/* Visual Range Bar */}
-                          <div className="range-bar-container">
-                            <div className="range-bar">
-                              <div className="range-bar-fill regular"></div>
-                            </div>
-                            <div className="range-labels">
-                              <span className="range-min">
-                                {formatCurrency(calculatePriceRange(group.pricePerSqFt, group.units).min)}
-                              </span>
-                              <span className="range-max">
-                                {formatCurrency(calculatePriceRange(group.pricePerSqFt, group.units).max)}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="range-item group-range">
-                            <span className="range-label">🎯 Group Price Range:</span>
-                            <span className="range-value highlight">
-                              {formatPriceRange(calculatePriceRange(group.groupPricePerSqFt, group.units))}
+                          {/* Green Range Bar */}
+                          <div className="range-bar-green"></div>
+                          <div className="range-limits-labels text-emerald-700">
+                            <span>
+                              {group.discounted_total_price_min
+                                ? `₹${(parseFloat(group.discounted_total_price_min) / 100000).toFixed(2)} Lakhs`
+                                : '₹56.28 Lakhs'
+                              }
+                            </span>
+                            <span>
+                              {group.discounted_total_price_max
+                                ? `₹${(parseFloat(group.discounted_total_price_max) / 100000).toFixed(2)} Lakhs`
+                                : '₹77.39 Lakhs'
+                              }
                             </span>
                           </div>
+                        </div>
 
-                          {/* Visual Range Bar for Group Price */}
-                          <div className="range-bar-container">
-                            <div className="range-bar">
-                              <div className="range-bar-fill group"></div>
-                            </div>
-                            <div className="range-labels">
-                              <span className="range-min group">
-                                {formatCurrency(calculatePriceRange(group.groupPricePerSqFt, group.units).min)}
-                              </span>
-                              <span className="range-max group">
-                                {formatCurrency(calculatePriceRange(group.groupPricePerSqFt, group.units).max)}
-                              </span>
-                            </div>
-                          </div>
+                        {/* Row 4: Dashed Separator */}
+                        <div className="dashed-separator"></div>
 
-                          <div className="units-info">
-                            <span className="units-label">Available Units:</span>
-                            <div className="units-list">
-                              {group.units.map((unit, idx) => (
-                                <span key={idx} className="unit-badge">
-                                  {unit.name} ({unit.area} sq ft)
-                                </span>
-                              ))}
-                            </div>
+                        {/* Row 5: Available Units */}
+                        <div className="available-units-section">
+                          <div className="section-label">AVAILABLE UNITS:</div>
+                          <div className="units-grid">
+                            {/* Parse unit configuration into pills if possible, else show dummies/fallbacks */}
+                            {group.unit_configuration && group.unit_configuration.includes(',') ? (
+                              group.unit_configuration.split(',').map((u, i) => (
+                                <div key={i} className="unit-pill">{u.trim()}</div>
+                              ))
+                            ) : (group.unit_configuration ? (
+                              <div className="unit-pill">{group.unit_configuration}</div>
+                            ) : (
+                              <>
+                                <div className="unit-pill">2 BHK (1200 sq ft)</div>
+                                <div className="unit-pill">3 BHK (1450 sq ft)</div>
+                                <div className="unit-pill">3 BHK Premium (1650 sq ft)</div>
+                              </>
+                            )
+                            )}
                           </div>
+                        </div>
+
+                      </div>
+
+                      {/* Secondary Info Clean */}
+                      {(group.unit_configuration || group.project_level) && (
+                        <div className="secondary-info-clean">
+                          {group.unit_configuration && (
+                            <div className="info-pill">{group.unit_configuration}</div>
+                          )}
+                          {group.project_level && (
+                            <div className="info-pill">{group.project_level}</div>
+                          )}
                         </div>
                       )}
 
-                      <div className="savings-note">
-                        💡 Final price depends on unit & area selected
-                      </div>
                     </div>
+
 
                     {/* Benefits */}
                     <div className="benefits-list">
@@ -323,10 +455,14 @@ const LiveGrouping = () => {
                         className="view-details-btn-grouping"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/exhibition/live-grouping/${group.id}`);
+                          if (group.details_page_url) {
+                            window.open(group.details_page_url, '_blank');
+                          } else {
+                            navigate(`/exhibition/live-grouping/${group.id}`);
+                          }
                         }}
                       >
-                        View Details
+                        {group.secondary_cta_text || 'View Details'}
                       </button>
                       <button
                         className="book-visit-btn-grouping"
@@ -341,8 +477,6 @@ const LiveGrouping = () => {
                       </button>
                     </div>
 
-
-
                     {/* Action Button - Navigate to 3D View */}
                     <button
                       className={`join-group-btn ${group.status}`}
@@ -354,8 +488,9 @@ const LiveGrouping = () => {
                     >
                       {group.status === 'closing' ? '⚡ Join Now - Closing Soon!' :
                         group.status === 'closed' ? '❌ Group Closed' :
-                          '🤝 Join This Group'}
+                          (group.primary_cta_text || '🤝 Join This Group')}
                     </button>
+
                   </div>
                 </motion.div>
               ))
