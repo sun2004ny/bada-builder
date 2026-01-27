@@ -223,7 +223,23 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
         console.log('🚀 Starting Atomic Bulk Project Creation...');
         await client.query('BEGIN');
 
-        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, hierarchy, latitude, longitude, map_address } = req.body;
+        const {
+            title, developer, location, description, original_price, group_price,
+            discount, savings, type, min_buyers, possession, rera_number, area,
+            hierarchy,
+            // New fields
+            project_name, builder_name, property_type: pt, unit_configuration, project_level,
+            offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+            regular_price_per_sqft, regular_price_per_sqft_max, group_price_per_sqft, group_price_per_sqft_max, price_unit, currency,
+            regular_total_price, discounted_total_price_min, discounted_total_price_max,
+            regular_price_min, regular_price_max,
+            total_savings_min, total_savings_max, benefits,
+            primary_cta_text, secondary_cta_text, details_page_url
+        } = req.body;
+
+        // Ensure property_type doesn't conflict with existing 'type' variable if any
+        // pt is used for property_type
+
 
         // 1. Handle Files
         let image = null;
@@ -246,11 +262,10 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             `INSERT INTO live_group_projects (
                 title, developer, location, description, status, image, images, 
                 original_price, group_price, discount, savings, type, min_buyers,
-                possession, rera_number, area, created_by, brochure_url,
-                latitude, longitude, map_address
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
+                possession, rera_number, area, created_by, brochure_url
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
             RETURNING *`,
-            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url, latitude, longitude, map_address]
+            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url]
         );
 
         const project = projectResult.rows[0];
@@ -307,7 +322,7 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
     { name: 'brochure', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, latitude, longitude, map_address } = req.body;
+        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area } = req.body;
 
         let image = null;
         let images = [];
@@ -330,12 +345,12 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
             `INSERT INTO live_group_projects (
         title, developer, location, description, status, image, images, 
         original_price, group_price, discount, savings, type, min_buyers,
-        possession, rera_number, area, created_by, brochure_url,
-        latitude, longitude, map_address
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
+        possession, rera_number, area, created_by, brochure_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
       RETURNING *`,
-            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url, latitude, longitude, map_address]
+            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url]
         );
+
 
         res.status(201).json({ project: result.rows[0] });
     } catch (error) {
