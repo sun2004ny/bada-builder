@@ -841,7 +841,7 @@ const AdminLiveGrouping = () => {
                       </div>
                       <div className="input-group">
                         <label>Discount Label</label>
-                        <input type="text" value={projectData.discount_label || ''} onChange={e => setProjectData({ ...projectData, discount_label: e.target.value })} placeholder="e.g. Early Bird" />
+                        <input type="text" value={projectData.discount_label || ''} onChange={e => setProjectData({ ...projectData, discount_label: e.target.value })} placeholder="e.g. Grouping offer" />
                       </div>
                       <div className="input-group">
                         <label>Offer Expiry</label>

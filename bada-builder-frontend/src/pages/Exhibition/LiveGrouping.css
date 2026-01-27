@@ -506,14 +506,26 @@
   color: #1e293b;
 }
 
-/* Orange Range Bar */
-.range-bar-orange {
-  height: 10px;
-  border-radius: 20px;
-  background: linear-gradient(90deg, #dc2626 0%, #f97316 100%);
-  /* Red to Orange */
-  margin-bottom: 6px;
-  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
+/* Unified Price Box Class */
+.price-box-v2 {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  margin-bottom: 12px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-height: 100px !important;
+  /* Unified Height */
+}
+
+/* Regular Price Box */
+.regular-price-box {
+  background: white;
+  border: 1px solid #e2e8f0;
 }
 
 /* Group Price Box (Green) */
@@ -521,9 +533,6 @@
   background: #d1fae5;
   /* Light Green Mint */
   border: 1px solid #34d399;
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 12px;
   position: relative;
   box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
 }
@@ -533,39 +542,110 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  width: 100%;
 }
 
 .group-price-row .label-col {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .group-price-row .icon {
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .group-price-row .label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   color: #065f46;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .group-price-row .value {
   font-size: 16px;
   font-weight: 800;
   color: #059669;
+  flex-shrink: 0;
 }
 
-/* Green Range Bar */
+/* Progress Bar Wrappers */
+.progress-bar-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Unified Progress Bars */
+.range-bar-orange,
+.range-bar-green,
+.range-bar-blue {
+  width: 100% !important;
+  height: 8px !important;
+  border-radius: 20px !important;
+  margin-bottom: 6px !important;
+  box-sizing: border-box !important;
+}
+
+.range-bar-orange {
+  background: linear-gradient(90deg, #dc2626 0%, #f97316 100%);
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
+}
+
 .range-bar-green {
-  height: 12px;
-  border-radius: 20px;
   background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-  /* Green Gradient */
-  margin-bottom: 6px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.range-bar-blue {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Mobile Responsiveness for Pricing */
+@media screen and (max-width: 480px) {
+  .price-box-v2 {
+    padding: 20px 15px !important;
+    min-height: 130px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 12px !important;
+  }
+
+  .group-price-row .label,
+  .regular-price-row .label,
+  .savings-box .label {
+    font-size: 14px !important;
+    letter-spacing: 1px !important;
+    font-weight: 950 !important;
+    display: block !important;
+    margin-bottom: 6px !important;
+    color: #1e293b !important;
+  }
+
+  .group-price-row .value,
+  .regular-price-row .value {
+    font-size: 20px !important;
+    font-weight: 900 !important;
+  }
+
+  .range-limits-labels {
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    margin-top: 10px !important;
+  }
+
+  .range-bar-orange,
+  .range-bar-green,
+  .range-bar-blue {
+    height: 14px !important;
+    margin-bottom: 10px !important;
+  }
 }
 
 /* Dashed Separator */

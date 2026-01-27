@@ -380,9 +380,9 @@ const LiveGrouping = () => {
                       <div className="yellow-pricing-container-v2">
 
                         {/* Row 1 & 2: Regular Price Range Box */}
-                        <div className="regular-price-box">
-                          <div className="regular-price-row" style={{ display: 'block', textAlign: 'left', marginBottom: '4px' }}>
-                            <span className="label" style={{ whiteSpace: 'nowrap', display: 'block' }}>REGULAR PRICE RANGE (per unit):</span>
+                        <div className="price-box-v2 regular-price-box">
+                          <div className="regular-price-row">
+                            <span className="label">REGULAR PRICE RANGE (per unit):</span>
                             <span className="value" style={{ display: 'none' }}>
                               {group.regular_price_min
                                 ? `₹${(parseFloat(group.regular_price_min) / 100000).toFixed(2)} Lakhs`
@@ -415,11 +415,11 @@ const LiveGrouping = () => {
                         </div>
 
                         {/* Row 3: Group Price Box (Green) */}
-                        <div className="group-price-box">
+                        <div className="price-box-v2 group-price-box">
                           <div className="group-price-row">
-                            <div className="label-col" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            <div className="label-col">
                               <span className="icon">🎯</span>
-                              <span className="label" style={{ whiteSpace: 'nowrap' }}>LIVE GROUP PRICE RANGE (per unit):</span>
+                              <span className="label">LIVE GROUP PRICE RANGE (per unit):</span>
                             </div>
                             <span className="value" style={{ display: 'none' }}>
                               {group.discounted_total_price_min
@@ -454,11 +454,11 @@ const LiveGrouping = () => {
 
                         {/* Savings Display (Conditional) - INSIDE YELLOW CONTAINER */}
                         {(group.totalSavingsMin || group.totalSavingsMax) && (
-                          <div className="savings-box">
+                          <div className="price-box-v2 savings-box" style={{ background: '#eff6ff', border: '1px solid #93c5fd' }}>
                             <div className="group-price-row">
-                              <div className="label-col" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                              <div className="label-col">
                                 <span className="icon">💰</span>
-                                <span className="label" style={{ color: '#1e40af', whiteSpace: 'nowrap' }}>TOTAL SAVINGS (per unit):</span>
+                                <span className="label" style={{ color: '#1e40af' }}>TOTAL SAVINGS (per unit):</span>
                               </div>
                               <span className="value" style={{ display: 'none' }}>
                                 {group.totalSavingsMax
