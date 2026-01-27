@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { propertiesAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './PropertyDetails.css';
 import { FiPhone, FiCheckCircle, FiInfo, FiMap, FiHome, FiMaximize2, FiBriefcase, FiUser, FiX, FiMessageSquare, FiPlay, FiPause } from 'react-icons/fi';
 import { FaChevronLeft, FaChevronRight, FaBed, FaBath, FaCouch } from 'react-icons/fa';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import ChatBox from '../components/ChatBox/ChatBox';
 import { generateChatId } from '../services/chatService';
 
 import ReviewSection from '../components/PropertyReviews/ReviewSection';
 import BookmarkButton from '../components/BookmarkButton/BookmarkButton';
+import PropertyMap from '../components/Map/PropertyMap';
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -22,7 +23,6 @@ const PropertyDetails = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showChat, setShowChat] = useState(false);
   const [chatData, setChatData] = useState(null);
-  const [chatStarted, setChatStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Prepare dynamic data - declared early to avoid hoisting issues in hooks
@@ -83,16 +83,15 @@ const PropertyDetails = () => {
     getPropertyData();
   }, [id, location.state]);
 
-  const nextImage = () => {
+  const nextImage = React.useCallback(() => {
     if (!propertyImages.length) return;
     setCurrentImageIndex((prev) => (prev + 1) % propertyImages.length);
-  };
+  }, [propertyImages.length]);
 
-
-  const prevImage = () => {
+  const prevImage = React.useCallback(() => {
     if (!propertyImages.length) return;
     setCurrentImageIndex((prev) => (prev - 1 + propertyImages.length) % propertyImages.length);
-  };
+  }, [propertyImages.length]);
 
   // Full Screen Image Viewer Logic
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -114,7 +113,7 @@ const PropertyDetails = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isPlaying, currentImageIndex, propertyImages.length]);
+  }, [isPlaying, nextImage, propertyImages.length]);
 
   // Handle body scroll when chat modal is open
   useEffect(() => {
@@ -132,25 +131,25 @@ const PropertyDetails = () => {
     setIsFullScreen(false);
   };
 
-  const handleKeyDown = (e) => {
-    if (!isFullScreen) return;
-
-    if (e.key === 'Escape') {
-      closeFullScreen();
-    } else if (e.key === 'ArrowLeft') {
-      prevImage();
-    } else if (e.key === 'ArrowRight') {
-      nextImage();
-    }
-  };
-
   useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isFullScreen) return;
+
+      if (e.key === 'Escape') {
+        closeFullScreen();
+      } else if (e.key === 'ArrowLeft') {
+        prevImage();
+      } else if (e.key === 'ArrowRight') {
+        nextImage();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset'; // Safety cleanup
     };
-  }, [isFullScreen, currentImageIndex]); // Re-bind when index changes for correct closure
+  }, [isFullScreen, nextImage, prevImage]);
 
 
   if (loading) {
@@ -206,7 +205,7 @@ const PropertyDetails = () => {
             {propertyImages.length > 0 ? (
               <>
                 <AnimatePresence mode='wait'>
-                  <motion.img
+                  <Motion.img
                     key={currentImageIndex}
                     src={propertyImages[currentImageIndex]}
                     alt={`Property Image ${currentImageIndex + 1}`}
@@ -551,7 +550,6 @@ const PropertyDetails = () => {
                         ownerEmail: property.email || ''
                       });
                       setShowChat(true);
-                      setChatStarted(true);
                     }}
                     className="chat-with-owner-btn w-full justify-center"
                   >
@@ -664,6 +662,23 @@ const PropertyDetails = () => {
           </div>
         </div>
 
+        {/* Map Section */}
+        {property.latitude && property.longitude && (
+          <div className="bg-white rounded-2xl p-6 md:p-8 shadow-md border border-gray-200 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <FiMap className="text-blue-600" />
+              Location on Map
+            </h2>
+            <div style={{ height: '400px', width: '100%', borderRadius: '1rem', overflow: 'hidden' }}>
+              <PropertyMap
+                latitude={parseFloat(property.latitude)}
+                longitude={parseFloat(property.longitude)}
+                address={property.map_address || property.address || property.location}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Reviews Section */}
         <ReviewSection
           propertyId={property.id}
@@ -675,7 +690,7 @@ const PropertyDetails = () => {
       {/* Full Screen Image Viewer Modal */}
       <AnimatePresence>
         {isFullScreen && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -752,21 +767,21 @@ const PropertyDetails = () => {
                 {currentImageIndex + 1} / {propertyImages.length}
               </div>
             </div>
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
 
       {/* Chat Modal */}
       <AnimatePresence>
         {showChat && chatData && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="chat-modal-overlay"
             onClick={() => setShowChat(false)}
           >
-            <motion.div
+            <Motion.div
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
@@ -779,8 +794,8 @@ const PropertyDetails = () => {
                 onClose={() => setShowChat(false)}
                 isOwner={false}
               />
-            </motion.div>
-          </motion.div>
+            </Motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </div>

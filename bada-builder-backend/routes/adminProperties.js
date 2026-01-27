@@ -85,7 +85,7 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
     const {
         title, type, location, price, description, facilities, images,
         property_source, status, metadata, is_featured, rera_number, bhk, area,
-        property_type_strict, credit_used
+        property_type_strict, credit_used, latitude, longitude, map_address
     } = req.body;
 
     // Map property_source to user_type for public filtering compatibility
@@ -99,15 +99,17 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
                 title, type, location, price, description, facilities, images, image_url,
                 property_source, status, metadata, is_featured, rera_number, bhk, 
                 area, user_id, user_type, property_type_strict, credit_used, 
+                latitude, longitude, map_address,
                 created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW(), NOW())
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW(), NOW())
             RETURNING *`,
             [
                 title, type, location, price, description, facilities || [], images || [], images?.[0] || null,
                 property_source || 'Individual', status || 'active', metadata || {}, is_featured || false,
                 rera_number, bhk, area, req.user.id, mappedUserType,
                 property_type_strict || (property_source === 'Developer' ? 'developer' : 'individual'),
-                credit_used || (property_source === 'Developer' ? 'developer' : 'individual')
+                credit_used || (property_source === 'Developer' ? 'developer' : 'individual'),
+                latitude, longitude, map_address
             ]
         );
         res.status(201).json(result.rows[0]);
@@ -127,7 +129,7 @@ router.put('/:id', authenticate, isAdmin, async (req, res) => {
     const {
         title, type, location, price, description, facilities, images,
         property_source, status, metadata, is_featured, rera_number, bhk, area,
-        property_type_strict, credit_used
+        property_type_strict, credit_used, latitude, longitude, map_address
     } = req.body;
 
     // Map property_source to user_type for public filtering compatibility
@@ -143,12 +145,13 @@ router.put('/:id', authenticate, isAdmin, async (req, res) => {
                 status = $10, metadata = $11, is_featured = $12, rera_number = $13, 
                 bhk = $14, area = $15, user_type = $16,
                 property_type_strict = $17, credit_used = $18, 
+                latitude = $19, longitude = $20, map_address = $21,
                 updated_at = NOW()
-            WHERE id = $19 RETURNING *`,
+            WHERE id = $22 RETURNING *`,
             [
                 title, type, location, price, description, facilities || [], images || [], images?.[0] || null,
                 property_source, status, metadata || {}, is_featured || false, rera_number, bhk, area, mappedUserType,
-                property_type_strict, credit_used, id
+                property_type_strict, credit_used, latitude, longitude, map_address, id
             ]
         );
 

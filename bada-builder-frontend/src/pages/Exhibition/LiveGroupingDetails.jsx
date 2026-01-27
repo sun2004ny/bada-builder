@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 // TODO: Implement with liveGroupingAPI.getById()
-import { liveGroupingAPI, liveGroupDynamicAPI } from '../../services/api';
-import { calculateTokenAmount, formatCurrency, calculateTotalPrice, calculateSavings, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
+import { liveGroupDynamicAPI } from '../../services/api';
+import { calculateTokenAmount, formatCurrency, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
+import PropertyMap from '../../components/Map/PropertyMap';
 import './LiveGroupingDetails.css';
 
 const LiveGroupingDetails = () => {
@@ -13,50 +14,53 @@ const LiveGroupingDetails = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchProperty = async () => {
+      try {
+        setLoading(true);
+        const data = await liveGroupDynamicAPI.getFullHierarchy(id);
+        const project = data.project;
+
+        if (project) {
+          // Map to expected format
+          const processedProject = {
+            ...project,
+            title: project.title || 'Untitled Project',
+            location: project.location || 'Location not specified',
+            pricePerSqFt: parseFloat(project.original_price?.replace(/[^0-9.]/g, '') || 0),
+            groupPricePerSqFt: parseFloat(project.group_price?.replace(/[^0-9.]/g, '') || 0),
+            images: project.images || (project.image ? [project.image] : ['/placeholder-property.jpg']),
+            benefits: project.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
+            facilities: project.facilities || ["Swimming Pool", "Gym", "Parking", "Security"],
+            advantages: Array.isArray(project.advantages) ? project.advantages : [],
+            filledSlots: project.filled_slots || 0,
+            totalSlots: project.total_slots || 0,
+            minBuyers: project.min_buyers || 0,
+            reraNumber: project.rera_number || 'Applied',
+            timeLeft: project.time_left || '15 Days',
+            savedAmt: project.savings || '0',
+            latitude: project.latitude,
+            longitude: project.longitude,
+            map_address: project.map_address,
+            groupDetails: project.group_details || {
+              refundPolicy: "100% refund if group doesn't fill",
+              closingDate: "Not specified",
+              expectedCompletion: project.possession || "TBD"
+            }
+          };
+          setProperty(processedProject);
+        } else {
+          setProperty(null);
+        }
+      } catch (error) {
+        console.error('Error fetching property:', error);
+        setProperty(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProperty();
   }, [id]);
-
-  const fetchProperty = async () => {
-    try {
-      setLoading(true);
-      const data = await liveGroupDynamicAPI.getFullHierarchy(id);
-      const project = data.project;
-
-      if (project) {
-        // Map to expected format
-        const processedProject = {
-          ...project,
-          title: project.title || 'Untitled Project',
-          location: project.location || 'Location not specified',
-          pricePerSqFt: parseFloat(project.original_price?.replace(/[^0-9.]/g, '') || 0),
-          groupPricePerSqFt: parseFloat(project.group_price?.replace(/[^0-9.]/g, '') || 0),
-          images: project.images || (project.image ? [project.image] : ['/placeholder-property.jpg']),
-          benefits: project.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
-          facilities: project.facilities || ["Swimming Pool", "Gym", "Parking", "Security"],
-          advantages: Array.isArray(project.advantages) ? project.advantages : [],
-          filledSlots: project.filled_slots || 0,
-          totalSlots: project.total_slots || 0,
-          minBuyers: project.min_buyers || 0,
-          reraNumber: project.rera_number || 'Applied',
-          timeLeft: project.time_left || '15 Days',
-          savings: project.savings || '0',
-          groupDetails: project.group_details || {
-            refundPolicy: "100% refund if group doesn't fill",
-            closingDate: "Not specified",
-            expectedCompletion: project.possession || "TBD"
-          }
-        };
-        setProperty(processedProject);
-      } else {
-        setProperty(null);
-      }
-    } catch (error) {
-      console.error('Error fetching property:', error);
-      setProperty(null);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -117,7 +121,7 @@ const LiveGroupingDetails = () => {
         </button>
 
         {/* Image Gallery */}
-        <motion.div
+        <Motion.div
           className="image-gallery"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -136,14 +140,14 @@ const LiveGroupingDetails = () => {
               <img key={idx} src={img} alt={`View ${idx + 2}`} />
             ))}
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Main Content */}
         <div className="content-grid">
           {/* Left Column */}
           <div className="left-column">
             {/* Title & Info */}
-            <motion.div
+            <Motion.div
               className="property-header"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -159,10 +163,10 @@ const LiveGroupingDetails = () => {
               <div className="rera-badge">
                 RERA ✅ {property.reraNumber}
               </div>
-            </motion.div>
+            </Motion.div>
 
             {/* Group Progress */}
-            <motion.div
+            <Motion.div
               className="group-progress-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -195,10 +199,10 @@ const LiveGroupingDetails = () => {
               <p className="progress-note">
                 {property.totalSlots - property.filledSlots} slots remaining
               </p>
-            </motion.div>
+            </Motion.div>
 
             {/* Description */}
-            <motion.div
+            <Motion.div
               className="description-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -206,10 +210,10 @@ const LiveGroupingDetails = () => {
             >
               <h2>About This Property</h2>
               <p>{property.description}</p>
-            </motion.div>
+            </Motion.div>
 
             {/* Group Benefits */}
-            <motion.div
+            <Motion.div
               className="benefits-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -224,10 +228,10 @@ const LiveGroupingDetails = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </Motion.div>
 
             {/* Facilities */}
-            <motion.div
+            <Motion.div
               className="facilities-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -241,10 +245,10 @@ const LiveGroupingDetails = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </Motion.div>
 
             {/* Location Advantages */}
-            <motion.div
+            <Motion.div
               className="location-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -259,10 +263,10 @@ const LiveGroupingDetails = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </Motion.div>
 
             {/* Developer Info */}
-            <motion.div
+            <Motion.div
               className="developer-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -276,12 +280,12 @@ const LiveGroupingDetails = () => {
                   <p>Trusted Real Estate Developer</p>
                 </div>
               </div>
-            </motion.div>
+            </Motion.div>
           </div>
 
           {/* Right Column - Sticky Pricing Card */}
           <div className="right-column">
-            <motion.div
+            <Motion.div
               className="pricing-card sticky"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -450,7 +454,7 @@ const LiveGroupingDetails = () => {
                   <span>100% Refund</span>
                 </div>
               </div>
-            </motion.div>
+            </Motion.div>
           </div>
         </div>
       </div>

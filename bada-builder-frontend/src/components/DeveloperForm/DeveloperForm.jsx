@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import './DeveloperForm.css';
+import LocationPicker from '../Map/LocationPicker';
 
 const DeveloperForm = ({
     formData,
@@ -15,7 +16,8 @@ const DeveloperForm = ({
     handleChange,
     handleSubmit,
     loading,
-    disabled
+    disabled,
+    handleLocationSelect
 }) => {
     const handleCheckboxChange = (category, value) => {
         const currentOptions = formData[category] || [];
@@ -190,6 +192,17 @@ const DeveloperForm = ({
                         onChange={handleChange}
                         placeholder="e.g. Whitefield, Bangalore"
                         required
+                    />
+                </div>
+
+                {/* Location Map Picker */}
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label>Pin Precise Location on Map</label>
+                    <LocationPicker 
+                        onLocationSelect={handleLocationSelect}
+                        initialLat={formData.latitude}
+                        initialLng={formData.longitude}
+                        initialAddress={formData.mapAddress}
                     />
                 </div>
             </div>

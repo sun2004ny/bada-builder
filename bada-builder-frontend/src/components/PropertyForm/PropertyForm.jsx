@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import './PropertyForm.css';
+import LocationPicker from '../Map/LocationPicker';
 
 const PropertyForm = ({
     formData,
@@ -15,8 +15,10 @@ const PropertyForm = ({
     userType,
     showBhkType,
     editingProperty,
-    disabled
+    disabled,
+    handleLocationSelect
 }) => {
+    console.log('PropertyForm Props:', { disabled, loading, userType, formData });
     return (
         <form onSubmit={handleSubmit} className="property-form">
             <div className="form-section">
@@ -145,6 +147,17 @@ const PropertyForm = ({
                         placeholder="e.g. Mumbai, Andheri West"
                         required
                         disabled={disabled}
+                    />
+                </div>
+
+                {/* Location Map Picker */}
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label>Pin Precise Location on Map</label>
+                    <LocationPicker 
+                        onLocationSelect={handleLocationSelect}
+                        initialLat={formData.latitude}
+                        initialLng={formData.longitude}
+                        initialAddress={formData.mapAddress}
                     />
                 </div>
 

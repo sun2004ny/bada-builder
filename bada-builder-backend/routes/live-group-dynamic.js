@@ -223,7 +223,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
         console.log('🚀 Starting Atomic Bulk Project Creation...');
         await client.query('BEGIN');
 
-        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, hierarchy } = req.body;
+        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, hierarchy, latitude, longitude, map_address } = req.body;
 
         // 1. Handle Files
         let image = null;
@@ -246,66 +246,56 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             `INSERT INTO live_group_projects (
                 title, developer, location, description, status, image, images, 
                 original_price, group_price, discount, savings, type, min_buyers,
-                possession, rera_number, area, created_by, brochure_url
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+                possession, rera_number, area, created_by, brochure_url,
+                latitude, longitude, map_address
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
             RETURNING *`,
-            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url]
+            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url, latitude, longitude, map_address]
         );
+
         const project = projectResult.rows[0];
-        console.log(`✅ Project created: ${project.id} - ${project.title}`);
+        const projectHierarchy = typeof hierarchy === 'string' ? JSON.parse(hierarchy) : hierarchy;
 
-        // 3. Process Hierarchy
-        const hierarchyData = JSON.parse(hierarchy || '[]');
-        let totalUnitsGenerated = 0;
+        if (projectHierarchy && Array.isArray(projectHierarchy)) {
+            for (const towerData of projectHierarchy) {
+                // Insert Tower
+                const towerResult = await client.query(
+                    'INSERT INTO live_group_towers (project_id, tower_name, total_floors) VALUES ($1, $2, $3) RETURNING id',
+                    [project.id, towerData.towerName || towerData.name, towerData.totalFloors || 0]
+                );
+                const towerId = towerResult.rows[0].id;
 
-        for (const towerData of hierarchyData) {
-            // Insert Tower
-            const towerResult = await client.query(
-                'INSERT INTO live_group_towers (project_id, tower_name, total_floors) VALUES ($1, $2, $3) RETURNING id',
-                [project.id, towerData.tower_name, towerData.total_floors]
-            );
-            const towerId = towerResult.rows[0].id;
-
-            // Insert Units
-            if (towerData.units && towerData.units.length > 0) {
-                for (const unit of towerData.units) {
-                    await client.query(
-                        `INSERT INTO live_group_units (
-                            tower_id, floor_number, unit_number, unit_type, 
-                            area, carpet_area, price, price_per_sqft, discount_price_per_sqft, status
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-                        [
-                            towerId,
-                            unit.floor_number,
-                            unit.unit_number,
-                            unit.unit_type || 'Unit',
-                            unit.area || 0,
-                            unit.carpet_area || null,
-                            unit.price || 0,
-                            unit.price_per_sqft || 0,
-                            unit.discount_price_per_sqft || null,
-                            unit.status || 'available'
-                        ]
-                    );
-                    totalUnitsGenerated++;
+                // Insert Units
+                if (towerData.units && Array.isArray(towerData.units)) {
+                    for (const unit of towerData.units) {
+                         await client.query(
+                            `INSERT INTO live_group_units (
+                                tower_id, floor_number, unit_number, unit_type, 
+                                area, price, price_per_sqft, status
+                            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                            [
+                                towerId,
+                                unit.floor_number,
+                                unit.unit_number,
+                                unit.unit_type || 'Unit',
+                                unit.area,
+                                unit.price,
+                                unit.price_per_sqft,
+                                'available'
+                            ]
+                        );
+                    }
                 }
             }
         }
-
-        // 4. Update Project Total Slots
-        await client.query(
-            'UPDATE live_group_projects SET total_slots = $1 WHERE id = $2',
-            [totalUnitsGenerated, project.id]
-        );
-
+        
         await client.query('COMMIT');
-        console.log(`🎉 Bulk creation complete. ${totalUnitsGenerated} units generated.`);
-        res.status(201).json({ project, message: 'Project hierarchy created successfully' });
+        res.status(201).json({ project, message: 'Project created successfully with hierarchy' });
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('❌ Bulk Create Error:', error);
-        res.status(500).json({ error: 'Failed to create project hierarchy: ' + error.message });
+        console.error('Bulk create error:', error);
+        res.status(500).json({ error: 'Failed to create project hierarchy' });
     } finally {
         client.release();
     }
@@ -317,7 +307,7 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
     { name: 'brochure', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area } = req.body;
+        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, latitude, longitude, map_address } = req.body;
 
         let image = null;
         let images = [];
@@ -340,10 +330,11 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
             `INSERT INTO live_group_projects (
         title, developer, location, description, status, image, images, 
         original_price, group_price, discount, savings, type, min_buyers,
-        possession, rera_number, area, created_by, brochure_url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+        possession, rera_number, area, created_by, brochure_url,
+        latitude, longitude, map_address
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
       RETURNING *`,
-            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url]
+            [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url, latitude, longitude, map_address]
         );
 
         res.status(201).json({ project: result.rows[0] });

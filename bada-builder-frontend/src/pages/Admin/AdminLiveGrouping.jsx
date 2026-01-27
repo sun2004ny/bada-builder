@@ -2,6 +2,7 @@ import React, { useState, useEffect, Fragment } from 'react';
 import toast from 'react-hot-toast';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
+import LocationPicker from '../../components/Map/LocationPicker';
 
 import {
   Plus, Search, TowerControl as Tower, Building2,
@@ -47,6 +48,9 @@ const AdminLiveGrouping = () => {
     title: '',
     developer: '',
     location: '',
+    latitude: null,
+    longitude: null,
+    map_address: '',
     description: '',
     original_price: '',
     group_price: '',
@@ -128,6 +132,16 @@ const AdminLiveGrouping = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLocationSelect = (locData) => {
+    setProjectData(prev => ({
+      ...prev,
+      location: locData.address,
+      latitude: locData.lat,
+      longitude: locData.lng,
+      map_address: locData.address
+    }));
   };
 
   const handleImageChange = (e) => {
@@ -697,6 +711,19 @@ const AdminLiveGrouping = () => {
                       <div className="input-group">
                         <label>Location</label>
                         <input type="text" value={projectData.location} onChange={e => setProjectData({ ...projectData, location: e.target.value })} placeholder="e.g. Sector 45, Gurgaon" />
+                      </div>
+                      
+                      {/* Location Picker Integration */}
+                      <div className="input-group full">
+                          <label>Pin Precise Location</label>
+                          <div style={{ height: '300px', width: '100%', marginBottom: '1rem' }}>
+                            <LocationPicker
+                                onLocationSelect={handleLocationSelect}
+                                initialLat={projectData.latitude}
+                                initialLng={projectData.longitude}
+                                initialAddress={projectData.map_address}
+                            />
+                          </div>
                       </div>
                       <div className="input-group full">
                         <label>Images</label>

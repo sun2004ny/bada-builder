@@ -9,6 +9,7 @@ import SubscriptionGuard from '../components/SubscriptionGuard/SubscriptionGuard
 import { formatDate } from '../utils/dateFormatter';
 import PropertyTemplateEditor from '../components/PropertyTemplateEditor/PropertyTemplateEditor';
 import { compressImage } from '../utils/imageCompressor';
+import LocationPicker from '../components/Map/LocationPicker';
 import './PostProperty.css';
 
 // --- Cloudinary Configuration ---
@@ -48,7 +49,7 @@ const uploadToCloudinary = async (file) => {
 
 
 
-const NewPropertySelectionContent = ({ userType, setUserType, setSelectedPropertyFlow, handleCreateNewProperty }) => (
+const NewPropertySelectionContent = ({ userType, setUserType, setSelectedPropertyFlow, handleCreateNewProperty, setCreditUsed }) => (
   <>
     <div className="selected-type-badge">
       <span>
@@ -185,10 +186,23 @@ const PostProperty = () => {
       area: '' // Legacy area in stats
     },
     contactPhone: '',
-    completionDate: ''
+    completionDate: '',
+    // Geolocation fields
+    latitude: null,
+    longitude: null,
+    mapAddress: ''
   });
 
   const [brochureFile, setBrochureFile] = useState(null);
+
+  const handleLocationSelect = (locationData) => {
+    setFormData(prev => ({
+        ...prev,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        mapAddress: locationData.map_address
+    }));
+  };
 
   useEffect(() => {
     console.log('🔍 Checking authentication...');
@@ -329,6 +343,7 @@ const PostProperty = () => {
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+    console.log('PostProperty handleChange:', name, value);
   };
 
   // Check if BHK type should be shown
@@ -411,6 +426,19 @@ const PostProperty = () => {
       if (parts.length > 1) maxPriceUnit = parts[1];
     }
 
+    // Parse Area
+    let areaVal = property.area || '';
+    let areaUnit = 'sq.ft';
+    if (areaVal && typeof areaVal === 'string') {
+      const parts = areaVal.split(' ');
+      if (parts.length > 1) {
+        areaVal = parts[0].replace(/[^0-9.]/g, '');
+        areaUnit = parts[1];
+      } else {
+        areaVal = areaVal.replace(/[^0-9.]/g, '');
+      }
+    }
+
     setFormData({
       title: property.title || '',
       type: property.type || '',
@@ -438,7 +466,10 @@ const PostProperty = () => {
       projectName: property.project_name || '',
       projectStats: property.project_stats || { towers: '', floors: '', units: '', area: '' },
       contactPhone: property.contact_phone || '',
-      completionDate: property.completion_date || ''
+      completionDate: property.completion_date || '',
+      latitude: property.latitude || null,
+      longitude: property.longitude || null,
+      mapAddress: property.map_address || ''
     });
     setImagePreview(property.image_url || '');
     setExtraPreviews(property.images || []);
@@ -534,7 +565,10 @@ const PostProperty = () => {
         project_stats: formData.projectStats || { towers: '', floors: '', units: '', area: '' },
         amenities: formData.amenities || [],
         residential_options: formData.residentialOptions || [],
-        commercial_options: formData.commercialOptions || []
+        commercial_options: formData.commercialOptions || [],
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        map_address: formData.mapAddress
       };
 
       // Update property via backend API
@@ -794,7 +828,10 @@ const PostProperty = () => {
         area: activeData.area ? `${activeData.area} ${activeData.areaUnit}` : (activeData.projectStats?.area || ''),
         user_type: userType || 'individual',
         credit_used: creditUsed || (userType === 'developer' ? 'developer' : 'individual'),
-        status: 'active'
+        status: 'active',
+        latitude: activeData.latitude,
+        longitude: activeData.longitude,
+        map_address: activeData.mapAddress
       };
 
       if (showBhkType && formData.bhk) propertyData.bhk = formData.bhk;
@@ -1156,6 +1193,7 @@ const PostProperty = () => {
                 handleSubmit={handleSubmit}
                 loading={loading}
                 disabled={developerCredits !== null && developerCredits <= 0}
+                handleLocationSelect={handleLocationSelect}
               />
             ) : (
               <PropertyForm
@@ -1172,6 +1210,7 @@ const PostProperty = () => {
                 showBhkType={showBhkType}
                 editingProperty={editingProperty}
                 disabled={userType === 'developer' && developerCredits !== null && developerCredits <= 0}
+                handleLocationSelect={handleLocationSelect}
               />
             )}
 
