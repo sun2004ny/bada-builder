@@ -784,7 +784,7 @@ const AdminLiveGrouping = () => {
                       {/* Location Picker Integration */}
                       <div className="input-group full">
                         <label>Pin Precise Location</label>
-                        <div style={{ height: '300px', width: '100%', marginBottom: '1rem' }}>
+                        <div style={{ height: '450px', width: '100%', marginBottom: '1rem' }}>
                           <LocationPicker
                             onLocationSelect={handleLocationSelect}
                             initialLat={projectData.latitude}
