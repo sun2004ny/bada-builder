@@ -230,7 +230,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             // New fields
             project_name, builder_name, property_type: pt, unit_configuration, project_level,
             offer_type, discount_percentage, discount_label, offer_expiry_datetime,
-            regular_price_per_sqft, group_price_per_sqft, price_unit, currency,
+            regular_price_per_sqft, regular_price_per_sqft_max, group_price_per_sqft, group_price_per_sqft_max, price_unit, currency,
             regular_total_price, discounted_total_price_min, discounted_total_price_max,
             regular_price_min, regular_price_max,
             total_savings_min, total_savings_max, benefits,
@@ -269,10 +269,12 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                 regular_total_price, discounted_total_price_min, discounted_total_price_max,
                 regular_price_min, regular_price_max,
                 total_savings_min, total_savings_max, benefits,
-                primary_cta_text, secondary_cta_text, details_page_url
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-                $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
+                $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42,
+                $43, $44
             ) RETURNING *`,
             [
                 title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
@@ -282,7 +284,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                 regular_total_price, discounted_total_price_min, discounted_total_price_max,
                 regular_price_min, regular_price_max,
                 total_savings_min, total_savings_max, Array.isArray(benefits) ? JSON.stringify(benefits) : (benefits || '[]'),
-                primary_cta_text, secondary_cta_text, details_page_url
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max
             ]
         );
 
@@ -358,7 +361,7 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
             // New fields
             project_name, builder_name, property_type: pt, unit_configuration, project_level,
             offer_type, discount_percentage, discount_label, offer_expiry_datetime,
-            regular_price_per_sqft, group_price_per_sqft, price_unit, currency,
+            regular_price_per_sqft, regular_price_per_sqft_max, group_price_per_sqft, group_price_per_sqft_max, price_unit, currency,
             regular_total_price, discounted_total_price_min, discounted_total_price_max,
             regular_price_min, regular_price_max,
             total_savings_min, total_savings_max, benefits,
@@ -394,10 +397,11 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
         regular_total_price, discounted_total_price_min, discounted_total_price_max,
         regular_price_min, regular_price_max,
         total_savings_min, total_savings_max, benefits,
-        primary_cta_text, secondary_cta_text, details_page_url
+        primary_cta_text, secondary_cta_text, details_page_url,
+        regular_price_per_sqft_max, group_price_per_sqft_max
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-        $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
+        $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44
       ) RETURNING *`,
             [
                 title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
@@ -407,7 +411,8 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
                 regular_total_price, discounted_total_price_min, discounted_total_price_max,
                 regular_price_min, regular_price_max,
                 total_savings_min, total_savings_max, Array.isArray(benefits) ? JSON.stringify(benefits) : (benefits || '[]'),
-                primary_cta_text, secondary_cta_text, details_page_url
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max
             ]
         );
 

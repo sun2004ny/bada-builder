@@ -53,7 +53,7 @@ const AdminLiveGrouping = () => {
     discount: '',
     savings: '',
     type: '', // Empty to force selection in Step 1
-    min_buyers: 5,
+    min_buyers: '',
     area: '',
     possession: '',
     rera_number: '',
@@ -63,12 +63,17 @@ const AdminLiveGrouping = () => {
     property_type: '',
     unit_configuration: '',
     project_level: '',
+    // Offer
     offer_type: '',
     discount_percentage: '',
     discount_label: '',
     offer_expiry_datetime: '',
+
+    // Pricing
     regular_price_per_sqft: '',
+    regular_price_per_sqft_max: '',
     group_price_per_sqft: '',
+    group_price_per_sqft_max: '',
     price_unit: 'sq ft',
     currency: 'INR',
     regular_total_price: '',
@@ -173,6 +178,12 @@ const AdminLiveGrouping = () => {
     try {
       setSaving(true);
 
+      if (!projectData.min_buyers) {
+        alert('Please specify Minimum Buyers');
+        setSaving(false);
+        return;
+      }
+
       // --- ATOMIC SAVE LOGIC ---
       // 1. Construct Full Hierarchy Object (Towers + Nested Units)
       const hierarchy = towers.map((tower, idx) => {
@@ -207,8 +218,38 @@ const AdminLiveGrouping = () => {
 
       console.log('🚀 Submitting Partial Hierarchy:', hierarchy);
 
+      // Sanitize projectData: convert empty strings to null for numeric fields
+      const sanitizeNumeric = (val) => (val === '' || val === null || val === undefined) ? null : val;
+
+      const sanitizedProjectData = {
+        ...projectData,
+        min_buyers: sanitizeNumeric(projectData.min_buyers),
+        original_price: sanitizeNumeric(projectData.original_price),
+        group_price: sanitizeNumeric(projectData.group_price),
+        discount: sanitizeNumeric(projectData.discount),
+        savings: sanitizeNumeric(projectData.savings),
+        area: sanitizeNumeric(projectData.area),
+        discount_percentage: sanitizeNumeric(projectData.discount_percentage),
+
+        regular_price_per_sqft: sanitizeNumeric(projectData.regular_price_per_sqft),
+        regular_price_per_sqft_max: sanitizeNumeric(projectData.regular_price_per_sqft_max),
+        group_price_per_sqft: sanitizeNumeric(projectData.group_price_per_sqft),
+        group_price_per_sqft_max: sanitizeNumeric(projectData.group_price_per_sqft_max),
+
+        regular_total_price: sanitizeNumeric(projectData.regular_total_price),
+        discounted_total_price_min: sanitizeNumeric(projectData.discounted_total_price_min),
+        discounted_total_price_max: sanitizeNumeric(projectData.discounted_total_price_max), // Fixed typo in state key if any, assuming standard naming
+
+        regular_price_min: sanitizeNumeric(projectData.regular_price_min),
+        regular_price_max: sanitizeNumeric(projectData.regular_price_max),
+
+        total_savings_min: sanitizeNumeric(projectData.total_savings_min),
+        total_savings_max: sanitizeNumeric(projectData.total_savings_max),
+      };
+
       // 2. Send Single Bulk Request
-      await liveGroupDynamicAPI.createProjectWithHierarchy(projectData, hierarchy, imageFiles, brochureFile);
+      toast.loading(`Saving: Reg Max: ${sanitizedProjectData.regular_price_per_sqft_max}, Group Max: ${sanitizedProjectData.group_price_per_sqft_max}`, { duration: 3000 });
+      await liveGroupDynamicAPI.createProjectWithHierarchy(sanitizedProjectData, hierarchy, imageFiles, brochureFile);
 
       toast.success('Project and complete hierarchy created successfully!');
       setShowWizard(false);
@@ -734,9 +775,19 @@ const AdminLiveGrouping = () => {
                         <input type="file" onChange={handleBrochureChange} accept=".pdf" />
                         {brochurePreview && <p className="text-sm text-green-600 mt-1">✓ {brochurePreview}</p>}
                       </div>
-
                       {/* --- EXTENDED OPTIONAL FIELDS --- */}
                       <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">Extended Information (Optional)</div>
+
+                      <div className="input-group">
+                        <label>Min Buyers <span style={{ color: 'red' }}>*</span></label>
+                        <input
+                          type="number"
+                          value={projectData.min_buyers}
+                          onChange={e => setProjectData({ ...projectData, min_buyers: e.target.value })}
+                          placeholder="e.g. 10"
+                          required
+                        />
+                      </div>
 
 
                       <div className="input-group">
@@ -769,37 +820,94 @@ const AdminLiveGrouping = () => {
 
                       <div className="input-group">
                         <label>Regular Price/SqFt</label>
-                        <input type="number" value={projectData.regular_price_per_sqft} onChange={e => setProjectData({ ...projectData, regular_price_per_sqft: e.target.value })} />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={projectData.regular_price_per_sqft}
+                            onChange={e => setProjectData({ ...projectData, regular_price_per_sqft: e.target.value })}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={projectData.regular_price_per_sqft_max}
+                            onChange={e => setProjectData({ ...projectData, regular_price_per_sqft_max: e.target.value })}
+                          />
+                        </div>
                       </div>
                       <div className="input-group">
                         <label>Group Price/SqFt</label>
-                        <input type="number" value={projectData.group_price_per_sqft} onChange={e => setProjectData({ ...projectData, group_price_per_sqft: e.target.value })} />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={projectData.group_price_per_sqft}
+                            onChange={e => setProjectData({ ...projectData, group_price_per_sqft: e.target.value })}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={projectData.group_price_per_sqft_max}
+                            onChange={e => setProjectData({ ...projectData, group_price_per_sqft_max: e.target.value })}
+                          />
+                        </div>
                       </div>
 
                       <div className="input-group">
-                        <label>Discounted Total (Min)</label>
-                        <input type="number" value={projectData.discounted_total_price_min} onChange={e => setProjectData({ ...projectData, discounted_total_price_min: e.target.value })} />
+                        <label>Regular Price (Min - Max)</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={projectData.regular_price_min}
+                            onChange={e => setProjectData({ ...projectData, regular_price_min: e.target.value })}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={projectData.regular_price_max}
+                            onChange={e => setProjectData({ ...projectData, regular_price_max: e.target.value })}
+                          />
+                        </div>
                       </div>
+
                       <div className="input-group">
-                        <label>Discounted Total (Max)</label>
-                        <input type="number" value={projectData.discounted_total_price_max} onChange={e => setProjectData({ ...projectData, discounted_total_price_max: e.target.value })} />
+                        <label>Discounted Total (Min - Max)</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={projectData.discounted_total_price_min}
+                            onChange={e => setProjectData({ ...projectData, discounted_total_price_min: e.target.value })}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={projectData.discounted_total_price_max}
+                            onChange={e => setProjectData({ ...projectData, discounted_total_price_max: e.target.value })}
+                          />
+                        </div>
                       </div>
+
                       <div className="input-group">
-                        <label>Regular Price (Min)</label>
-                        <input type="number" value={projectData.regular_price_min} onChange={e => setProjectData({ ...projectData, regular_price_min: e.target.value })} />
+                        <label>Savings (Min - Max)</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={projectData.total_savings_min}
+                            onChange={e => setProjectData({ ...projectData, total_savings_min: e.target.value })}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={projectData.total_savings_max}
+                            onChange={e => setProjectData({ ...projectData, total_savings_max: e.target.value })}
+                          />
+                        </div>
                       </div>
-                      <div className="input-group">
-                        <label>Regular Price (Max)</label>
-                        <input type="number" value={projectData.regular_price_max} onChange={e => setProjectData({ ...projectData, regular_price_max: e.target.value })} />
-                      </div>
-                      <div className="input-group">
-                        <label>Savings (Min)</label>
-                        <input type="number" value={projectData.total_savings_min} onChange={e => setProjectData({ ...projectData, total_savings_min: e.target.value })} />
-                      </div>
-                      <div className="input-group">
-                        <label>Savings (Max)</label>
-                        <input type="number" value={projectData.total_savings_max} onChange={e => setProjectData({ ...projectData, total_savings_max: e.target.value })} />
-                      </div>
+
+
 
 
 
