@@ -11,7 +11,7 @@ const pool = new Pool({
     max: 10, // Reduced from 20 to be safer with Neon free tier limits
     min: 2,  // Minimum number of idle connections
     idleTimeoutMillis: 10000, // Close idle clients faster (10s instead of 30s)
-    connectionTimeoutMillis: 5000, // Fail faster on connection (5s)
+    connectionTimeoutMillis: 10000, // Fail after 10s on connection
     maxUses: 7500, // Close connection after 7500 queries to prevent leaks
 });
 

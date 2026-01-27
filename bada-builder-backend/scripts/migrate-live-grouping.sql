@@ -55,7 +55,10 @@ CREATE TABLE IF NOT EXISTS live_group_projects (
     secondary_cta_text VARCHAR(100),
     details_page_url TEXT,
     layout_columns INTEGER,
-    layout_rows INTEGER
+    layout_rows INTEGER,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    map_address TEXT
 );
 
 -- 2. Towers table
@@ -77,7 +80,11 @@ CREATE TABLE IF NOT EXISTS live_group_units (
     unit_number VARCHAR(20) NOT NULL,
     unit_type VARCHAR(100), -- 1BHK, 2BHK, etc.
     area FLOAT,
+    carpet_area NUMERIC,
+    super_built_up_area NUMERIC,
     price DECIMAL(15, 2),
+    price_per_sqft NUMERIC,
+    discount_price_per_sqft NUMERIC,
     status VARCHAR(20) DEFAULT 'available', -- available, locked, booked
     locked_at TIMESTAMP,
     locked_by INTEGER REFERENCES users(id) ON DELETE SET NULL,

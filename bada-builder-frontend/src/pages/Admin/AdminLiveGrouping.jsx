@@ -774,24 +774,24 @@ const AdminLiveGrouping = () => {
                     <div className="form-grid">
                       <div className="input-group">
                         <label>Project Title</label>
-                        <input type="text" value={projectData.title} onChange={e => setProjectData({ ...projectData, title: e.target.value })} placeholder="e.g. Skyline Residency" />
+                        <input type="text" value={projectData.title || ''} onChange={e => setProjectData({ ...projectData, title: e.target.value })} placeholder="e.g. Skyline Residency" />
                       </div>
                       <div className="input-group">
                         <label>Location</label>
-                        <input type="text" value={projectData.location} onChange={e => setProjectData({ ...projectData, location: e.target.value })} placeholder="e.g. Sector 45, Gurgaon" />
+                        <input type="text" value={projectData.location || ''} onChange={e => setProjectData({ ...projectData, location: e.target.value })} placeholder="e.g. Sector 45, Gurgaon" />
                       </div>
-                      
+
                       {/* Location Picker Integration */}
                       <div className="input-group full">
-                          <label>Pin Precise Location</label>
-                          <div style={{ height: '300px', width: '100%', marginBottom: '1rem' }}>
-                            <LocationPicker
-                                onLocationSelect={handleLocationSelect}
-                                initialLat={projectData.latitude}
-                                initialLng={projectData.longitude}
-                                initialAddress={projectData.map_address}
-                            />
-                          </div>
+                        <label>Pin Precise Location</label>
+                        <div style={{ height: '300px', width: '100%', marginBottom: '1rem' }}>
+                          <LocationPicker
+                            onLocationSelect={handleLocationSelect}
+                            initialLat={projectData.latitude}
+                            initialLng={projectData.longitude}
+                            initialAddress={projectData.map_address}
+                          />
+                        </div>
                       </div>
                       <div className="input-group full">
                         <label>Images</label>
@@ -812,7 +812,7 @@ const AdminLiveGrouping = () => {
                         <label>Min Buyers <span style={{ color: 'red' }}>*</span></label>
                         <input
                           type="number"
-                          value={projectData.min_buyers}
+                          value={projectData.min_buyers || ''}
                           onChange={e => setProjectData({ ...projectData, min_buyers: e.target.value })}
                           placeholder="e.g. 10"
                           required
@@ -822,30 +822,30 @@ const AdminLiveGrouping = () => {
 
                       <div className="input-group">
                         <label>Builder Name</label>
-                        <input type="text" value={projectData.builder_name} onChange={e => setProjectData({ ...projectData, builder_name: e.target.value })} placeholder="Company Name" />
+                        <input type="text" value={projectData.builder_name || ''} onChange={e => setProjectData({ ...projectData, builder_name: e.target.value })} placeholder="Company Name" />
                       </div>
                       <div className="input-group">
                         <label>Property Type (Detail)</label>
-                        <input type="text" value={projectData.property_type} onChange={e => setProjectData({ ...projectData, property_type: e.target.value })} placeholder="e.g. Luxury Apartment" />
+                        <input type="text" value={projectData.property_type || ''} onChange={e => setProjectData({ ...projectData, property_type: e.target.value })} placeholder="e.g. Luxury Apartment" />
                       </div>
                       <div className="input-group">
                         <label>Types of Units:</label>
-                        <input type="text" value={projectData.unit_configuration} onChange={e => setProjectData({ ...projectData, unit_configuration: e.target.value })} placeholder="e.g. 3BHK, 2BHK, 1BHK" />
+                        <input type="text" value={projectData.unit_configuration || ''} onChange={e => setProjectData({ ...projectData, unit_configuration: e.target.value })} placeholder="e.g. 3BHK, 2BHK, 1BHK" />
                       </div>
 
 
 
                       <div className="input-group">
                         <label>Discount %</label>
-                        <input type="number" value={projectData.discount_percentage} onChange={e => setProjectData({ ...projectData, discount_percentage: e.target.value })} placeholder="e.g. 15" />
+                        <input type="number" value={projectData.discount_percentage || ''} onChange={e => setProjectData({ ...projectData, discount_percentage: e.target.value })} placeholder="e.g. 15" />
                       </div>
                       <div className="input-group">
                         <label>Discount Label</label>
-                        <input type="text" value={projectData.discount_label} onChange={e => setProjectData({ ...projectData, discount_label: e.target.value })} placeholder="e.g. Early Bird" />
+                        <input type="text" value={projectData.discount_label || ''} onChange={e => setProjectData({ ...projectData, discount_label: e.target.value })} placeholder="e.g. Early Bird" />
                       </div>
                       <div className="input-group">
                         <label>Offer Expiry</label>
-                        <input type="datetime-local" value={projectData.offer_expiry_datetime} onChange={e => setProjectData({ ...projectData, offer_expiry_datetime: e.target.value })} />
+                        <input type="datetime-local" value={projectData.offer_expiry_datetime || ''} onChange={e => setProjectData({ ...projectData, offer_expiry_datetime: e.target.value })} />
                       </div>
 
                       <div className="input-group">
@@ -854,13 +854,13 @@ const AdminLiveGrouping = () => {
                           <input
                             type="number"
                             placeholder="Min"
-                            value={projectData.regular_price_per_sqft}
+                            value={projectData.regular_price_per_sqft || ''}
                             onChange={e => setProjectData({ ...projectData, regular_price_per_sqft: e.target.value })}
                           />
                           <input
                             type="number"
                             placeholder="Max"
-                            value={projectData.regular_price_per_sqft_max}
+                            value={projectData.regular_price_per_sqft_max || ''}
                             onChange={e => setProjectData({ ...projectData, regular_price_per_sqft_max: e.target.value })}
                           />
                         </div>
@@ -871,13 +871,13 @@ const AdminLiveGrouping = () => {
                           <input
                             type="number"
                             placeholder="Min"
-                            value={projectData.group_price_per_sqft}
+                            value={projectData.group_price_per_sqft || ''}
                             onChange={e => setProjectData({ ...projectData, group_price_per_sqft: e.target.value })}
                           />
                           <input
                             type="number"
                             placeholder="Max"
-                            value={projectData.group_price_per_sqft_max}
+                            value={projectData.group_price_per_sqft_max || ''}
                             onChange={e => setProjectData({ ...projectData, group_price_per_sqft_max: e.target.value })}
                           />
                         </div>
@@ -889,13 +889,13 @@ const AdminLiveGrouping = () => {
                           <input
                             type="number"
                             placeholder="Min"
-                            value={projectData.regular_price_min}
+                            value={projectData.regular_price_min || ''}
                             onChange={e => setProjectData({ ...projectData, regular_price_min: e.target.value })}
                           />
                           <input
                             type="number"
                             placeholder="Max"
-                            value={projectData.regular_price_max}
+                            value={projectData.regular_price_max || ''}
                             onChange={e => setProjectData({ ...projectData, regular_price_max: e.target.value })}
                           />
                         </div>
@@ -907,13 +907,13 @@ const AdminLiveGrouping = () => {
                           <input
                             type="number"
                             placeholder="Min"
-                            value={projectData.discounted_total_price_min}
+                            value={projectData.discounted_total_price_min || ''}
                             onChange={e => setProjectData({ ...projectData, discounted_total_price_min: e.target.value })}
                           />
                           <input
                             type="number"
                             placeholder="Max"
-                            value={projectData.discounted_total_price_max}
+                            value={projectData.discounted_total_price_max || ''}
                             onChange={e => setProjectData({ ...projectData, discounted_total_price_max: e.target.value })}
                           />
                         </div>
@@ -925,13 +925,13 @@ const AdminLiveGrouping = () => {
                           <input
                             type="number"
                             placeholder="Min"
-                            value={projectData.total_savings_min}
+                            value={projectData.total_savings_min || ''}
                             onChange={e => setProjectData({ ...projectData, total_savings_min: e.target.value })}
                           />
                           <input
                             type="number"
                             placeholder="Max"
-                            value={projectData.total_savings_max}
+                            value={projectData.total_savings_max || ''}
                             onChange={e => setProjectData({ ...projectData, total_savings_max: e.target.value })}
                           />
                         </div>
@@ -944,7 +944,7 @@ const AdminLiveGrouping = () => {
                             <label>Layout Columns</label>
                             <input
                               type="number"
-                              value={projectData.layout_columns}
+                              value={projectData.layout_columns || ''}
                               onChange={e => setProjectData({ ...projectData, layout_columns: e.target.value })}
                               placeholder="e.g. 5"
                             />
@@ -953,7 +953,7 @@ const AdminLiveGrouping = () => {
                             <label>Layout Rows</label>
                             <input
                               type="number"
-                              value={projectData.layout_rows}
+                              value={projectData.layout_rows || ''}
                               onChange={e => setProjectData({ ...projectData, layout_rows: e.target.value })}
                               placeholder="e.g. 2"
                             />
@@ -1000,7 +1000,7 @@ const AdminLiveGrouping = () => {
                         {towers.map((t, idx) => (
                           <Fragment key={idx}>
                             <tr>
-                              <td><input type="text" value={t.name} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
+                              <td><input type="text" value={t.name || ''} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
 
                               {projectData.type === 'Bungalow' ? (
                                 <>
@@ -1028,7 +1028,7 @@ const AdminLiveGrouping = () => {
                                 </>
                               ) : (
                                 <>
-                                  <td><input type="number" value={t.floors} onChange={e => updateTowerRow(idx, 'floors', e.target.value)} placeholder="" /></td>
+                                  <td><input type="number" value={t.floors || ''} onChange={e => updateTowerRow(idx, 'floors', e.target.value)} placeholder="" /></td>
                                   <td>
                                     <input
                                       type="number"
@@ -1556,7 +1556,7 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
                             <label className="text-[9px] font-bold text-slate-400 uppercase">Unit Type</label>
                             <select
                               className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
-                              value={unit.unit_type}
+                              value={unit.unit_type || ''}
                               onChange={e => onUpdate(uIdx, 'unit_type', e.target.value)}
                               disabled={!unit.isCustom}
                             >
@@ -1568,7 +1568,7 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
                             <input
                               type="number"
                               className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
-                              value={unit.area}
+                              value={unit.area || ''}
                               onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
                               disabled={!unit.isCustom}
                             />
@@ -1738,7 +1738,7 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults }) => {
                     <input
                       type="text"
                       className={`text-xs font-bold p-1 rounded border transition-colors ${!unit.isCustom ? 'bg-slate-50 border-transparent cursor-not-allowed text-slate-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400 outline-none'}`}
-                      value={unit.unit_number}
+                      value={unit.unit_number || ''}
                       onChange={e => onUpdate(uIdx, 'unit_number', e.target.value)}
                       disabled={!unit.isCustom}
                     />
@@ -1751,7 +1751,7 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults }) => {
                       <label className="text-[9px] font-bold text-slate-400 uppercase">Unit Type</label>
                       <select
                         className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
-                        value={unit.unit_type}
+                        value={unit.unit_type || 'Villa'}
                         onChange={e => onUpdate(uIdx, 'unit_type', e.target.value)}
                         disabled={!unit.isCustom}
                       >
@@ -1767,7 +1767,7 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults }) => {
                       <input
                         type="number"
                         className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
-                        value={unit.area}
+                        value={unit.area || ''}
                         onChange={e => onUpdate(uIdx, 'area', parseFloat(e.target.value) || 0)}
                         disabled={!unit.isCustom}
                       />
