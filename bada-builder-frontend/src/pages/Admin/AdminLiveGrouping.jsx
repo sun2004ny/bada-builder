@@ -937,29 +937,6 @@ const AdminLiveGrouping = () => {
                         </div>
                       </div>
 
-                      {projectData.type === 'Bungalow' && (
-                        <>
-                          <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">3D Layout Configuration (Optional)</div>
-                          <div className="input-group">
-                            <label>Layout Columns</label>
-                            <input
-                              type="number"
-                              value={projectData.layout_columns || ''}
-                              onChange={e => setProjectData({ ...projectData, layout_columns: e.target.value })}
-                              placeholder="e.g. 5"
-                            />
-                          </div>
-                          <div className="input-group">
-                            <label>Layout Rows</label>
-                            <input
-                              type="number"
-                              value={projectData.layout_rows || ''}
-                              onChange={e => setProjectData({ ...projectData, layout_rows: e.target.value })}
-                              placeholder="e.g. 2"
-                            />
-                          </div>
-                        </>
-                      )}
 
 
 
@@ -1064,6 +1041,30 @@ const AdminLiveGrouping = () => {
                         ))}
                       </tbody>
                     </table>
+
+                    {projectData.type === 'Bungalow' && (
+                      <div className="form-grid mt-6">
+                        <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">3D Layout Configuration (Optional)</div>
+                        <div className="input-group">
+                          <label>Layout Columns</label>
+                          <input
+                            type="number"
+                            value={projectData.layout_columns || ''}
+                            onChange={e => setProjectData({ ...projectData, layout_columns: e.target.value })}
+                            placeholder="e.g. 5"
+                          />
+                        </div>
+                        <div className="input-group">
+                          <label>Layout Rows</label>
+                          <input
+                            type="number"
+                            value={projectData.layout_rows || ''}
+                            onChange={e => setProjectData({ ...projectData, layout_rows: e.target.value })}
+                            placeholder="e.g. 2"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
