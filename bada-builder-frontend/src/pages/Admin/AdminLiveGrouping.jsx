@@ -248,7 +248,6 @@ const AdminLiveGrouping = () => {
       };
 
       // 2. Send Single Bulk Request
-      toast.loading(`Saving: Reg Max: ${sanitizedProjectData.regular_price_per_sqft_max}, Group Max: ${sanitizedProjectData.group_price_per_sqft_max}`, { duration: 3000 });
       await liveGroupDynamicAPI.createProjectWithHierarchy(sanitizedProjectData, hierarchy, imageFiles, brochureFile);
 
       toast.success('Project and complete hierarchy created successfully!');
