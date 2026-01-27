@@ -234,12 +234,9 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             regular_total_price, discounted_total_price_min, discounted_total_price_max,
             regular_price_min, regular_price_max,
             total_savings_min, total_savings_max, benefits,
-            primary_cta_text, secondary_cta_text, details_page_url
+            primary_cta_text, secondary_cta_text, details_page_url,
+            layout_columns, layout_rows
         } = req.body;
-
-        // Ensure property_type doesn't conflict with existing 'type' variable if any
-        // pt is used for property_type
-
 
         // 1. Handle Files
         let image = null;
@@ -262,10 +259,46 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             `INSERT INTO live_group_projects (
                 title, developer, location, description, status, image, images, 
                 original_price, group_price, discount, savings, type, min_buyers,
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+                possession, rera_number, area, created_by, brochure_url,
+                project_name, builder_name, property_type, unit_configuration, project_level,
+                offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+                regular_price_per_sqft, group_price_per_sqft, price_unit, currency,
+                regular_total_price, discounted_total_price_min, discounted_total_price_max,
+                regular_price_min, regular_price_max,
+                total_savings_min, total_savings_max, benefits,
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max,
+                layout_columns, layout_rows
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+                $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42,
+                $43, $44, $45, $46
+            ) RETURNING *`,
+            [
+                title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
+                project_name, builder_name, pt, unit_configuration, project_level,
+                offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+                regular_price_per_sqft, group_price_per_sqft, price_unit, currency || 'INR',
+                regular_total_price, discounted_total_price_min, discounted_total_price_max,
+                regular_price_min, regular_price_max,
+                total_savings_min, total_savings_max, Array.isArray(benefits) ? JSON.stringify(benefits) : (benefits || '[]'),
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max,
+                layout_columns, layout_rows
+            ]
+=======
+>>>>>>> Stashed changes
                 possession, rera_number, area, created_by, brochure_url
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
             RETURNING *`,
             [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url]
+<<<<<<< Updated upstream
+=======
+>>>>>>> 6c7020b47e09ce98a3bd2df24cb6cee762dbf7ad
+>>>>>>> Stashed changes
         );
 
         const project = projectResult.rows[0];
@@ -280,6 +313,41 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                 );
                 const towerId = towerResult.rows[0].id;
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+        for (const towerData of hierarchyData) {
+            // Insert Tower
+            const towerResult = await client.query(
+                'INSERT INTO live_group_towers (project_id, tower_name, total_floors, layout_columns, layout_rows) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [project.id, towerData.tower_name, towerData.total_floors, towerData.layout_columns, towerData.layout_rows]
+            );
+            const towerId = towerResult.rows[0].id;
+
+            // Insert Units
+            if (towerData.units && towerData.units.length > 0) {
+                for (const unit of towerData.units) {
+                    await client.query(
+                        `INSERT INTO live_group_units (
+                            tower_id, floor_number, unit_number, unit_type, 
+                            area, carpet_area, price, price_per_sqft, discount_price_per_sqft, status
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                        [
+                            towerId,
+                            unit.floor_number,
+                            unit.unit_number,
+                            unit.unit_type || 'Unit',
+                            unit.area || 0,
+                            unit.carpet_area || null,
+                            unit.price || 0,
+                            unit.price_per_sqft || 0,
+                            unit.discount_price_per_sqft || null,
+                            unit.status || 'available'
+                        ]
+                    );
+                    totalUnitsGenerated++;
+=======
+>>>>>>> Stashed changes
                 // Insert Units
                 if (towerData.units && Array.isArray(towerData.units)) {
                     for (const unit of towerData.units) {
@@ -300,6 +368,10 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                             ]
                         );
                     }
+<<<<<<< Updated upstream
+=======
+>>>>>>> 6c7020b47e09ce98a3bd2df24cb6cee762dbf7ad
+>>>>>>> Stashed changes
                 }
             }
         }
@@ -322,7 +394,28 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
     { name: 'brochure', maxCount: 1 }
 ]), async (req, res) => {
     try {
+<<<<<<< Updated upstream
         const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area } = req.body;
+=======
+<<<<<<< HEAD
+        const {
+            title, developer, location, description, original_price, group_price,
+            discount, savings, type, min_buyers, possession, rera_number, area,
+            // New fields
+            project_name, builder_name, property_type: pt, unit_configuration, project_level,
+            offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+            regular_price_per_sqft, regular_price_per_sqft_max, group_price_per_sqft, group_price_per_sqft_max, price_unit, currency,
+            regular_total_price, discounted_total_price_min, discounted_total_price_max,
+            regular_price_min, regular_price_max,
+            total_savings_min, total_savings_max, benefits,
+            primary_cta_text, secondary_cta_text, details_page_url,
+            layout_columns, layout_rows
+        } = req.body;
+
+=======
+        const { title, developer, location, description, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area } = req.body;
+>>>>>>> 6c7020b47e09ce98a3bd2df24cb6cee762dbf7ad
+>>>>>>> Stashed changes
 
         let image = null;
         let images = [];
@@ -345,10 +438,45 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
             `INSERT INTO live_group_projects (
         title, developer, location, description, status, image, images, 
         original_price, group_price, discount, savings, type, min_buyers,
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+        possession, rera_number, area, created_by, brochure_url,
+        project_name, builder_name, property_type, unit_configuration, project_level,
+        offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+        regular_price_per_sqft, group_price_per_sqft, price_unit, currency,
+        regular_total_price, discounted_total_price_min, discounted_total_price_max,
+        regular_price_min, regular_price_max,
+        total_savings_min, total_savings_max, benefits,
+        primary_cta_text, secondary_cta_text, details_page_url,
+        regular_price_per_sqft_max, group_price_per_sqft_max,
+        layout_columns, layout_rows
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+        $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46
+      ) RETURNING *`,
+            [
+                title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
+                project_name, builder_name, pt, unit_configuration, project_level,
+                offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+                regular_price_per_sqft, group_price_per_sqft, price_unit, currency || 'INR',
+                regular_total_price, discounted_total_price_min, discounted_total_price_max,
+                regular_price_min, regular_price_max,
+                total_savings_min, total_savings_max, Array.isArray(benefits) ? JSON.stringify(benefits) : (benefits || '[]'),
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max,
+                layout_columns, layout_rows
+            ]
+=======
+>>>>>>> Stashed changes
         possession, rera_number, area, created_by, brochure_url
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
       RETURNING *`,
             [title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url]
+<<<<<<< Updated upstream
+=======
+>>>>>>> 6c7020b47e09ce98a3bd2df24cb6cee762dbf7ad
+>>>>>>> Stashed changes
         );
 
 
@@ -362,12 +490,12 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
 // Add Tower
 router.post('/admin/projects/:id/towers', authenticate, isAdmin, async (req, res) => {
     try {
-        const { tower_name, total_floors } = req.body;
+        const { tower_name, total_floors, layout_columns, layout_rows } = req.body;
         const project_id = req.params.id;
 
         const result = await pool.query(
-            'INSERT INTO live_group_towers (project_id, tower_name, total_floors) VALUES ($1, $2, $3) RETURNING *',
-            [project_id, tower_name, total_floors]
+            'INSERT INTO live_group_towers (project_id, tower_name, total_floors, layout_columns, layout_rows) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [project_id, tower_name, total_floors, layout_columns, layout_rows]
         );
 
         res.status(201).json({ tower: result.rows[0] });

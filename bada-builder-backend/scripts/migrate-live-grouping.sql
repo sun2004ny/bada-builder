@@ -27,7 +27,35 @@ CREATE TABLE IF NOT EXISTS live_group_projects (
     area VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    brochure_url TEXT,
+    project_name VARCHAR(255),
+    builder_name VARCHAR(255),
+    property_type VARCHAR(255),
+    unit_configuration TEXT,
+    project_level VARCHAR(100),
+    offer_type VARCHAR(100),
+    discount_percentage DECIMAL(5, 2),
+    discount_label VARCHAR(255),
+    offer_expiry_datetime TIMESTAMP,
+    regular_price_per_sqft DECIMAL(15, 2),
+    regular_price_per_sqft_max DECIMAL(15, 2),
+    group_price_per_sqft DECIMAL(15, 2),
+    group_price_per_sqft_max DECIMAL(15, 2),
+    price_unit VARCHAR(50) DEFAULT 'sq ft',
+    currency VARCHAR(10) DEFAULT 'INR',
+    regular_total_price DECIMAL(15, 2),
+    discounted_total_price_min DECIMAL(15, 2),
+    discounted_total_price_max DECIMAL(15, 2),
+    regular_price_min DECIMAL(15, 2),
+    regular_price_max DECIMAL(15, 2),
+    total_savings_min DECIMAL(15, 2),
+    total_savings_max DECIMAL(15, 2),
+    primary_cta_text VARCHAR(100),
+    secondary_cta_text VARCHAR(100),
+    details_page_url TEXT,
+    layout_columns INTEGER,
+    layout_rows INTEGER
 );
 
 -- 2. Towers table
@@ -36,6 +64,8 @@ CREATE TABLE IF NOT EXISTS live_group_towers (
     project_id INTEGER REFERENCES live_group_projects(id) ON DELETE CASCADE,
     tower_name VARCHAR(100) NOT NULL,
     total_floors INTEGER NOT NULL,
+    layout_columns INTEGER,
+    layout_rows INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

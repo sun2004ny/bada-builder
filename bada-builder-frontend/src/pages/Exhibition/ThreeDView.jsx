@@ -115,8 +115,8 @@ const BungalowColony = ({ position, propertyData, project, onUnitClick }) => {
     const COLOR_SELECTED = '#3b82f6'; // Blue for hover
 
     // Arrange bungalows in rows
-    const bungalowsPerRow = Math.ceil(Math.sqrt(totalBungalows));
-    const rows = Math.ceil(totalBungalows / bungalowsPerRow);
+    const bungalowsPerRow = project?.layout_columns || Math.ceil(Math.sqrt(totalBungalows));
+    const rows = project?.layout_rows || Math.ceil(totalBungalows / bungalowsPerRow);
 
     // Calculate colony dimensions
     const colonyWidth = bungalowsPerRow * SPACING_X + ROAD_WIDTH * 2;
@@ -466,8 +466,9 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
 
     // Calculate Footprint based on unitsPerFloor
     const sampleFloorUnits = unitsByFloor[1] || unitsByFloor[0] || unitsByFloor[-1] || [];
-    const cols = Math.ceil(Math.sqrt(sampleFloorUnits.length || 4));
-    const rows = Math.ceil(sampleFloorUnits.length / cols) || 1;
+    const cols = tower.layout_columns || Math.ceil(Math.sqrt(sampleFloorUnits.length || 4));
+    const rows = tower.layout_rows || Math.ceil(sampleFloorUnits.length / cols) || 1;
+    const currentCols = cols; // For reference in unit mapping
     const footprintWidth = cols * (UNIT_WIDTH + UNIT_GAP) + 1;
     const footprintDepth = rows * (UNIT_DEPTH + UNIT_GAP) + 1;
 
@@ -509,8 +510,8 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
                 }
 
                 return units.map((unit, idx) => {
-                    const row = Math.floor(idx / cols);
-                    const col = idx % cols;
+                    const row = Math.floor(idx / currentCols);
+                    const col = idx % currentCols;
 
                     const posX = (col - (cols - 1) / 2) * (UNIT_WIDTH + UNIT_GAP);
                     const posZ = (row - (Math.ceil(units.length / cols) - 1) / 2) * (UNIT_DEPTH + UNIT_GAP);

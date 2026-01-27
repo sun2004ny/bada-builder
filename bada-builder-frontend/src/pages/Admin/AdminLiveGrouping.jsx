@@ -86,14 +86,14 @@ const AdminLiveGrouping = () => {
     total_savings_min: '',
     total_savings_max: '',
     regular_price_min: '',
-    regular_price_max: ''
-
-
+    regular_price_max: '',
+    layout_columns: '',
+    layout_rows: ''
   });
 
 
   const [towers, setTowers] = useState([
-    { name: 'Tower A', floors: 10, unitsPerFloor: 4 }
+    { name: 'Tower A', floors: 10, unitsPerFloor: 4, layout_columns: '', layout_rows: '' }
   ]);
 
 
@@ -226,6 +226,8 @@ const AdminLiveGrouping = () => {
         return {
           tower_name: tower.name, // API expects snake_case usually? Check addTower payload: { tower_name }
           total_floors: parseInt(tower.floors) || (projectData.type === 'Bungalow' ? 1 : 0),
+          layout_columns: tower.layout_columns || null,
+          layout_rows: tower.layout_rows || null,
           units: compiledUnits
         };
       });
@@ -259,6 +261,8 @@ const AdminLiveGrouping = () => {
 
         total_savings_min: sanitizeNumeric(projectData.total_savings_min),
         total_savings_max: sanitizeNumeric(projectData.total_savings_max),
+        layout_columns: sanitizeNumeric(projectData.layout_columns),
+        layout_rows: sanitizeNumeric(projectData.layout_rows),
       };
 
       // 2. Send Single Bulk Request
@@ -373,7 +377,7 @@ const AdminLiveGrouping = () => {
 
 
   const addTowerRow = () => {
-    setTowers([...towers, { name: `Tower ${String.fromCharCode(65 + towers.length)}`, floors: 10, unitsPerFloor: 4 }]);
+    setTowers([...towers, { name: `Tower ${String.fromCharCode(65 + towers.length)}`, floors: 10, unitsPerFloor: 4, layout_columns: '', layout_rows: '' }]);
   };
 
   const removeTowerRow = (index) => {
@@ -386,7 +390,7 @@ const AdminLiveGrouping = () => {
       const updatedTower = { ...newTowers[index] };
 
       // Handle number inputs specifically to prevent NaN
-      if (field === 'floors' || field === 'unitsPerFloor') {
+      if (field === 'floors' || field === 'unitsPerFloor' || field === 'total_bungalows' || field === 'layout_columns' || field === 'layout_rows') {
         updatedTower[field] = value === '' ? '' : parseInt(value);
       } else {
         updatedTower[field] = value;
@@ -933,6 +937,30 @@ const AdminLiveGrouping = () => {
                         </div>
                       </div>
 
+                      {projectData.type === 'Bungalow' && (
+                        <>
+                          <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">3D Layout Configuration (Optional)</div>
+                          <div className="input-group">
+                            <label>Layout Columns</label>
+                            <input
+                              type="number"
+                              value={projectData.layout_columns}
+                              onChange={e => setProjectData({ ...projectData, layout_columns: e.target.value })}
+                              placeholder="e.g. 5"
+                            />
+                          </div>
+                          <div className="input-group">
+                            <label>Layout Rows</label>
+                            <input
+                              type="number"
+                              value={projectData.layout_rows}
+                              onChange={e => setProjectData({ ...projectData, layout_rows: e.target.value })}
+                              placeholder="e.g. 2"
+                            />
+                          </div>
+                        </>
+                      )}
+
 
 
 
@@ -962,6 +990,7 @@ const AdminLiveGrouping = () => {
                               <th>{projectData.type === 'Plot' ? 'Size/Variant' : 'Floors'}</th>
                               <th>Units per Floor</th>
                               <th>Extra Levels</th>
+                              <th>3D Layout Cols</th>
                             </>
                           )}
                           <th>Actions</th>
@@ -1017,6 +1046,15 @@ const AdminLiveGrouping = () => {
                                         <input type="checkbox" checked={t.hasBasement || false} onChange={e => updateTowerRow(idx, 'hasBasement', e.target.checked)} /> Basement
                                       </label>
                                     </div>
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      value={t.layout_columns || ''}
+                                      onChange={e => updateTowerRow(idx, 'layout_columns', e.target.value)}
+                                      placeholder="Auto"
+                                      style={{ width: '60px' }}
+                                    />
                                   </td>
                                 </>
                               )}
@@ -1272,8 +1310,9 @@ const AdminLiveGrouping = () => {
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        )
+        }
+      </AnimatePresence >
 
       <AdminUnitEditModal
         isOpen={showUnitEditModal}
