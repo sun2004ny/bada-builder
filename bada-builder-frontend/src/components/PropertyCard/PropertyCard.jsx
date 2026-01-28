@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMapPin, FiHome, FiMaximize2, FiCalendar } from 'react-icons/fi';
+import { FiMapPin, FiHome, FiMaximize2, FiCalendar, FiShare2, FiLink, FiCheck } from 'react-icons/fi';
+import { FaWhatsapp, FaFacebook, FaTwitter } from 'react-icons/fa';
 import './PropertyCard.css';
 import BookmarkButton from '../BookmarkButton/BookmarkButton';
 import { motion } from 'framer-motion';
@@ -25,6 +26,58 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
     navigate(`/property-details/${property.id}`, { state: { property, type: source } });
   };
 
+  // --- Share Functionality ---
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/property-details/${property.id}`;
+    const shareData = {
+      title: property.project_name || property.title || 'Property Details',
+      text: `Check out this amazing property: ${property.project_name || property.title}`,
+      url: shareUrl
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      setShowShareMenu(!showShareMenu);
+      // Auto-hide copy feedback if previously set
+      if (copied) setCopied(false);
+    }
+  };
+
+  const handleSocialShare = (platform) => {
+    const shareUrl = `${window.location.origin}/property-details/${property.id}`;
+    const text = encodeURIComponent(`Check out this property: ${property.project_name || property.title}`);
+    const url = encodeURIComponent(shareUrl);
+
+    let link = '';
+    if (platform === 'whatsapp') link = `https://api.whatsapp.com/send?text=${text}%20${url}`;
+    else if (platform === 'facebook') link = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+    else if (platform === 'twitter') link = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+
+    if (link) {
+      window.open(link, '_blank');
+      setShowShareMenu(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    const shareUrl = `${window.location.origin}/property-details/${property.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+      setShowShareMenu(false);
+    }, 2000);
+  };
+
   const propertyTitle = property.project_name || property.projectName || property.title || property.projectName || 'Untitled Property';
 
   return (
@@ -42,8 +95,40 @@ const PropertyCard = ({ property, viewType = 'grid', source = 'home' }) => {
           alt={propertyTitle}
           loading="lazy"
         />
-        <div className="absolute top-3 right-3 z-10">
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
           <BookmarkButton propertyId={property.id} />
+
+          <div className="relative">
+            <AnimatedButton
+              onClick={handleShare}
+              className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white transition-all flex items-center justify-center text-gray-600 hover:text-blue-600"
+              title="Share Property"
+            >
+              <FiShare2 size={20} />
+            </AnimatedButton>
+
+            {/* Share Menu Popup - Repositioned for top-right */}
+            {showShareMenu && (
+              <div
+                className="share-menu-popup top-right-mode"
+                onClick={(e) => e.stopPropagation()}
+                onMouseLeave={() => setShowShareMenu(false)}
+              >
+                <button className="share-social-btn" onClick={() => handleSocialShare('whatsapp')}>
+                  <FaWhatsapp className="share-social-icon text-green-500" />
+                </button>
+                <button className="share-social-btn" onClick={() => handleSocialShare('facebook')}>
+                  <FaFacebook className="share-social-icon text-blue-600" />
+                </button>
+                <button className="share-social-btn" onClick={() => handleSocialShare('twitter')}>
+                  <FaTwitter className="share-social-icon text-sky-400" />
+                </button>
+                <button className="share-social-btn" onClick={handleCopyLink}>
+                  {copied ? <FiCheck className="share-social-icon text-emerald-600" /> : <FiLink className="share-social-icon text-slate-500" />}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Special Badges */}
