@@ -1065,7 +1065,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
                     }
                 }}
                 onPointerOut={() => setHoveredIndex(null)}
-                // Click removed from land mesh
+            // Click removed from land mesh
             >
                 <boxGeometry args={[V_PLOT_W, 0.15, V_PLOT_D]} />
                 <meshStandardMaterial roughness={0.7} metalness={0.05} />
@@ -1100,7 +1100,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
                                     zIndex: 10 // Ensure it sits above
                                 }}
                             >
-                                <div 
+                                <div
                                     className="flex flex-col items-center gap-1 opacity-90 hover:opacity-100 transition-opacity"
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -1182,9 +1182,9 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
 
     return (
         <group position={position}>
-            {/* Tower Name Label */}
+            {/* Tower Name Label - Dynamic Height Calculation */}
             <Text
-                position={[0, (tower.total_floors + 1) * FLOOR_HEIGHT + (hasBasement ? 2 : 0), 0]}
+                position={[0, getFloorY(parseInt(sortedFloors[sortedFloors.length - 1] || 0)) + UNIT_HEIGHT + 1.5, 0]}
                 fontSize={2.5}
                 color="#1e293b"
                 anchorX="center"
