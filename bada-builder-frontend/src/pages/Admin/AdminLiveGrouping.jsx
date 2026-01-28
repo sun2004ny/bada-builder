@@ -18,6 +18,7 @@ import './AdminLiveGrouping.css';
 const PROPERTY_TYPES = [
   { id: 'Apartment', label: 'Flat / Apartments', icon: Building2, desc: 'Multi-story residential buildings' },
   { id: 'Bungalow', label: 'Bungalow', icon: Home, desc: 'Individual luxury houses' },
+  { id: 'Twin Villa', label: 'Twin Villa', icon: Box, desc: 'Two identical houses sharing a wall' },
   { id: 'Plot', label: 'Land / Plot', icon: MapIcon, desc: 'Open land and sectors' },
   { id: 'MixedUse', label: 'Mixed Use Complex', icon: LayoutGrid, desc: 'Commercial + Residential projects' },
   { id: 'Commercial', label: 'Commercial', icon: Store, desc: 'Shops, Offices & Showrooms' }
@@ -537,14 +538,14 @@ const AdminLiveGrouping = () => {
       return units;
     };
 
-    if (projectData.type === 'Bungalow') {
+    if (projectData.type === 'Bungalow' || projectData.type === 'Twin Villa') {
       const totalBungalows = parseInt(tower.total_bungalows) || 1;
       const bungUnits = [];
 
       for (let k = 0; k < totalBungalows; k++) {
         bungUnits.push({
-          unit_number: `B-${k + 1}`,
-          unit_type: tower.bungalow_type || 'Villa',
+          unit_number: projectData.type === 'Twin Villa' ? `TV-${k + 1}` : `B-${k + 1}`,
+          unit_type: tower.bungalow_type || (projectData.type === 'Twin Villa' ? 'Twin Villa' : 'Villa'),
           area: 2500, // Plot Area
           super_built_up_area: 2000,
           carpet_area: 1500,
@@ -592,7 +593,8 @@ const AdminLiveGrouping = () => {
       case 'Apartment':
         return context === 'parent' ? 'Tower' : 'Unit';
       case 'Bungalow':
-        return context === 'parent' ? 'Block' : 'Bungalow';
+      case 'Twin Villa':
+        return context === 'parent' ? 'Block' : (type === 'Twin Villa' ? 'Twin Villa' : 'Bungalow');
       case 'Plot':
         return context === 'parent' ? 'Sector' : 'Plot';
       case 'MixedUse':
@@ -985,9 +987,9 @@ const AdminLiveGrouping = () => {
                       <thead>
                         <tr>
                           <th>{getLabel(projectData.type, 'parent')} Name</th>
-                          {projectData.type === 'Bungalow' || projectData.type === 'Plot' ? (
+                          {projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot' ? (
                             <>
-                              <th>{projectData.type === 'Plot' ? 'Total Plots' : 'Total Bungalows'}</th>
+                              <th>{projectData.type === 'Plot' ? 'Total Plots' : 'Total Units'}</th>
                               <th>{projectData.type === 'Plot' ? '3D Layout' : 'Type'}</th>
                             </>
                           ) : (
@@ -1007,7 +1009,7 @@ const AdminLiveGrouping = () => {
                             <tr>
                               <td><input type="text" value={t.name || ''} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
 
-                              {projectData.type === 'Bungalow' || projectData.type === 'Plot' ? (
+                              {projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot' ? (
                                 <>
                                   <td>
                                     <input
@@ -1027,7 +1029,7 @@ const AdminLiveGrouping = () => {
                                       </div>
                                     ) : (
                                       <select
-                                        value={t.bungalow_type || 'Villa'}
+                                        value={t.bungalow_type || (projectData.type === 'Twin Villa' ? 'Twin Villa' : 'Villa')}
                                         onChange={e => updateTowerRow(idx, 'bungalow_type', e.target.value)}
                                         className="w-full p-2 border rounded"
                                       >
@@ -1079,7 +1081,7 @@ const AdminLiveGrouping = () => {
                       </tbody>
                     </table>
 
-                    {(projectData.type === 'Bungalow' || projectData.type === 'Plot') && (
+                    {(projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot') && (
                       <div className="form-grid mt-6">
                         <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">
                           {projectData.type === 'Plot' ? 'Land Layout Configuration' : '3D Layout Configuration (Optional)'}

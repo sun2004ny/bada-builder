@@ -54,11 +54,11 @@ const InstancedFoliage = ({ type = 'tree', count = 100, positions, scales, rotat
     if (type === 'tree') {
         return (
             <group>
-                <instancedMesh ref={meshRef} args={[null, null, count]}>
+                <instancedMesh ref={meshRef} args={[null, null, count]} raycast={() => null}>
                     <cylinderGeometry args={[0.05, 0.1, 1, 6]} />
                     <meshStandardMaterial color="#4d2c19" roughness={0.9} />
                 </instancedMesh>
-                <instancedMesh ref={leafRef} args={[null, null, count]}>
+                <instancedMesh ref={leafRef} args={[null, null, count]} raycast={() => null}>
                     <coneGeometry args={[0.4, 1.2, 6]} />
                     <meshStandardMaterial color="#2d5a27" roughness={0.8} />
                 </instancedMesh>
@@ -67,7 +67,7 @@ const InstancedFoliage = ({ type = 'tree', count = 100, positions, scales, rotat
     }
 
     return (
-        <instancedMesh ref={meshRef} args={[null, null, count]}>
+        <instancedMesh ref={meshRef} args={[null, null, count]} raycast={() => null}>
             <sphereGeometry args={[0.2, 5, 5]} />
             <meshStandardMaterial color="#367a4d" roughness={0.8} />
         </instancedMesh>
@@ -173,9 +173,306 @@ const UnitBox = ({ unit, position, size, onClick, specialColor, rotation = [0, 0
     );
 };
 
-// Bungalow Colony Component - Multiple independent bungalows in a residential layout
-const BungalowColony = ({ position, propertyData, project, onUnitClick }) => {
-    // Collect and Sort units numerically for a logical sequence
+// --- Helper: Rectangular Pyramid for Roofs (Prevents shearing/distortion) ---
+const RectangularPyramid = ({ width, height, depth, color }) => {
+    const vertices = useMemo(() => {
+        const w = width / 2;
+        const d = depth / 2;
+        const h = height;
+        return new Float32Array([
+            // Base
+            -w, 0, -d, w, 0, -d, w, 0, d,
+            w, 0, d, -w, 0, d, -w, 0, -d,
+            // Sides
+            -w, 0, -d, w, 0, -d, 0, h, 0,
+            w, 0, -d, w, 0, d, 0, h, 0,
+            w, 0, d, -w, 0, d, 0, h, 0,
+            -w, 0, d, -w, 0, -d, 0, h, 0,
+        ]);
+    }, [width, height, depth]);
+
+    return (
+        <mesh castShadow>
+            <bufferGeometry onUpdate={(self) => self.computeVertexNormals()}>
+                <bufferAttribute
+                    attach="attributes-position"
+                    count={vertices.length / 3}
+                    array={vertices}
+                    itemSize={3}
+                />
+            </bufferGeometry>
+            <meshStandardMaterial color={color} roughness={0.4} flatShading={true} />
+        </mesh>
+    );
+};
+
+// --- Shared Twin Villa Building Component (Two Units, One Structure) ---
+const SharedTwinVilla = ({ position, index, units, onUnitClick }) => {
+    const [hoveredLeft, setHoveredLeft] = useState(false);
+    const [hoveredRight, setHoveredRight] = useState(false);
+    const seed = (index * 89) % 100;
+
+    const UNIT_WIDTH = 9.5;
+    const UNIT_HEIGHT = 3.5;
+    const UNIT_DEPTH = 10;
+    const ROOF_HEIGHT = 1.6;
+    const PLINTH_H = 0.5; // Simplified plinth
+    const WALL_W = UNIT_WIDTH * 0.94;
+    const WALL_D = UNIT_DEPTH * 0.94;
+    const WALL_H = UNIT_HEIGHT;
+
+    const ROOF_SLAB_W = UNIT_WIDTH * 2 + 1.2;
+    const ROOF_SLAB_D = UNIT_DEPTH + 1.2;
+    const ROOF_SLAB_H = 0.25;
+
+    // Variants for visual richness
+    const variants = [
+        { wall: '#fefcf0', roof: '#2d3748', door: '#4a2c0a', accent: '#e2e8f0', steps: '#718096' },
+        { wall: '#fdfbf7', roof: '#4a5568', door: '#5d3c1e', accent: '#cbd5e0', steps: '#a0aec0' },
+        { wall: '#f7fafc', roof: '#1a202c', door: '#3e2723', accent: '#edf2f7', steps: '#4a5568' },
+    ];
+    const v = variants[seed % variants.length];
+
+    const leftUnit = units[0];
+    const rightUnit = units[1];
+
+    const getStatusColor = (unit, hovered, baseColor) => {
+        if (!unit) return '#cbd5e0';
+        if (unit.status === 'booked') return COLOR_BOOKED;
+        if (unit.status === 'locked') return COLOR_LOCKED;
+        if (hovered && unit.status === 'available') return COLOR_SELECTED;
+        return baseColor;
+    };
+
+    const leftColor = getStatusColor(leftUnit, hoveredLeft, v.wall);
+    const rightColor = getStatusColor(rightUnit, hoveredRight, v.wall);
+
+    return (
+        <group position={position}>
+            {/* 1. Unified Plinth */}
+            <mesh position={[0, PLINTH_H / 2, 0]} castShadow receiveShadow>
+                <boxGeometry args={[UNIT_WIDTH * 2, PLINTH_H, UNIT_DEPTH]} />
+                <meshStandardMaterial color={v.steps} roughness={0.9} />
+            </mesh>
+            <mesh position={[0, PLINTH_H + 0.05, 0]}>
+                <boxGeometry args={[UNIT_WIDTH * 2 + 0.4, 0.1, UNIT_DEPTH + 0.4]} />
+                <meshStandardMaterial color={v.accent} roughness={0.7} />
+            </mesh>
+
+            {/* Left Unit */}
+            <group position={[-UNIT_WIDTH / 2, PLINTH_H + WALL_H / 2, 0]}>
+                <mesh
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (leftUnit && leftUnit.status !== 'booked') onUnitClick(leftUnit);
+                    }}
+                    onPointerOver={(e) => {
+                        e.stopPropagation();
+                        if (leftUnit && leftUnit.status === 'available') {
+                            setHoveredLeft(true);
+                            document.body.style.cursor = 'pointer';
+                        }
+                    }}
+                    onPointerOut={() => {
+                        setHoveredLeft(false);
+                        document.body.style.cursor = 'default';
+                    }}
+                    castShadow receiveShadow
+                >
+                    <boxGeometry args={[WALL_W, WALL_H, WALL_D]} />
+                    <meshStandardMaterial color={leftColor} roughness={0.7} transparent opacity={0.98} />
+                </mesh>
+
+                {/* Detailing Left */}
+                <group pointerEvents="none">
+                    <group position={[WALL_W / 2 - 2, -WALL_H / 2, WALL_D / 2]}>
+                        {/* Entrance Platform */}
+                        <mesh position={[0, 0.05, 0.6]} receiveShadow castShadow><boxGeometry args={[2.8, 0.2, 1.4]} /><meshStandardMaterial color={v.accent} /></mesh>
+                        <group position={[0, 1.1, 0.05]}>
+                            <mesh castShadow><boxGeometry args={[1.5, 2.2, 0.2]} /><meshStandardMaterial color={v.accent} /></mesh>
+                            <group position={[0, 0, 0.08]}>
+                                <mesh><boxGeometry args={[1.3, 2.0, 0.1]} /><meshStandardMaterial color={v.door} roughness={0.5} /></mesh>
+                                <mesh position={[0, 0.6, 0.02]} scale={[0.7, 0.3, 1]}><boxGeometry args={[1.1, 1.8, 0.02]} /><meshStandardMaterial color={v.door} roughness={0.7} /></mesh>
+                                <mesh position={[0.4, 0, 0.06]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#ECC94B" metalness={0.8} /></mesh>
+                            </group>
+                        </group>
+                    </group>
+                    <group position={[-WALL_W / 2 + 2.5, 0, WALL_D / 2 + 0.05]}>
+                        <mesh castShadow><boxGeometry args={[2.5, 1.8, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                        <mesh position={[0, -0.9, 0.1]}><boxGeometry args={[2.7, 0.1, 0.3]} /><meshStandardMaterial color={v.accent} /></mesh>
+                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[2.2, 1.5, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.6} /></mesh>
+                    </group>
+                    {/* Side Windows */}
+                    <group position={[-WALL_W / 2 - 0.05, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+                        <mesh castShadow><boxGeometry args={[2.0, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.7, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                    </group>
+                </group>
+
+                {leftUnit && (
+                    <group position={[0, WALL_H / 2 + 3, 0]}>
+                        <Text fontSize={1} color={hoveredLeft ? "#3b82f6" : "#1e293b"} outlineWidth={0.05} outlineColor="white">
+                            {leftUnit.unit_number}
+                        </Text>
+                    </group>
+                )}
+            </group>
+
+            {/* Right Unit */}
+            <group position={[UNIT_WIDTH / 2, PLINTH_H + WALL_H / 2, 0]}>
+                <mesh
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (rightUnit && rightUnit.status !== 'booked') onUnitClick(rightUnit);
+                    }}
+                    onPointerOver={(e) => {
+                        e.stopPropagation();
+                        if (rightUnit && rightUnit.status === 'available') {
+                            setHoveredRight(true);
+                            document.body.style.cursor = 'pointer';
+                        }
+                    }}
+                    onPointerOut={() => {
+                        setHoveredRight(false);
+                        document.body.style.cursor = 'default';
+                    }}
+                    castShadow receiveShadow
+                >
+                    <boxGeometry args={[WALL_W, WALL_H, WALL_D]} />
+                    <meshStandardMaterial color={rightUnit ? rightColor : '#cbd5e0'} roughness={0.7} transparent opacity={rightUnit ? 0.98 : 0.4} />
+                </mesh>
+
+                {rightUnit && (
+                    <group pointerEvents="none">
+                        <group position={[-WALL_W / 2 + 2, -WALL_H / 2, WALL_D / 2]}>
+                            {/* Entrance Platform */}
+                            <mesh position={[0, 0.05, 0.6]} receiveShadow castShadow><boxGeometry args={[2.8, 0.2, 1.4]} /><meshStandardMaterial color={v.accent} /></mesh>
+                            <group position={[0, 1.1, 0.05]}>
+                                <mesh castShadow><boxGeometry args={[1.5, 2.2, 0.2]} /><meshStandardMaterial color={v.accent} /></mesh>
+                                <group position={[0, 0, 0.08]}>
+                                    <mesh><boxGeometry args={[1.3, 2.0, 0.1]} /><meshStandardMaterial color={v.door} roughness={0.5} /></mesh>
+                                    <mesh position={[0, 0.6, 0.02]} scale={[0.7, 0.3, 1]}><boxGeometry args={[1.1, 1.8, 0.02]} /><meshStandardMaterial color={v.door} roughness={0.7} /></mesh>
+                                    <mesh position={[-0.4, 0, 0.06]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#ECC94B" metalness={0.8} /></mesh>
+                                </group>
+                            </group>
+                        </group>
+                        <group position={[WALL_W / 2 - 2.5, 0, WALL_D / 2 + 0.05]}>
+                            <mesh castShadow><boxGeometry args={[2.5, 1.8, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                            <mesh position={[0, -0.9, 0.1]}><boxGeometry args={[2.7, 0.1, 0.3]} /><meshStandardMaterial color={v.accent} /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[2.2, 1.5, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.6} /></mesh>
+                        </group>
+                        {/* Side Windows */}
+                        <group position={[WALL_W / 2 + 0.05, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+                            <mesh castShadow><boxGeometry args={[2.0, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.7, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                        </group>
+                        <group position={[0, WALL_H / 2 + 3, 0]}>
+                            <Text fontSize={1} color={hoveredRight ? "#3b82f6" : "#1e293b"} outlineWidth={0.05} outlineColor="white">
+                                {rightUnit.unit_number}
+                            </Text>
+                        </group>
+                    </group>
+                )}
+            </group>
+
+            {/* 3. Roof System */}
+            <group position={[0, PLINTH_H + WALL_H, 0]}>
+                <mesh position={[0, ROOF_SLAB_H / 2, 0]} castShadow>
+                    <boxGeometry args={[ROOF_SLAB_W, ROOF_SLAB_H, ROOF_SLAB_D]} />
+                    <meshStandardMaterial color={v.accent} roughness={0.5} />
+                </mesh>
+                <group position={[0, ROOF_SLAB_H, 0]}>
+                    <RectangularPyramid width={ROOF_SLAB_W - 0.2} height={ROOF_HEIGHT} depth={ROOF_SLAB_D - 0.2} color={v.roof} />
+                </group>
+            </group>
+        </group>
+    );
+};
+
+// --- Standalone Plot Component (to fit in ResidentialColony grid) ---
+const UnitPlot = ({ position, unit, onUnitClick }) => {
+    const [hovered, setHovered] = useState(false);
+    const isBooked = unit?.status === 'booked';
+    const isAvailable = unit?.status === 'available';
+
+    // Image-matched colors: Vibrant Green for available, Vibrant Red for booked
+    let color = '#2ecc71'; // Vibrant Emerald Green
+    if (isBooked) color = '#eb3b5a'; // Red
+    else if (unit?.status === 'locked') color = '#f59e0b'; // Amber
+    else if (hovered && isAvailable) color = '#0fb9b1'; // Teal hover
+
+    // Image-matched proportions: Deep plots
+    const plotW = 14;
+    const plotD = 18;
+
+    return (
+        <group position={position}>
+            {/* 1. Plot Surface (Vibrant) */}
+            <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, 0.05, 0]}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (unit) onUnitClick(unit);
+                }}
+                onPointerOver={(e) => {
+                    e.stopPropagation();
+                    if (isAvailable) {
+                        setHovered(true);
+                        document.body.style.cursor = 'pointer';
+                    }
+                }}
+                onPointerOut={() => {
+                    setHovered(false);
+                    document.body.style.cursor = 'default';
+                }}
+            >
+                <planeGeometry args={[plotW, plotD]} />
+                <meshStandardMaterial
+                    color={color}
+                    roughness={0.6}
+                    transparent
+                    opacity={0.9}
+                />
+            </mesh>
+
+            {/* 2. Thin White Border */}
+            <lineSegments position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <edgesGeometry args={[new THREE.PlaneGeometry(plotW, plotD)]} />
+                <lineBasicMaterial color="white" transparent opacity={0.4} />
+            </lineSegments>
+
+            {/* 3. Floating Floating Black Badge */}
+            {unit && (
+                <group position={[0, 1.2, 0]}>
+                    <mesh castShadow>
+                        <boxGeometry args={[4.2, 2.2, 0.1]} />
+                        <meshStandardMaterial color="#1a202c" roughness={0.1} />
+                    </mesh>
+                    <Text
+                        position={[0, 0.35, 0.08]}
+                        fontSize={0.7}
+                        color="white"
+                        anchorX="center"
+                    >
+                        {unit.unit_number.match(/^[0-9]+$/) ? `P-${unit.unit_number}` : unit.unit_number}
+                    </Text>
+                    <Text
+                        position={[0, -0.4, 0.08]}
+                        fontSize={0.35}
+                        color="#a0aec0"
+                        anchorX="center"
+                    >
+                        {unit.area || '1200'} sq ft
+                    </Text>
+                </group>
+            )}
+        </group>
+    );
+};
+
+// --- Unified Residential Colony (Handles Bungalow, Twin Villa, and Plot with Pairing) ---
+const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => {
     const rawUnits = project?.towers?.reduce((units, tower) => {
         return [...units, ...(tower.units || [])];
     }, []) || [];
@@ -186,347 +483,346 @@ const BungalowColony = ({ position, propertyData, project, onUnitClick }) => {
         return numA - numB;
     });
 
-    const totalBungalows = allUnits.length || 6;
+    // Pairing Logic
+    const buildings = [];
+    let i = 0;
+    while (i < allUnits.length) {
+        const unit = allUnits[i];
+        const typeNorm = (unit.unit_type || '').toLowerCase();
+        const isTV = typeNorm.includes('twin');
+        const isPlot = typeNorm.includes('plot') || typeNorm.includes('land');
 
-    // Colony configuration
-    const BUNGALOW_WIDTH = 12;
-    const BUNGALOW_HEIGHT = 3.5;
-    const BUNGALOW_DEPTH = 10;
-    const ROOF_HEIGHT = 1.5;
-    const ROOF_OVERHANG = 0.8;
-    const SPACING_X = 18; // Horizontal spacing between bungalows
-    const SPACING_Z = 16; // Vertical spacing between rows
-    const ROAD_WIDTH = 4;
+        if (isPlot) {
+            buildings.push({ type: 'Plot', units: [unit] });
+            i++;
+            continue;
+        }
 
-    // Colors
-    const WALL_COLORS = ['#f5f5dc', '#faf0e6', '#fff8dc', '#f0e68c']; // Cream variations
-    const ROOF_COLORS = ['#4a5568', '#5a6978', '#6b7280']; // Dark grey variations
-    const DOOR_COLOR = '#8b4513';
-    const WINDOW_COLOR = '#87ceeb';
-    const GROUND_COLOR = '#a8d5ba';
+        if (isTV && i + 1 < allUnits.length) {
+            const nextUnit = allUnits[i + 1];
+            const nextIsTV = (nextUnit.unit_type || '').toLowerCase().includes('twin');
+            if (nextIsTV) {
+                buildings.push({ type: 'TwinVilla', units: [unit, nextUnit] });
+                i += 2;
+                continue;
+            }
+        }
+        buildings.push({ type: isTV ? 'TwinVilla' : 'Bungalow', units: [unit] });
+        i++;
+    }
+
+    const isMixed = buildings.some((b, idx, arr) => idx > 0 && b.type !== arr[0].type);
+    const isOnlyPlots = buildings.every(b => b.type === 'Plot');
+
+    // Spacing configuration (prefer project data for "modern/dynamic" layout)
+    const SCALE = 0.2;
+    const projectRW = parseFloat(project?.road_width || 20) * SCALE;
+    const projectPW = parseFloat(project?.plot_size_width || (isOnlyPlots ? 100 : 120)) * SCALE;
+    const projectPD = parseFloat(project?.plot_size_depth || (isOnlyPlots ? 90 : 100)) * SCALE;
+    const projectGap = parseFloat(project?.plot_gap || (isOnlyPlots ? 5 : 10)) * SCALE;
+
+    const SPACING_X = projectPW + projectGap + (isMixed ? 4 : 0);
+    const SPACING_Z = projectPD + projectRW;
+    const ROAD_WIDTH = projectRW || 4;
+
+    const bPerRow = project?.layout_columns || Math.ceil(Math.sqrt(buildings.length));
+    const totalRows = Math.ceil(buildings.length / bPerRow);
+    const colWidth = bPerRow * SPACING_X + ROAD_WIDTH * 2;
+    const colDepth = totalRows * SPACING_Z + ROAD_WIDTH * 2;
+
     const ROAD_COLOR = '#6b7280';
     const GREEN_SPACE_COLOR = '#7cb342';
-    const COLOR_SELECTED = '#3b82f6'; // Blue for hover
 
-    // Arrange bungalows in rows
-    const bungalowsPerRow = project?.layout_columns || Math.ceil(Math.sqrt(totalBungalows));
-    const rows = project?.layout_rows || Math.ceil(totalBungalows / bungalowsPerRow);
-
-    // Calculate colony dimensions
-    const colonyWidth = bungalowsPerRow * SPACING_X + ROAD_WIDTH * 2;
-    const colonyDepth = rows * SPACING_Z + ROAD_WIDTH * 2;
-
-    // Single Extremely Detailed Bungalow Unit Component
-    const BungalowUnit = ({ position, index, unit }) => {
-        const [hovered, setHovered] = useState(false);
-
-        // --- Per-Unit Randomization Seed (based on index) ---
-        const seed = (index * 77) % 100;
-
-        // --- Structural Constants ---
-        const PLINTH_HEIGHT = 0.6;
-        const P_WIDTH = BUNGALOW_WIDTH;
-        const P_DEPTH = BUNGALOW_DEPTH;
-
-        const WALL_W = BUNGALOW_WIDTH * 0.94;
-        const WALL_D = BUNGALOW_DEPTH * 0.94;
-        const WALL_H = BUNGALOW_HEIGHT;
-
-        const ROOF_SLAB_W = BUNGALOW_WIDTH + ROOF_OVERHANG;
-        const ROOF_SLAB_D = BUNGALOW_DEPTH + ROOF_OVERHANG;
-        const ROOF_SLAB_H = 0.3;
-
-        // --- Visual Variants (6+ Randomized) ---
-        const variants = [
-            { wall: '#fefcf0', roof: '#2d3748', door: '#4a2c0a', accent: '#e2e8f0', steps: '#718096' }, // Ivory & Charcoal
-            { wall: '#fdfbf7', roof: '#4a5568', door: '#5d3c1e', accent: '#cbd5e0', steps: '#a0aec0' }, // Classic Beige
-            { wall: '#f7fafc', roof: '#1a202c', door: '#3e2723', accent: '#edf2f7', steps: '#4a5568' }, // Modern Cool
-            { wall: '#fff5f5', roof: '#334155', door: '#5c4033', accent: '#f1f5f9', steps: '#64748b' }, // Subtle Rose
-            { wall: '#f0fff4', roof: '#4a5568', door: '#2c3e50', accent: '#e6fffa', steps: '#718096' }, // Mint Tint
-            { wall: '#fffaf0', roof: '#2d3748', door: '#3d2b1f', accent: '#f7fafc', steps: '#8a8d91' }, // Warm Silk
-        ];
-        const v = variants[seed % variants.length];
-
-        // --- Randomized Porch Logic ---
-        const porchWidth = 4 + (seed % 15) / 10; // 4.0 to 5.5
-        const porchDepth = 2.5 + (seed % 10) / 10; // 2.5 to 3.5
-
-        // --- Interaction State ---
-        const isBooked = unit?.status === 'booked';
-        const isLocked = unit?.status === 'locked';
-        const isAvailable = unit?.status === 'available';
-
-        let buildingColor = v.wall;
-        if (isBooked) buildingColor = COLOR_BOOKED;
-        else if (isLocked) buildingColor = COLOR_LOCKED;
-        else if (hovered && isAvailable) buildingColor = COLOR_SELECTED;
-
-        return (
-            <group position={position}>
-                {/* 1. Foundation Plinth (Beveled effect via layered boxes) */}
-                <group position={[0, PLINTH_HEIGHT / 2, 0]} pointerEvents="none">
-                    <mesh receiveShadow castShadow>
-                        <boxGeometry args={[P_WIDTH, PLINTH_HEIGHT, P_DEPTH]} />
-                        <meshStandardMaterial color={v.steps} roughness={0.9} />
-                    </mesh>
-                    <mesh position={[0, 0.05, 0]}> {/* Subtle top bevel slab */}
-                        <boxGeometry args={[P_WIDTH + 0.1, 0.1, P_DEPTH + 0.1]} />
-                        <meshStandardMaterial color={v.accent} roughness={0.7} />
-                    </mesh>
-                </group>
-
-                {/* 2. Main Building Body (Walls) - Primary Interaction Target */}
-                <mesh
-                    position={[0, PLINTH_HEIGHT + WALL_H / 2, 0]}
-                    receiveShadow
-                    castShadow
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        // Only allow click for interactive units (available or locked)
-                        if (!isBooked && unit) {
-                            onUnitClick(unit);
-                        }
-                    }}
-                    onPointerOver={(e) => {
-                        e.stopPropagation();
-                        // Only show hover for available units
-                        if (isAvailable && !isBooked) {
-                            setHovered(true);
-                            document.body.style.cursor = 'pointer';
-                        }
-                    }}
-                    onPointerOut={() => {
-                        setHovered(false);
-                        document.body.style.cursor = 'default';
-                    }}
-                >
-                    <boxGeometry args={[WALL_W, WALL_H, WALL_D]} />
-                    <meshStandardMaterial
-                        color={buildingColor}
-                        roughness={0.7}
-                        transparent
-                        opacity={isBooked ? 0.9 : 0.98}
-                    />
-                </mesh>
-
-                {/* Decorative Elements - Non-Clickable (pointerEvents="none") */}
-                <group pointerEvents="none">
-                    {/* Corner Moldings */}
-                    {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
-                        <mesh key={`corner-${i}`} position={[(WALL_W / 2) * x, PLINTH_HEIGHT + WALL_H / 2, (WALL_D / 2) * z]} castShadow>
-                            <boxGeometry args={[0.2, WALL_H, 0.2]} />
-                            <meshStandardMaterial color={v.accent} />
-                        </mesh>
-                    ))}
-
-                    {/* 3. Roof System */}
-                    <group position={[0, PLINTH_HEIGHT + WALL_H, 0]}>
-                        <mesh position={[0, ROOF_SLAB_H / 2, 0]} castShadow>
-                            <boxGeometry args={[ROOF_SLAB_W, ROOF_SLAB_H, ROOF_SLAB_D]} />
-                            <meshStandardMaterial color={v.accent} roughness={0.5} />
-                        </mesh>
-                        <mesh
-                            position={[0, ROOF_SLAB_H + ROOF_HEIGHT / 2, 0]}
-                            scale={[1, 1, ROOF_SLAB_D / ROOF_SLAB_W]}
-                            rotation={[0, Math.PI / 4, 0]}
-                            castShadow
-                        >
-                            <coneGeometry args={[ROOF_SLAB_W / Math.sqrt(2), ROOF_HEIGHT, 4]} />
-                            <meshStandardMaterial color={v.roof} roughness={0.4} flatShading={true} />
-                        </mesh>
-                    </group>
-
-                    {/* 4. Porch & Entrance Assembly */}
-                    <group position={[0, PLINTH_HEIGHT, WALL_D / 2]}>
-                        <mesh position={[0, -0.05, porchDepth / 2]} receiveShadow castShadow>
-                            <boxGeometry args={[porchWidth, 0.2, porchDepth]} />
-                            <meshStandardMaterial color={v.accent} />
-                        </mesh>
-
-                        {[0, 1, 2, 3].map((step) => (
-                            <mesh key={`step-${step}`} position={[0, -0.2 - (step * 0.12), porchDepth + (step * 0.3)]} castShadow>
-                                <boxGeometry args={[porchWidth * 0.8, 0.12, 0.4]} />
-                                <meshStandardMaterial color={v.steps} roughness={0.9} />
-                            </mesh>
-                        ))}
-
-                        {[-(porchWidth / 2 - 0.2), (porchWidth / 2 - 0.2)].map((x, i) => (
-                            <group key={`col-grp-${i}`} position={[x, 0, porchDepth - 0.3]}>
-                                <mesh position={[0, 0.1, 0]} castShadow>
-                                    <boxGeometry args={[0.4, 0.2, 0.4]} />
-                                    <meshStandardMaterial color={v.steps} />
-                                </mesh>
-                                <mesh position={[0, WALL_H / 2, 0]} castShadow>
-                                    <boxGeometry args={[0.2, WALL_H, 0.2]} />
-                                    <meshStandardMaterial color={v.accent} />
-                                </mesh>
-                            </group>
-                        ))}
-
-                        <group position={[0, 1.1, 0.05]}>
-                            <mesh castShadow>
-                                <boxGeometry args={[1.8, 2.4, 0.2]} />
-                                <meshStandardMaterial color={v.accent} />
-                            </mesh>
-                            <group position={[0, 0, 0.08]}>
-                                <mesh>
-                                    <boxGeometry args={[1.5, 2.1, 0.1]} />
-                                    <meshStandardMaterial color={v.door} roughness={0.5} />
-                                </mesh>
-                                <mesh position={[0, 0.6, 0.02]} scale={[0.7, 0.3, 1]}>
-                                    <boxGeometry args={[1.3, 2.0, 0.02]} />
-                                    <meshStandardMaterial color={v.door} roughness={0.7} />
-                                </mesh>
-                                <mesh position={[0.5, 0, 0.06]}>
-                                    <sphereGeometry args={[0.04, 8, 8]} />
-                                    <meshStandardMaterial color="#ECC94B" metalness={0.8} />
-                                </mesh>
-                            </group>
-                        </group>
-                    </group>
-
-                    {/* 5. Window Assemblies */}
-                    {[-3.2, 3.2].map((x, i) => (
-                        <group key={`win-f-${i}`} position={[x, PLINTH_HEIGHT + WALL_H * 0.55, WALL_D / 2 + 0.05]}>
-                            <mesh castShadow>
-                                <boxGeometry args={[1.5, 1.8, 0.2]} />
-                                <meshStandardMaterial color="white" />
-                            </mesh>
-                            <mesh position={[0, -0.9, 0.1]}>
-                                <boxGeometry args={[1.7, 0.1, 0.3]} />
-                                <meshStandardMaterial color={v.accent} />
-                            </mesh>
-                            <mesh position={[0, 0.9, 0.1]}>
-                                <boxGeometry args={[1.6, 0.15, 0.25]} />
-                                <meshStandardMaterial color={v.accent} />
-                            </mesh>
-                            <mesh position={[0, 0, 0.06]}>
-                                <boxGeometry args={[1.2, 1.5, 0.05]} />
-                                <meshStandardMaterial color="#87ceeb" transparent opacity={0.6} metalness={0.6} />
-                            </mesh>
-                        </group>
-                    ))}
-
-                    {/* Side Windows */}
-                    {[-2.5, 2.5].map((z, i) => (
-                        <group key={`win-s-${i}`}>
-                            <group position={[WALL_W / 2 + 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, Math.PI / 2, 0]}>
-                                <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
-                                <mesh position={[0, -0.75, 0.1]}><boxGeometry args={[1.6, 0.08, 0.25]} /><meshStandardMaterial color={v.accent} /></mesh>
-                                <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
-                            </group>
-                            <group position={[-WALL_W / 2 - 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, -Math.PI / 2, 0]}>
-                                <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
-                                <mesh position={[0, -0.75, 0.1]}><boxGeometry args={[1.6, 0.08, 0.25]} /><meshStandardMaterial color={v.accent} /></mesh>
-                                <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
-                            </group>
-                        </group>
-                    ))}
-                </group>
-
-                {/* 6. High Visibility Unit Label */}
-                {unit && (
-                    <group position={[0, PLINTH_HEIGHT + WALL_H * 0.8, WALL_D / 2 + 0.2]}>
-                        <Text
-                            fontSize={0.6}
-                            color={hovered ? "#3b82f6" : "#1a202c"} // Solid black/dark charcoal
-                            anchorX="center"
-                            anchorY="middle"
-                        >
-                            {unit.unit_number}
-                        </Text>
-                    </group>
-                )}
-            </group>
-        );
-    };
+    // Tree generation for Plots
+    const treePositions = useMemo(() => {
+        const positions = [];
+        // Boundary trees
+        for (let x = -colWidth / 2 - 5; x <= colWidth / 2 + 5; x += 15) {
+            positions.push([x, 0, -colDepth / 2 - 5]);
+            positions.push([x, 0, colDepth / 2 + 5]);
+        }
+        for (let z = -colDepth / 2 - 5; z <= colDepth / 2 + 5; z += 15) {
+            positions.push([-colWidth / 2 - 5, 0, z]);
+            positions.push([colWidth / 2 + 5, 0, z]);
+        }
+        // Scattered interior trees
+        if (isOnlyPlots) {
+            for (let i = 0; i < 40; i++) {
+                positions.push([
+                    (Math.random() - 0.5) * (colWidth + 20),
+                    0,
+                    (Math.random() - 0.5) * (colDepth + 20)
+                ]);
+            }
+        }
+        return positions;
+    }, [colWidth, colDepth, isOnlyPlots]);
 
     return (
         <group position={position}>
-            {/* Colony Ground Base */}
+            {/* 1. Colony Ground Base (Lush Green) */}
             <mesh position={[0, -0.5, 0]} receiveShadow>
-                <boxGeometry args={[colonyWidth + 10, 0.3, colonyDepth + 10]} />
-                <meshStandardMaterial color={GROUND_COLOR} roughness={0.9} />
+                <boxGeometry args={[colWidth + 60, 0.3, colDepth + 60]} />
+                <meshStandardMaterial color="#5d8233" roughness={1} />
             </mesh>
 
-            {/* Compound Boundary Wall */}
+            {/* 2. Compound Boundary Fence */}
             <lineSegments position={[0, 1, 0]}>
-                <edgesGeometry args={[new THREE.BoxGeometry(colonyWidth + 8, 2, colonyDepth + 8)]} />
-                <lineBasicMaterial color="#8b7355" linewidth={3} />
+                <edgesGeometry args={[new THREE.BoxGeometry(colWidth + 15, 2, colDepth + 15)]} />
+                <lineBasicMaterial color="#2d3436" linewidth={4} />
             </lineSegments>
 
-            {/* Internal Roads - Horizontal */}
-            {Array.from({ length: rows + 1 }).map((_, i) => {
-                const zPos = -colonyDepth / 2 + i * SPACING_Z;
-                return (
-                    <mesh key={`road-h-${i}`} position={[0, -0.35, zPos]} receiveShadow>
-                        <boxGeometry args={[colonyWidth, 0.1, ROAD_WIDTH]} />
-                        <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
-                    </mesh>
-                );
-            })}
+            {/* 3. Instanced Trees (Perimeter & Scattered) */}
+            <InstancedFoliage
+                count={treePositions.length}
+                positions={treePositions}
+                scales={treePositions.map(() => 1.5 + Math.random() * 1.0)}
+                rotations={treePositions.map(() => Math.random() * Math.PI)}
+            />
 
-            {/* Internal Roads - Vertical */}
-            {Array.from({ length: bungalowsPerRow + 1 }).map((_, i) => {
-                const xPos = -colonyWidth / 2 + i * SPACING_X;
-                return (
-                    <mesh key={`road-v-${i}`} position={[xPos, -0.35, 0]} receiveShadow>
-                        <boxGeometry args={[ROAD_WIDTH, 0.1, colonyDepth]} />
-                        <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
-                    </mesh>
-                );
-            })}
+            {/* 4. Internal Roads */}
+            {Array.from({ length: totalRows + 1 }).map((_, i) => (
+                <mesh key={`road-h-${i}`} position={[0, -0.35, -colDepth / 2 + i * SPACING_Z]} receiveShadow>
+                    <boxGeometry args={[colWidth, 0.1, ROAD_WIDTH]} />
+                    <meshStandardMaterial color="#a5b1c2" roughness={0.4} />
+                </mesh>
+            ))}
 
-            {/* Green Spaces (between some bungalows) */}
-            {Array.from({ length: Math.floor(totalBungalows / 3) }).map((_, i) => {
-                const row = Math.floor((i * 2) / bungalowsPerRow);
-                const col = (i * 2) % bungalowsPerRow;
-                const xPos = -colonyWidth / 2 + col * SPACING_X + SPACING_X / 2;
-                const zPos = -colonyDepth / 2 + row * SPACING_Z + SPACING_Z / 2;
+            {/* 4. Internal Roads - Vertical */}
+            {Array.from({ length: bPerRow + 1 }).map((_, i) => (
+                <mesh key={`road-v-${i}`} position={[-colWidth / 2 + i * SPACING_X, -0.35, 0]} receiveShadow>
+                    <boxGeometry args={[ROAD_WIDTH, 0.1, colDepth]} />
+                    <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                </mesh>
+            ))}
 
+            {/* 5. Random Green Spaces */}
+            {Array.from({ length: Math.floor(buildings.length / 3) }).map((_, i) => {
+                const r = (i * 3) % totalRows;
+                const c = (i * 2) % bPerRow;
+                const x = -colWidth / 2 + c * SPACING_X + SPACING_X / 2;
+                const z = -colDepth / 2 + r * SPACING_Z + SPACING_Z / 2;
                 return (
-                    <mesh key={`green-${i}`} position={[xPos, -0.3, zPos]} receiveShadow>
-                        <boxGeometry args={[6, 0.15, 6]} />
+                    <mesh key={`green-${i}`} position={[x, -0.28, z]} receiveShadow>
+                        <boxGeometry args={[8, 0.1, 8]} />
                         <meshStandardMaterial color={GREEN_SPACE_COLOR} roughness={0.8} />
                     </mesh>
                 );
             })}
 
-            {/* Render Individual Bungalows */}
-            {Array.from({ length: totalBungalows }).map((_, index) => {
-                const row = Math.floor(index / bungalowsPerRow);
-                const col = index % bungalowsPerRow;
+            {/* Render Buildings */}
+            {buildings.map((b, idx) => {
+                const row = Math.floor(idx / bPerRow);
+                const col = idx % bPerRow;
+                const xPos = -colWidth / 2 + col * SPACING_X + SPACING_X / 2;
+                const zPos = -colDepth / 2 + row * SPACING_Z + SPACING_Z / 2;
 
-                const xPos = -colonyWidth / 2 + col * SPACING_X + SPACING_X / 2;
-                // Reverse row mapping: row 0 (index 0) is now at the front
-                const visualRow = (rows - 1) - row;
-                const zPos = -colonyDepth / 2 + visualRow * SPACING_Z + SPACING_Z / 2;
-
-                const unit = allUnits[index]; // Get the actual unit data
-
-                return (
-                    <BungalowUnit
-                        key={`bungalow-${index}`}
-                        position={[xPos, 0, zPos]}
-                        index={index}
-                        unit={unit}
-                        onUnitClick={onUnitClick}
-                    />
-                );
+                if (b.type === 'TwinVilla') {
+                    return (
+                        <SharedTwinVilla
+                            key={`building-${idx}`}
+                            position={[xPos, 0, zPos]}
+                            index={idx}
+                            units={b.units}
+                            onUnitClick={onUnitClick}
+                        />
+                    );
+                } else if (b.type === 'Plot') {
+                    return (
+                        <UnitPlot
+                            key={`plot-${idx}`}
+                            position={[xPos, 0, zPos]}
+                            unit={b.units[0]}
+                            onUnitClick={onUnitClick}
+                        />
+                    );
+                } else {
+                    return (
+                        <Bungalow
+                            key={`building-${idx}`}
+                            position={[xPos, 0, zPos]}
+                            index={idx}
+                            unit={b.units[0]}
+                            onUnitClick={onUnitClick}
+                        />
+                    );
+                }
             })}
 
             {/* Colony Name Label */}
             <Text
-                position={[0, BUNGALOW_HEIGHT + ROOF_HEIGHT + 4, -colonyDepth / 2 - 8]}
-                fontSize={3}
+                position={[0, 10, -colDepth / 2 - 10]}
+                fontSize={4}
                 color="#1e293b"
                 anchorX="center"
             >
-                {propertyData?.title || propertyData?.project_name || 'Bungalow Colony'}
+                {propertyData?.title || 'Residential Project'}
             </Text>
         </group>
     );
 };
+
+// --- Detailed Bungalow Unit Component (Moved to top-level for reuse) ---
+const Bungalow = ({ position, index, unit, onUnitClick }) => {
+    const [hovered, setHovered] = useState(false);
+    const seed = (index * 77) % 100;
+
+    const BUNGALOW_WIDTH = 12;
+    const BUNGALOW_HEIGHT = 3.5;
+    const BUNGALOW_DEPTH = 10;
+    const ROOF_HEIGHT = 1.6;
+    const ROOF_OVERHANG = 0.8;
+    const PLINTH_HEIGHT = 0.6;
+    const WALL_W = BUNGALOW_WIDTH * 0.94;
+    const WALL_D = BUNGALOW_DEPTH * 0.94;
+    const WALL_H = BUNGALOW_HEIGHT;
+
+    const ROOF_SLAB_W = BUNGALOW_WIDTH + ROOF_OVERHANG;
+    const ROOF_SLAB_D = BUNGALOW_DEPTH + ROOF_OVERHANG;
+    const ROOF_SLAB_H = 0.25;
+
+    const variants = [
+        { wall: '#fefcf0', roof: '#2d3748', door: '#4a2c0a', accent: '#e2e8f0', steps: '#718096' },
+        { wall: '#fdfbf7', roof: '#4a5568', door: '#5d3c1e', accent: '#cbd5e0', steps: '#a0aec0' },
+        { wall: '#f7fafc', roof: '#1a202c', door: '#3e2723', accent: '#edf2f7', steps: '#4a5568' },
+        { wall: '#fff5f5', roof: '#334155', door: '#5c4033', accent: '#f1f5f9', steps: '#64748b' },
+        { wall: '#f0fff4', roof: '#4a5568', door: '#2c3e50', accent: '#e6fffa', steps: '#718096' },
+        { wall: '#fffaf0', roof: '#2d3748', door: '#3d2b1f', accent: '#f7fafc', steps: '#8a8d91' },
+    ];
+    const v = variants[seed % variants.length];
+
+    const porchWidth = 4 + (seed % 15) / 10;
+    const porchDepth = 2.5 + (seed % 10) / 10;
+
+    const isBooked = unit?.status === 'booked';
+    const isLocked = unit?.status === 'locked';
+    const isAvailable = unit?.status === 'available';
+
+    let buildingColor = v.wall;
+    if (isBooked) buildingColor = COLOR_BOOKED;
+    else if (isLocked) buildingColor = COLOR_LOCKED;
+    else if (hovered && isAvailable) buildingColor = COLOR_SELECTED;
+
+    return (
+        <group position={position}>
+            {/* 1. Foundation Plinth */}
+            <group position={[0, PLINTH_HEIGHT / 2, 0]} pointerEvents="none">
+                <mesh receiveShadow castShadow>
+                    <boxGeometry args={[BUNGALOW_WIDTH, PLINTH_HEIGHT, BUNGALOW_DEPTH]} />
+                    <meshStandardMaterial color={v.steps} roughness={0.9} />
+                </mesh>
+            </group>
+
+            {/* 2. Main Building Body */}
+            <mesh
+                position={[0, PLINTH_HEIGHT + WALL_H / 2, 0]}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isBooked && unit) onUnitClick(unit);
+                }}
+                onPointerOver={(e) => {
+                    e.stopPropagation();
+                    if (isAvailable && !isBooked) {
+                        setHovered(true);
+                        document.body.style.cursor = 'pointer';
+                    }
+                }}
+                onPointerOut={() => {
+                    setHovered(false);
+                    document.body.style.cursor = 'default';
+                }}
+                castShadow receiveShadow
+            >
+                <boxGeometry args={[WALL_W, WALL_H, WALL_D]} />
+                <meshStandardMaterial color={buildingColor} roughness={0.7} transparent opacity={isBooked ? 0.9 : 0.98} />
+            </mesh>
+
+            <group pointerEvents="none">
+                {/* 3. Roof System */}
+                <group position={[0, PLINTH_HEIGHT + WALL_H, 0]}>
+                    <mesh position={[0, ROOF_SLAB_H / 2, 0]} castShadow>
+                        <boxGeometry args={[ROOF_SLAB_W, ROOF_SLAB_H, ROOF_SLAB_D]} />
+                        <meshStandardMaterial color={v.accent} roughness={0.5} />
+                    </mesh>
+                    <group position={[0, ROOF_SLAB_H, 0]}>
+                        <RectangularPyramid width={ROOF_SLAB_W} height={ROOF_HEIGHT} depth={ROOF_SLAB_D} color={v.roof} />
+                    </group>
+                </group>
+
+                {/* 4. Porch & Entrance */}
+                <group position={[0, PLINTH_HEIGHT, WALL_D / 2]}>
+                    <mesh position={[0, -0.05, porchDepth / 2]} receiveShadow castShadow>
+                        <boxGeometry args={[porchWidth, 0.2, porchDepth]} />
+                        <meshStandardMaterial color={v.accent} />
+                    </mesh>
+                    {[0, 1, 2, 3].map((step) => (
+                        <mesh key={`step-${step}`} position={[0, -0.2 - (step * 0.12), porchDepth + (step * 0.3)]} castShadow>
+                            <boxGeometry args={[porchWidth * 0.8, 0.12, 0.4]} />
+                            <meshStandardMaterial color={v.steps} roughness={0.9} />
+                        </mesh>
+                    ))}
+                    {/* Columns */}
+                    {[-(porchWidth / 2 - 0.2), (porchWidth / 2 - 0.2)].map((x, i) => (
+                        <group key={`col-grp-${i}`} position={[x, 0, porchDepth - 0.3]}>
+                            <mesh position={[0, 0.1, 0]} castShadow>
+                                <boxGeometry args={[0.4, 0.2, 0.4]} />
+                                <meshStandardMaterial color={v.steps} />
+                            </mesh>
+                            <mesh position={[0, WALL_H / 2, 0]} castShadow>
+                                <boxGeometry args={[0.2, WALL_H, 0.2]} />
+                                <meshStandardMaterial color={v.accent} />
+                            </mesh>
+                        </group>
+                    ))}
+                    <group position={[0, 1.1, 0.05]}>
+                        <mesh castShadow><boxGeometry args={[1.8, 2.4, 0.2]} /><meshStandardMaterial color={v.accent} /></mesh>
+                        <group position={[0, 0, 0.08]}>
+                            <mesh><boxGeometry args={[1.5, 2.1, 0.1]} /><meshStandardMaterial color={v.door} roughness={0.5} /></mesh>
+                            <mesh position={[0, 0.6, 0.02]} scale={[0.7, 0.3, 1]}><boxGeometry args={[1.3, 2.0, 0.02]} /><meshStandardMaterial color={v.door} roughness={0.7} /></mesh>
+                            <mesh position={[0.5, 0, 0.06]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#ECC94B" metalness={0.8} /></mesh>
+                        </group>
+                    </group>
+                </group>
+
+                {/* 5. Window Assemblies */}
+                {[-3.2, 3.2].map((x, i) => (
+                    <group key={`win-f-${i}`} position={[x, PLINTH_HEIGHT + WALL_H * 0.55, WALL_D / 2 + 0.05]}>
+                        <mesh castShadow><boxGeometry args={[1.5, 1.8, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                        <mesh position={[0, -0.9, 0.1]}><boxGeometry args={[1.7, 0.1, 0.3]} /><meshStandardMaterial color={v.accent} /></mesh>
+                        <mesh position={[0, 0.9, 0.1]}><boxGeometry args={[1.6, 0.15, 0.25]} /><meshStandardMaterial color={v.accent} /></mesh>
+                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.5, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.6} metalness={0.6} /></mesh>
+                    </group>
+                ))}
+
+                {/* Side Windows */}
+                {[-2.5, 2.5].map((z, i) => (
+                    <group key={`win-side-${i}`}>
+                        <group position={[WALL_W / 2 + 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, Math.PI / 2, 0]}>
+                            <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                        </group>
+                        <group position={[-WALL_W / 2 - 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, -Math.PI / 2, 0]}>
+                            <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                        </group>
+                    </group>
+                ))}
+            </group>
+
+            {/* 6. Label */}
+            {unit && (
+                <group position={[0, PLINTH_HEIGHT + WALL_H + 4, 0]}>
+                    <Text fontSize={1} color={hovered ? "#3b82f6" : "#1e293b"} outlineWidth={0.05} outlineColor="white">
+                        {unit.unit_number}
+                    </Text>
+                </group>
+            )}
+        </group>
+    );
+};
+
+// Aliasing old name for compatibility if needed, but we'll try to replace calls
+const BungalowColony = (props) => <ResidentialColony {...props} />;
 
 const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium, selectedUnit }) => {
     const meshRef = useRef();
@@ -549,9 +845,6 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
     const SPACING_X = V_PLOT_W + V_GAP;
     const SPACING_Z = V_PLOT_D + V_ROAD_W;
 
-    const colonyWidth = cols * SPACING_X;
-    const colonyDepth = rows * SPACING_Z;
-
     const allUnits = useMemo(() => {
         const units = project.towers?.[0]?.units || [];
         // Sort numerically (e.g., P-1, P-2, ..., P-10) instead of alphabetically
@@ -561,6 +854,13 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
             return numA - numB;
         });
     }, [project.towers]);
+
+    // Recalculate rows to fit all units if they exceed the configured layout
+    const calculatedRows = Math.ceil(allUnits.length / cols);
+    const effectiveRows = Math.max(rows, calculatedRows);
+
+    const colonyWidth = cols * SPACING_X;
+    const colonyDepth = effectiveRows * SPACING_Z;
 
     // Shared Coordinate Calculation Logic
     const getPlotLayout = useCallback((index) => {
@@ -587,9 +887,9 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
             tempObject.updateMatrix();
             meshRef.current.setMatrixAt(index, tempObject.matrix);
 
-            let color = '#10b981'; // Green
-            if (unit?.status === 'booked') color = '#ef4444'; // Red
-            else if (unit?.status === 'locked') color = '#f59e0b'; // Amber
+            let color = '#2ecc71'; // Emerald Green Available
+            if (unit?.status === 'booked') color = '#eb3b5a'; // Red Booked
+            else if (unit?.status === 'locked') color = '#f59e0b'; // Amber Hold
 
             tempColor.set(color);
             meshRef.current.setColorAt(index, tempColor);
@@ -632,7 +932,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
         }
 
         // Road-side Clusters
-        for (let i = 0; i < rows + 1; i++) {
+        for (let i = 0; i < effectiveRows + 1; i++) {
             const roadZ = -colonyDepth / 2 + i * SPACING_Z - V_ROAD_W / 2;
             const bushCount = Math.floor(colonyWidth / 6);
             for (let j = 0; j < bushCount; j++) {
@@ -650,7 +950,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
             bushScales: bushes.map(b => b.scale),
             bushRotations: bushes.map(b => b.rot)
         };
-    }, [showPremium, colonyWidth, colonyDepth, rows, SPACING_Z, V_ROAD_W]);
+    }, [showPremium, colonyWidth, colonyDepth, effectiveRows, SPACING_Z, V_ROAD_W, rows]);
 
     // Handle Hover Update
     useEffect(() => {
@@ -658,12 +958,12 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
         const tempColor = new THREE.Color();
 
         allUnits.forEach((unit, index) => {
-            let color = '#10b981';
-            if (unit?.status === 'booked') color = '#ef4444';
+            let color = '#2ecc71';
+            if (unit?.status === 'booked') color = '#eb3b5a';
             else if (unit?.status === 'locked') color = '#f59e0b';
 
-            if (index === hoveredIndex) {
-                tempColor.set(color).multiplyScalar(1.2);
+            if (index === hoveredIndex && unit?.status === 'available') {
+                tempColor.set('#0fb9b1'); // Teal hover for available only
             } else {
                 tempColor.set(color);
             }
@@ -674,10 +974,10 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
 
     return (
         <group position={position}>
-            {/* Ground Terrain - Main Project Base */}
+            {/* Ground Terrain - Main Project Base (Forest Green) */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
-                <planeGeometry args={[colonyWidth + 120, colonyDepth + 120]} />
-                <meshStandardMaterial color="#f8fafc" roughness={1} />
+                <planeGeometry args={[colonyWidth + 150, colonyDepth + 150]} />
+                <meshStandardMaterial color="#3f6634" roughness={1} />
             </mesh>
 
             {/* Carved Land / Plot Surface (Slightly elevated above roads) */}
@@ -709,7 +1009,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
             </group>
 
             {/* Roads - Deep Recessed Asphalt style */}
-            {Array.from({ length: rows + 1 }).map((_, i) => {
+            {Array.from({ length: effectiveRows + 1 }).map((_, i) => {
                 const roadZ = -colonyDepth / 2 + i * SPACING_Z - V_ROAD_W / 2;
                 return (
                     <group key={`road-set-${i}`}>
@@ -760,12 +1060,16 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
                 args={[null, null, allUnits.length]}
                 onPointerMove={(e) => {
                     e.stopPropagation();
-                    setHoveredIndex(e.instanceId);
+                    if (hoveredIndex !== e.instanceId) {
+                        setHoveredIndex(e.instanceId);
+                    }
                 }}
                 onPointerOut={() => setHoveredIndex(null)}
                 onClick={(e) => {
                     e.stopPropagation();
-                    if (e.instanceId !== undefined) onUnitClick(allUnits[e.instanceId]);
+                    if (e.instanceId !== undefined && allUnits[e.instanceId]) {
+                        onUnitClick(allUnits[e.instanceId]);
+                    }
                 }}
             >
                 <boxGeometry args={[V_PLOT_W, 0.15, V_PLOT_D]} />
@@ -812,7 +1116,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
                                         transform: hoveredIndex === index ? 'scale(1.05) translateY(-5px)' : 'none'
                                     }}>
                                         <div style={{ fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '0.4px' }}>
-                                            {unit?.unit_number}
+                                            {unit?.unit_number?.startsWith('P-') ? unit.unit_number : `P-${unit.unit_number}`}
                                         </div>
                                         <div style={{
                                             fontSize: '10px',
@@ -1523,12 +1827,12 @@ const ThreeDView = () => {
                 <Canvas
                     shadows={property?.type !== 'Plot'}
                     className="w-full h-full"
-                    style={{ background: property?.type === 'Plot' ? '#f1f5f9' : '#0f172a' }}
-                    frameloop={property?.type === 'Plot' ? 'demand' : 'always'}
+                    style={{ background: property?.type === 'Plot' ? '#4d7c32' : '#0f172a' }}
+                    frameloop="always"
                 >
                     <PerspectiveCamera
                         makeDefault
-                        position={project?.type === 'Plot' ? [40, 30, 40] : property?.type === 'Bungalow' ? [30, 15, 40] : [50, 50, 100]}
+                        position={project?.type === 'Plot' ? [40, 30, 40] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [40, 20, 50] : [50, 50, 100]}
                         fov={40}
                     />
                     <Sky sunPosition={[100, 20, 50]} />
@@ -1540,49 +1844,63 @@ const ThreeDView = () => {
                         shadow-mapSize={[2048, 2048]}
                     />
                     <OrbitControls
-                        target={project?.type === 'Plot' ? [0, 0, 0] : property?.type === 'Bungalow' ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
+                        target={project?.type === 'Plot' ? [0, 0, 0] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
                         maxPolarAngle={Math.PI / 2.1}
                     />
 
-                    {/* Conditional Rendering: Bungalow vs Plot vs Tower/Flat */}
-                    {property?.type === 'Bungalow' ? (
-                        <BungalowColony
-                            position={[0, 0, 0]}
-                            propertyData={property}
-                            project={project}
-                            onUnitClick={handleUnitClick}
-                        />
-                    ) : property?.type === 'Plot' ? (
-                        <PlotColony
-                            position={[0, 0, 0]}
-                            propertyData={property}
-                            project={project}
-                            onUnitClick={handleUnitClick}
-                            showPremium={showPremium}
-                            selectedUnit={selectedUnit}
-                        />
-                    ) : (
-                        <group>
-                            {project.towers.map((tower, idx) => {
-                                const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                    {/* Normalizing Type for Robust Comparison */}
+                    {(() => {
+                        const typeNorm = (property?.type || '').toLowerCase().trim();
+                        // Use ResidentialColony for anything that isn't an Apartment (Mixed, Plot, Bungalow, Villa, etc.)
+                        const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
 
-                                const towerUnits = tower.units || [];
-                                const lowestFloor = towerUnits.length > 0
-                                    ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
-                                    : 1;
+                        if (!isApartment) {
+                            const isStrictlyPlot = typeNorm.includes('plot') || typeNorm.includes('land');
 
+                            if (isStrictlyPlot) {
                                 return (
-                                    <Tower
-                                        key={tower.id}
-                                        tower={tower}
-                                        position={[posX, 0, 0]}
+                                    <PlotColony
+                                        position={[0, 0, 0]}
+                                        propertyData={property}
+                                        project={project}
                                         onUnitClick={handleUnitClick}
-                                        lowestFloor={lowestFloor}
+                                        showPremium={true}
+                                        selectedUnit={selectedUnit}
                                     />
                                 );
-                            })}
-                        </group>
-                    )}
+                            }
+
+                            return (
+                                <ResidentialColony
+                                    position={[0, 0, 0]}
+                                    propertyData={property}
+                                    project={project}
+                                    onUnitClick={handleUnitClick}
+                                />
+                            );
+                        } else {
+                            return (
+                                <group>
+                                    {project.towers.map((tower, idx) => {
+                                        const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                                        const towerUnits = tower.units || [];
+                                        const lowestFloor = towerUnits.length > 0
+                                            ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
+                                            : 1;
+                                        return (
+                                            <Tower
+                                                key={tower.id}
+                                                tower={tower}
+                                                position={[posX, 0, 0]}
+                                                onUnitClick={handleUnitClick}
+                                                lowestFloor={lowestFloor}
+                                            />
+                                        );
+                                    })}
+                                </group>
+                            );
+                        }
+                    })()}
 
                     {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
                     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
