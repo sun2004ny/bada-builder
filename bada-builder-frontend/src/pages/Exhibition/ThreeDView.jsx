@@ -1,13 +1,107 @@
 import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sky, Text, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, Sky, Text, PerspectiveCamera, Html } from '@react-three/drei';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import { ChevronLeft, Layers, Box, Info, Timer, X, CreditCard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { liveGroupDynamicAPI } from '../../services/api';
 import './LiveGrouping.css';
+
+// --- Decorative & Performance Components ---
+const InstancedFoliage = ({ type = 'tree', count = 100, positions, scales, rotations }) => {
+    const meshRef = useRef();
+    const leafRef = useRef();
+
+    useEffect(() => {
+        if (!meshRef.current) return;
+        const temp = new THREE.Object3D();
+        const tempLeaf = new THREE.Object3D();
+
+        for (let i = 0; i < count; i++) {
+            const pos = positions[i] || [0, 0, 0];
+            const scale = scales ? scales[i] : 1;
+            const rotY = rotations ? rotations[i] : 0;
+
+            if (type === 'tree') {
+                // Trunk
+                temp.position.set(pos[0], pos[1] + 0.5 * scale, pos[2]);
+                temp.scale.set(scale, scale, scale);
+                temp.rotation.y = rotY;
+                temp.updateMatrix();
+                meshRef.current.setMatrixAt(i, temp.matrix);
+
+                // Leaves
+                tempLeaf.position.set(pos[0], pos[1] + 1.2 * scale, pos[2]);
+                tempLeaf.scale.set(scale, scale, scale);
+                tempLeaf.rotation.y = rotY + (Math.random() * 0.2); // slight variation for leaves
+                tempLeaf.updateMatrix();
+                leafRef.current.setMatrixAt(i, tempLeaf.matrix);
+            } else {
+                // Bush
+                temp.position.set(pos[0], pos[1] + 0.1 * scale, pos[2]);
+                temp.scale.set(scale, scale, scale);
+                temp.rotation.y = rotY;
+                temp.updateMatrix();
+                meshRef.current.setMatrixAt(i, temp.matrix);
+            }
+        }
+        meshRef.current.instanceMatrix.needsUpdate = true;
+        if (leafRef.current) leafRef.current.instanceMatrix.needsUpdate = true;
+    }, [count, positions, scales, rotations, type]);
+
+    if (type === 'tree') {
+        return (
+            <group>
+                <instancedMesh ref={meshRef} args={[null, null, count]}>
+                    <cylinderGeometry args={[0.05, 0.1, 1, 6]} />
+                    <meshStandardMaterial color="#4d2c19" roughness={0.9} />
+                </instancedMesh>
+                <instancedMesh ref={leafRef} args={[null, null, count]}>
+                    <coneGeometry args={[0.4, 1.2, 6]} />
+                    <meshStandardMaterial color="#2d5a27" roughness={0.8} />
+                </instancedMesh>
+            </group>
+        );
+    }
+
+    return (
+        <instancedMesh ref={meshRef} args={[null, null, count]}>
+            <sphereGeometry args={[0.2, 5, 5]} />
+            <meshStandardMaterial color="#367a4d" roughness={0.8} />
+        </instancedMesh>
+    );
+};
+
+const PerimeterBoundary = ({ width, depth }) => (
+    <group>
+        {/* Low Wall style boundary with depth */}
+        {[
+            { pos: [0, 0.25, -depth / 2], size: [width, 0.5, 0.4] }, // Back
+            { pos: [0, 0.25, depth / 2], size: [width, 0.5, 0.4] },  // Front
+            { pos: [-width / 2, 0.25, 0], size: [0.4, 0.5, depth] }, // Left
+            { pos: [width / 2, 0.25, 0], size: [0.4, 0.5, depth] },  // Right
+        ].map((v, i) => (
+            <mesh key={`wall-${i}`} position={v.pos}>
+                <boxGeometry args={v.size} />
+                <meshStandardMaterial color="#cbd5e1" roughness={0.6} metalness={0.1} />
+            </mesh>
+        ))}
+        {/* Hedge topping - lush green */}
+        {[
+            { pos: [0, 0.55, -depth / 2], size: [width + 0.4, 0.3, 0.5] },
+            { pos: [0, 0.55, depth / 2], size: [width + 0.4, 0.3, 0.5] },
+            { pos: [-width / 2, 0.55, 0], size: [0.5, 0.3, depth + 0.4] },
+            { pos: [width / 2, 0.55, 0], size: [0.5, 0.3, depth + 0.4] },
+        ].map((v, i) => (
+            <mesh key={`hedge-${i}`} position={v.pos}>
+                <boxGeometry args={v.size} />
+                <meshStandardMaterial color="#2d5a27" roughness={1} />
+            </mesh>
+        ))}
+    </group>
+);
 
 // --- Configuration ---
 const TOWER_SPACING = 20;
@@ -434,6 +528,313 @@ const BungalowColony = ({ position, propertyData, project, onUnitClick }) => {
     );
 };
 
+const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium, selectedUnit }) => {
+    const meshRef = useRef();
+    const [hoveredIndex, setHoveredIndex] = useState(null);
+
+    const rows = parseInt(project?.layout_rows) || project?.towers?.[0]?.layout_rows || 5;
+    const cols = parseInt(project?.layout_columns) || project?.towers?.[0]?.layout_columns || 4;
+
+    const roadWidth = parseFloat(project?.road_width) || 20;
+    const plotGap = parseFloat(project?.plot_gap) || 2;
+    const plotWidth = parseFloat(project?.plot_size_width) || 30;
+    const plotDepth = parseFloat(project?.plot_size_depth) || 40;
+
+    const SCALE = 0.2;
+    const V_PLOT_W = plotWidth * SCALE;
+    const V_PLOT_D = plotDepth * SCALE;
+    const V_ROAD_W = roadWidth * SCALE;
+    const V_GAP = plotGap * SCALE;
+
+    const SPACING_X = V_PLOT_W + V_GAP;
+    const SPACING_Z = V_PLOT_D + V_ROAD_W;
+
+    const colonyWidth = cols * SPACING_X;
+    const colonyDepth = rows * SPACING_Z;
+
+    const allUnits = useMemo(() => {
+        const units = project.towers?.[0]?.units || [];
+        // Sort numerically (e.g., P-1, P-2, ..., P-10) instead of alphabetically
+        return [...units].sort((a, b) => {
+            const numA = parseInt(String(a.unit_number).replace(/\D/g, '')) || 0;
+            const numB = parseInt(String(b.unit_number).replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+    }, [project.towers]);
+
+    // Shared Coordinate Calculation Logic
+    const getPlotLayout = useCallback((index) => {
+        const row = Math.floor(index / cols);
+        const col = index % cols;
+        const x = -colonyWidth / 2 + col * SPACING_X + V_PLOT_W / 2;
+        const z = -colonyDepth / 2 + row * SPACING_Z + V_PLOT_D / 2;
+        return { x, z, row, col };
+    }, [cols, colonyWidth, colonyDepth, SPACING_X, SPACING_Z, V_PLOT_W, V_PLOT_D]);
+
+    // Apply Matrices and Colors
+    useEffect(() => {
+        if (!meshRef.current) return;
+
+        const tempObject = new THREE.Object3D();
+        const tempColor = new THREE.Color();
+
+        allUnits.forEach((unit, index) => {
+            const { x, z } = getPlotLayout(index);
+
+            // REALISM: Organic slight Y-rotation and slight Y-offset variation
+            tempObject.position.set(x, 0.05 + (Math.random() * 0.01), z);
+            tempObject.rotation.y = (Math.random() - 0.5) * 0.04;
+            tempObject.updateMatrix();
+            meshRef.current.setMatrixAt(index, tempObject.matrix);
+
+            let color = '#10b981'; // Green
+            if (unit?.status === 'booked') color = '#ef4444'; // Red
+            else if (unit?.status === 'locked') color = '#f59e0b'; // Amber
+
+            tempColor.set(color);
+            meshRef.current.setColorAt(index, tempColor);
+        });
+
+        meshRef.current.instanceMatrix.needsUpdate = true;
+        if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+    }, [allUnits, getPlotLayout]);
+
+    // --- Memoized Foliage Positions (Performance Safety) ---
+    const foliageData = useMemo(() => {
+        if (!showPremium) return { treePositions: [], treeScales: [], treeRotations: [], bushPositions: [], bushScales: [], bushRotations: [] };
+
+        const trees = [];
+        const bushes = [];
+
+        // Perimeter Clusters (Corners and Boundaries)
+        const projectBounds = [
+            { x: -colonyWidth / 2 - 5, z: (Math.random() - 0.5) * colonyDepth },
+            { x: colonyWidth / 2 + 5, z: (Math.random() - 0.5) * colonyDepth },
+            { x: (Math.random() - 0.5) * colonyWidth, z: -colonyDepth / 2 - 5 },
+            { x: (Math.random() - 0.5) * colonyWidth, z: colonyDepth / 2 + 5 }
+        ];
+
+        // Trees along boundary
+        const treeCount = Math.floor((colonyWidth + colonyDepth) / 5);
+        for (let i = 0; i < treeCount; i++) {
+            const side = i % 4;
+            let x, z;
+            if (side === 0) { x = -colonyWidth / 2 - 6; z = (i / treeCount) * colonyDepth - colonyDepth / 2; }
+            else if (side === 1) { x = colonyWidth / 2 + 6; z = (i / treeCount) * colonyDepth - colonyDepth / 2; }
+            else if (side === 2) { x = (i / treeCount) * colonyWidth - colonyWidth / 2; z = -colonyDepth / 2 - 6; }
+            else { x = (i / treeCount) * colonyWidth - colonyWidth / 2; z = colonyDepth / 2 + 6; }
+
+            // Add some jitter
+            x += (Math.random() - 0.5) * 3;
+            z += (Math.random() - 0.5) * 3;
+
+            trees.push({ pos: [x, 0, z], scale: 1.0 + Math.random() * 1.2, rot: Math.random() * Math.PI * 2 });
+        }
+
+        // Road-side Clusters
+        for (let i = 0; i < rows + 1; i++) {
+            const roadZ = -colonyDepth / 2 + i * SPACING_Z - V_ROAD_W / 2;
+            const bushCount = Math.floor(colonyWidth / 6);
+            for (let j = 0; j < bushCount; j++) {
+                const x = -colonyWidth / 2 + j * 6 + (Math.random() - 0.5) * 3;
+                bushes.push({ pos: [x, 0.05, roadZ + V_ROAD_W / 2 + 1.2], scale: 0.6 + Math.random() * 0.8, rot: Math.random() * Math.PI * 2 });
+                bushes.push({ pos: [x, 0.05, roadZ - V_ROAD_W / 2 - 1.2], scale: 0.6 + Math.random() * 0.8, rot: Math.random() * Math.PI * 2 });
+            }
+        }
+
+        return {
+            treePositions: trees.map(t => t.pos),
+            treeScales: trees.map(t => t.scale),
+            treeRotations: trees.map(t => t.rot),
+            bushPositions: bushes.map(b => b.pos),
+            bushScales: bushes.map(b => b.scale),
+            bushRotations: bushes.map(b => b.rot)
+        };
+    }, [showPremium, colonyWidth, colonyDepth, rows, SPACING_Z, V_ROAD_W]);
+
+    // Handle Hover Update
+    useEffect(() => {
+        if (!meshRef.current) return;
+        const tempColor = new THREE.Color();
+
+        allUnits.forEach((unit, index) => {
+            let color = '#10b981';
+            if (unit?.status === 'booked') color = '#ef4444';
+            else if (unit?.status === 'locked') color = '#f59e0b';
+
+            if (index === hoveredIndex) {
+                tempColor.set(color).multiplyScalar(1.2);
+            } else {
+                tempColor.set(color);
+            }
+            meshRef.current.setColorAt(index, tempColor);
+        });
+        if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+    }, [hoveredIndex, allUnits]);
+
+    return (
+        <group position={position}>
+            {/* Ground Terrain - Main Project Base */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
+                <planeGeometry args={[colonyWidth + 120, colonyDepth + 120]} />
+                <meshStandardMaterial color="#f8fafc" roughness={1} />
+            </mesh>
+
+            {/* Carved Land / Plot Surface (Slightly elevated above roads) */}
+            <group position={[0, -0.05, 0]}>
+                {/* Main Grass Surface with patches */}
+                <mesh rotation={[-Math.PI / 2, 0, 0]}>
+                    <planeGeometry args={[colonyWidth + 10, colonyDepth + 10]} />
+                    <meshStandardMaterial color="#367a4d" roughness={0.9} />
+                </mesh>
+                {showPremium && Array.from({ length: 45 }).map((_, i) => (
+                    <mesh
+                        key={`noise-patch-${i}`}
+                        rotation={[-Math.PI / 2, 0, Math.random() * Math.PI]}
+                        position={[
+                            (Math.random() - 0.5) * (colonyWidth + 40),
+                            0.001 * i, // prevent z-fighting
+                            (Math.random() - 0.5) * (colonyDepth + 40)
+                        ]}
+                    >
+                        <planeGeometry args={[10 + Math.random() * 15, 10 + Math.random() * 15]} />
+                        <meshStandardMaterial
+                            color={i % 3 === 0 ? "#4caf50" : i % 3 === 1 ? "#8bc34a" : "#967b5f"} // Green mix + Soil
+                            transparent
+                            opacity={0.25}
+                            roughness={1}
+                        />
+                    </mesh>
+                ))}
+            </group>
+
+            {/* Roads - Deep Recessed Asphalt style */}
+            {Array.from({ length: rows + 1 }).map((_, i) => {
+                const roadZ = -colonyDepth / 2 + i * SPACING_Z - V_ROAD_W / 2;
+                return (
+                    <group key={`road-set-${i}`}>
+                        {/* Asphalt Base */}
+                        <mesh position={[0, -0.18, roadZ]}>
+                            <boxGeometry args={[colonyWidth + 50, 0.06, V_ROAD_W]} />
+                            <meshStandardMaterial color="#1e293b" roughness={0.6} />
+                        </mesh>
+                        {/* Curbs / Shoulders with beveled feel */}
+                        <mesh position={[0, -0.1, roadZ + V_ROAD_W / 2 + 0.3]}>
+                            <boxGeometry args={[colonyWidth + 50, 0.12, 0.6]} />
+                            <meshStandardMaterial color="#94a3b8" roughness={0.5} />
+                        </mesh>
+                        <mesh position={[0, -0.1, roadZ - V_ROAD_W / 2 - 0.3]}>
+                            <boxGeometry args={[colonyWidth + 50, 0.12, 0.6]} />
+                            <meshStandardMaterial color="#94a3b8" roughness={0.5} />
+                        </mesh>
+                    </group>
+                );
+            })}
+
+            {/* Outer Perimeter Boundary */}
+            {showPremium && <PerimeterBoundary width={colonyWidth + 10} depth={colonyDepth + 10} />}
+
+            {/* foliage (Instanced for Performance Safety) */}
+            {showPremium && (
+                <group>
+                    <InstancedFoliage
+                        type="tree"
+                        count={foliageData.treePositions.length}
+                        positions={foliageData.treePositions}
+                        scales={foliageData.treeScales}
+                        rotations={foliageData.treeRotations}
+                    />
+                    <InstancedFoliage
+                        type="bush"
+                        count={foliageData.bushPositions.length}
+                        positions={foliageData.bushPositions}
+                        scales={foliageData.bushScales}
+                        rotations={foliageData.bushRotations}
+                    />
+                </group>
+            )}
+
+            {/* Instanced Plots - Physical 'Carved' look with organic variation */}
+            <instancedMesh
+                ref={meshRef}
+                args={[null, null, allUnits.length]}
+                onPointerMove={(e) => {
+                    e.stopPropagation();
+                    setHoveredIndex(e.instanceId);
+                }}
+                onPointerOut={() => setHoveredIndex(null)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (e.instanceId !== undefined) onUnitClick(allUnits[e.instanceId]);
+                }}
+            >
+                <boxGeometry args={[V_PLOT_W, 0.15, V_PLOT_D]} />
+                <meshStandardMaterial roughness={0.7} metalness={0.05} />
+            </instancedMesh>
+
+            {/* Embedded Boundary Markers and Premium Labels */}
+            {allUnits.map((unit, index) => {
+                const { x, z, col } = getPlotLayout(index);
+                const areaSqFt = parseFloat(unit?.area || 0);
+                const areaSqYd = (areaSqFt / 9).toFixed(1);
+
+                return (
+                    <group key={`plot-assets-${index}`}>
+                        {/* Boundary line logic - Recessed into ground */}
+                        {showPremium && col < cols - 1 && (
+                            <mesh position={[x + SPACING_X / 2 - V_GAP / 2, 0.015, z]}>
+                                <boxGeometry args={[0.04, 0.01, V_PLOT_D]} />
+                                <meshStandardMaterial color="#ffffff" transparent opacity={0.5} />
+                            </mesh>
+                        )}
+
+                        {!selectedUnit && (
+                            <Html
+                                position={[x, 0.45, z]}
+                                center
+                                distanceFactor={22}
+                                style={{
+                                    pointerEvents: 'none',
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-1 opacity-90 hover:opacity-100 transition-opacity">
+                                    <div style={{
+                                        background: 'rgba(15, 23, 42, 0.85)',
+                                        padding: '10px 20px',
+                                        borderRadius: '10px',
+                                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                                        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+                                        backdropFilter: 'blur(8px)',
+                                        transition: 'all 0.3s ease-out',
+                                        transform: hoveredIndex === index ? 'scale(1.05) translateY(-5px)' : 'none'
+                                    }}>
+                                        <div style={{ fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '0.4px' }}>
+                                            {unit?.unit_number}
+                                        </div>
+                                        <div style={{
+                                            fontSize: '10px',
+                                            fontWeight: '700',
+                                            marginTop: '3px',
+                                            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                                            paddingTop: '4px',
+                                            color: '#94a3b8'
+                                        }}>
+                                            {areaSqFt} ft²
+                                        </div>
+                                    </div>
+                                </div>
+                            </Html>
+                        )}
+                    </group>
+                );
+            })}
+        </group>
+    );
+};
+
 const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
     const BASEMENT_HEIGHT = 4.0;
     const UNIT_HEIGHT = FLOOR_HEIGHT * 0.9;
@@ -654,6 +1055,7 @@ const ThreeDView = () => {
     const [viewMode, setViewMode] = useState('3d'); // '3d' | '2d'
     const [showHoldOptions, setShowHoldOptions] = useState(false);
     const [holdLoading, setHoldLoading] = useState(false);
+    const [showPremium, setShowPremium] = useState(true);
 
     const fetchHierarchy = useCallback(async () => {
         try {
@@ -881,7 +1283,12 @@ const ThreeDView = () => {
                         <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
                         <p className="text-xs md:text-sm !text-slate-200 font-medium flex items-center gap-2">
                             {project.location}
-                            {(project.type !== 'Bungalow' && project.type !== 'Colony') && (
+                            {project.type === 'Plot' ? (
+                                <>
+                                    <span className="w-1 h-1 rounded-full bg-white/50"></span>
+                                    Plot / Land
+                                </>
+                            ) : (project.type !== 'Bungalow' && project.type !== 'Colony') && (
                                 <>
                                     <span className="w-1 h-1 rounded-full bg-white/50"></span>
                                     {project.towers.length} Towers
@@ -894,8 +1301,9 @@ const ThreeDView = () => {
                 </div>
 
                 {/* View Toggle */}
-                <div className="pointer-events-auto self-center md:self-auto flex gap-3">
-                    {/* View Toggle */}
+                <div className="pointer-events-auto self-center md:self-auto flex items-center gap-3">
+                    {/* Premium Toggle (only for Plot type) */}
+                    {/* Premium Toggle removed as per user request */}
                     <div className="bg-slate-900/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 flex relative shadow-2xl">
                         {['3d', '2d'].map((mode) => (
                             <button
@@ -966,11 +1374,14 @@ const ThreeDView = () => {
                                         )}
                                     </div>
                                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                        {selectedUnit.floor_number === -1
-                                            ? 'Basement Level'
-                                            : selectedUnit.floor_number === 0
-                                                ? 'Ground Floor'
-                                                : `Floor ${selectedUnit.floor_number}`} • {selectedUnit.unit_type}
+                                        {project.type === 'Plot'
+                                            ? `${selectedUnit.unit_type || 'Plot'}${selectedUnit.is_corner ? ' • Corner' : ''}${selectedUnit.facing ? ` • ${selectedUnit.facing} Facing` : ''}`
+                                            : selectedUnit.floor_number === -1
+                                                ? 'Basement Level'
+                                                : selectedUnit.floor_number === 0
+                                                    ? 'Ground Floor'
+                                                    : `Floor ${selectedUnit.floor_number}`}
+                                        {project.type !== 'Plot' && ` • ${selectedUnit.unit_type}`}
                                     </p>
                                 </div>
                                 <button
@@ -1109,10 +1520,15 @@ const ThreeDView = () => {
 
             {/* 3D Canvas */}
             {viewMode === '3d' && (
-                <Canvas shadows className="w-full h-full">
+                <Canvas
+                    shadows={property?.type !== 'Plot'}
+                    className="w-full h-full"
+                    style={{ background: property?.type === 'Plot' ? '#f1f5f9' : '#0f172a' }}
+                    frameloop={property?.type === 'Plot' ? 'demand' : 'always'}
+                >
                     <PerspectiveCamera
                         makeDefault
-                        position={property?.type === 'Bungalow' ? [30, 15, 40] : [50, 50, 100]}
+                        position={project?.type === 'Plot' ? [40, 30, 40] : property?.type === 'Bungalow' ? [30, 15, 40] : [50, 50, 100]}
                         fov={40}
                     />
                     <Sky sunPosition={[100, 20, 50]} />
@@ -1124,17 +1540,26 @@ const ThreeDView = () => {
                         shadow-mapSize={[2048, 2048]}
                     />
                     <OrbitControls
-                        target={property?.type === 'Bungalow' ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
+                        target={project?.type === 'Plot' ? [0, 0, 0] : property?.type === 'Bungalow' ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
                         maxPolarAngle={Math.PI / 2.1}
                     />
 
-                    {/* Conditional Rendering: Bungalow vs Tower/Flat */}
+                    {/* Conditional Rendering: Bungalow vs Plot vs Tower/Flat */}
                     {property?.type === 'Bungalow' ? (
                         <BungalowColony
                             position={[0, 0, 0]}
                             propertyData={property}
                             project={project}
                             onUnitClick={handleUnitClick}
+                        />
+                    ) : property?.type === 'Plot' ? (
+                        <PlotColony
+                            position={[0, 0, 0]}
+                            propertyData={property}
+                            project={project}
+                            onUnitClick={handleUnitClick}
+                            showPremium={showPremium}
+                            selectedUnit={selectedUnit}
                         />
                     ) : (
                         <group>

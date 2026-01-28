@@ -58,7 +58,11 @@ CREATE TABLE IF NOT EXISTS live_group_projects (
     layout_rows INTEGER,
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
-    map_address TEXT
+    map_address TEXT,
+    road_width DECIMAL(10, 2),
+    plot_gap DECIMAL(10, 2),
+    plot_size_width DECIMAL(10, 2),
+    plot_size_depth DECIMAL(10, 2)
 );
 
 -- 2. Towers table
@@ -88,6 +92,8 @@ CREATE TABLE IF NOT EXISTS live_group_units (
     status VARCHAR(20) DEFAULT 'available', -- available, locked, booked
     locked_at TIMESTAMP,
     locked_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    facing VARCHAR(50),
+    is_corner BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -115,3 +121,27 @@ CREATE TRIGGER update_live_group_projects_modtime
     BEFORE UPDATE ON live_group_projects
     FOR EACH ROW
     EXECUTE PROCEDURE update_modified_column();
+
+-- Migration for existing tables (if they already exist)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='live_group_projects' AND column_name='road_width') THEN
+        ALTER TABLE live_group_projects ADD COLUMN road_width DECIMAL(10, 2);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='live_group_projects' AND column_name='plot_gap') THEN
+        ALTER TABLE live_group_projects ADD COLUMN plot_gap DECIMAL(10, 2);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='live_group_projects' AND column_name='plot_size_width') THEN
+        ALTER TABLE live_group_projects ADD COLUMN plot_size_width DECIMAL(10, 2);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='live_group_projects' AND column_name='plot_size_depth') THEN
+        ALTER TABLE live_group_projects ADD COLUMN plot_size_depth DECIMAL(10, 2);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='live_group_units' AND column_name='facing') THEN
+        ALTER TABLE live_group_units ADD COLUMN facing VARCHAR(50);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='live_group_units' AND column_name='is_corner') THEN
+        ALTER TABLE live_group_units ADD COLUMN is_corner BOOLEAN DEFAULT FALSE;
+    END IF;
+END $$;

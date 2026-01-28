@@ -233,7 +233,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             total_savings_min, total_savings_max, benefits,
             primary_cta_text, secondary_cta_text, details_page_url,
             layout_columns, layout_rows,
-            latitude, longitude, map_address
+            latitude, longitude, map_address,
+            road_width, plot_gap, plot_size_width, plot_size_depth
         } = req.body;
 
         // 1. Handle Files (DO THIS BEFORE OPENING DB CONNECTION)
@@ -274,11 +275,12 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     primary_cta_text, secondary_cta_text, details_page_url,
                     regular_price_per_sqft_max, group_price_per_sqft_max,
                     layout_columns, layout_rows,
-                    latitude, longitude, map_address
+                    latitude, longitude, map_address,
+                    road_width, plot_gap, plot_size_width, plot_size_depth
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
                     $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42,
-                    $43, $44, $45, $46, $47, $48, $49
+                    $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53
                 ) RETURNING *`,
                 [
                     title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
@@ -291,7 +293,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     primary_cta_text, secondary_cta_text, details_page_url,
                     regular_price_per_sqft_max, group_price_per_sqft_max,
                     layout_columns, layout_rows,
-                    latitude || null, longitude || null, map_address || null
+                    latitude || null, longitude || null, map_address || null,
+                    road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null
                 ]
             );
 
@@ -324,7 +327,9 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                             price: unit.price || 0,
                             price_per_sqft: unit.price_per_sqft || 0,
                             discount_price_per_sqft: unit.discount_price_per_sqft || null,
-                            status: unit.status || 'available'
+                            status: unit.status || 'available',
+                            facing: unit.facing || null,
+                            is_corner: unit.is_corner || false
                         });
                         totalUnitsGenerated++;
                     }
@@ -343,7 +348,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     const cols = [
                         unit.tower_id, unit.floor_number, unit.unit_number, unit.unit_type,
                         unit.area, unit.carpet_area, unit.super_built_up_area, unit.price,
-                        unit.price_per_sqft, unit.discount_price_per_sqft, unit.status
+                        unit.price_per_sqft, unit.discount_price_per_sqft, unit.status,
+                        unit.facing, unit.is_corner
                     ];
 
                     cols.forEach(val => {
@@ -357,7 +363,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                 const insertQuery = `
                     INSERT INTO live_group_units (
                         tower_id, floor_number, unit_number, unit_type, 
-                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, status
+                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, status,
+                        facing, is_corner
                     ) VALUES ${placeholders.join(', ')}
                 `;
                 await client.query(insertQuery, values);
@@ -564,7 +571,7 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
         const unitId = req.params.id;
         const {
             unit_number, unit_type, floor_number, area, carpet_area, super_built_up_area,
-            price_per_sqft, discount_price_per_sqft, status
+            price_per_sqft, discount_price_per_sqft, status, facing, is_corner
         } = req.body;
 
         const existingResult = await pool.query('SELECT * FROM live_group_units WHERE id = $1', [unitId]);
@@ -603,12 +610,17 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 status = $7,
                 price = $8,
                 carpet_area = $9,
-                super_built_up_area = $10
-            WHERE id = $11 RETURNING *`,
+                super_built_up_area = $10,
+                facing = $11,
+                is_corner = $12
+            WHERE id = $13 RETURNING *`,
             [
                 finalUnitNumber, finalUnitType, finalFloorNumber, finalArea,
                 finalPricePerSqft, finalDiscountPricePerSqft, finalStatus,
-                totalPrice, finalCarpetArea, finalSuperBuiltUpArea, unitId
+                totalPrice, finalCarpetArea, finalSuperBuiltUpArea,
+                facing !== undefined ? facing : existingUnit.facing,
+                is_corner !== undefined ? is_corner : existingUnit.is_corner,
+                unitId
             ]
         );
 

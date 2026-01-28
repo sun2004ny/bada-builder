@@ -88,7 +88,11 @@ const AdminLiveGrouping = () => {
     regular_price_min: '',
     regular_price_max: '',
     layout_columns: '',
-    layout_rows: ''
+    layout_rows: '',
+    road_width: '',
+    plot_gap: '',
+    plot_size_width: '',
+    plot_size_depth: ''
   });
 
 
@@ -263,6 +267,10 @@ const AdminLiveGrouping = () => {
         total_savings_max: sanitizeNumeric(projectData.total_savings_max),
         layout_columns: sanitizeNumeric(projectData.layout_columns),
         layout_rows: sanitizeNumeric(projectData.layout_rows),
+        road_width: sanitizeNumeric(projectData.road_width),
+        plot_gap: sanitizeNumeric(projectData.plot_gap),
+        plot_size_width: sanitizeNumeric(projectData.plot_size_width),
+        plot_size_depth: sanitizeNumeric(projectData.plot_size_depth),
       };
 
       // 2. Send Single Bulk Request
@@ -548,6 +556,26 @@ const AdminLiveGrouping = () => {
       }
       // Store all bungalows under a dummy floor '0' or '1', let's use '0'
       newConfig[0] = bungUnits;
+    } else if (projectData.type === 'Plot') {
+      const rows = parseInt(tower.layout_rows) || 5;
+      const cols = parseInt(tower.layout_columns) || 4;
+      const plotUnits = [];
+      const totalPlots = rows * cols;
+
+      for (let k = 0; k < totalPlots; k++) {
+        plotUnits.push({
+          unit_number: `P-${k + 1}`,
+          unit_type: 'Plot',
+          area: projectData.area || 1200,
+          facing: 'North',
+          is_corner: false,
+          price: 0,
+          discount_price: null,
+          price_per_sqft: projectData.regular_price_per_sqft || 0,
+          discount_price_per_sqft: projectData.group_price_per_sqft || null
+        });
+      }
+      newConfig[0] = plotUnits;
     } else {
       if (tower.hasBasement) newConfig[-1] = generateUnitsForFloor();
       if (tower.hasGroundFloor) newConfig[0] = generateUnitsForFloor();
@@ -957,14 +985,14 @@ const AdminLiveGrouping = () => {
                       <thead>
                         <tr>
                           <th>{getLabel(projectData.type, 'parent')} Name</th>
-                          {projectData.type === 'Bungalow' ? (
+                          {projectData.type === 'Bungalow' || projectData.type === 'Plot' ? (
                             <>
-                              <th>Total Bungalows</th>
-                              <th>Type</th>
+                              <th>{projectData.type === 'Plot' ? 'Total Plots' : 'Total Bungalows'}</th>
+                              <th>{projectData.type === 'Plot' ? '3D Layout' : 'Type'}</th>
                             </>
                           ) : (
                             <>
-                              <th>{projectData.type === 'Plot' ? 'Size/Variant' : 'Floors'}</th>
+                              <th>Floors</th>
                               <th>Units per Floor</th>
                               <th>Extra Levels</th>
                               <th>3D Layout Cols</th>
@@ -979,28 +1007,37 @@ const AdminLiveGrouping = () => {
                             <tr>
                               <td><input type="text" value={t.name || ''} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
 
-                              {projectData.type === 'Bungalow' ? (
+                              {projectData.type === 'Bungalow' || projectData.type === 'Plot' ? (
                                 <>
                                   <td>
                                     <input
                                       type="number"
-                                      value={t.total_bungalows || ''}
-                                      onChange={e => updateTowerRow(idx, 'total_bungalows', e.target.value)}
-                                      placeholder="e.g. 10"
+                                      value={projectData.type === 'Plot' ? (t.layout_rows * t.layout_columns || '') : (t.total_bungalows || '')}
+                                      onChange={e => updateTowerRow(idx, projectData.type === 'Plot' ? 'total_plots' : 'total_bungalows', e.target.value)}
+                                      placeholder={projectData.type === 'Plot' ? "Auto" : "e.g. 10"}
+                                      readOnly={projectData.type === 'Plot'}
                                     />
                                   </td>
                                   <td>
-                                    <select
-                                      value={t.bungalow_type || 'Villa'}
-                                      onChange={e => updateTowerRow(idx, 'bungalow_type', e.target.value)}
-                                      className="w-full p-2 border rounded"
-                                    >
-                                      <option value="Villa">Villa</option>
-                                      <option value="Bungalow">Bungalow</option>
-                                      <option value="Row House">Row House</option>
-                                      <option value="Twin Villa">Twin Villa</option>
-                                      <option value="Plot">Plot</option>
-                                    </select>
+                                    {projectData.type === 'Plot' ? (
+                                      <div className="flex gap-1 items-center">
+                                        <input type="number" placeholder="R" className="w-12 text-xs" value={t.layout_rows || ''} onChange={e => updateTowerRow(idx, 'layout_rows', e.target.value)} />
+                                        <span className="text-[10px]">x</span>
+                                        <input type="number" placeholder="C" className="w-12 text-xs" value={t.layout_columns || ''} onChange={e => updateTowerRow(idx, 'layout_columns', e.target.value)} />
+                                      </div>
+                                    ) : (
+                                      <select
+                                        value={t.bungalow_type || 'Villa'}
+                                        onChange={e => updateTowerRow(idx, 'bungalow_type', e.target.value)}
+                                        className="w-full p-2 border rounded"
+                                      >
+                                        <option value="Villa">Villa</option>
+                                        <option value="Bungalow">Bungalow</option>
+                                        <option value="Row House">Row House</option>
+                                        <option value="Twin Villa">Twin Villa</option>
+                                        <option value="Plot">Plot</option>
+                                      </select>
+                                    )}
                                   </td>
                                 </>
                               ) : (
@@ -1042,27 +1079,72 @@ const AdminLiveGrouping = () => {
                       </tbody>
                     </table>
 
-                    {projectData.type === 'Bungalow' && (
+                    {(projectData.type === 'Bungalow' || projectData.type === 'Plot') && (
                       <div className="form-grid mt-6">
-                        <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">3D Layout Configuration (Optional)</div>
-                        <div className="input-group">
-                          <label>Layout Columns</label>
-                          <input
-                            type="number"
-                            value={projectData.layout_columns || ''}
-                            onChange={e => setProjectData({ ...projectData, layout_columns: e.target.value })}
-                            placeholder="e.g. 5"
-                          />
+                        <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">
+                          {projectData.type === 'Plot' ? 'Land Layout Configuration' : '3D Layout Configuration (Optional)'}
                         </div>
-                        <div className="input-group">
-                          <label>Layout Rows</label>
-                          <input
-                            type="number"
-                            value={projectData.layout_rows || ''}
-                            onChange={e => setProjectData({ ...projectData, layout_rows: e.target.value })}
-                            placeholder="e.g. 2"
-                          />
-                        </div>
+                        {projectData.type === 'Plot' ? (
+                          <>
+                            <div className="input-group">
+                              <label>Road Width (ft)</label>
+                              <input
+                                type="number"
+                                value={projectData.road_width || ''}
+                                onChange={e => setProjectData({ ...projectData, road_width: e.target.value })}
+                                placeholder="e.g. 30"
+                              />
+                            </div>
+                            <div className="input-group">
+                              <label>Plot Gap / Margin (ft)</label>
+                              <input
+                                type="number"
+                                value={projectData.plot_gap || ''}
+                                onChange={e => setProjectData({ ...projectData, plot_gap: e.target.value })}
+                                placeholder="e.g. 2"
+                              />
+                            </div>
+                            <div className="input-group">
+                              <label>Plot Width (ft)</label>
+                              <input
+                                type="number"
+                                value={projectData.plot_size_width || ''}
+                                onChange={e => setProjectData({ ...projectData, plot_size_width: e.target.value })}
+                                placeholder="e.g. 30"
+                              />
+                            </div>
+                            <div className="input-group">
+                              <label>Plot Depth (ft)</label>
+                              <input
+                                type="number"
+                                value={projectData.plot_size_depth || ''}
+                                onChange={e => setProjectData({ ...projectData, plot_size_depth: e.target.value })}
+                                placeholder="e.g. 40"
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="input-group">
+                              <label>Layout Columns</label>
+                              <input
+                                type="number"
+                                value={projectData.layout_columns || ''}
+                                onChange={e => setProjectData({ ...projectData, layout_columns: e.target.value })}
+                                placeholder="e.g. 5"
+                              />
+                            </div>
+                            <div className="input-group">
+                              <label>Layout Rows</label>
+                              <input
+                                type="number"
+                                value={projectData.layout_rows || ''}
+                                onChange={e => setProjectData({ ...projectData, layout_rows: e.target.value })}
+                                placeholder="e.g. 2"
+                              />
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1206,7 +1288,7 @@ const AdminLiveGrouping = () => {
 
 
 
-                                {projectData.type === 'Bungalow' ? (
+                                {(projectData.type === 'Bungalow' || projectData.type === 'Plot') ? (
                                   <div className="p-4">
                                     <BungalowGrid
                                       units={(towerUnits[towerIdx]?.[0] || [])}
@@ -1214,7 +1296,7 @@ const AdminLiveGrouping = () => {
                                       onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
                                       onAdd={() => addUnitToConfig(towerIdx, 0)}
                                       globalDefaults={globalUnitDefaults}
-
+                                      projectType={projectData.type}
                                     />
                                   </div>
                                 ) : (
@@ -1676,7 +1758,7 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
 };
 
 // Bungalow Grid Component
-const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults }) => {
+const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projectType }) => {
 
 
   return (
@@ -1796,6 +1878,40 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults }) => {
                       />
                     </div>
                   </div>
+
+                  {projectType === 'Plot' && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="input-field-group">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Facing</label>
+                        <select
+                          className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50"
+                          value={unit.facing || 'North'}
+                          onChange={e => onUpdate(uIdx, 'facing', e.target.value)}
+                          disabled={!unit.isCustom}
+                        >
+                          <option value="North">North</option>
+                          <option value="South">South</option>
+                          <option value="East">East</option>
+                          <option value="West">West</option>
+                          <option value="North-East">North-East</option>
+                          <option value="North-West">North-West</option>
+                          <option value="South-East">South-East</option>
+                          <option value="South-West">South-West</option>
+                        </select>
+                      </div>
+                      <div className="input-field-group flex items-end">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-2 cursor-pointer mb-1">
+                          <input
+                            type="checkbox"
+                            checked={unit.is_corner || false}
+                            onChange={e => onUpdate(uIdx, 'is_corner', e.target.checked)}
+                            disabled={!unit.isCustom}
+                          />
+                          Is Corner?
+                        </label>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="action-buttons flex justify-between items-center">
                     {!unit.isCustom ? (

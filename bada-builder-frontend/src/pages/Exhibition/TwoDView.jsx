@@ -26,6 +26,7 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
         if (t.includes('showroom')) return { icon: Store, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-200', label: 'Showroom' };
         if (t.includes('basement') || t.includes('storage')) return { icon: Box, color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', label: 'Storage' };
         if (t.includes('parking')) return { icon: Car, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200', label: 'Parking' };
+        if (t.includes('plot') || t.includes('land')) return { icon: LayoutGrid, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', label: 'Plot' };
         return { icon: LayoutGrid, color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-200', label: type || 'Unit' };
     };
 
@@ -74,14 +75,14 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold tracking-tight !text-white">
-                                        {(project.type === 'Bungalow' || project.type === 'Colony')
+                                        {(project.type === 'Bungalow' || project.type === 'Colony' || project.type === 'Plot')
                                             ? project.title
                                             : tower.tower_name}
                                     </h2>
                                     <p className="text-sm !text-slate-300 flex items-center gap-2">
                                         <Layers size={14} />
-                                        {project.type === 'Bungalow'
-                                            ? `${tower.units?.length || 0} Bungalows`
+                                        {(project.type === 'Bungalow' || project.type === 'Plot')
+                                            ? `${tower.units?.length || 0} ${project.type === 'Plot' ? 'Plots' : 'Bungalows'}`
                                             : `${tower.total_floors} Floors • ${tower.units?.length || 0} Units`
                                         }
                                     </p>
@@ -91,8 +92,8 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
 
                         {/* Content Container */}
                         <div className="p-4 md:p-6 space-y-4">
-                            {project.type === 'Bungalow' ? (
-                                /* BUNGALOW VIEW: Flat Grid */
+                            {(project.type === 'Bungalow' || project.type === 'Plot') ? (
+                                /* BUNGALOW/PLOT VIEW: Flat Grid */
                                 <div className="flex flex-wrap gap-4">
                                     {tower.units
                                         .sort((a, b) => {
