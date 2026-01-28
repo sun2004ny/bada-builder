@@ -1065,12 +1065,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
                     }
                 }}
                 onPointerOut={() => setHoveredIndex(null)}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (e.instanceId !== undefined && allUnits[e.instanceId]) {
-                        onUnitClick(allUnits[e.instanceId]);
-                    }
-                }}
+                // Click removed from land mesh
             >
                 <boxGeometry args={[V_PLOT_W, 0.15, V_PLOT_D]} />
                 <meshStandardMaterial roughness={0.7} metalness={0.05} />
@@ -1098,24 +1093,32 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
                                 center
                                 distanceFactor={22}
                                 style={{
-                                    pointerEvents: 'none',
+                                    pointerEvents: 'none', // Allow pass-through for container
                                     color: 'white',
                                     textAlign: 'center',
-                                    whiteSpace: 'nowrap'
+                                    whiteSpace: 'nowrap',
+                                    zIndex: 10 // Ensure it sits above
                                 }}
                             >
-                                <div className="flex flex-col items-center gap-1 opacity-90 hover:opacity-100 transition-opacity">
+                                <div 
+                                    className="flex flex-col items-center gap-1 opacity-90 hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onUnitClick(unit);
+                                    }}
+                                    style={{ pointerEvents: 'auto', cursor: 'pointer' }} // Re-enable clicks for the card
+                                >
                                     <div style={{
                                         background: 'rgba(15, 23, 42, 0.85)',
-                                        padding: '10px 20px',
-                                        borderRadius: '10px',
+                                        padding: '16px 32px', // Larger padding
+                                        borderRadius: '12px',
                                         border: '1px solid rgba(255, 255, 255, 0.15)',
                                         boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
                                         backdropFilter: 'blur(8px)',
                                         transition: 'all 0.3s ease-out',
-                                        transform: hoveredIndex === index ? 'scale(1.05) translateY(-5px)' : 'none'
+                                        transform: hoveredIndex === index ? 'scale(1.1) translateY(-5px)' : 'none'
                                     }}>
-                                        <div style={{ fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '0.4px' }}>
+                                        <div style={{ fontSize: '24px', fontWeight: '900', color: '#fff', letterSpacing: '0.4px' }}>
                                             {unit?.unit_number?.startsWith('P-') ? unit.unit_number : `P-${unit.unit_number}`}
                                         </div>
                                         <div style={{
