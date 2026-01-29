@@ -126,8 +126,38 @@ const ShortStayDetails = () => {
                         {/* Specific Details */}
                         <div className="specifics-section">
                             <h2>Property Details</h2>
+                            
+                            {/* Hotel Room Types Table */}
+                            {specific_details?.roomTypes && Array.isArray(specific_details.roomTypes) && specific_details.roomTypes.length > 0 && (
+                                <div className="room-types-display" style={{marginBottom: '24px'}}>
+                                    <h3 style={{fontSize: '16px', color: '#e2e8f0', marginBottom: '12px'}}>Room Options</h3>
+                                    <div style={{overflowX: 'auto'}}>
+                                        <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '14px', color: '#cbd5e1'}}>
+                                            <thead>
+                                                <tr style={{borderBottom: '1px solid rgba(255,255,255,0.1)'}}>
+                                                    <th style={{textAlign: 'left', padding: '12px 0 12px 8px', color: '#94a3b8'}}>Type</th>
+                                                    <th style={{textAlign: 'center', padding: '12px 0', color: '#94a3b8'}}>Available</th>
+                                                    <th style={{textAlign: 'right', padding: '12px 8px 12px 0', color: '#94a3b8'}}>Price</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {specific_details.roomTypes.map((room, idx) => (
+                                                    <tr key={idx} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
+                                                        <td style={{padding: '12px 0 12px 8px', fontWeight: 500}}>{room.type}</td>
+                                                        <td style={{textAlign: 'center', padding: '12px 0'}}>{room.count}</td>
+                                                        <td style={{textAlign: 'right', padding: '12px 8px 12px 0', color: '#10b981', fontWeight: 600}}>₹{room.price}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="specifics-grid">
-                                {specific_details && Object.entries(specific_details).map(([key, value]) => (
+                                {specific_details && Object.entries(specific_details)
+                                    .filter(([key]) => key !== 'roomTypes') // Filter out roomTypes from generic list
+                                    .map(([key, value]) => (
                                     <div key={key} className="specific-item">
                                         <strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> 
                                         {typeof value === 'boolean' ? (

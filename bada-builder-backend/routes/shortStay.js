@@ -198,7 +198,16 @@ router.put('/:id', authenticate, validateOwner, upload.array('images', 30), asyn
       amenities, specific_details, existing_images
     } = req.body;
 
-    let finalImages = existing_images ? (Array.isArray(existing_images) ? existing_images : [existing_images]) : [];
+    let finalImages = [];
+    if (existing_images) {
+        try {
+            const parsed = typeof existing_images === 'string' ? JSON.parse(existing_images) : existing_images;
+            finalImages = Array.isArray(parsed) ? parsed : [parsed];
+        } catch (e) {
+            console.error('Error parsing existing_images:', e);
+            finalImages = [];
+        }
+    }
     
     if (req.files && req.files.length > 0) {
       const buffers = req.files.map(file => file.buffer);

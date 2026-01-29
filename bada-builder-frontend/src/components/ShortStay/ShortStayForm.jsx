@@ -323,6 +323,48 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
         }
     };
 
+    // Room Type Handlers for Hotels
+    const addRoomType = () => {
+        setFormData(prev => {
+            const currentTypes = prev.specific_details.roomTypes || [];
+            return {
+                ...prev,
+                specific_details: {
+                    ...prev.specific_details,
+                    roomTypes: [...currentTypes, { type: 'Standard AC', count: 1, price: '' }]
+                }
+            };
+        });
+    };
+
+    const removeRoomType = (index) => {
+        setFormData(prev => {
+            const currentTypes = [...(prev.specific_details.roomTypes || [])];
+            currentTypes.splice(index, 1);
+            return {
+                ...prev,
+                specific_details: {
+                    ...prev.specific_details,
+                    roomTypes: currentTypes
+                }
+            };
+        });
+    };
+
+    const updateRoomType = (index, field, value) => {
+        setFormData(prev => {
+            const currentTypes = [...(prev.specific_details.roomTypes || [])];
+            currentTypes[index] = { ...currentTypes[index], [field]: value };
+            return {
+                ...prev,
+                specific_details: {
+                    ...prev.specific_details,
+                    roomTypes: currentTypes
+                }
+            };
+        });
+    };
+
     const renderSpecificFields = () => {
         const props = formData.specific_details;
         
@@ -457,28 +499,111 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                         ))}
                     </>
                 );
-             case 'hotel':
+            case 'hotel':
                 return (
                     <>
                         <div className="form-group">
-                            <label>Category</label>
+                            <label>Hotel Category</label>
                              <select name="hotelCategory" value={props.hotelCategory || ''} onChange={handleSpecificChange} className="premium-input">
                                 <option value="Budget">Budget</option>
                                 <option value="3 Star">3 Star</option>
                                 <option value="4 Star">4 Star</option>
                                 <option value="5 Star">5 Star</option>
+                                <option value="Resort">Resort</option>
                             </select>
                         </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Total Rooms</label>
-                                <input type="number" name="totalRooms" value={props.totalRooms || ''} onChange={handleSpecificChange} className="premium-input" />
-                            </div>
-                             <div className="form-group">
-                                <label>Elevator Count</label>
-                                <input type="number" name="elevatorCount" value={props.elevatorCount || ''} onChange={handleSpecificChange} className="premium-input" />
-                            </div>
+                        
+                        <div className="form-group">
+                             <label>Elevator Count</label>
+                             <input type="number" name="elevatorCount" value={props.elevatorCount || ''} onChange={handleSpecificChange} className="premium-input" />
                         </div>
+
+                        <div className="details-divider" style={{ margin: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }} />
+                        
+                        <div className="room-types-section">
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                                <label style={{marginBottom: 0}}>Room Configuration</label>
+                                <button type="button" onClick={addRoomType} className="active" style={{
+                                    background: 'rgba(255, 56, 92, 0.15)',
+                                    color: '#FF385C',
+                                    border: '1px solid #FF385C',
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer'
+                                }}>
+                                    + Add Room Type
+                                </button>
+                            </div>
+
+                            {(props.roomTypes || []).length === 0 && (
+                                <div style={{textAlign: 'center', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', color: '#64748b', fontSize: '14px'}}>
+                                    No rooms added yet. Click "+ Add Room Type" to define your inventory.
+                                </div>
+                            )}
+
+                            {(props.roomTypes || []).map((room, index) => (
+                                <div key={index} className="room-type-card" style={{
+                                    background: 'rgba(255,255,255,0.03)',
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    marginBottom: '12px',
+                                    border: '1px solid rgba(255,255,255,0.05)'
+                                }}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '12px'}}>
+                                        <span style={{fontSize: '12px', color: '#94a3b8', fontWeight: 600}}>Room Type {index + 1}</span>
+                                        <button type="button" onClick={() => removeRoomType(index)} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px'}}>
+                                            <FaTrash /> Remove
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="form-group" style={{marginBottom: '12px'}}>
+                                        <select 
+                                            value={room.type} 
+                                            onChange={(e) => updateRoomType(index, 'type', e.target.value)}
+                                            className="premium-input"
+                                            style={{padding: '10px'}}
+                                        >
+                                            <option value="Standard Non-AC">Standard Non-AC</option>
+                                            <option value="Standard AC">Standard AC</option>
+                                            <option value="Deluxe">Deluxe</option>
+                                            <option value="Super Deluxe">Super Deluxe</option>
+                                            <option value="Luxury">Luxury</option>
+                                            <option value="Ultra Luxury">Ultra Luxury</option>
+                                            <option value="Suite">Suite</option>
+                                            <option value="Family Room">Family Room</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-row" style={{gap: '12px'}}>
+                                        <div className="form-group" style={{marginBottom: 0}}>
+                                            <input 
+                                                type="number" 
+                                                placeholder="Count"
+                                                value={room.count} 
+                                                onChange={(e) => updateRoomType(index, 'count', e.target.value)}
+                                                className="premium-input"
+                                                style={{padding: '10px'}}
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{marginBottom: 0, position: 'relative'}}>
+                                             <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'#64748b'}}>₹</span>
+                                            <input 
+                                                type="number" 
+                                                placeholder="Price/Night"
+                                                value={room.price} 
+                                                onChange={(e) => updateRoomType(index, 'price', e.target.value)}
+                                                className="premium-input"
+                                                style={{padding: '10px', paddingLeft: '24px'}}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="details-divider" style={{ margin: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }} />
+
                         <label>Hotel Services</label>
                         {['24x7 Front Desk', 'Room Service', 'Restaurant', 'Bar', 'Banquet Hall'].map(item => (
                             <BinaryToggle 
@@ -928,18 +1053,36 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                             <textarea name="houseRules" value={formData.policies.houseRules} onChange={handlePolicyChange} className="premium-input" rows={3} placeholder="No loud music after 10 PM, etc." />
                         </div>
 
-                         <div className="checkbox-group-styled">
-                            {['ID Required', 'Smoking Allowed', 'Pets Allowed', 'Events Allowed'].map(item => {
-                                const key = item.split(' ')[0].toLowerCase() + (item.includes('Required') ? 'Required' : ''); // sloppy mapping, fixing by manual key map
-                                const mapKey = item === 'ID Required' ? 'idRequired' : item === 'Smoking Allowed' ? 'smoking' : item === 'Pets Allowed' ? 'pets' : 'events';
-                                
-                                return (
-                                    <label key={item} className={`checkbox-card ${formData.policies[mapKey] ? 'active' : ''}`}>
-                                        <input type="checkbox" name={mapKey} checked={formData.policies[mapKey]} onChange={handlePolicyChange} hidden />
-                                        <span>{item}</span>
-                                    </label>
-                                );
-                            })}
+                        <div style={{ marginTop: '20px' }}>
+                            <label style={{ marginBottom: '16px', display: 'block' }}>Rules & Permissions</label>
+                            
+                            <BinaryToggle 
+                                label="Government ID Required" 
+                                name="idRequired" 
+                                value={formData.policies.idRequired} 
+                                onChange={(name, val) => handlePolicyChange({ target: { name, value: val } })} 
+                            />
+                            
+                            <BinaryToggle 
+                                label="Smoking Allowed" 
+                                name="smoking" 
+                                value={formData.policies.smoking} 
+                                onChange={(name, val) => handlePolicyChange({ target: { name, value: val } })} 
+                            />
+                            
+                            <BinaryToggle 
+                                label="Pets Allowed" 
+                                name="pets" 
+                                value={formData.policies.pets} 
+                                onChange={(name, val) => handlePolicyChange({ target: { name, value: val } })} 
+                            />
+                            
+                            <BinaryToggle 
+                                label="Events / Parties Allowed" 
+                                name="events" 
+                                value={formData.policies.events} 
+                                onChange={(name, val) => handlePolicyChange({ target: { name, value: val } })} 
+                            />
                         </div>
                     </motion.div>
                 );
