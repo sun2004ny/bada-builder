@@ -5,34 +5,61 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const pool = new Pool({
+/**
+ * DATABASE SINGLETON REFACTOR
+ * Refactored to address "Connection terminated" and timeout errors.
+ */
+
+const poolConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
-    max: 10, // Reduced from 20 to be safer with Neon free tier limits
-    min: 2,  // Minimum number of idle connections
-    idleTimeoutMillis: 10000, // Close idle clients faster (10s instead of 30s)
-    connectionTimeoutMillis: 10000, // Fail after 10s on connection
-    maxUses: 7500, // Close connection after 7500 queries to prevent leaks
-});
+    // Optimized for stability and performance
+    max: 20,                       // Maintain up to 20 connections
+    idleTimeoutMillis: 30000,      // Keep idle connections open for 30s to reduce handshake overhead
+    connectionTimeoutMillis: 5000, // Fail fast (5s) if connection cannot be established
+    maxUses: 7500,                 // Protect against potential memory leaks in long-running processes
+};
 
-// Test connection and set query timeout
-pool.on('connect', (client) => {
-    // Set statement timeout for this connection
-    client.query('SET statement_timeout = 30000'); // 30 seconds
-    console.log('✅ Connected to PostgreSQL database');
-});
+// Internal instance
+let poolInstance;
 
-pool.on('error', (err) => {
-    console.error('❌ Database connection error:', err.message);
-    // Don't exit, let the pool handle reconnection
-});
+const getPool = () => {
+    if (!poolInstance) {
+        console.log('🚀 Initializing Singleton Database Pool...');
+        poolInstance = new Pool(poolConfig);
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    pool.end(() => {
-        console.log('Pool has ended');
+        // Pool-level error listener (CRITICAL)
+        poolInstance.on('error', (err) => {
+            console.error('❌ Unexpected error on idle database client:', err.message);
+            // pg-pool will automatically remove the broken client from the pool
+        });
+
+        // Connection-level setup
+        poolInstance.on('connect', (client) => {
+            // Set a safe statement timeout to prevent hanging queries from blocking the pool
+            client.query('SET statement_timeout = 60000'); // 60 seconds
+        });
+    }
+    return poolInstance;
+};
+
+// Export the pool instance directly to maintain compatibility with existing db.query() calls
+const pool = getPool();
+
+// Graceful shutdown handler
+const shutdown = async (signal) => {
+    console.log(`\nSystem received ${signal}. Closing database pool...`);
+    try {
+        await pool.end();
+        console.log('✅ Database pool has been closed gracefully.');
         process.exit(0);
-    });
-});
+    } catch (err) {
+        console.error('Error during pool shutdown:', err.message);
+        process.exit(1);
+    }
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 export default pool;
