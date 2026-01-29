@@ -57,6 +57,29 @@ const LocationMarker = ({ position, setPosition }) => {
     );
 };
 
+// Binary Toggle Component
+const BinaryToggle = ({ label, name, value, onChange }) => (
+    <div className="toggle-field">
+        <span className="toggle-label">{label}</span>
+        <div className="binary-toggle-container">
+            <button 
+                type="button"
+                className={`binary-toggle-btn ${value === true ? 'active yes' : ''}`}
+                onClick={() => onChange(name, true)}
+            >
+                Yes
+            </button>
+            <button 
+                type="button"
+                className={`binary-toggle-btn ${value === false ? 'active no' : ''}`}
+                onClick={() => onChange(name, false)}
+            >
+                No
+            </button>
+        </div>
+    </div>
+);
+
 const ShortStayForm = ({ category, onClose, initialData = null }) => {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
@@ -303,6 +326,11 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
     const renderSpecificFields = () => {
         const props = formData.specific_details;
         
+        // Helper to handle toggle change
+        const handleToggle = (name, val) => {
+            handleSpecificChange({ target: { name, value: val } });
+        };
+
         switch(category) {
             case 'apartment': // Flats / Apartments
                 return (
@@ -333,14 +361,15 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                             <input type="number" name="carpetArea" value={props.carpetArea || ''} onChange={handleSpecificChange} className="premium-input" />
                         </div>
                         <label>Features & Amenities</label>
-                        <div className="checkbox-group-styled">
-                            {['Lift Available', 'Balcony', 'Gated Society', 'Gym', 'Pool', 'Security', 'Clubhouse'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        {['Lift Available', 'Balcony', 'Gated Society', 'Gym', 'Pool', 'Security', 'Clubhouse'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
             case 'house': // Villa / Bungalow
@@ -377,14 +406,15 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                             </div>
                         </div>
                         <label>Features</label>
-                        <div className="checkbox-group-styled">
-                             {['Private Garden', 'Private Pool', 'Caretaker Available', 'BBQ Area'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        {['Private Garden', 'Private Pool', 'Caretaker Available', 'BBQ Area'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
              case 'dormitory':
@@ -415,14 +445,16 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                                 <option value="Female Only">Female Only</option>
                             </select>
                         </div>
-                         <div className="checkbox-group-styled">
-                             {['Lockers Available', 'Common Area', 'Security Cameras'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        <label>Amenities</label>
+                        {['Lockers Available', 'Common Area', 'Security Cameras'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
              case 'hotel':
@@ -447,14 +479,16 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                                 <input type="number" name="elevatorCount" value={props.elevatorCount || ''} onChange={handleSpecificChange} className="premium-input" />
                             </div>
                         </div>
-                         <div className="checkbox-group-styled">
-                             {['24x7 Front Desk', 'Room Service', 'Restaurant', 'Bar', 'Banquet Hall'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        <label>Hotel Services</label>
+                        {['24x7 Front Desk', 'Room Service', 'Restaurant', 'Bar', 'Banquet Hall'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
              case 'cottage':
@@ -476,14 +510,16 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                                 <option value="Mountain">Mountain</option>
                             </select>
                         </div>
-                        <div className="checkbox-group-styled">
-                             {['Private Lawn', 'Fireplace', 'Outdoor Seating'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        <label>Features</label>
+                        {['Private Lawn', 'Fireplace', 'Outdoor Seating'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
             case 'tree_house':
@@ -508,14 +544,16 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                                 <option value="High">High</option>
                             </select>
                         </div>
-                        <div className="checkbox-group-styled">
-                             {['Safety Certified', 'Child Friendly'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        <label>Safety & Stats</label>
+                        {['Safety Certified', 'Child Friendly'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </div>
                 );
              case 'tent':
@@ -529,14 +567,16 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                                 <option value="Luxury">Luxury</option>
                             </select>
                         </div>
-                         <div className="checkbox-group-styled">
-                             {['Private Washroom', 'Beds Provided', 'Campfire Access', 'Meals Included'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        <label>Camping Features</label>
+                        {['Private Washroom', 'Beds Provided', 'Campfire Access', 'Meals Included'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
              case 'farmhouse':
@@ -556,14 +596,16 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                                 <label>Music Allowed Till</label>
                                 <input type="time" name="musicTime" value={props.musicTime || ''} onChange={handleSpecificChange} className="premium-input" />
                         </div>
-                         <div className="checkbox-group-styled">
-                             {['Event Allowed', 'Staff Available'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        <label>Services</label>
+                        {['Event Allowed', 'Staff Available'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
              case 'hostel':
@@ -586,14 +628,16 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                                 <option value="Dorm">Dorm</option>
                             </select>
                         </div>
-                        <div className="checkbox-group-styled">
-                             {['Mess Facility', 'Study Area', 'Warden Available', 'Laundry Facility'].map(item => (
-                                <label key={item} className={`checkbox-card ${props[item] ? 'active' : ''}`}>
-                                    <input type="checkbox" name={item} checked={props[item] || false} onChange={handleSpecificChange} hidden />
-                                    <span>{item}</span>
-                                </label>
-                            ))}
-                        </div>
+                        <label>Facilities</label>
+                        {['Mess Facility', 'Study Area', 'Warden Available', 'Laundry Facility'].map(item => (
+                            <BinaryToggle 
+                                key={item} 
+                                label={item} 
+                                name={item} 
+                                value={props[item] === true} 
+                                onChange={handleToggle} 
+                            />
+                        ))}
                     </>
                 );
             default:

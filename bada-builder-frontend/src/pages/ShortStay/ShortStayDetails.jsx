@@ -129,7 +129,12 @@ const ShortStayDetails = () => {
                             <div className="specifics-grid">
                                 {specific_details && Object.entries(specific_details).map(([key, value]) => (
                                     <div key={key} className="specific-item">
-                                        <strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {value.toString()}
+                                        <strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> 
+                                        {typeof value === 'boolean' ? (
+                                            value ? <span style={{color: '#10b981', marginLeft: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>Yes <FaCheck size={12}/></span> : <span style={{color: '#ef4444', marginLeft: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>No <FaTimes size={12}/></span>
+                                        ) : (
+                                            <span style={{marginLeft: '6px'}}>{value.toString()}</span>
+                                        )}
                                     </div>
                                 ))}
                             </div>
