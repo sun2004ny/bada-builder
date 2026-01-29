@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import BackgroundVideo from '../../components/BackgroundVideo/BackgroundVideo';
 import shortStayVideo from '../../assets/videos/shortstay_hero.mp4';
 import './ShortStayLanding.css';
@@ -19,7 +19,8 @@ const ShortStayLanding = () => {
     location: '',
     checkIn: '',
     checkOut: '',
-    guests: 1
+    guests: 1,
+    type: ''
   });
 
   const categories = [
@@ -27,7 +28,7 @@ const ShortStayLanding = () => {
     { id: 'house', name: 'Villa / Bunglow', icon: <FaHome />, desc: 'Spacious private homes' },
     { id: 'dormitory', name: 'Dormitory', icon: <FaBed />, desc: 'Budget friendly beds' },
     { id: 'hotel', name: 'Hotels', icon: <FaHotel />, desc: 'Luxury & Service' },
-    { id: 'cottage', name: 'Cottages', icon: <FaHome />, desc: 'Rustic charm' }, // Reusing Home for now or find distinct
+    { id: 'cottage', name: 'Cottages', icon: <FaHome />, desc: 'Rustic charm' }, 
     { id: 'tree_house', name: 'Tree House', icon: <FaTree />, desc: 'Nature elevated' },
     { id: 'tent', name: 'Tents', icon: <FaCampground />, desc: 'Glamping experience' },
     { id: 'farmhouse', name: 'Farmhouse', icon: <FaLeaf />, desc: 'Peaceful getaways' },
@@ -45,11 +46,9 @@ const ShortStayLanding = () => {
     try {
       setLoading(true);
       const data = await shortStayAPI.getAll();
-      // Ensure we have an array even if API returns { properties: [], count: 0 }
       setListings(data.properties || []);
     } catch (error) {
       console.error('Error fetching listings:', error);
-      // Fallback empty state is better than crash
       setListings([]);
     } finally {
       setLoading(false);
@@ -59,7 +58,6 @@ const ShortStayLanding = () => {
   const fetchFavorites = async () => {
       try {
           const data = await shortStayAPI.getUserFavorites();
-          // Assuming API returns array of favorite properties, we just need IDs for checking
           const favIds = new Set(data.favorites.map(fav => fav.id));
           setFavorites(favIds);
       } catch (error) {
@@ -92,18 +90,14 @@ const ShortStayLanding = () => {
   const handleSearch = async () => {
     setLoading(true);
     try {
-        // Construct filters
         const filters = {};
         if (searchParams.location) filters.location = searchParams.location;
         if (searchParams.guests > 1) filters.guests = searchParams.guests;
-        
-        // Pass date filters if implemented on backend
-        // if (searchParams.checkIn) filters.checkIn = searchParams.checkIn;
+        if (searchParams.type) filters.type = searchParams.type;
         
         const data = await shortStayAPI.getAll(filters);
         setListings(data.properties || []);
         
-        // Scroll to results
         const element = document.getElementById('listings-section');
         if (element) element.scrollIntoView({ behavior: 'smooth' });
         
@@ -114,21 +108,7 @@ const ShortStayLanding = () => {
     }
   };
 
-  const handleCategoryClick = async (categoryId) => {
-    // Determine if we should navigate to search page or just filter locally/API
-    // For now, let's filter the current view for better UX
-    setLoading(true);
-    try {
-        const data = await shortStayAPI.getAll({ type: categoryId });
-        setListings(data.properties || []);
-        const element = document.getElementById('listings-section');
-        if (element) element.scrollIntoView({ behavior: 'smooth' });
-    } catch (error) {
-        console.error('Filter failed:', error);
-    } finally {
-        setLoading(false);
-    }
-  };
+
 
   const handleListProperty = () => {
       if (!user) {
@@ -267,30 +247,7 @@ const ShortStayLanding = () => {
 
       <div className="short-stay-content-wrapper">
         {/* Categories Section */}
-        <section className="short-stay-categories-section">
-          <div className="short-stay-section-header">
-            <h2>Browse by Property Type</h2>
-            <p>Find the exact style of stay you're looking for</p>
-          </div>
-          <div className="short-stay-categories-grid">
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                className="short-stay-category-card"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                onClick={() => handleCategoryClick(category.id)}
-                whileHover={{ y: -6, scale: 1.02 }}
-              >
-                <div className="short-stay-category-icon">{category.icon}</div>
-                <h3>{category.name}</h3>
-                <p>{category.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+        {/* Categories Section Removed - Replaced by Search Dropdown */}
 
         {/* Listings Section */}
         <section id="listings-section" className="short-stay-featured-section">
@@ -298,6 +255,48 @@ const ShortStayLanding = () => {
             <div>
               <h2>{listings.length > 0 ? `Properties (${listings.length})` : 'Featured Stays'}</h2>
               <p>Top-rated properties across the country</p>
+            </div>
+            
+            <div className="short-stay-filter-dropdown">
+                <select
+                    value={searchParams.type}
+                    onChange={async (e) => {
+                        const newType = e.target.value;
+                        setSearchParams(prev => ({ ...prev, type: newType }));
+                        
+                        // Trigger immediate filter
+                        setLoading(true);
+                        try {
+                            const filters = {};
+                            if (searchParams.location) filters.location = searchParams.location;
+                            if (searchParams.guests > 1) filters.guests = searchParams.guests;
+                            if (newType) filters.type = newType;
+                            
+                            const data = await shortStayAPI.getAll(filters);
+                            setListings(data.properties || []);
+                        } catch (error) {
+                            console.error('Filter failed:', error);
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    style={{
+                        padding: '10px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #DDDDDD',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#222222',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        minWidth: '200px'
+                    }}
+                >
+                    <option value="">All Property Types</option>
+                    {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                </select>
             </div>
           </div>
 
