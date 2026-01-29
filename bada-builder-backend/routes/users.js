@@ -45,9 +45,9 @@ router.get('/stats', authenticate, async (req, res) => {
       [userId]
     );
 
-    // Get live grouping count
+    // Get live grouping count (Units booked in Live Groups)
     const groupingResult = await pool.query(
-      'SELECT COUNT(*) as count FROM live_grouping_properties WHERE created_by = $1',
+      'SELECT COUNT(*) as count FROM live_group_units WHERE booked_by = $1',
       [userId]
     );
 

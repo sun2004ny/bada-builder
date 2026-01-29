@@ -313,7 +313,8 @@
 .dropdown-title {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: #111827 !important;
+  /* Reinforce visibility */
   margin: 0;
 }
 
@@ -334,7 +335,8 @@
   gap: 10px;
   cursor: pointer;
   font-size: 14px;
-  color: #374151;
+  color: #374151 !important;
+  /* Reinforce visibility */
   font-weight: 500;
   padding: 8px 12px;
   border-radius: 8px;

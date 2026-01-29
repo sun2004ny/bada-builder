@@ -4,6 +4,21 @@
   min-height: 100vh;
 }
 
+/* Fix visibility issues caused by global style leakage from ShortStay */
+.admin-live-grouping.overhaul label {
+  color: #475569 !important;
+  display: block !important;
+}
+
+.admin-live-grouping.overhaul .form-grid .input-group label {
+  color: #475569 !important;
+}
+
+/* Ensure headings are also visible if they were affected */
+.admin-live-grouping.overhaul h3 {
+  color: #1e293b !important;
+}
+
 .admin-header-v2 {
   display: flex;
   justify-content: space-between;
