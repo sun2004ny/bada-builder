@@ -1374,8 +1374,9 @@ const CameraController = ({ movement, controlsRef }) => {
         s.up.copy(camera.up).normalize();
 
         // High-end Speed Constants
-        const baseSpeed = 80; // Higher base speed
-        const lerpFactor = Math.min(delta * 8, 1); // Fast damping
+        const isMobile = window.innerWidth <= 768;
+        const baseSpeed = isMobile ? 40 : 80; // Reduced speed for mobile
+        const lerpFactor = Math.min(delta * (isMobile ? 12 : 8), 1); // Snappier damping for mobile
 
         // Calculate target velocities based on input
         if (movement.up) targetMoveVel.addScaledVector(s.up, baseSpeed);
