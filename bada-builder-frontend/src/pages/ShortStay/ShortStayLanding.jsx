@@ -22,7 +22,7 @@ const ShortStayLanding = () => {
     location: '',
     checkIn: '',
     checkOut: '',
-    guests: { adults: 1, children: 0, infants: 0 },
+    guests: { adults: 1, children: 0, infants: 0, pets: 0 },
     type: ''
   });
 
@@ -124,12 +124,18 @@ const ShortStayLanding = () => {
   };
 
   const getGuestLabel = () => {
-    const { adults, children, infants } = searchParams.guests;
+    const { adults, children, infants, pets } = searchParams.guests;
     const total = adults + children;
-    if (total === 1 && infants === 0) return "Add guests";
+    if (total === 1 && infants === 0 && pets === 0) return "Add guests";
     let label = `${total} Guest${total !== 1 ? 's' : ''}`;
     if (infants > 0) label += `, ${infants} Infant${infants !== 1 ? 's' : ''}`;
+    if (pets > 0) label += `, ${pets} Pet${pets !== 1 ? 's' : ''}`;
     return label;
+  };
+
+  const handleClearDates = (e) => {
+    e.stopPropagation();
+    setSearchParams(prev => ({ ...prev, checkIn: '', checkOut: '' }));
   };
 
 
@@ -207,8 +213,15 @@ const ShortStayLanding = () => {
                     onClick={() => setActivePopup('calendar')}
                   >
                     <label>When</label>
-                    <div className={`pill-display-value ${!searchParams.checkIn ? 'value-placeholder' : ''}`}>
-                      {getDateLabel()}
+                    <div className="pill-value-container">
+                      <div className={`pill-display-value ${!searchParams.checkIn ? 'value-placeholder' : ''}`}>
+                        {getDateLabel()}
+                      </div>
+                      {searchParams.checkIn && (
+                        <button className="clear-date-btn" onClick={handleClearDates}>
+                          &times;
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -219,15 +232,15 @@ const ShortStayLanding = () => {
                     onClick={() => setActivePopup('guests')}
                   >
                     <label>Who</label>
-                    <div className={`pill-display-value ${searchParams.guests.adults + searchParams.guests.children === 1 && searchParams.guests.infants === 0 ? 'value-placeholder' : ''}`}>
+                    <div className={`pill-display-value ${searchParams.guests.adults + searchParams.guests.children === 1 && searchParams.guests.infants === 0 && searchParams.guests.pets === 0 ? 'value-placeholder' : ''}`}>
                       {getGuestLabel()}
                     </div>
                   </div>
 
                   <div className="search-pill-btn-container">
                     <button className="airbnb-search-button" onClick={handleSearch}>
-                      <FaSearch className="search-icon" />
                       <span>Search</span>
+                      <FaSearch className="search-icon" />
                     </button>
                   </div>
 
@@ -339,7 +352,7 @@ const ShortStayLanding = () => {
             <div className="no-listings-found">
               <h3>No properties found matching your criteria.</h3>
               <p>Try adjusting your filters or browse other categories.</p>
-              <button className="reset-search-btn" onClick={() => { setSearchParams({ location: '', checkIn: '', checkOut: '', guests: { adults: 1, children: 0, infants: 0 }, type: '' }); fetchListings(); }}>Reset Search</button>
+              <button className="reset-search-btn" onClick={() => { setSearchParams({ location: '', checkIn: '', checkOut: '', guests: { adults: 1, children: 0, infants: 0, pets: 0 }, type: '' }); fetchListings(); }}>Reset Search</button>
             </div>
           ) : (
             <div className="short-stay-listings-grid">

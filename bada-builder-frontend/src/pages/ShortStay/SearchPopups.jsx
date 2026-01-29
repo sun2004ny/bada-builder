@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaMinus, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaPlus, FaMinus, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 
 /**
  * Robust Date Picker with Airbnb Aesthetics
@@ -113,10 +113,10 @@ export const CalendarPopup = ({ checkIn, checkOut, onChange, onClose }) => {
         >
             <div className="calendar-nav">
                 <button className="nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
-                    <FaChevronLeft />
+                    <FaAngleLeft />
                 </button>
                 <button className="nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
-                    <FaChevronRight />
+                    <FaAngleRight />
                 </button>
             </div>
             <div className="calendar-container">
@@ -167,6 +167,7 @@ export const GuestPopup = ({ guests, onChange, onClose }) => {
         { id: 'adults', label: 'Adults', sub: 'Ages 13 or above' },
         { id: 'children', label: 'Children', sub: 'Ages 2–12' },
         { id: 'infants', label: 'Infants', sub: 'Under 2' },
+        { id: 'pets', label: 'Pets', sub: 'Service animals welcome' },
     ];
 
     return (
