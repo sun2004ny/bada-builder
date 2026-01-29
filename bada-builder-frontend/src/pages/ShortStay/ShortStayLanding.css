@@ -222,6 +222,34 @@
   color: #717171;
 }
 
+.pill-value-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.clear-date-btn {
+  background: #f7f7f7;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #222222;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.clear-date-btn:hover {
+  background: #ebebeb;
+}
+
 .pill-display-value {
   font-size: 14px;
   color: #222222;
@@ -229,6 +257,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 400;
+  flex: 1;
 }
 
 .pill-display-value.value-placeholder {
@@ -247,18 +276,26 @@
 }
 
 .airbnb-search-button {
-  background-color: #FF385C;
-  color: #FFFFFF;
+  background-color: #28a745 !important;
+  /* Vibrant Green */
+  color: #FFFFFF !important;
   border: none;
-  border-radius: 24px;
-  padding: 12px 24px;
+  border-radius: 32px;
+  padding: 12px 28px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: transform 0.1s ease, filter 0.2s ease;
+  justify-content: center;
+  gap: 16px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0, 1);
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.airbnb-search-button span {
+  color: #FFFFFF;
 }
 
 .airbnb-search-button:active {
@@ -266,11 +303,14 @@
 }
 
 .airbnb-search-button:hover {
-  filter: brightness(0.9);
+  background-color: #218838 !important;
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
 }
 
 .search-icon {
   font-size: 16px;
+  color: #FFFFFF !important;
 }
 
 /* --- POPUPS --- */
@@ -288,9 +328,16 @@
 
 /* Calendar Specific */
 .calendar-popup {
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  min-width: 700px;
+}
+
+.guest-popup {
+  right: 0;
+  width: 400px;
 }
 
 .calendar-nav {
@@ -308,18 +355,28 @@
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: transparent;
+  background: #F7F7F7;
+  /* Light background for visibility */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: #222222;
   pointer-events: all;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .nav-btn:hover {
-  background: #F7F7F7;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.1);
 }
 
 .calendar-container {
@@ -443,15 +500,22 @@
   border-bottom: none;
 }
 
+.guest-info {
+  flex: 1;
+  text-align: left;
+}
+
 .guest-label {
   font-size: 16px;
   font-weight: 600;
   color: #222222;
+  margin: 0;
 }
 
 .guest-sub {
   font-size: 14px;
   color: #717171;
+  margin: 0;
 }
 
 .guest-controls {
@@ -465,13 +529,20 @@
   height: 32px;
   border-radius: 50%;
   border: 1px solid #B0B0B0;
-  background: transparent;
+  background: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   color: #717171;
-  transition: all 0.2s;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  padding: 0;
+}
+
+.counter-btn svg {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 .counter-btn:hover:not(:disabled) {
