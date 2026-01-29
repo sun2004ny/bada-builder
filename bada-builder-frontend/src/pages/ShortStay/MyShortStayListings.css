@@ -1,0 +1,151 @@
+/* MyShortStayListings.css */
+
+.my-listings-page {
+    padding-top: 100px;
+    min-height: 80vh;
+}
+
+.my-listings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.my-listings-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.add-new-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0F172A;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.add-new-btn:hover {
+    background: #1E293B;
+}
+
+.no-listings-state {
+    text-align: center;
+    padding: 60px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.no-listings-state button {
+    margin-top: 16px;
+    padding: 10px 20px;
+    background: #FF385C;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.my-listings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.my-listing-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    transition: box-shadow 0.2s;
+}
+
+.my-listing-card:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.listing-image {
+    position: relative;
+    height: 200px;
+}
+
+.listing-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.status-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.listing-details {
+    padding: 16px;
+}
+
+.listing-details h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.listing-location {
+    font-size: 14px;
+    color: #64748B;
+    margin-bottom: 8px;
+}
+
+.listing-price {
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 16px;
+}
+
+.listing-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.listing-actions button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+    transition: all 0.2s;
+}
+
+.listing-actions button:hover {
+    background: #f1f5f9;
+}
+
+.listing-actions .delete-btn:hover {
+    background: #FFF1F2;
+    color: #E11D48;
+    border-color: #FECDD3;
+}

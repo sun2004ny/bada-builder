@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-// TODO: Implement short stay listings API endpoint
-// import { shortStayAPI } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import BackgroundVideo from '../../components/BackgroundVideo/BackgroundVideo';
+import shortStayVideo from '../../assets/videos/shortstay_hero.mp4';
 import './ShortStayLanding.css';
-import shortStayVideo from '../../assets/sort stay video.mp4';
+import { shortStayAPI } from '../../services/shortStayApi';
+import { useAuth } from '../../context/AuthContext';
+import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate } from 'react-icons/fa';
 
 const ShortStayLanding = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser: user } = useAuth(); // Alias currentUser to user for existing code compatibility
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState(new Set());
+  
   const [searchParams, setSearchParams] = useState({
     location: '',
     checkIn: '',
@@ -21,60 +23,120 @@ const ShortStayLanding = () => {
   });
 
   const categories = [
-    { id: 'apartment', name: 'Apartments', icon: '🏢', count: 0 },
-    { id: 'villa', name: 'Villas', icon: '🏡', count: 0 },
-    { id: 'house', name: 'Independent Houses', icon: '🏠', count: 0 },
-    { id: 'duplex', name: 'Duplex / Triplex', icon: '🏘️', count: 0 },
-    { id: 'service_apartment', name: 'Service Apartments', icon: '🏨', count: 0 }
+    { id: 'apartment', name: 'Flats / Apartments', icon: <FaBuilding />, desc: 'Cozy city stays' },
+    { id: 'house', name: 'Villa / Bunglow', icon: <FaHome />, desc: 'Spacious private homes' },
+    { id: 'dormitory', name: 'Dormitory', icon: <FaBed />, desc: 'Budget friendly beds' },
+    { id: 'hotel', name: 'Hotels', icon: <FaHotel />, desc: 'Luxury & Service' },
+    { id: 'cottage', name: 'Cottages', icon: <FaHome />, desc: 'Rustic charm' }, // Reusing Home for now or find distinct
+    { id: 'tree_house', name: 'Tree House', icon: <FaTree />, desc: 'Nature elevated' },
+    { id: 'tent', name: 'Tents', icon: <FaCampground />, desc: 'Glamping experience' },
+    { id: 'farmhouse', name: 'Farmhouse', icon: <FaLeaf />, desc: 'Peaceful getaways' },
+    { id: 'hostel', name: 'Hostel', icon: <FaUserGraduate />, desc: 'Student living' }
   ];
 
   useEffect(() => {
     fetchListings();
-  }, []);
+    if (user) {
+        fetchFavorites();
+    }
+  }, [user]);
 
   const fetchListings = async () => {
     try {
-      // TODO: Implement with shortStayAPI.getAll({ status: 'approved' })
-      // For now, using empty array - will fall back to sample data
-      const listingsData = [];
-
-      // If no data in Firestore, use fallback sample data
-      if (listingsData.length === 0) {
-        setListings(fallbackListings);
-      } else {
-        setListings(listingsData);
-      }
+      setLoading(true);
+      const data = await shortStayAPI.getAll();
+      // Ensure we have an array even if API returns { properties: [], count: 0 }
+      setListings(data.properties || []);
     } catch (error) {
       console.error('Error fetching listings:', error);
-      // Use fallback data on error
-      setListings(fallbackListings);
+      // Fallback empty state is better than crash
+      setListings([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fallback sample data
-  const fallbackListings = [
-    { id: 1, title: "Modern 2BHK in Alkapuri", propertyType: "apartment", location: { city: "Vadodara", area: "Alkapuri" }, pricing: { nightlyRate: 2500 }, capacity: { bedrooms: 2, beds: 2, maxGuests: 4 }, images: ["/placeholder-property.jpg"], rating: 4.8, reviewCount: 24, status: "approved" },
-    { id: 2, title: "Luxury 3BHK Near Sayajigunj", propertyType: "apartment", location: { city: "Vadodara", area: "Sayajigunj" }, pricing: { nightlyRate: 3500 }, capacity: { bedrooms: 3, beds: 3, maxGuests: 6 }, images: ["/placeholder-property.jpg"], rating: 4.9, reviewCount: 31, status: "approved" },
-    { id: 3, title: "Cozy Villa in Fatehgunj", propertyType: "villa", location: { city: "Vadodara", area: "Fatehgunj" }, pricing: { nightlyRate: 9500 }, capacity: { bedrooms: 5, beds: 6, maxGuests: 12 }, images: ["/placeholder-property.jpg"], rating: 4.9, reviewCount: 42, status: "approved" },
-    { id: 4, title: "Modern Duplex in Manjalpur", propertyType: "duplex", location: { city: "Vadodara", area: "Manjalpur" }, pricing: { nightlyRate: 6800 }, capacity: { bedrooms: 4, beds: 4, maxGuests: 8 }, images: ["/placeholder-property.jpg"], rating: 4.8, reviewCount: 30, status: "approved" },
-    { id: 5, title: "Executive Service Apartment in Alkapuri", propertyType: "service_apartment", location: { city: "Vadodara", area: "Alkapuri" }, pricing: { nightlyRate: 3500 }, capacity: { bedrooms: 2, beds: 2, maxGuests: 4 }, images: ["/placeholder-property.jpg"], rating: 4.8, reviewCount: 28, status: "approved" },
-    { id: 6, title: "Elegant House in Gotri", propertyType: "house", location: { city: "Vadodara", area: "Gotri" }, pricing: { nightlyRate: 4900 }, capacity: { bedrooms: 3, beds: 3, maxGuests: 6 }, images: ["/placeholder-property.jpg"], rating: 4.6, reviewCount: 21, status: "approved" },
-  ];
-
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (searchParams.location) params.append('location', searchParams.location);
-    if (searchParams.checkIn) params.append('checkIn', searchParams.checkIn);
-    if (searchParams.checkOut) params.append('checkOut', searchParams.checkOut);
-    if (searchParams.guests) params.append('guests', searchParams.guests);
-
-    navigate(`/short-stay/search?${params.toString()}`);
+  const fetchFavorites = async () => {
+      try {
+          const data = await shortStayAPI.getUserFavorites();
+          // Assuming API returns array of favorite properties, we just need IDs for checking
+          const favIds = new Set(data.favorites.map(fav => fav.id));
+          setFavorites(favIds);
+      } catch (error) {
+          console.error('Error fetching favorites:', error);
+      }
   };
 
-  const handleCategoryClick = (categoryId) => {
-    navigate(`/short-stay/search?type=${categoryId}`);
+  const handleToggleFavorite = async (e, propertyId) => {
+      e.stopPropagation();
+      if (!user) {
+          alert('Please login to save favorites');
+          return;
+      }
+      try {
+          const result = await shortStayAPI.toggleFavorite(propertyId);
+          setFavorites(prev => {
+              const newFavs = new Set(prev);
+              if (result.isFavorite) {
+                  newFavs.add(propertyId);
+              } else {
+                  newFavs.delete(propertyId);
+              }
+              return newFavs;
+          });
+      } catch (error) {
+          console.error('Error toggling favorite:', error);
+      }
+  };
+
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+        // Construct filters
+        const filters = {};
+        if (searchParams.location) filters.location = searchParams.location;
+        if (searchParams.guests > 1) filters.guests = searchParams.guests;
+        
+        // Pass date filters if implemented on backend
+        // if (searchParams.checkIn) filters.checkIn = searchParams.checkIn;
+        
+        const data = await shortStayAPI.getAll(filters);
+        setListings(data.properties || []);
+        
+        // Scroll to results
+        const element = document.getElementById('listings-section');
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (error) {
+        console.error('Search failed:', error);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleCategoryClick = async (categoryId) => {
+    // Determine if we should navigate to search page or just filter locally/API
+    // For now, let's filter the current view for better UX
+    setLoading(true);
+    try {
+        const data = await shortStayAPI.getAll({ type: categoryId });
+        setListings(data.properties || []);
+        const element = document.getElementById('listings-section');
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        console.error('Filter failed:', error);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleListProperty = () => {
+      if (!user) {
+          // Redirect to login with return url
+          navigate('/login', { state: { from: '/short-stay/list-property' } });
+      } else {
+          navigate('/short-stay/list-property');
+      }
   };
 
   return (
@@ -91,9 +153,7 @@ const ShortStayLanding = () => {
           fallbackColor="#0F172A"
           overlay={false}
         >
-          {/* Custom scoped overlay to prevent leakage */}
           <div className="short-stay-hero-overlay" />
-
           <div className="short-stay-hero-container">
             <div className="short-stay-hero-content">
               <div className="short-stay-hero-text-box">
@@ -114,14 +174,12 @@ const ShortStayLanding = () => {
                 </motion.p>
               </div>
 
-              {/* Modern Airbnb-Style Search Card */}
+              {/* Modern Search Card */}
               <motion.div
                 className="short-stay-search-card"
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.4 }}
-                whileHover={{ y: -5, scale: 1.01 }}
-                whileTap={{ scale: 0.995 }}
               >
                 <div className="short-stay-search-row">
                   <div className="short-stay-search-field">
@@ -182,18 +240,21 @@ const ShortStayLanding = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
               >
+                {user && (
+                    <motion.button
+                    className="short-stay-btn short-stay-btn-outline"
+                    onClick={() => navigate('/short-stay/my-listings')}
+                    whileHover={{ y: -4, scale: 1.05, background: 'rgba(255, 255, 255, 0.2)' }}
+                    whileTap={{ scale: 0.98 }}
+                    >
+                    My Listings
+                    </motion.button>
+                )}
+                
                 <motion.button
                   className="short-stay-btn short-stay-btn-primary"
-                  onClick={() => navigate('/short-stay/search')}
+                  onClick={handleListProperty}
                   whileHover={{ y: -4, scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Explore Stays
-                </motion.button>
-                <motion.button
-                  className="short-stay-btn short-stay-btn-outline"
-                  onClick={() => user ? navigate('/short-stay/list-property') : navigate('/login')}
-                  whileHover={{ y: -4, scale: 1.05, background: 'rgba(255, 255, 255, 0.2)' }}
                   whileTap={{ scale: 0.98 }}
                 >
                   List Your Property
@@ -219,31 +280,25 @@ const ShortStayLanding = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
                 onClick={() => handleCategoryClick(category.id)}
                 whileHover={{ y: -6, scale: 1.02 }}
               >
                 <div className="short-stay-category-icon">{category.icon}</div>
                 <h3>{category.name}</h3>
-                <p>{listings.filter(l => l.propertyType === category.id).length} properties</p>
+                <p>{category.desc}</p>
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* Featured Listings */}
-        <section className="short-stay-featured-section">
+        {/* Listings Section */}
+        <section id="listings-section" className="short-stay-featured-section">
           <div className="short-stay-section-header-flex">
             <div>
-              <h2>Featured Stays</h2>
+              <h2>{listings.length > 0 ? `Properties (${listings.length})` : 'Featured Stays'}</h2>
               <p>Top-rated properties across the country</p>
             </div>
-            <button
-              className="short-stay-view-all-link"
-              onClick={() => navigate('/short-stay/search')}
-            >
-              View all stays →
-            </button>
           </div>
 
           {loading ? (
@@ -251,9 +306,15 @@ const ShortStayLanding = () => {
               <div className="short-stay-spinner"></div>
               <p>Finding the best properties for you...</p>
             </div>
+          ) : listings.length === 0 ? (
+             <div className="no-listings-found">
+                 <h3>No properties found matching your criteria.</h3>
+                 <p>Try adjusting your filters or browse other categories.</p>
+                 <button className="reset-search-btn" onClick={() => { setSearchParams({ location: '', checkIn: '', checkOut: '', guests: 1 }); fetchListings(); }}>Reset Search</button>
+             </div>
           ) : (
             <div className="short-stay-listings-grid">
-              {listings.slice(0, 6).map((listing, index) => (
+              {listings.map((listing, index) => (
                 <motion.div
                   key={listing.id}
                   className="short-stay-property-card"
@@ -264,28 +325,48 @@ const ShortStayLanding = () => {
                   onClick={() => navigate(`/short-stay/${listing.id}`)}
                   whileHover={{ y: -8 }}
                 >
-                  <div className="short-stay-property-image">
-                    <img src={listing.images[0] || '/placeholder-property.jpg'} alt={listing.title} />
-                    <div className="short-stay-property-badge">{listing.propertyType.replace('_', ' ')}</div>
-                  </div>
+                    <div className="short-stay-property-image">
+                        <img 
+                            src={listing.cover_image || (listing.images && listing.images[0]) || '/placeholder-property.jpg'} 
+                            alt={listing.title} 
+                        />
+                        <div className="short-stay-property-badge">
+                            {categories.find(c => c.id === listing.category)?.name || listing.category}
+                        </div>
+                        <button 
+                            className={`favorite-btn ${favorites.has(listing.id) ? 'active' : ''}`}
+                            onClick={(e) => handleToggleFavorite(e, listing.id)}
+                        >
+                            {favorites.has(listing.id) ? '❤️' : '🤍'}
+                        </button>
+                    </div>
+                  
                   <div className="short-stay-property-info">
                     <div className="short-stay-property-header">
                       <h3>{listing.title}</h3>
-                      {listing.rating && (
-                        <div className="short-stay-property-rating">
-                          ⭐ <span>{listing.rating}</span>
-                        </div>
-                      )}
+                      <div className="short-stay-property-rating">
+                        ⭐ <span>{listing.rating || 'New'}</span>
+                      </div>
                     </div>
-                    <p className="short-stay-property-location">📍 {listing.location.city}, {listing.location.area}</p>
+                    
+                    <p className="short-stay-property-location">
+                        📍 {listing.location?.city || listing.location?.address || 'Location unavailable'}
+                    </p>
+                    
                     <div className="short-stay-property-specs">
-                      <span>{listing.capacity.bedrooms} Bedrooms</span>
-                      <span className="short-stay-dot">·</span>
-                      <span>{listing.capacity.maxGuests} Guests</span>
+                        {/* Dynamic specs based on category could go here */}
+                        <span>
+                            {listing.specific_details?.bhk ? `${listing.specific_details.bhk} BHK` : 
+                             listing.specific_details?.bedrooms ? `${listing.specific_details.bedrooms} Beds` :
+                             listing.category === 'hotel' ? 'Luxury Room' : 'Comfortable Stay'}
+                        </span>
+                        <span className="short-stay-dot">·</span>
+                        <span>{listing.guests || 2} Guests</span>
                     </div>
+                    
                     <div className="short-stay-property-footer">
                       <div className="short-stay-property-price">
-                        <span className="short-stay-price-amount">₹{listing.pricing.nightlyRate.toLocaleString()}</span>
+                        <span className="short-stay-price-amount">₹{listing.pricing?.perNight?.toLocaleString() || 'N/A'}</span>
                         <span className="short-stay-price-unit">/ night</span>
                       </div>
                     </div>
@@ -294,49 +375,6 @@ const ShortStayLanding = () => {
               ))}
             </div>
           )}
-        </section>
-
-        {/* Features / Why Choose Us */}
-        <section className="short-stay-features-section">
-          <div className="short-stay-section-header">
-            <h2>Why Book With Us?</h2>
-            <p>Experience excellence and security in every stay</p>
-          </div>
-          <div className="short-stay-features-grid">
-            <motion.div
-              className="short-stay-feature-item"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="short-stay-feature-icon">🛡️</div>
-              <h3>Secure Booking</h3>
-              <p>Your safety and security are our top priorities with verified payments.</p>
-            </motion.div>
-            <motion.div
-              className="short-stay-feature-item"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <div className="short-stay-feature-icon">✨</div>
-              <h3>Handpicked Homes</h3>
-              <p>We personally verify properties to ensure they meet our quality standards.</p>
-            </motion.div>
-            <motion.div
-              className="short-stay-feature-item"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <div className="short-stay-feature-icon">💎</div>
-              <h3>Premium Support</h3>
-              <p>Our dedicated team is here to help you 24/7 during your stay.</p>
-            </motion.div>
-          </div>
         </section>
       </div>
     </div>

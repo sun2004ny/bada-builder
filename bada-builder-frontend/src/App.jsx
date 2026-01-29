@@ -40,6 +40,9 @@ import LiveGrouping from './pages/Exhibition/LiveGrouping';
 import LiveGroupingDetails from './pages/Exhibition/LiveGroupingDetails';
 import ThreeDView from './pages/Exhibition/ThreeDView';
 import ShortStayLanding from './pages/ShortStay/ShortStayLanding';
+import ListShortStay from './pages/ShortStay/ListShortStay';
+import ShortStayDetails from './pages/ShortStay/ShortStayDetails';
+import MyShortStayListings from './pages/ShortStay/MyShortStayListings';
 import HomeLoans from './pages/HomeLoans/HomeLoans';
 import AdminLiveGrouping from './pages/Admin/AdminLiveGrouping';
 import LongLiveBrowse from './pages/LongLive/LongLiveBrowse';
@@ -172,6 +175,9 @@ function AppContent() {
             <Route path="/exhibition/live-grouping/:id" element={<LiveGroupingDetails />} />
             <Route path="/exhibition/3d-view" element={<ThreeDView />} />
             <Route path="/short-stay" element={<ShortStayLanding />} />
+            <Route path="/short-stay/list-property" element={<ListShortStay />} />
+            <Route path="/short-stay/:id" element={<ShortStayDetails />} />
+            <Route path="/short-stay/my-listings" element={<MyShortStayListings />} />
             <Route path="/home-loans" element={<HomeLoans />} />
             <Route path="/long-live/browse" element={<LongLiveBrowse />} />
             <Route path="/long-live/post" element={<LongLivePost />} />
