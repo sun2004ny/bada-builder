@@ -1,0 +1,151 @@
+/* CameraControls.css */
+
+.camera-controls-wrapper {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.camera-edge-btn {
+    position: absolute;
+    pointer-events: auto;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.camera-edge-btn:hover {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    color: #60a5fa;
+    /* Blue glow on hover */
+}
+
+.camera-edge-btn:active {
+    transform: scale(0.9);
+}
+
+/* Position Specific Classes */
+.btn-pos-top {
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.btn-pos-top:hover {
+    transform: translateX(-50%) scale(1.1) translateY(-4px);
+}
+
+.btn-pos-bottom {
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.btn-pos-bottom:hover {
+    transform: translateX(-50%) scale(1.1) translateY(4px);
+}
+
+.btn-pos-left {
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.btn-pos-left:hover {
+    transform: translateY(-50%) scale(1.1) translateX(-4px);
+}
+
+.btn-pos-right {
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.btn-pos-right:hover {
+    transform: translateY(-50%) scale(1.1) translateX(4px);
+}
+
+/* Zoom Container (Bottom Right) */
+.camera-zoom-group {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.camera-zoom-btn {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.5);
+    /* Brand Blue */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+    touch-action: none;
+}
+
+.camera-zoom-btn:hover {
+    background: rgba(59, 130, 246, 0.7);
+    transform: scale(1.1);
+    box-shadow: 0 12px 32px rgba(59, 130, 246, 0.5);
+}
+
+.camera-zoom-btn:active {
+    transform: scale(0.9);
+}
+
+@media (max-width: 768px) {
+
+    .camera-edge-btn,
+    .camera-zoom-btn {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+    }
+
+    .btn-pos-top {
+        top: 80px;
+        /* Moved down to clear header */
+    }
+
+    .btn-pos-bottom {
+        bottom: 20px;
+    }
+
+    .btn-pos-left {
+        left: 12px;
+    }
+
+    .btn-pos-right {
+        right: 12px;
+    }
+}
