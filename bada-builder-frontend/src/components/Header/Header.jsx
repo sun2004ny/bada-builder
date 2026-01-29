@@ -79,7 +79,6 @@ const Header = () => {
   const [logoutLoading, setLogoutLoading] = useState(false);
 
   const timeoutRef = useRef(null);
-  const calctimeoutRef = useRef(null);
   const profileTimeoutRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,7 +100,6 @@ const Header = () => {
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (calctimeoutRef.current) clearTimeout(calctimeoutRef.current);
       if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
       window.removeEventListener('open-mobile-menu', handleOpenMenu);
     };
@@ -189,10 +187,6 @@ const Header = () => {
     }
   };
 
-  const toggleMobileLongLive = () => {
-    setMobileLongLiveOpen(!mobileLongLiveOpen);
-  };
-
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setShowDropdown(true);
@@ -267,7 +261,7 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="flex items-center space-x-4 hidden lg:flex font-semibold text-gray-900">
+          <nav className="items-center space-x-4 hidden lg:flex font-semibold text-gray-900">
             {/* ... navigation links ... */}
             <PreloaderLink
               to="/exhibition"
@@ -458,7 +452,7 @@ const Header = () => {
           </div>
 
           {/* Mobile Menu Button - Strictly hidden on desktop */}
-          <div className="mobile-menu-toggle-wrapper items-center ml-2">
+          <div className="mobile-menu-toggle-wrapper items-center ml-2 lg:hidden">
             <button
               onClick={toggleMobileMenu}
               className="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#58335e] transition-all duration-200"

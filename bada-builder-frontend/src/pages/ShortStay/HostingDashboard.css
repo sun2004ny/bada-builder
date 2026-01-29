@@ -1,0 +1,214 @@
+.hosting-dashboard {
+    min-height: 100vh;
+    background-color: #fff;
+    font-family: 'Circular', -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif;
+}
+
+.hosting-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    height: 80px;
+    border-bottom: 1px solid #ebebeb;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.hosting-logo {
+    cursor: pointer;
+}
+
+.hosting-nav {
+    display: flex;
+    gap: 32px;
+}
+
+.nav-item {
+    background: transparent !important;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #717171;
+    cursor: pointer;
+    padding: 28px 0;
+    position: relative;
+    transition: color 0.2s;
+    border-radius: 0 !important;
+    margin: 0 !important;
+}
+
+.nav-item:hover {
+    color: #222222;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 28px 0;
+    margin: 0 !important;
+}
+
+.nav-item.active {
+    color: #222222;
+    font-weight: 600;
+}
+
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 20px; /* Adjust according to padding */ 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background-color: #000; /* Add visible underline for active state */
+}
+
+.hosting-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-action {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.header-action:hover {
+    background: #f7f7f7;
+}
+
+.switch-btn {
+    background: none;
+    border: 1px solid #dddddd;
+    border-radius: 21px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #222222;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.switch-btn:hover {
+    background: #f7f7f7;
+    border-color: #000;
+}
+
+.profile-menu {
+    margin-left: 8px;
+}
+
+.profile-icon {
+    width: 36px;
+    height: 36px;
+    background: #000;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    overflow: hidden;
+}
+
+.profile-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hosting-content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px;
+}
+
+/* Today Filter Tabs */
+.today-filter-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px; /* Reduced from 40px */
+    justify-content: center;
+}
+
+/* Image 1 shows specific toggle style: Dark pills */
+.filter-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #f7f7f7;
+    color: #222;
+    transition: all 0.2s;
+}
+
+.filter-tab.active {
+    background: #222;
+    color: white;
+}
+
+.empty-reservations-state {
+    text-align: center;
+    padding: 10px 0 40px 0; /* Reduced top padding from 40px to 10px */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.empty-reservations-state h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #222;
+    border: none !important;
+    border-left: none !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+.empty-reservations-state p {
+    color: #717171;
+    margin-bottom: 32px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.complete-listing-btn-subtle {
+    background: transparent;
+    color: #222;
+    border: 1px solid #222;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.complete-listing-btn-subtle:hover {
+    background: #f7f7f7;
+}
+
+/* Resources */
+.resources-section {
+    margin-top: 60px;
+}
+
+.resources-section h3 {
+    font-size: 22px;
+    margin-bottom: 24px;
+}

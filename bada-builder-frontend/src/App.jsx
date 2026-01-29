@@ -42,6 +42,7 @@ import ThreeDView from './pages/Exhibition/ThreeDView';
 import ShortStayLanding from './pages/ShortStay/ShortStayLanding';
 import ListShortStay from './pages/ShortStay/ListShortStay';
 import ShortStayDetails from './pages/ShortStay/ShortStayDetails';
+import HostingDashboard from './pages/ShortStay/HostingDashboard';
 
 import HomeLoans from './pages/HomeLoans/HomeLoans';
 import AdminLiveGrouping from './pages/Admin/AdminLiveGrouping';
@@ -140,7 +141,7 @@ function AppContent() {
       <ScrollToTop />
       <Preloader />
       {!isMessagesPage && !isAdminPanel && <Header />}
-      {!isMessagesPage && !isAdminPanel && <GlobalSearchBar />}
+      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && <GlobalSearchBar />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
       {!isMessagesPage && !isAdminPanel && <Chatbot />}
       {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
@@ -177,7 +178,8 @@ function AppContent() {
             <Route path="/short-stay" element={<ShortStayLanding />} />
             <Route path="/short-stay/list-property" element={<ListShortStay />} />
             <Route path="/short-stay/:id" element={<ShortStayDetails />} />
-
+            <Route path="/hosting" element={<HostingDashboard />} />
+            
             <Route path="/home-loans" element={<HomeLoans />} />
             <Route path="/long-live/browse" element={<LongLiveBrowse />} />
             <Route path="/long-live/post" element={<LongLivePost />} />

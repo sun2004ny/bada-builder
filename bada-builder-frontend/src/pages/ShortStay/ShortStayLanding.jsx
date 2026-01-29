@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import BackgroundVideo from '../../components/BackgroundVideo/BackgroundVideo';
 import shortStayVideo from '../../assets/videos/shortstay_hero.mp4';
 import './ShortStayLanding.css';
 import { shortStayAPI } from '../../services/shortStayApi';
 import { useAuth } from '../../context/AuthContext';
-import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch, FaArrowRight } from 'react-icons/fa';
+
+
+
 import { CalendarPopup, GuestPopup } from './SearchPopups';
 
 const ShortStayLanding = () => {
@@ -134,19 +137,12 @@ const ShortStayLanding = () => {
 
 
 
-  const handleListProperty = () => {
-    if (!user) {
-      // Redirect to login with return url
-      navigate('/login', { state: { from: '/short-stay/list-property' } });
-    } else {
-      navigate('/short-stay/list-property');
-    }
-  };
+
 
   return (
     <div className="short-stay-page">
       {/* Hero Section */}
-      <motion.section
+      <Motion.section
         className="short-stay-hero-section"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -159,27 +155,39 @@ const ShortStayLanding = () => {
         >
           <div className="short-stay-hero-overlay" />
           <div className="short-stay-hero-container">
+
+             
             <div className="short-stay-hero-content">
               <div className="short-stay-hero-text-box">
-                <motion.h1
+                <Motion.h1
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.7, delay: 0.2 }}
                 >
                   Find Your Perfect Short Stay
-                </motion.h1>
-                <motion.p
+                </Motion.h1>
+                <Motion.p
                   className="short-stay-hero-subtitle"
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.7, delay: 0.3 }}
                 >
                   Discover comfortable stays for your next trip
-                </motion.p>
+                </Motion.p>
+                
+                 <Motion.button 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.8 }}
+                    onClick={() => navigate('/hosting')}
+                    className="switch-to-hosting-btn-hero-centered"
+                 >
+                    Switch to Hosting
+                 </Motion.button>
               </div>
 
               {/* Modern Airbnb Search Pill (v2) */}
-              <motion.div
+              <Motion.div
                 className="airbnb-search-pill-container"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -249,30 +257,14 @@ const ShortStayLanding = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              </motion.div>
-
-              {/* Quick Actions */}
-              <motion.div
-                className="short-stay-quick-actions"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-              >
+              </Motion.div>
 
 
-                <motion.button
-                  className="short-stay-btn short-stay-btn-primary"
-                  onClick={handleListProperty}
-                  whileHover={{ y: -4, scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  List Your Property
-                </motion.button>
-              </motion.div>
+
             </div>
           </div>
         </BackgroundVideo>
-      </motion.section>
+      </Motion.section>
 
       <div className="short-stay-content-wrapper">
         {/* Categories Section */}
@@ -342,65 +334,71 @@ const ShortStayLanding = () => {
               <button className="reset-search-btn" onClick={() => { setSearchParams({ location: '', checkIn: '', checkOut: '', guests: { adults: 1, children: 0, infants: 0 }, type: '' }); fetchListings(); }}>Reset Search</button>
             </div>
           ) : (
-            <div className="short-stay-listings-grid">
-              {listings.map((listing, index) => (
-                <motion.div
-                  key={listing.id}
-                  className="short-stay-property-card"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  onClick={() => navigate(`/short-stay/${listing.id}`)}
-                  whileHover={{ y: -8 }}
-                >
-                  <div className="short-stay-property-image">
-                    <img
-                      src={listing.cover_image || (listing.images && listing.images[0]) || '/placeholder-property.jpg'}
-                      alt={listing.title}
-                    />
-                    <div className="short-stay-property-badge">
-                      {categories.find(c => c.id === listing.category)?.name || listing.category}
-                    </div>
-                    <button
-                      className={`favorite-btn ${favorites.has(listing.id) ? 'active' : ''}`}
-                      onClick={(e) => handleToggleFavorite(e, listing.id)}
-                    >
-                      {favorites.has(listing.id) ? '❤️' : '🤍'}
-                    </button>
+            <div className="short-stay-groups-container">
+              {Object.entries(listings.reduce((acc, listing) => {
+                  const city = listing.location?.city || 'Other Locations';
+                  if (!acc[city]) acc[city] = [];
+                  acc[city].push(listing);
+                  return acc;
+              }, {})).map(([city, cityListings]) => (
+                <div key={city} className="location-group-section">
+                  <div className="location-group-header">
+                     <h3>{city === 'Other Locations' ? 'Explore more stays' : `Stay in ${city}`}</h3>
+                     <button className="see-all-btn" onClick={() => navigate(`/short-stay/search?location=${city}`)}>
+                        <FaArrowRight size={12} />
+                     </button>
                   </div>
+                  
+                  <div className="horizontal-scroll-container">
+                    {cityListings.map((listing, index) => (
+                      <Motion.div
+                        key={listing.id}
+                        className="short-stay-property-card horizontal-card"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        onClick={() => navigate(`/short-stay/${listing.id}`)}
+                        whileHover={{ y: -5 }}
+                      >
+                        <div className="short-stay-property-image">
+                          <img
+                            src={listing.cover_image || (listing.images && listing.images[0]) || '/placeholder-property.jpg'}
+                            alt={listing.title}
+                          />
+                          <div className="short-stay-property-badge">
+                            {categories.find(c => c.id === listing.category)?.name || listing.category}
+                          </div>
+                          <button
+                            className={`favorite-btn ${favorites.has(listing.id) ? 'active' : ''}`}
+                            onClick={(e) => handleToggleFavorite(e, listing.id)}
+                          >
+                            {favorites.has(listing.id) ? '❤️' : '🤍'}
+                          </button>
+                        </div>
 
-                  <div className="short-stay-property-info">
-                    <div className="short-stay-property-header">
-                      <h3>{listing.title}</h3>
-                      <div className="short-stay-property-rating">
-                        ⭐ <span>{listing.rating || 'New'}</span>
-                      </div>
-                    </div>
+                        <div className="short-stay-property-info">
+                          <div className="short-stay-property-header">
+                            <h3 className="truncate-title">{listing.title}</h3>
+                            <div className="short-stay-property-rating">
+                              ⭐ <span>{listing.rating || 'New'}</span>
+                            </div>
+                          </div>
 
-                    <p className="short-stay-property-location">
-                      📍 {listing.location?.city || listing.location?.address || 'Location unavailable'}
-                    </p>
+                          <p className="short-stay-property-location">
+                             {listing.specific_details?.bhk ? `${listing.specific_details.bhk} BHK` : listing.category}
+                          </p>
 
-                    <div className="short-stay-property-specs">
-                      {/* Dynamic specs based on category could go here */}
-                      <span>
-                        {listing.specific_details?.bhk ? `${listing.specific_details.bhk} BHK` :
-                          listing.specific_details?.bedrooms ? `${listing.specific_details.bedrooms} Beds` :
-                            listing.category === 'hotel' ? 'Luxury Room' : 'Comfortable Stay'}
-                      </span>
-                      <span className="short-stay-dot">·</span>
-                      <span>{listing.guests || 2} Guests</span>
-                    </div>
-
-                    <div className="short-stay-property-footer">
-                      <div className="short-stay-property-price">
-                        <span className="short-stay-price-amount">₹{listing.pricing?.perNight?.toLocaleString() || 'N/A'}</span>
-                        <span className="short-stay-price-unit">/ night</span>
-                      </div>
-                    </div>
+                          <div className="short-stay-property-footer">
+                            <div className="short-stay-property-price">
+                              <span className="short-stay-price-amount">₹{listing.pricing?.perNight?.toLocaleString() || 'N/A'}</span>
+                              <span className="short-stay-price-unit">/ night</span>
+                            </div>
+                          </div>
+                        </div>
+                      </Motion.div>
+                    ))}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}

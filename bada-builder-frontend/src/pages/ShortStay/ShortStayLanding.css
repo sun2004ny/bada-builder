@@ -46,6 +46,28 @@
   pointer-events: none;
 }
 
+.switch-to-hosting-btn-hero {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: #FFFFFF;
+    color: #222222;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: transform 0.2s, background 0.2s;
+    z-index: 100; /* Ensure clickable */
+}
+
+.switch-to-hosting-btn-hero:hover {
+    transform: scale(1.05);
+    background: #F7F7F7;
+}
+
 .short-stay-search-positioner {
   position: absolute;
   bottom: 0;
@@ -585,9 +607,9 @@
    -------------------------------------------------------------------------- */
 
 .short-stay-content-wrapper {
-  max-width: 1200px;
+  max-width: 95%; /* Utilize almost full width like Airbnb */
   margin: 0 auto;
-  padding: 60px 24px;
+  padding: 40px 24px;
 }
 
 .short-stay-section-header {
@@ -609,7 +631,7 @@
 .short-stay-section-header-flex {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center; /* Changed from flex-end to center */
   margin-bottom: 48px;
 }
 
@@ -617,6 +639,10 @@
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 8px;
+  border: none !important; /* Remove global blue strip */
+  border-left: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
 }
 
 .short-stay-section-header-flex p {
@@ -1008,4 +1034,135 @@
 
 .reset-search-btn:hover {
   background: #e31c5f;
+}
+
+/* CSS for ShortStayLanding Horizontal Scrolling */
+
+.short-stay-groups-container {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    padding-bottom: 60px;
+}
+
+.location-group-section {
+    width: 100%;
+}
+
+.location-group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 0; /* Removed extra padding to align with "Properties" header */
+}
+
+.location-group-header h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #222222;
+    margin: 0; /* Remove default margins for perfect alignment */
+}
+
+.see-all-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important; /* Prevent squashing */
+    padding: 0 !important; /* Reset global padding */
+    margin: 0 !important;
+    border-radius: 50% !important;
+    background: #F7F7F7 !important;
+    border: 1px solid rgba(0,0,0,0.04) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    color: #222222 !important;
+    box-shadow: none !important;
+    line-height: 1 !important; /* Fix vertical alignment */
+}
+
+.see-all-btn:hover {
+    background: #EBEBEB !important;
+    transform: scale(1.05) !important;
+}
+
+.horizontal-scroll-container {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    padding: 4px 0 24px 0; /* Remove horizontal padding so cards start aligned with header */
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none; /* Hide scrollbar IE */
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+}
+
+.horizontal-scroll-container::-webkit-scrollbar {
+    display: none; /* Hide scrollbar Chrome/Safari */
+}
+
+.horizontal-card {
+    min-width: 280px;
+    max-width: 280px;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    /* Redefining styles for horizontal context */
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.horizontal-card .short-stay-property-image {
+.horizontal-card .short-stay-property-badge {
+    top: 8px;
+    left: 8px;
+    font-size: 10px;
+    padding: 4px 8px;
+}
+
+/* Switch to Hosting Button - Centered Hero */
+.switch-to-hosting-btn-hero-centered {
+    background: white;
+    color: #222;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 32px !important; /* Force gap from text */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: inline-block; /* Ensure margins work */
+}
+
+.switch-to-hosting-btn-hero-centered:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+
+/* Reduce gap below the text box (above search pill) */
+.short-stay-hero-text-box {
+    margin-bottom: 24px !important;
+}
+
+.truncate-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.short-stay-property-info {
+    padding: 12px 0 0 0; /* Minimal padding */
+}
+
+.short-stay-property-footer {
+    margin-top: 4px;
+}
 }

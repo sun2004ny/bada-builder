@@ -23,6 +23,12 @@
   transition: all 0.3s ease;
 }
 
+@media (min-width: 1024px) {
+  .mobile-menu-toggle-wrapper {
+    display: none !important;
+  }
+}
+
 .mobile-menu-toggle-wrapper:hover {
   background: rgba(88, 51, 94, 0.1);
   transform: scale(1.05);
