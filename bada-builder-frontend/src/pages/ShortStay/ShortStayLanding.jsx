@@ -11,6 +11,7 @@ import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCamp
 
 
 import { CalendarPopup, GuestPopup } from './SearchPopups';
+import ShortStayCard from '../../components/PropertyCard/ShortStayCard';
 
 const ShortStayLanding = () => {
   const navigate = useNavigate();
@@ -364,51 +365,13 @@ const ShortStayLanding = () => {
                   
                   <div className="horizontal-scroll-container">
                     {cityListings.map((listing, index) => (
-                      <Motion.div
-                        key={listing.id}
-                        className="short-stay-property-card horizontal-card"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        onClick={() => navigate(`/short-stay/${listing.id}`)}
-                        whileHover={{ y: -5 }}
-                      >
-                        <div className="short-stay-property-image">
-                          <img
-                            src={listing.cover_image || (listing.images && listing.images[0]) || '/placeholder-property.jpg'}
-                            alt={listing.title}
-                          />
-                          <div className="short-stay-property-badge">
-                            {categories.find(c => c.id === listing.category)?.name || listing.category}
-                          </div>
-                          <button
-                            className={`favorite-btn ${favorites.has(listing.id) ? 'active' : ''}`}
-                            onClick={(e) => handleToggleFavorite(e, listing.id)}
-                          >
-                            {favorites.has(listing.id) ? '❤️' : '🤍'}
-                          </button>
-                        </div>
-
-                        <div className="short-stay-property-info">
-                          <div className="short-stay-property-header">
-                            <h3 className="truncate-title">{listing.title}</h3>
-                            <div className="short-stay-property-rating">
-                              ⭐ <span>{listing.rating || 'New'}</span>
-                            </div>
-                          </div>
-
-                          <p className="short-stay-property-location">
-                             {listing.specific_details?.bhk ? `${listing.specific_details.bhk} BHK` : listing.category}
-                          </p>
-
-                          <div className="short-stay-property-footer">
-                            <div className="short-stay-property-price">
-                              <span className="short-stay-price-amount">₹{listing.pricing?.perNight?.toLocaleString() || 'N/A'}</span>
-                              <span className="short-stay-price-unit">/ night</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Motion.div>
+                      <ShortStayCard 
+                        key={listing.id} 
+                        listing={listing} 
+                        index={index} 
+                        favorites={favorites} 
+                        onToggleFavorite={handleToggleFavorite} 
+                      />
                     ))}
                   </div>
                 </div>

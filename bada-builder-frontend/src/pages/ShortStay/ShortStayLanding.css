@@ -1050,31 +1050,42 @@
 
 /* --- New Additions --- */
 
-.favorite-btn {
+/* Specific selector to override global button styles */
+button.favorite-btn {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
+  background: rgba(0, 0, 0, 0.5) !important; /* Force dark translucent background */
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 16px;
-  transition: transform 0.2s;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  padding: 0 !important; /* Reset padding from global button */
 }
 
-.favorite-btn:hover {
+button.favorite-btn:hover {
   transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.7) !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
 }
 
-.favorite-btn.active {
-  background: #fff;
+button.favorite-btn:active {
+  transform: scale(0.95);
+}
+
+button.favorite-btn.active {
+  background: rgba(0, 0, 0, 0.5) !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
 }
 
 .no-listings-found {

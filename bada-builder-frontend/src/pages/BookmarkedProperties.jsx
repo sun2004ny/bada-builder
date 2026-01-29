@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { favoritesAPI } from '../services/api';
 import { wishlistAPI } from '../services/wishlistAPI';
+import { shortStayAPI } from '../services/shortStayApi';
 import PropertyCard from '../components/PropertyCard/PropertyCard';
-import { FiHeart, FiSearch, FiPlus, FiFolder, FiTrash2 } from 'react-icons/fi';
+import ShortStayCard from '../components/PropertyCard/ShortStayCard';
+import { FiHeart, FiSearch, FiPlus, FiFolder, FiTrash2, FiHome, FiBriefcase, FiMap } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import WishlistModal from '../components/Wishlist/WishlistModal';
 import WishlistSelectionModal from '../components/Wishlist/WishlistSelectionModal';
@@ -10,9 +12,11 @@ import './BookmarkedProperties.css';
 
 const BookmarkedProperties = () => {
     const [properties, setProperties] = useState([]);
+    const [shortStayFavorites, setShortStayFavorites] = useState([]);
     const [wishlists, setWishlists] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeWishlist, setActiveWishlist] = useState('all'); // 'all' or wishlist.id
+    const [activeCategory, setActiveCategory] = useState('all'); // 'all', 'individual', 'developer', 'short_stay'
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
     const [selectedPropertyId, setSelectedPropertyId] = useState(null);
@@ -20,12 +24,14 @@ const BookmarkedProperties = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [favResponse, wishResponse] = await Promise.all([
+            const [favResponse, wishResponse, shortStayResponse] = await Promise.all([
                 favoritesAPI.getFavorites(),
-                wishlistAPI.getWishlists()
+                wishlistAPI.getWishlists(),
+                shortStayAPI.getUserFavorites().catch(() => ({ favorites: [] }))
             ]);
             setProperties(favResponse.properties || []);
             setWishlists(wishResponse.wishlists || []);
+            setShortStayFavorites(shortStayResponse.favorites || []);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -100,7 +106,7 @@ const BookmarkedProperties = () => {
         }
     };
 
-    if (loading && properties.length === 0) {
+    if (loading && properties.length === 0 && shortStayFavorites.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 min-h-[60vh]">
                 <div className="loading-spinner"></div>
@@ -137,7 +143,36 @@ const BookmarkedProperties = () => {
                     </button>
                 </div>
 
-                {/* Wishlist Tabs */}
+                {/* Category Filtering Tabs */}
+                <div className="flex space-x-4 mb-6 border-b border-gray-200 pb-2 overflow-x-auto">
+                   <button 
+                     className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg ${activeCategory === 'all' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}`}
+                     onClick={() => setActiveCategory('all')}
+                   >
+                     All Properties
+                   </button>
+                   <button 
+                     className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg ${activeCategory === 'individual' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}`}
+                     onClick={() => setActiveCategory('individual')}
+                   >
+                     <div className="flex items-center gap-2"><FiHome size={16} /> By Individual</div>
+                   </button>
+                   <button 
+                     className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg ${activeCategory === 'developer' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}`}
+                     onClick={() => setActiveCategory('developer')}
+                   >
+                     <div className="flex items-center gap-2"><FiBriefcase size={16} /> By Developer</div>
+                   </button>
+                   <button 
+                     className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg ${activeCategory === 'short_stay' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}`}
+                     onClick={() => setActiveCategory('short_stay')}
+                   >
+                     <div className="flex items-center gap-2"><FiMap size={16} /> Short Stays</div>
+                   </button>
+                </div>
+
+                {/* Wishlist Tabs - Only show for regular properties if needed, or hide for 'short_stay' */}
+                {activeCategory !== 'short_stay' && (
                 <div className="wishlist-tabs-container mb-10">
                     <div className="wishlist-tabs-scroll">
                         <button
@@ -171,6 +206,7 @@ const BookmarkedProperties = () => {
                         ))}
                     </div>
                 </div>
+                )}
 
                 {/* Property Grid */}
                 <div className="relative">
@@ -180,9 +216,32 @@ const BookmarkedProperties = () => {
                         </div>
                     )}
 
-                    {properties.length > 0 ? (
+                    {(properties.length > 0 || shortStayFavorites.length > 0) ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                            {properties.map((property) => (
+                            {/* Short Stay Cards */}
+                            {(activeCategory === 'all' || activeCategory === 'short_stay') && shortStayFavorites.map((property, index) => (
+                                <ShortStayCard
+                                    key={`ss-${property.id}`}
+                                    listing={property}
+                                    index={index}
+                                    favorites={new Set(shortStayFavorites.map(p => p.id))}
+                                    onToggleFavorite={async (e) => {
+                                        e.stopPropagation();
+                                        await shortStayAPI.toggleFavorite(property.id);
+                                        // Refresh only short stay favorites
+                                        const res = await shortStayAPI.getUserFavorites();
+                                        setShortStayFavorites(res.favorites || []);
+                                    }}
+                                />
+                            ))}
+
+                            {/* Regular Property Cards - Filtered by Category */}
+                            {(activeCategory !== 'short_stay') && properties.filter(p => {
+                                if (activeCategory === 'all') return true;
+                                if (activeCategory === 'individual') return p.type?.toLowerCase().includes('individual') || p.category?.toLowerCase() === 'individual';
+                                if (activeCategory === 'developer') return p.type?.toLowerCase().includes('developer') || p.category?.toLowerCase() === 'developer';
+                                return true;
+                            }).map((property) => (
                                 <motion.div
                                     key={property.id}
                                     initial={{ opacity: 0, scale: 0.95 }}

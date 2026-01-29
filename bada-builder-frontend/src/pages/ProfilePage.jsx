@@ -2,14 +2,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { propertiesAPI, authAPI, usersAPI } from '../services/api';
-import { formatDate } from '../utils/dateFormatter';
+import { authAPI, usersAPI } from '../services/api';
+import { shortStayAPI } from '../services/shortStayApi';
 import {
   FiUser, FiMail, FiPhone, FiHash, FiBriefcase, FiEdit3,
   FiTrash2, FiMessageSquare, FiHome, FiUsers, FiCalendar,
   FiTrendingUp, FiAlertCircle, FiX, FiHeart
 } from 'react-icons/fi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import ChatList from '../components/ChatList/ChatList';
 import ChatBox from '../components/ChatBox/ChatBox';
 import './ProfilePage.css';
@@ -17,10 +17,10 @@ import './ProfilePage.css';
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile, refreshProfile } = useAuth();
-  const [loading, setLoading] = useState(false);
+
   const [uploading, setUploading] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+
   const fileInputRef = useRef(null);
 
   const [activityCounts, setActivityCounts] = useState({
@@ -39,12 +39,6 @@ const ProfilePage = () => {
   useEffect(() => {
     if (userProfile?.profile_photo) {
       setProfilePhoto(userProfile.profile_photo);
-    } else {
-      // Fallback or attempt to fetch if userProfile isn't fully hydrated?
-      // Usually userProfile from context is sufficient.
-      const loadProfilePhoto = async () => {
-        // ... existing logic if any ...
-      };
     }
   }, [userProfile]);
 
@@ -54,7 +48,12 @@ const ProfilePage = () => {
 
       try {
         setLoadingActivity(true);
-        const response = await usersAPI.getStats(); // Corrected to usersAPI
+        const [response, shortStayResponse] = await Promise.all([
+          usersAPI.getStats(),
+          shortStayAPI.getUserFavorites().catch(() => ({ favorites: [] }))
+        ]);
+
+        const shortStayCount = shortStayResponse?.favorites?.length || 0;
 
         if (response) {
           setActivityCounts({
@@ -64,7 +63,7 @@ const ProfilePage = () => {
             shortStayBookings: response.shortStayBookings || 0,
             investments: response.investments || 0,
             myComplaints: response.complaints || 0,
-            favorites: response.favorites || 0
+            favorites: (response.favorites || 0) + shortStayCount
           });
         }
       } catch (error) {
@@ -174,8 +173,8 @@ const ProfilePage = () => {
 
       setProfilePhoto(photoURL);
       await refreshProfile();
-      setUploadSuccess(true);
-      setTimeout(() => setUploadSuccess(false), 3000);
+      setProfilePhoto(photoURL);
+      await refreshProfile();
     } catch (error) {
       console.error('Error uploading photo:', error);
       alert('Upload failed. Please try again.');
