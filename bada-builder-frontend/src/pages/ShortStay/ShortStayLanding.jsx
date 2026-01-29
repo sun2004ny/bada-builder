@@ -220,16 +220,7 @@ const ShortStayLanding = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
               >
-                {user && (
-                    <motion.button
-                    className="short-stay-btn short-stay-btn-outline"
-                    onClick={() => navigate('/short-stay/my-listings')}
-                    whileHover={{ y: -4, scale: 1.05, background: 'rgba(255, 255, 255, 0.2)' }}
-                    whileTap={{ scale: 0.98 }}
-                    >
-                    My Listings
-                    </motion.button>
-                )}
+
                 
                 <motion.button
                   className="short-stay-btn short-stay-btn-primary"
