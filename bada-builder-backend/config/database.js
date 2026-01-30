@@ -12,12 +12,15 @@ const { Pool } = pg;
 
 const poolConfig = {
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    // Optimized for stability and performance
+    ssl: {
+        rejectUnauthorized: false // Match Neon/AWS requirements
+    },
+    // Optimized for stability and performance with Neon Pooler
     max: 20,                       // Maintain up to 20 connections
-    idleTimeoutMillis: 30000,      // Keep idle connections open for 30s to reduce handshake overhead
-    connectionTimeoutMillis: 5000, // Fail fast (5s) if connection cannot be established
-    maxUses: 7500,                 // Protect against potential memory leaks in long-running processes
+    idleTimeoutMillis: 0,          // Release connections immediately to pooler (recommended for Neon)
+    connectionTimeoutMillis: 30000, // Increased to 30s to allow for slow SSL handshakes on Windows
+    maxUses: 7500,                 // Protect against potential memory leaks
+    keepAlive: true,              // Enable TCP keep-alive to prevent silent drops
 };
 
 // Internal instance
