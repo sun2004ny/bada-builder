@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
-import { FaTimes, FaCheck, FaArrowRight, FaArrowLeft, FaUpload, FaTrash, FaMapMarkerAlt, FaRupeeSign, FaClipboardList, FaConciergeBell, FaCamera, FaHome } from 'react-icons/fa';
-import { shortStayAPI } from '../../services/shortStayApi';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { 
+    FaTimes, FaUpload, FaTrash, FaCheck, FaArrowLeft, FaArrowRight,
+    FaClipboardList, FaMapMarkerAlt, FaCamera, FaRupeeSign, FaConciergeBell,
+    FaHome, FaBuilding, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate 
+} from 'react-icons/fa';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './ShortStayForm.css';
+import { shortStayAPI } from '../../services/shortStayApi';
+
 
 // Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -17,14 +22,16 @@ L.Icon.Default.mergeOptions({
 });
 
 const STEPS = [
-    { id: 'basic', title: 'The Basics', icon: <FaClipboardList /> },
+    { id: 'category', title: 'Property Type', icon: <FaBuilding /> },
+    { id: 'type', title: 'Privacy Type', icon: <FaHome /> },
     { id: 'location', title: 'Location', icon: <FaMapMarkerAlt /> },
-    { id: 'media', title: 'Media', icon: <FaCamera /> },
+    { id: 'specifics', title: 'Floor Plan', icon: <FaClipboardList /> },
+    { id: 'amenities', title: 'Amenities', icon: <FaConciergeBell /> },
+    { id: 'media', title: 'Photos', icon: <FaCamera /> },
+    { id: 'basic', title: 'Title & Desc', icon: <FaClipboardList /> },
     { id: 'pricing', title: 'Pricing', icon: <FaRupeeSign /> },
-    { id: 'specifics', title: 'Details', icon: <FaHome /> }, 
     { id: 'rules', title: 'Rules', icon: <FaClipboardList /> },
-    { id: 'policies', title: 'Policies', icon: <FaClipboardList /> },
-    { id: 'amenities', title: 'Amenities', icon: <FaConciergeBell /> }
+    { id: 'policies', title: 'Policies', icon: <FaClipboardList /> }
 ];
 
 const stepVariants = {
@@ -80,18 +87,19 @@ const BinaryToggle = ({ label, name, value, onChange }) => (
     </div>
 );
 
-const ShortStayForm = ({ category, onClose, initialData = null }) => {
+const ShortStayForm = ({ onClose, initialData = null }) => {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
     
     // Form State
     const [formData, setFormData] = useState({
-        // Basic
+        category: null, // New Field for selecting property category
+        privacyType: 'entire_place', // New Field
         title: '',
         description: '',
         hostType: 'individual', 
-        propertyType: category, // Auto-set
+        propertyType: '', // Now selected in step 0
         
         // Location
         location: {
@@ -157,7 +165,7 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                 title: initialData.title || '',
                 description: initialData.description || '',
                 hostType: initialData.hostType || 'individual',
-                propertyType: initialData.category || category,
+                propertyType: initialData.category || prev.category,
                 location: {
                     ...prev.location,
                     ...initialData.location
@@ -186,7 +194,7 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                 specific_details: initialData.specific_details || {}
             }));
         }
-    }, [initialData, category]);
+    }, [initialData]);
 
     // Handlers
     const handleBasicChange = (e) => {
@@ -301,14 +309,14 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                 await shortStayAPI.update(initialData.id, {
                     ...formData,
                     existing_images: formData.existingImages, // Send remaining existing images
-                    category: initialData.category || category
+                    category: initialData.category || formData.category
                 }, formData.images); // Send NEW files
                 alert('Property updated successfully!');
             } else {
                 // Create Mode
                 await shortStayAPI.create({
                     ...formData,
-                    category
+                    category: formData.category
                 }, formData.images);
                 alert('Property listed successfully!');
             }
@@ -373,7 +381,7 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
             handleSpecificChange({ target: { name, value: val } });
         };
 
-        switch(category) {
+        switch(formData.category) {
             case 'apartment': // Flats / Apartments
                 return (
                     <>
@@ -772,52 +780,75 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
 
     const renderStepContent = () => {
         switch(currentStep) {
-            case 0: // Basic Info
+            case 0: { // Category Selection (New Step 0)
+                const categories = [
+                    { id: 'apartment', name: 'Flats / Apartments', icon: <FaBuilding /> },
+                    { id: 'house', name: 'Villa / Bunglow', icon: <FaHome /> },
+                    { id: 'dormitory', name: 'Dormitory', icon: <FaBed /> },
+                    { id: 'hotel', name: 'Hotels', icon: <FaHotel /> },
+                    { id: 'cottage', name: 'Cottages', icon: <FaHome /> },
+                    { id: 'tree_house', name: 'Tree House', icon: <FaTree /> },
+                    { id: 'tent', name: 'Tents', icon: <FaCampground /> },
+                    { id: 'farmhouse', name: 'Farmhouse', icon: <FaLeaf /> },
+                    { id: 'hostel', name: 'Hostel', icon: <FaUserGraduate /> }
+                ];
                 return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
-                        <h3>Let's start with the basics</h3>
-                        <p className="step-subtitle">Give your property a catchy title and description.</p>
-                        
-                        <div className="form-group">
-                            <label>Property Name</label>
-                            <input 
-                                name="title" 
-                                value={formData.title} 
-                                onChange={handleBasicChange} 
-                                placeholder="e.g. Luxury Villa with Ocean View" 
-                                className="premium-input"
-                                autoFocus
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Description (Short + Detailed)</label>
-                            <textarea 
-                                name="description" 
-                                value={formData.description} 
-                                onChange={handleBasicChange} 
-                                rows={5} 
-                                placeholder="Describe your property in detail..." 
-                                className="premium-input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Host Type</label>
-                            <div className="select-cards">
-                                {['individual', 'professional', 'company'].map(type => (
-                                    <div 
-                                        key={type}
-                                        className={`select-card ${formData.hostType === type ? 'selected' : ''}`}
-                                        onClick={() => handleBasicChange({ target: { name: 'hostType', value: type } })}
-                                    >
-                                        <span className="card-icon">{type === 'individual' ? '👤' : type === 'professional' ? '👔' : '🏢'}</span>
-                                        <span className="card-label">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                                    </div>
-                                ))}
-                            </div>
+                        <h3>Which of these best describes your place?</h3>
+                        <div className="category-selection-grid">
+                            {categories.map((cat) => (
+                                <div
+                                    key={cat.id}
+                                    className={`category-option-card ${formData.category === cat.id ? 'selected' : ''}`}
+                                    onClick={() => setFormData(prev => ({ ...prev, category: cat.id, propertyType: cat.id }))}
+                                >
+                                    <div className="category-icon">{cat.icon}</div>
+                                    <div className="category-label">{cat.name}</div>
+                                </div>
+                            ))}
                         </div>
                     </motion.div>
                 );
-            case 1: // Location
+            }
+
+            case 1: // Privacy Type (Old Step 0)
+                return (
+                    <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
+                        <h3>What type of place will guests have?</h3>
+                        <div className="privacy-type-options">
+                            {[
+                                { id: 'entire_place', title: 'An entire place', desc: 'Guests have the whole place to themselves.', icon: '🏠' },
+                                { id: 'private_room', title: 'A private room', desc: 'Guests sleep in a private room but some areas may be shared.', icon: '🚪' },
+                                { id: 'shared_room', title: 'A shared room', desc: 'Guests sleep in a room or common area that may be shared with others.', icon: '🛋️' }
+                            ].map(option => (
+                                <div 
+                                    key={option.id}
+                                    className={`privacy-option-card ${formData.privacyType === option.id ? 'selected' : ''}`}
+                                    onClick={() => handleBasicChange({ target: { name: 'privacyType', value: option.id } })}
+                                    style={{
+                                        border: formData.privacyType === option.id ? '2px solid #222' : '1px solid #ddd',
+                                        borderRadius: '12px',
+                                        padding: '24px',
+                                        marginBottom: '16px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: formData.privacyType === option.id ? '#f7f7f7' : '#fff'
+                                    }}
+                                >
+                                    <div>
+                                        <h4 style={{ margin: '0 0 4px', fontSize: '18px', color: '#222' }}>{option.title}</h4>
+                                        <p style={{ margin: 0, color: '#717171', fontSize: '14px' }}>{option.desc}</p>
+                                    </div>
+                                    <div style={{ fontSize: '32px' }}>{option.icon}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                );
+
+            case 2: // Location
                  return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
                         <h3>Where is it located?</h3>
@@ -885,7 +916,53 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                         </div>
                     </motion.div>
                 );
-            case 2: // Media
+
+            case 3: // Specific Details (Floor Plan)
+                return (
+                    <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
+                         <h3>Floor Plan & Details</h3>
+                         <p className="step-subtitle">Tell us more about the {formData.category ? formData.category.replaceAll('_', ' ') : 'property'}.</p>
+                        {renderSpecificFields()}
+                    </motion.div>
+                );
+
+            case 4: { // Amenities
+                const amenitiesList = [
+                    { name: 'Wifi', icon: '📶' },
+                    { name: 'AC', icon: '❄️' },
+                    { name: 'TV', icon: '📺' },
+                    { name: 'Kitchen', icon: '🍳' },
+                    { name: 'Washing Machine', icon: '🧺' },
+                    { name: 'Pool', icon: '🏊' },
+                    { name: 'Gym', icon: '🏋️' },
+                    { name: 'Parking', icon: '🅿️' },
+                    { name: 'Power Backup', icon: '🔋' },
+                    { name: 'Geyser', icon: '🚿' },
+                    { name: 'First Aid', icon: '🩹' },
+                    { name: 'Workstation', icon: '💻' }
+                ];
+                return (
+                    <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
+                        <h3>Amenities</h3>
+                        <p className="step-subtitle">What does your place offer?</p>
+                        
+                        <div className="amenities-grid-premium">
+                            {amenitiesList.map(item => (
+                                <div 
+                                    key={item.name} 
+                                    className={`amenity-card ${formData.amenities.includes(item.name) ? 'selected' : ''}`}
+                                    onClick={() => toggleAmenity(item.name)}
+                                >
+                                    <span className="amenity-icon">{item.icon}</span>
+                                    <span className="amenity-name">{item.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                );
+            }
+
+            case 5: // Media
                 return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
                         <h3>Add some photos</h3>
@@ -926,7 +1003,54 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                         </div>
                     </motion.div>
                 );
-            case 3: // Pricing
+
+            case 6: // Title & Desc
+                return (
+                    <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
+                        <h3>Let's give your place a name</h3>
+                        <p className="step-subtitle">Short titles work best. Have fun with it.</p>
+                        
+                        <div className="form-group">
+                            <label>Property Name</label>
+                            <input 
+                                name="title" 
+                                value={formData.title} 
+                                onChange={handleBasicChange} 
+                                placeholder="e.g. Luxury Villa with Ocean View" 
+                                className="premium-input"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Description</label>
+                            <textarea 
+                                name="description" 
+                                value={formData.description} 
+                                onChange={handleBasicChange} 
+                                rows={5} 
+                                placeholder="Describe your property in detail..." 
+                                className="premium-input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Host Type</label>
+                            <div className="select-cards">
+                                {['individual', 'professional', 'company'].map(type => (
+                                    <div 
+                                        key={type}
+                                        className={`select-card ${formData.hostType === type ? 'selected' : ''}`}
+                                        onClick={() => handleBasicChange({ target: { name: 'hostType', value: type } })}
+                                    >
+                                        <span className="card-icon">{type === 'individual' ? '👤' : type === 'professional' ? '👔' : '🏢'}</span>
+                                        <span className="card-label">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 7: // Pricing
                 return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
                         <h3>Set your pricing</h3>
@@ -979,15 +1103,8 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                         </div>
                     </motion.div>
                 );
-            case 4: // Specific Details (NOW AT STEP 5)
-                return (
-                    <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
-                         <h3>Property Details</h3>
-                         <p className="step-subtitle">Tell us more about the {category.replaceAll('_', ' ')}.</p>
-                        {renderSpecificFields()}
-                    </motion.div>
-                );
-            case 5: // Rules
+
+            case 8: // Rules
                 return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
                         <h3>Stay Rules</h3>
@@ -1021,7 +1138,7 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                     </motion.div>
                 );
 
-            case 6: // Policies
+            case 9: // Policies
                  return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
                         <h3>Policies & House Rules</h3>
@@ -1087,45 +1204,72 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                     </motion.div>
                 );
 
-             case 7: { // Amenities
-                const amenitiesList = [
-                    { name: 'Wifi', icon: '📶' },
-                    { name: 'AC', icon: '❄️' },
-                    { name: 'TV', icon: '📺' },
-                    { name: 'Kitchen', icon: '🍳' },
-                    { name: 'Washing Machine', icon: '🧺' },
-                    { name: 'Pool', icon: '🏊' },
-                    { name: 'Gym', icon: '🏋️' },
-                    { name: 'Parking', icon: '🅿️' },
-                    { name: 'Power Backup', icon: '🔋' },
-                    { name: 'Geyser', icon: '🚿' },
-                    { name: 'First Aid', icon: '🩹' },
-                    { name: 'Workstation', icon: '💻' }
-                ];
-                return (
-                    <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
-                        <h3>Amenities</h3>
-                        <p className="step-subtitle">What does your place offer?</p>
-                        
-                        <div className="amenities-grid-premium">
-                            {amenitiesList.map(item => (
-                                <div 
-                                    key={item.name} 
-                                    className={`amenity-card ${formData.amenities.includes(item.name) ? 'selected' : ''}`}
-                                    onClick={() => toggleAmenity(item.name)}
-                                >
-                                    <span className="amenity-icon">{item.icon}</span>
-                                    <span className="amenity-name">{item.name}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-                );
-            }
             default:
                 return null;
         }
     };
+
+    const isInline = true; // Force inline for now based on usage, or pass as prop
+
+    if (isInline) {
+         return (
+            <div className="short-stay-form-inline">
+                {/* Header with Progress */}
+                <div className="modal-header-premium">
+                    <div className="header-top">
+                         {/* Header Updated Logic */}
+                    </div>
+                </div>
+
+                <div className="modal-body-premium">
+                    <AnimatePresence mode="wait">
+                        {renderStepContent()}
+                    </AnimatePresence>
+                </div>
+
+                <div 
+                    className="modal-footer-premium"
+                    style={{ '--progress-width': `${((currentStep + 1) / STEPS.length) * 100}%` }}
+                >
+                    <button 
+                        onClick={() => {
+                            if (currentStep === 0) {
+                                // If at Category Selection, going back might mean going to Dashboard
+                                window.history.back(); // Or onClose() if provided
+                            } else {
+                                setCurrentStep(prev => prev - 1);
+                            }
+                        }}
+                        className="back-btn-premium"
+                    >
+                        Back
+                    </button>
+                    
+                    {currentStep < STEPS.length - 1 ? (
+                        <button 
+                            onClick={() => setCurrentStep(prev => prev + 1)}
+                            className="next-btn-premium"
+                            disabled={currentStep === 0 && !formData.category} 
+                        >
+                            Next
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={loading}
+                            className="submit-btn-premium"
+                        >
+                            {loading ? (
+                                <span className="loading-spinner-small" />
+                            ) : (
+                                <>List Property <FaCheck /></>
+                            )}
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="short-stay-modal-overlay">
@@ -1139,7 +1283,7 @@ const ShortStayForm = ({ category, onClose, initialData = null }) => {
                 {/* Header with Progress */}
                 <div className="modal-header-premium">
                     <div className="header-top">
-                        <span className="category-badge">{category.replaceAll('_', ' ')}</span>
+                        <span className="category-badge">{formData.category ? formData.category.replaceAll('_', ' ') : 'New Property'}</span>
                         <button onClick={onClose} className="close-btn"><FaTimes /></button>
                     </div>
                     <div className="progress-container">

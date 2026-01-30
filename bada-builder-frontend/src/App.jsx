@@ -141,7 +141,7 @@ function AppContent() {
       <ScrollToTop />
       <Preloader />
       {!isMessagesPage && !isAdminPanel && <Header />}
-      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && <GlobalSearchBar />}
+      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && location.pathname !== '/short-stay/list-property' && <GlobalSearchBar />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
       {!isMessagesPage && !isAdminPanel && <Chatbot />}
       {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
