@@ -17,7 +17,7 @@ const poolConfig = {
     },
     // Optimized for stability and performance with Neon Pooler
     max: 20,                       // Maintain up to 20 connections
-    idleTimeoutMillis: 0,          // Release connections immediately to pooler (recommended for Neon)
+    idleTimeoutMillis: 10000,      // Keep connections alive for 10s to avoid frequent handshakes
     connectionTimeoutMillis: 30000, // Increased to 30s to allow for slow SSL handshakes on Windows
     maxUses: 7500,                 // Protect against potential memory leaks
     keepAlive: true,              // Enable TCP keep-alive to prevent silent drops
