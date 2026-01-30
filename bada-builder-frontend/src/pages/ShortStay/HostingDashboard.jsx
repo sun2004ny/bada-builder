@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion as Motion, AnimatePresence } from 'framer-motion'; // Used for animations
+import HostingMessages from './HostingMessages';
 import './HostingDashboard.css';
 
 const HostingDashboard = () => {
@@ -40,6 +41,12 @@ const HostingDashboard = () => {
                 onClick={() => navigate('/my-properties')} // Reusing existing my-properties for listings
             >
                 Listings
+            </button>
+            <button 
+                className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
+                onClick={() => setActiveTab('messages')}
+            >
+                Messages
             </button>
         </nav>
 
@@ -106,6 +113,10 @@ const HostingDashboard = () => {
                     <p>Calendar view coming soon.</p>
                 </div>
             </div>
+        )}
+
+        {activeTab === 'messages' && (
+             <HostingMessages />
         )}
       </main>
     </div>

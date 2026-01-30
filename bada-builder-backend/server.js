@@ -143,10 +143,18 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
+// Start server
+import { createServer } from 'http';
+import { initSocket } from './utils/socket.js';
+
+const httpServer = createServer(app);
+const io = initSocket(httpServer);
+
+const server = httpServer.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔌 Socket.io initialized`);
 });
 
 // Periodic Cleanup for Live Grouping Unit Locks (Every 1 minute)

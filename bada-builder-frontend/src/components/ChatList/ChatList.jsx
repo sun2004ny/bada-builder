@@ -4,7 +4,7 @@ import { getUserChats } from '../../services/chatService';
 import { FiMessageSquare, FiUser } from 'react-icons/fi';
 import './ChatList.css';
 
-const ChatList = ({ onChatSelect }) => {
+const ChatList = ({ onChatSelect, activeChatId, refreshTrigger, realTimeChatUpdate }) => {
     const { currentUser } = useAuth();
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,14 +13,66 @@ const ChatList = ({ onChatSelect }) => {
     useEffect(() => {
         if (!currentUser) return;
 
-        setLoading(true);
+        // Don't show loading spinner on background refresh (refreshTrigger > 0)
+        if (refreshTrigger === 0) setLoading(true);
+        
         const unsubscribe = getUserChats(currentUser.uid, (userChats) => {
             setChats(userChats);
             setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [currentUser]);
+    }, [currentUser, refreshTrigger]);
+
+    // Handle real-time updates
+    useEffect(() => {
+        if (realTimeChatUpdate) {
+            setChats(prevChats => {
+                // Parse timestamp logically
+                let msgTime = realTimeChatUpdate.last_message_time;
+                if (typeof msgTime === 'string') {
+                    // Normalize to ISO format (replace space with T)
+                    msgTime = msgTime.replace(' ', 'T');
+                    // Ensure it ends with Z to force UTC
+                    if (!msgTime.endsWith('Z') && !msgTime.includes('+')) {
+                        msgTime += 'Z';
+                    }
+                }
+
+                // Map backend chat object to frontend format
+                const updatedChatFormatted = {
+                    chatId: realTimeChatUpdate.chat_id,
+                    propertyId: realTimeChatUpdate.property_id,
+                    propertyTitle: realTimeChatUpdate.property_title,
+                    propertyImage: realTimeChatUpdate.property_image,
+                    buyerId: realTimeChatUpdate.buyer_id,
+                    buyerName: realTimeChatUpdate.buyer_name,
+                    ownerId: realTimeChatUpdate.owner_id,
+                    ownerName: realTimeChatUpdate.owner_name,
+                    lastMessage: realTimeChatUpdate.last_message,
+                    lastMessageTime: new Date(msgTime),
+                    unreadCount: {
+                        [realTimeChatUpdate.buyer_id]: realTimeChatUpdate.buyer_unread_count,
+                        [realTimeChatUpdate.owner_id]: realTimeChatUpdate.owner_unread_count
+                    }
+                };
+
+                // Check if chat exists
+                const existingIndex = prevChats.findIndex(c => c.chatId === updatedChatFormatted.chatId);
+                
+                let newChats;
+                if (existingIndex >= 0) {
+                    newChats = [...prevChats];
+                    newChats[existingIndex] = updatedChatFormatted;
+                } else {
+                    newChats = [updatedChatFormatted, ...prevChats];
+                }
+                
+                // Re-sort by time
+                return newChats.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+            });
+        }
+    }, [realTimeChatUpdate]);
 
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '';
@@ -28,6 +80,9 @@ const ChatList = ({ onChatSelect }) => {
         const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
         const now = new Date();
         const diff = now - date;
+
+        // Less than 1 minute
+        if (diff < 60000) return 'Just now';
 
         // Less than 1 minute
         if (diff < 60000) return 'Just now';
@@ -51,7 +106,11 @@ const ChatList = ({ onChatSelect }) => {
         }
 
         // Show date
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            timeZone: 'Asia/Kolkata'
+        });
     };
 
     const getOtherParticipant = (chat) => {
@@ -135,7 +194,7 @@ const ChatList = ({ onChatSelect }) => {
                         return (
                             <div
                                 key={chat.chatId}
-                                className={`chat-item ${unreadCount > 0 ? 'chat-item-unread' : ''}`}
+                                className={`chat-item ${unreadCount > 0 ? 'chat-item-unread' : ''} ${ activeChatId === chat.chatId ? 'active' : ''}`}
                                 onClick={() => onChatSelect(chat)}
                             >
                                 <div className="chat-item-avatar">

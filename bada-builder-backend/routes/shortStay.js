@@ -136,7 +136,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT p.*, 
-       u.name as host_name, u.email as host_email, u.phone as host_phone, u.profile_photo as host_photo,
+       u.name as host_name, u.email as host_email, u.phone as host_phone, u.profile_photo as host_photo, u.created_at as host_joined_at,
        EXISTS(SELECT 1 FROM short_stay_favorites f WHERE f.property_id = p.id AND f.user_id = $2) as is_favorite
        FROM short_stay_properties p
        LEFT JOIN users u ON p.user_id = u.id

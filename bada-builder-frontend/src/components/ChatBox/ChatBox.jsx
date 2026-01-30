@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
-    createOrGetChat,
     sendMessage,
     getChatMessages,
     markChatAsRead
 } from '../../services/chatService';
+import { getSocket } from '../../services/socketService';
 import { FiSend, FiX } from 'react-icons/fi';
 import './ChatBox.css';
 
@@ -28,22 +28,18 @@ const ChatBox = ({
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
-    const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
 
     // Initialize chat and load messages
     useEffect(() => {
         const initializeChat = async () => {
             try {
                 setLoading(true);
-
-                // Set up real-time message listener
-                // Note: Listening to a collection that doesn't exist yet is valid in Firestore
                 const unsubscribe = getChatMessages(chatId, (msgs) => {
                     setMessages(msgs);
                     setLoading(false);
                 });
 
-                // Mark chat as read when opened (only if chat exists)
                 if (currentUser) {
                     await markChatAsRead(chatId, String(currentUser.uid));
                 }
@@ -57,9 +53,38 @@ const ChatBox = ({
 
         if (chatId && currentUser) {
             let unsub;
-            initializeChat().then(cleanup => {
-                unsub = cleanup;
-            });
+            initializeChat().then(cleanup => unsub = cleanup);
+            
+            // Socket.io Listener
+            const socket = getSocket();
+            if (socket) {
+                const handleNewMessage = (data) => {
+                    if (data.chatId === chatId) {
+                        setMessages((prev) => {
+                            // Avoid duplicates just in case
+                            const exists = prev.some(m => m.timestamp === data.message.timestamp && m.text === data.message.text);
+                            if (exists) return prev;
+                            const newMsg = {
+                                ...data.message,
+                                id: Date.now(), // Temp ID until refresh
+                                message: data.message.text // Map text to message prop if needed, or fix backend to send consistent format
+                            };
+                            return [...prev, newMsg];
+                        });
+                        
+                        // Mark as read immediately if chat is open
+                        markChatAsRead(chatId, String(currentUser.uid));
+                    }
+                };
+                
+                socket.on('new_message', handleNewMessage);
+                
+                return () => {
+                    if (unsub) unsub();
+                    socket.off('new_message', handleNewMessage);
+                };
+            }
+            
             return () => {
                 if (unsub) unsub();
             };
@@ -72,7 +97,12 @@ const ChatBox = ({
     }, [messages]);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
     };
 
     const handleSendMessage = async (e) => {
@@ -82,13 +112,34 @@ const ChatBox = ({
 
         try {
             setSending(true);
-            await sendMessage(
+            const response = await sendMessage(
                 chatId,
                 String(currentUser.uid),
                 userProfile?.name || currentUser.email,
                 newMessage.trim(),
                 !isOwner ? chatData : null // Pass metadata only for buyer's first message
             );
+            
+            // Optimistic update using backend response
+            if (response && response.message) {
+                const sentMsg = response.message;
+                const newMsgFormatted = {
+                    id: sentMsg.timestamp || Date.now(),
+                    senderId: sentMsg.sender_id,
+                    senderName: sentMsg.sender_name,
+                    message: sentMsg.text,
+                    timestamp: new Date(sentMsg.timestamp)
+                };
+                
+                setMessages(prev => {
+                    // Check for duplicates (in case socket event arrived first)
+                    if (prev.some(m => m.id === newMsgFormatted.id || (m.timestamp && new Date(m.timestamp).getTime() === newMsgFormatted.timestamp.getTime()))) {
+                        return prev;
+                    }
+                    return [...prev, newMsgFormatted];
+                });
+            }
+
             setNewMessage('');
         } catch (error) {
             console.error('Error sending message:', error);
@@ -107,7 +158,8 @@ const ChatBox = ({
         const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
         return date.toLocaleTimeString('en-US', {
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone: 'Asia/Kolkata'
         });
     };
 
@@ -140,7 +192,7 @@ const ChatBox = ({
             </div>
 
             {/* Messages Area */}
-            <div className="chat-messages">
+            <div className="chat-messages" ref={chatContainerRef}>
                 {loading ? (
                     <div className="chat-loading">
                         <div className="chat-loader"></div>
@@ -180,7 +232,7 @@ const ChatBox = ({
                                 </div>
                             </div>
                         ))}
-                        <div ref={messagesEndRef} />
+                        <div />
                     </>
                 )}
             </div>

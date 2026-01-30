@@ -1,0 +1,123 @@
+/* HostingMessages.css */
+.hosting-dashboard-container {
+    height: calc(100vh - 100px);
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.hosting-messages-wrapper {
+    display: flex;
+    height: 100%;
+    background-color: #fff;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08); /* Premium shadow */
+    overflow: hidden;
+    border: 1px solid #eaeaea;
+}
+
+/* Sidebar */
+.hm-sidebar {
+    width: 380px;
+    flex-shrink: 0;
+    border-right: 1px solid #eaeaea;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+}
+
+.hm-sidebar-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.hm-sidebar-header h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #222;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.hm-chat-list-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Main Area */
+.hm-main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    position: relative;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f7f7f7' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Empty State */
+.hm-empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #717171;
+    padding: 40px;
+    text-align: center;
+}
+
+.hm-empty-icon {
+    background-color: #f7f7f7;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: #222;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.hm-empty-state h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #222;
+}
+
+.hm-empty-state p {
+    font-size: 15px;
+    color: #717171;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hosting-dashboard-container {
+        padding: 0;
+        height: calc(100vh - 60px);
+    }
+    
+    .hosting-messages-wrapper {
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+    }
+
+    .hm-sidebar, .hm-main-area {
+        width: 100%;
+        display: none;
+    }
+
+    .hm-sidebar.active {
+        display: flex;
+        width: 100%;
+    }
+
+    .hm-main-area.active {
+        display: flex;
+        width: 100%;
+    }
+}

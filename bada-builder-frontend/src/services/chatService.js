@@ -25,6 +25,18 @@ export const createOrGetChat = async (chatData) => {
 
         const chat = response.chat;
 
+        // Helper to parse date as UTC if string lacks timezone
+        const parseDate = (d) => {
+            if (typeof d === 'string') {
+                let s = d.replace(' ', 'T');
+                if (!s.endsWith('Z') && !s.includes('+')) {
+                    s += 'Z';
+                }
+                return new Date(s);
+            }
+            return new Date(d);
+        };
+
         // Map backend fields to frontend expected fields
         return {
             chatId: chat.chat_id,
@@ -34,7 +46,7 @@ export const createOrGetChat = async (chatData) => {
             buyerId: chat.buyer_id,
             ownerId: chat.owner_id,
             lastMessage: chat.last_message,
-            lastMessageTime: new Date(chat.last_message_time),
+            lastMessageTime: parseDate(chat.last_message_time),
             unreadCount: {
                 [chat.buyer_id]: chat.buyer_unread_count,
                 [chat.owner_id]: chat.owner_unread_count
@@ -156,22 +168,32 @@ export const getUserChats = (userId, callback) => {
             errorCount = 0;
 
             if (isSubscribed) {
-                const chats = Array.isArray(response.chats) ? response.chats.map(chat => ({
-                    chatId: chat.chat_id,
-                    propertyId: chat.property_id,
-                    propertyTitle: chat.property_title,
-                    propertyImage: chat.property_image,
-                    buyerId: chat.buyer_id,
-                    buyerName: chat.buyer_name,
-                    ownerId: chat.owner_id,
-                    ownerName: chat.owner_name,
-                    lastMessage: chat.last_message,
-                    lastMessageTime: new Date(chat.last_message_time),
-                    unreadCount: {
-                        [chat.buyer_id]: chat.buyer_unread_count,
-                        [chat.owner_id]: chat.owner_unread_count
+                const chats = Array.isArray(response.chats) ? response.chats.map(chat => {
+                    let msgTime = chat.last_message_time;
+                    if (typeof msgTime === 'string') {
+                         msgTime = msgTime.replace(' ', 'T');
+                         if (!msgTime.endsWith('Z') && !msgTime.includes('+')) {
+                             msgTime += 'Z';
+                         }
                     }
-                })) : [];
+                    
+                    return {
+                        chatId: chat.chat_id,
+                        propertyId: chat.property_id,
+                        propertyTitle: chat.property_title,
+                        propertyImage: chat.property_image,
+                        buyerId: chat.buyer_id,
+                        buyerName: chat.buyer_name,
+                        ownerId: chat.owner_id,
+                        ownerName: chat.owner_name,
+                        lastMessage: chat.last_message,
+                        lastMessageTime: new Date(msgTime),
+                        unreadCount: {
+                            [chat.buyer_id]: chat.buyer_unread_count,
+                            [chat.owner_id]: chat.owner_unread_count
+                        }
+                    };
+                }) : [];
                 callback(chats);
 
                 // Schedule next poll - standard 5s interval
@@ -217,7 +239,7 @@ export const getUserChats = (userId, callback) => {
  * @param {string} userId - User ID who read the messages
  * @returns {Promise<void>}
  */
-export const markChatAsRead = async (chatId, userId) => {
+export const markChatAsRead = async (chatId) => {
     try {
         await chatAPI.markAsRead(chatId);
     } catch (error) {

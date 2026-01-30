@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FaMapMarkerAlt, FaStar, FaUser, FaCheck, FaTimes, FaHeart, FaShare } from 'react-icons/fa';
 import { shortStayAPI } from '../../services/shortStayApi';
+import { createOrGetChat } from '../../services/chatService';
 import { useAuth } from '../../context/AuthContext';
-import './ShortStayDetails.css'; // Will create this next
-// import PropertyMap from '../../components/PropertyMap'; // Reuse existing map component if compatible
+import './ShortStayDetails.css';
 
 const ShortStayDetails = () => {
     const { id } = useParams();
-    const { user } = useAuth();
+    const navigate = useNavigate();
+    const { currentUser: user } = useAuth();
     const [property, setProperty] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isFavorite, setIsFavorite] = useState(false);
@@ -43,13 +44,63 @@ const ShortStayDetails = () => {
         }
     };
 
+    const handleContactHost = async () => {
+        if (!user) {
+            // alert('Please login to contact the host'); // Removed for smoother UX
+            navigate('/login', { state: { from: `/short-stay/${id}` } }); // Allow redirect back after login
+            return;
+        }
+
+        try {
+            // We use a separate loading state or just browser loading for now, 
+            // but ensuring we don't double click could be good.
+            const chatResponse = await createOrGetChat({
+                propertyId: id,
+                ownerId: property.user_id || property.owner_id
+            });
+
+            if (chatResponse && chatResponse.chatId) {
+                navigate('/messages');
+            }
+        } catch (error) {
+            console.error('Error contacting host:', error);
+            alert('Failed to start chat. Please try again.');
+        }
+    };
+
     if (loading) return <div className="short-stay-page loading">Loading...</div>;
     if (!property) return <div className="short-stay-page error">Property not found</div>;
+
+    const getJoinedText = (dateString) => {
+        if (!dateString) return 'Joined recently';
+        // Ensure date string handling is robust
+        const joined = new Date(dateString);
+        if (isNaN(joined.getTime())) return 'Joined recently';
+
+        const now = new Date();
+        const diffTime = Math.abs(now - joined);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        // Logic: 
+        // < 30 days: Joined recently
+        // < 365 days: Joined X months ago
+        // >= 365 days: Joined X years ago
+        
+        if (diffDays < 30) {
+            return 'Joined recently';
+        } else if (diffDays < 365) {
+            const months = Math.floor(diffDays / 30);
+            return `Joined ${months} ${months === 1 ? 'month' : 'months'} ago`;
+        } else {
+            const years = Math.floor(diffDays / 365);
+            return `Joined ${years} ${years === 1 ? 'year' : 'years'} ago`;
+        }
+    };
 
     const {
         title, description, location, pricing, 
         rules, policies, amenities, specific_details,
-        images, host_name, host_photo, rating
+        images, host_name, host_photo, rating, host_joined_at
     } = property;
 
     return (
@@ -95,10 +146,44 @@ const ShortStayDetails = () => {
 
                         <div className="host-info">
                             <img src={host_photo || '/default-user.png'} alt={host_name} className="host-avatar" />
-                            <div>
+                            <div style={{flex: 1}}>
                                 <h3>Hosted by {host_name || 'User'}</h3>
-                                <p>Joined recently</p>
+                                <p>{getJoinedText(host_joined_at)}</p>
                             </div>
+                        {/* Only show Contact Host if not owner */}
+                        {user && String(user.uid) === String(property.user_id) ? (
+                             <button 
+                                disabled
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#f0f0f0',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '8px',
+                                    cursor: 'not-allowed',
+                                    fontWeight: '600',
+                                    color: '#999'
+                                }}
+                            >
+                                You own this property
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={handleContactHost}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#fff',
+                                    border: '1px solid #000',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={(e) => e.target.style.backgroundColor = '#f7f7f7'}
+                                onMouseOut={(e) => e.target.style.backgroundColor = '#fff'}
+                            >
+                                Contact Host
+                            </button>
+                        )}
                         </div>
 
                         <div className="details-divider" />
