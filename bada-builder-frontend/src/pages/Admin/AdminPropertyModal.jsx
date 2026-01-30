@@ -36,38 +36,48 @@ const uploadToCloudinary = async (file) => {
 
 const adminModalStyles = `
     .admin-modal-input {
-        background-color: #1f2937 !important; /* gray-800 */
-        color: white !important;
-        border: 1px solid #4b5563 !important; /* gray-600 */
+        background-color: transparent !important;
+        color: white !important; /* Force white text for visibility on dark bg */
+        border: 1px solid rgba(156, 163, 175, 0.3) !important;
         outline: none !important;
         box-shadow: none !important;
+        transition: all 0.2s ease;
     }
 
     .admin-modal-input:focus {
-        border-color: #9ca3af !important; /* gray-400 */
-        box-shadow: none !important;
-        outline: none !important;
+        border-color: #3b82f6 !important; /* blue-500 */
+        box-shadow: 0 0 0 1px #3b82f6 !important;
+        background-color: rgba(59, 130, 246, 0.05) !important;
     }
 
     /* Fix for Select dropdown options */
     .admin-modal-input option {
-        background-color: #1f2937 !important;
+        background-color: #1f2937 !important; /* Forces dark background for options since modal is dark */
         color: white !important;
     }
 
-    /* Remove autocomplete background color causing white/blue wash */
+    /* Remove autocomplete background color causing white/blue/grey wash - EXTREMELY AGGRESSIVE */
     .admin-modal-input:-webkit-autofill,
     .admin-modal-input:-webkit-autofill:hover, 
     .admin-modal-input:-webkit-autofill:focus, 
     .admin-modal-input:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
+        -webkit-box-shadow: 0 0 0 1000px #1f2937 inset !important; /* Match your dark theme background */
         -webkit-text-fill-color: white !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+
+    /* Placeholder style */
+    .admin-modal-input::placeholder {
+        color: rgba(156, 163, 175, 0.5) !important;
     }
 `;
 
-const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialSource = 'Individual' }) => {
+const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialSource = 'By Bada Builder' }) => {
+    const [activeLayout, setActiveLayout] = useState('Form A');
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+    const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
         title: '',
         type: 'Apartment',
@@ -91,14 +101,19 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
             ownerName: '',
             schemeType: 'Residential',
             possessionStatus: 'Ready to Move',
-            amenities: [],
+            amenities: '', // Changed to string for comma-separated
             contactPhone: '',
+            contactEmail: '', // Added Email
             completionDate: '',
             towers: '',
             floors: '',
             units: '',
             sold_units: 0,
-            total_revenue: 0
+            total_revenue: 0,
+            bathrooms: '',
+            furnishing: 'Unfurnished',
+            priceUnit: 'Lakh',
+            areaUnit: 'sq.ft'
         }
     });
 
@@ -128,13 +143,21 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
                 latitude: null,
                 longitude: null,
                 map_address: '',
-                metadata: {}
+                metadata: {
+                    amenities: '',
+                    contactEmail: '',
+                    bathrooms: '',
+                    furnishing: 'Unfurnished',
+                    priceUnit: 'Lakh',
+                    areaUnit: 'sq.ft'
+                }
             });
         }
     }, [property, isOpen, initialSource]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        setIsDirty(true);
         if (name.startsWith('metadata.')) {
             const metaKey = name.split('.')[1];
             setFormData(prev => ({
@@ -199,28 +222,48 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
         }));
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.title) newErrors.title = 'Title is required';
+        if (!formData.location) newErrors.location = 'Location description is required';
+        if (!formData.description) newErrors.description = 'Detailed description is required';
+        if (!formData.price) newErrors.price = 'Price is required';
+
+        // Removed Project Name requirement as per user request to use Title instead
+
+        if (formData.images.filter(img => img).length === 0 && selectedFiles.length === 0) {
+            newErrors.images = 'At least one image is required';
+        }
+
+        setErrors(newErrors);
+        return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setUploading(true);
 
+        const { isValid, errors: validationErrors } = validateForm();
+        if (!isValid) {
+            const firstError = Object.values(validationErrors)[0] || 'Check the form for highlighted fields.';
+            alert(`Validation Error: ${firstError}`);
+            return;
+        }
+
+        setUploading(true);
         try {
             // 1. Upload new files if any
             let newImageUrls = [];
             if (selectedFiles.length > 0) {
-                console.log(`Uploading ${selectedFiles.length} images...`);
-                // Compress and Upload
                 newImageUrls = await Promise.all(selectedFiles.map(async (file) => {
                     try {
                         const compressed = await compressImage(file);
                         return await uploadToCloudinary(compressed);
                     } catch (err) {
                         console.error('Upload failed for file', file.name, err);
-                        try { return await uploadToCloudinary(file); } catch (retryErr) { return null; }
+                        return null;
                     }
                 }));
             }
-
-            // Filter out failed uploads
             const successfulUrls = newImageUrls.filter(url => url !== null);
 
             // 2. Combine with existing URLs
@@ -236,17 +279,20 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
 
             // Sync metadata fields to root for card compatibility
             if (formData.property_source === 'Developer' || formData.property_source === 'By Bada Builder') {
-                submissionData.project_name = formData.metadata.projectName;
+                submissionData.project_name = formData.metadata.projectName || formData.title;
                 submissionData.company_name = formData.property_source === 'By Bada Builder' ? 'Bada Builder' : (formData.metadata.ownerName || 'Developer');
                 submissionData.possession_status = formData.metadata.possessionStatus;
                 submissionData.contact_phone = formData.metadata.contactPhone;
+                submissionData.contact_email = formData.metadata.contactEmail; // Added Email
 
                 // Map stats for Developer view
                 submissionData.project_stats = {
                     towers: formData.metadata.towers,
                     floors: formData.metadata.floors,
                     units: formData.metadata.units,
-                    area: formData.area
+                    area: formData.area,
+                    bathrooms: formData.metadata.bathrooms,
+                    furnishing: formData.metadata.furnishing
                 };
             } else {
                 // Individual mappings
@@ -256,13 +302,13 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
             }
 
             await onSave(submissionData);
-            setUploading(false);
-            setSelectedFiles([]);
-
+            setIsDirty(false);
+            onClose();
         } catch (error) {
             console.error('Submission error:', error);
-            setUploading(false);
             alert('Failed to upload images or save property.');
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -275,136 +321,114 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
                 <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
                 <style>{adminModalStyles}</style>
 
-                <div className="inline-block relative z-10 w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-2xl rounded-2xl border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                            {property ? 'Edit Property' : 'Add New Property'}
-                        </h3>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <X className="h-6 w-6" />
-                        </button>
+                <div className="inline-block relative z-10 w-full max-w-5xl overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-2xl rounded-2xl border border-gray-200 dark:border-gray-700">
+                    {/* Header: Fixed/Sticky area */}
+                    <div className="flex flex-col md:flex-row items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-20">
+                        <div className="flex items-center space-x-4 mb-4 md:mb-0">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                                {property ? 'Edit Property' : 'Add New Property'}
+                            </h3>
+                            <div className="h-6 w-[1px] bg-gray-300 dark:bg-gray-600 hidden md:block" />
+                            <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setActiveLayout('Form A')}
+                                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${activeLayout === 'Form A' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                                >
+                                    Form A
+                                </button>
+                                <button
+                                    onClick={() => setActiveLayout('Form B')}
+                                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${activeLayout === 'Form B' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                                >
+                                    Form B
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4 w-full md:w-auto">
+                            <div className="flex-1 md:flex-initial">
+                                <span className="text-xl font-bold text-blue-600 dark:text-blue-400 tracking-tight">
+                                    By Bada Builder
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (isDirty) {
+                                        if (window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+                                            onClose();
+                                        }
+                                    } else {
+                                        onClose();
+                                    }
+                                }}
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Left Column: Core Data */}
-                            <div className="space-y-6">
-                                <div className="p-4 bg-transparent rounded-xl space-y-4">
-                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">
-                                        <Info className="h-4 w-4 text-blue-500" />
-                                        <span>Listing Identity</span>
-                                    </h4>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
-                                        <input
-                                            type="text"
-                                            name="title"
-                                            value={formData.title}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="e.g. Luxurious 3BHK Apartment"
-                                            className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property Type</label>
-                                            <select
-                                                name="type"
-                                                value={formData.type}
-                                                onChange={handleChange}
-                                                className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                            >
-                                                <option value="Apartment">Apartment</option>
-                                                <option value="Villa">Villa</option>
-                                                <option value="Independent House">Independent House</option>
-                                                <option value="Plot">Plot</option>
-                                                <option value="Commercial">Commercial</option>
-                                                <option value="Bungalow">Bungalow</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Source</label>
-                                            <select
-                                                name="property_source"
-                                                value={formData.property_source}
-                                                onChange={handleChange}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold"
-                                            >
-                                                <option value="Individual">Individual</option>
-                                                <option value="Developer">Developer</option>
-                                                <option value="By Bada Builder">By Bada Builder</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Form Sections based on Source */}
-                                {formData.property_source === 'Individual' && (
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(100vh-200px)]">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            {/* Main Form Content Area (LHS + RHS) */}
+                            {activeLayout === 'Form A' ? (
+                                <>
+                                    <div className="lg:col-span-7 space-y-6">
+                                        {/* Property Title */}
+                                        <div className="space-y-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (Total) *</label>
-                                                <div className="relative">
-                                                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                                    <input
-                                                        type="text"
-                                                        name="price"
-                                                        value={formData.price}
-                                                        onChange={handleChange}
-                                                        placeholder="e.g. 85 Lakh"
-                                                        required
-                                                        className="w-full pl-10 pr-4 py-2 rounded-lg admin-modal-input"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">BHK Type</label>
-                                                <select
-                                                    name="bhk"
-                                                    value={formData.bhk}
-                                                    onChange={handleChange}
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                                >
-                                                    <option value="">Select BHK</option>
-                                                    <option value="1 BHK">1 BHK</option>
-                                                    <option value="2 BHK">2 BHK</option>
-                                                    <option value="3 BHK">3 BHK</option>
-                                                    <option value="4 BHK">4 BHK</option>
-                                                    <option value="5+ BHK">5+ BHK</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Built-up Area</label>
+                                                <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1 ml-4">Property Title</label>
                                                 <input
                                                     type="text"
-                                                    name="area"
-                                                    value={formData.area}
+                                                    name="title"
+                                                    value={formData.title}
                                                     onChange={handleChange}
-                                                    placeholder="e.g. 1500 sq.ft"
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
+                                                    placeholder="e.g. 3BHK Apartment near Airport"
+                                                    required
+                                                    className="w-full px-4 py-2 text-xl font-bold bg-transparent text-white border-b border-gray-100 dark:border-gray-700 focus:border-blue-500 outline-none transition-colors admin-modal-input"
                                                 />
                                             </div>
+                                        </div>
+
+                                        {/* Location (City, Area) */}
+                                        <div className="flex items-center space-x-2 p-2 bg-transparent border border-gray-100 dark:border-gray-700 rounded-lg admin-modal-input">
+                                            <MapPin className="h-4 w-4 text-blue-500" />
+                                            <input
+                                                type="text"
+                                                name="location"
+                                                value={formData.location}
+                                                onChange={handleChange}
+                                                placeholder="Location (City, Area)"
+                                                required
+                                                className="w-full bg-transparent border-none focus:ring-0 text-sm font-semibold text-white admin-modal-input"
+                                            />
+                                        </div>
+
+                                        {/* Property Type & Furnishing */}
+                                        <div className="grid grid-cols-2 gap-6 pt-2">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms</label>
-                                                <input
-                                                    type="number"
-                                                    name="metadata.bathrooms"
-                                                    value={formData.metadata.bathrooms || ''}
-                                                    onChange={handleMetadataChange}
-                                                    placeholder="e.g. 2"
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                                />
+                                                <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Property Type</label>
+                                                <select
+                                                    name="type"
+                                                    value={formData.type}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 text-white admin-modal-input"
+                                                >
+                                                    <option value="Apartment">Apartment</option>
+                                                    <option value="Villa">Villa</option>
+                                                    <option value="Independent House">Independent House</option>
+                                                    <option value="Plot">Plot</option>
+                                                    <option value="Commercial">Commercial</option>
+                                                    <option value="Bungalow">Bungalow</option>
+                                                </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Furnishing</label>
+                                                <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Furnishing Status</label>
                                                 <select
                                                     name="metadata.furnishing"
                                                     value={formData.metadata.furnishing || 'Unfurnished'}
                                                     onChange={handleMetadataChange}
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
+                                                    className="w-full px-3 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 text-white admin-modal-input"
                                                 >
                                                     <option value="Unfurnished">Unfurnished</option>
                                                     <option value="Semi-Furnished">Semi-Furnished</option>
@@ -412,229 +436,382 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
                                                 </select>
                                             </div>
                                         </div>
-                                        <div className="mt-4">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parking Availability</label>
-                                            <select
-                                                name="metadata.parking"
-                                                value={formData.metadata.parking || 'No'}
-                                                onChange={handleMetadataChange}
-                                                className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                            >
-                                                <option value="No">No</option>
-                                                <option value="Yes (Open)">Yes (Open)</option>
-                                                <option value="Yes (Covered)">Yes (Covered)</option>
-                                                <option value="Yes (Both)">Yes (Both)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
 
-                                {(formData.property_source === 'Developer' || formData.property_source === 'By Bada Builder') && (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Name *</label>
-                                            <input
-                                                type="text"
-                                                name="metadata.projectName"
-                                                value={formData.metadata.projectName || ''}
-                                                onChange={handleMetadataChange}
-                                                placeholder="e.g. Green Valley Residency"
-                                                required
-                                                className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price Range *</label>
+                                        {/* Boxed Quick Stats Layout (12-column grid) */}
+                                        <div className="grid grid-cols-12 gap-4 pt-4">
+                                            {/* Investment / Price Box (Large) */}
+                                            <div className="col-span-6 p-4 rounded-xl space-y-4 admin-modal-input">
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Investment / Price</label>
+                                                    <div className="flex items-center space-x-1">
+                                                        <input
+                                                            type="text"
+                                                            name="price"
+                                                            value={formData.price}
+                                                            onChange={handleChange}
+                                                            placeholder="Price"
+                                                            className="w-full bg-transparent border-b border-gray-100 dark:border-gray-700 focus:border-blue-500 outline-none text-sm font-bold admin-modal-input"
+                                                        />
+                                                        <select
+                                                            name="metadata.priceUnit"
+                                                            value={formData.metadata.priceUnit || 'Lakh'}
+                                                            onChange={handleMetadataChange}
+                                                            className="bg-transparent text-[10px] font-bold text-blue-500 outline-none admin-modal-input"
+                                                        >
+                                                            <option value="Lakh">Lakh</option>
+                                                            <option value="Cr">Cr</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Built-up Area</label>
+                                                    <div className="flex items-center space-x-1">
+                                                        <input
+                                                            type="text"
+                                                            name="area"
+                                                            value={formData.area}
+                                                            onChange={handleChange}
+                                                            placeholder="Area"
+                                                            className="w-full bg-transparent border-b border-gray-100 dark:border-gray-700 focus:border-blue-500 outline-none text-sm font-bold admin-modal-input"
+                                                        />
+                                                        <select
+                                                            name="metadata.areaUnit"
+                                                            value={formData.metadata.areaUnit || 'sq.ft'}
+                                                            onChange={handleMetadataChange}
+                                                            className="bg-transparent text-[10px] font-bold text-blue-500 outline-none admin-modal-input"
+                                                        >
+                                                            <option value="sq.ft">sq.ft</option>
+                                                            <option value="sq.yd">sq.yd</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Bedrooms Box */}
+                                            <div className="col-span-3 flex flex-col items-center justify-center p-4 rounded-xl text-center admin-modal-input">
+                                                <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-4 h-8">Bedrooms (BHK)</label>
                                                 <input
                                                     type="text"
-                                                    name="price"
-                                                    value={formData.price}
+                                                    name="bhk"
+                                                    value={formData.bhk}
                                                     onChange={handleChange}
-                                                    placeholder="e.g. 50L - 1.2Cr"
-                                                    required
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
+                                                    placeholder="e.g. 3"
+                                                    className="w-full text-center text-lg font-bold bg-transparent border border-gray-100 dark:border-gray-700 rounded-lg p-1 outline-none text-white focus:border-blue-500 admin-modal-input"
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">RERA Number</label>
+
+                                            {/* Bathrooms Box */}
+                                            <div className="col-span-3 flex flex-col items-center justify-center p-4 rounded-xl text-center admin-modal-input">
+                                                <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-4 h-8">Bathrooms</label>
                                                 <input
                                                     type="text"
-                                                    name="rera_number"
-                                                    value={formData.rera_number || ''}
-                                                    onChange={handleChange}
-                                                    placeholder="Registration No."
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Scheme Type</label>
-                                                <select
-                                                    name="metadata.schemeType"
-                                                    value={formData.metadata.schemeType || 'Residential'}
+                                                    name="metadata.bathrooms"
+                                                    value={formData.metadata.bathrooms || ''}
                                                     onChange={handleMetadataChange}
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                                >
-                                                    <option value="Residential">Residential</option>
-                                                    <option value="Commercial">Commercial</option>
-                                                    <option value="Both">Both</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company/Owner Name</label>
-                                                <input
-                                                    type="text"
-                                                    name="metadata.ownerName"
-                                                    value={formData.metadata.ownerName || ''}
-                                                    onChange={handleMetadataChange}
-                                                    placeholder="e.g. DLF Ltd."
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
+                                                    placeholder="e.g. 2"
+                                                    className="w-full text-center text-lg font-bold bg-transparent border border-gray-100 dark:border-gray-700 rounded-lg p-1 outline-none text-white focus:border-blue-500 admin-modal-input"
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Possession Status</label>
-                                                <select
-                                                    name="metadata.possessionStatus"
-                                                    value={formData.metadata.possessionStatus || 'Ready to Move'}
-                                                    onChange={handleMetadataChange}
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                                >
-                                                    <option value="Ready to Move">Ready to Move</option>
-                                                    <option value="Under Construction">Under Construction</option>
-                                                    <option value="Just Launched">Just Launched</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Phone</label>
-                                                <input
-                                                    type="text"
-                                                    name="metadata.contactPhone"
-                                                    value={formData.metadata.contactPhone || ''}
-                                                    onChange={handleMetadataChange}
-                                                    maxLength={10}
-                                                    placeholder="10-digit number"
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {(formData.metadata.possessionStatus === 'Under Construction' || formData.metadata.possessionStatus === 'Just Launched') && (
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expected Completion</label>
-                                                <input
-                                                    type="date"
-                                                    name="metadata.completionDate"
-                                                    value={formData.metadata.completionDate || ''}
-                                                    onChange={handleMetadataChange}
-                                                    className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                                />
-                                            </div>
-                                        )}
-
-                                        <div className="p-4 bg-transparent rounded-xl">
-                                            <h5 className="text-xs font-bold text-gray-500 uppercase mb-3">Project Statistics</h5>
-                                            <div className="grid grid-cols-3 gap-3">
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-gray-400 mb-1">Towers</label>
-                                                    <input
-                                                        type="number"
-                                                        name="metadata.towers"
-                                                        value={formData.metadata.towers || ''}
+                                        {/* Details & About Property */}
+                                        <div className="grid grid-cols-2 gap-6 pt-6">
+                                            <div className="space-y-4">
+                                                <h4 className="text-2xl font-bold bg-blue-600 dark:bg-blue-600 text-white px-3 py-1 rounded-sm border-l-4 border-blue-400 w-fit">Details</h4>
+                                                <div className="p-4 rounded-xl admin-modal-input shadow-sm">
+                                                    <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-2">Amenities / Facilities (Comma Separated)</label>
+                                                    <textarea
+                                                        name="metadata.amenities"
+                                                        value={formData.metadata.amenities || ''}
                                                         onChange={handleMetadataChange}
-                                                        className="w-full px-3 py-1.5 text-sm rounded admin-modal-input"
+                                                        placeholder="Eg. Pool, Gym, Club House, 24x7 Security..."
+                                                        rows={3}
+                                                        className="w-full bg-transparent border border-gray-100 dark:border-gray-700 rounded-lg p-3 text-sm focus:border-blue-500 transition-colors text-white admin-modal-input"
                                                     />
                                                 </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-gray-400 mb-1">Floors</label>
-                                                    <input
-                                                        type="number"
-                                                        name="metadata.floors"
-                                                        value={formData.metadata.floors || ''}
-                                                        onChange={handleMetadataChange}
-                                                        className="w-full px-3 py-1.5 text-sm rounded admin-modal-input"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-gray-400 mb-1">Total Units</label>
-                                                    <input
-                                                        type="number"
-                                                        name="metadata.units"
-                                                        value={formData.metadata.units || ''}
-                                                        onChange={handleMetadataChange}
-                                                        className="w-full px-3 py-1.5 text-sm rounded admin-modal-input"
+                                            </div>
+                                            <div className="space-y-4">
+                                                <h4 className="text-2xl font-bold bg-blue-600 dark:bg-blue-600 text-white px-3 py-1 rounded-sm border-l-4 border-blue-400 w-fit">About Property</h4>
+                                                <div className="p-4 rounded-xl admin-modal-input shadow-sm">
+                                                    <textarea
+                                                        name="description"
+                                                        value={formData.description}
+                                                        onChange={handleChange}
+                                                        placeholder="Write a detailed description of the property/project here..."
+                                                        rows={6}
+                                                        className="w-full bg-transparent outline-none text-sm text-gray-200 admin-modal-input"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {formData.property_source === 'By Bada Builder' && (
-                                            <div className="grid grid-cols-2 gap-4 p-4 bg-transparent rounded-lg border border-gray-700">
+                                        {/* Contact Information */}
+                                        <div className="pt-8 pb-4 space-y-4">
+                                            <h4 className="text-2xl font-bold bg-blue-600 dark:bg-blue-600 text-white px-3 py-1 rounded-sm border-l-4 border-blue-400 w-fit">Contact Information</h4>
+                                            <div className="grid grid-cols-2 gap-x-8 gap-y-6 px-4 pt-2">
                                                 <div>
-                                                    <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Sold Units</label>
+                                                    <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Owner Name</label>
                                                     <input
-                                                        type="number"
-                                                        name="metadata.sold_units"
-                                                        value={formData.metadata.sold_units || 0}
+                                                        type="text"
+                                                        name="metadata.ownerName"
+                                                        value={formData.metadata.ownerName || ''}
                                                         onChange={handleMetadataChange}
-                                                        className="w-full px-4 py-2 rounded admin-modal-input"
+                                                        placeholder="Your Name"
+                                                        className="w-full bg-transparent border-b border-gray-100 dark:border-gray-700 p-2 text-lg font-bold outline-none focus:border-blue-500 transition-colors text-white admin-modal-input"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Total Revenue (Cr)</label>
+                                                    <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Phone Number *</label>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="text-blue-500 font-bold bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">+91</span>
+                                                        <input
+                                                            type="text"
+                                                            name="metadata.contactPhone"
+                                                            value={formData.metadata.contactPhone || ''}
+                                                            onChange={handleMetadataChange}
+                                                            placeholder="10-digit number"
+                                                            className="w-full bg-transparent border-b border-gray-100 dark:border-gray-700 p-2 text-lg font-bold outline-none focus:border-blue-500 transition-colors text-white admin-modal-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Email Address</label>
                                                     <input
-                                                        type="number"
-                                                        name="metadata.total_revenue"
-                                                        value={formData.metadata.total_revenue || 0}
+                                                        type="email"
+                                                        name="metadata.contactEmail"
+                                                        value={formData.metadata.contactEmail || ''}
                                                         onChange={handleMetadataChange}
-                                                        step="0.1"
-                                                        className="w-full px-4 py-2 rounded admin-modal-input"
+                                                        placeholder="name@example.com"
+                                                        className="w-full bg-transparent border-b border-gray-100 dark:border-gray-700 p-2 text-sm outline-none admin-modal-input"
                                                     />
                                                 </div>
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
-                                )}
+                                </>
+                            ) : (
+                                <>
+                                    {/* Left Column: Form B Design */}
+                                    <div className="lg:col-span-7 space-y-8">
+                                        <div className="space-y-6">
+                                            {/* Listing Identity Section */}
+                                            <div className="space-y-4">
+                                                <h4 className="text-sm font-bold text-blue-400 flex items-center space-x-2 uppercase tracking-wider">
+                                                    <Info className="h-4 w-4" />
+                                                    <span>Listing Identity</span>
+                                                </h4>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-400 mb-1">Title *</label>
+                                                    <input
+                                                        type="text"
+                                                        name="title"
+                                                        value={formData.title}
+                                                        onChange={handleChange}
+                                                        className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-400 mb-1">Property Type</label>
+                                                        <select
+                                                            name="type"
+                                                            value={formData.type}
+                                                            onChange={handleChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        >
+                                                            <option value="Apartment">Apartment</option>
+                                                            <option value="Villa">Villa</option>
+                                                            <option value="Independent House">Independent House</option>
+                                                            <option value="Plot">Plot</option>
+                                                            <option value="Commercial">Commercial</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location Description *</label>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            name="location"
-                                            value={formData.location}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="e.g. Vastrapur, Ahmedabad"
-                                            className="w-full pl-10 pr-4 py-2 rounded-lg admin-modal-input"
-                                        />
+                                            {/* Project Details */}
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-400 mb-1">Project Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        name="metadata.projectName"
+                                                        value={formData.metadata.projectName || ''}
+                                                        onChange={handleMetadataChange}
+                                                        className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-400 mb-1">Price Range *</label>
+                                                        <input
+                                                            type="text"
+                                                            name="price"
+                                                            value={formData.price}
+                                                            onChange={handleChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-400 mb-1">RERA Number</label>
+                                                        <input
+                                                            type="text"
+                                                            name="rera_number"
+                                                            value={formData.rera_number || ''}
+                                                            onChange={handleChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-400 mb-1">Scheme Type</label>
+                                                        <select
+                                                            name="metadata.schemeType"
+                                                            value={formData.metadata.schemeType || 'Residential'}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        >
+                                                            <option value="Residential">Residential</option>
+                                                            <option value="Commercial">Commercial</option>
+                                                            <option value="Both">Both</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-400 mb-1">Company/Owner Name</label>
+                                                        <input
+                                                            type="text"
+                                                            name="metadata.ownerName"
+                                                            value={formData.metadata.ownerName || ''}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-400 mb-1">Possession Status</label>
+                                                        <select
+                                                            name="metadata.possessionStatus"
+                                                            value={formData.metadata.possessionStatus || 'Ready to Move'}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        >
+                                                            <option value="Ready to Move">Ready to Move</option>
+                                                            <option value="Under Construction">Under Construction</option>
+                                                            <option value="Just Launched">Just Launched</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-400 mb-1">Contact Phone</label>
+                                                        <input
+                                                            type="text"
+                                                            name="metadata.contactPhone"
+                                                            value={formData.metadata.contactPhone || ''}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Project Statistics (Form B style) */}
+                                            <div className="space-y-4">
+                                                <h5 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Project Statistics</h5>
+                                                <div className="grid grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Towers</label>
+                                                        <input
+                                                            type="number"
+                                                            name="metadata.towers"
+                                                            value={formData.metadata.towers || ''}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-3 py-2 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Floors</label>
+                                                        <input
+                                                            type="number"
+                                                            name="metadata.floors"
+                                                            value={formData.metadata.floors || ''}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-3 py-2 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Total Units</label>
+                                                        <input
+                                                            type="number"
+                                                            name="metadata.units"
+                                                            value={formData.metadata.units || ''}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-3 py-2 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 bg-gray-900/40 p-4 rounded-xl border border-gray-700/50">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Sold Units</label>
+                                                        <input
+                                                            type="number"
+                                                            name="metadata.sold_units"
+                                                            value={formData.metadata.sold_units || 0}
+                                                            onChange={handleMetadataChange}
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Total Revenue (Cr)</label>
+                                                        <input
+                                                            type="number"
+                                                            name="metadata.total_revenue"
+                                                            value={formData.metadata.total_revenue || 0}
+                                                            onChange={handleMetadataChange}
+                                                            step="0.1"
+                                                            className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Descriptions */}
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-400 mb-1">Location Description *</label>
+                                                    <div className="relative">
+                                                        <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                                                        <input
+                                                            type="text"
+                                                            name="location"
+                                                            value={formData.location}
+                                                            onChange={handleChange}
+                                                            className="w-full pl-10 pr-4 py-2.5 rounded-lg admin-modal-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-400 mb-1">Detailed Description *</label>
+                                                    <textarea
+                                                        name="description"
+                                                        value={formData.description}
+                                                        onChange={handleChange}
+                                                        rows={4}
+                                                        className="w-full px-4 py-2.5 rounded-lg admin-modal-input"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </>
+                            )}
 
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Detailed Description *</label>
-                                    <textarea
-                                        name="description"
-                                        value={formData.description}
-                                        onChange={handleChange}
-                                        required
-                                        rows={4}
-                                        placeholder="Enter all property details, amenities, and key highlights..."
-                                        className="w-full px-4 py-2 rounded-lg admin-modal-input"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Right Column: Media & Map */}
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Precision Map Location</label>
-                                    <div className="rounded-xl overflow-hidden border border-gray-300 dark:border-gray-600 h-[240px]">
+                            {/* Shared Right Column: Map & Media (Always stays mounted for performance) */}
+                            <div className="lg:col-span-5 space-y-6">
+                                {/* Precision Map Location Card */}
+                                <div className="p-5 bg-gray-900/20 rounded-2xl border border-gray-700/50 space-y-4">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Precision Map Location</h4>
+                                    <div className="rounded-xl overflow-hidden border border-gray-700 h-[280px] shadow-inner">
                                         <LocationPicker
                                             onLocationSelect={handleLocationSelect}
                                             initialLat={formData.latitude}
@@ -642,23 +819,30 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
                                             initialAddress={formData.map_address}
                                         />
                                     </div>
-                                    <p className="text-[10px] text-gray-500 italic">Pinning the exact location helps in better visibility and distance calculation.</p>
+                                    <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                                        <p className="text-xs text-gray-400 flex items-center">
+                                            <MapPin className="h-3 w-3 mr-2 text-blue-500" />
+                                            <span className="truncate">{formData.map_address || 'No location selected'}</span>
+                                        </p>
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 italic text-center px-4">
+                                        Pinning the exact location helps in better visibility and distance calculation.
+                                    </p>
                                 </div>
 
-                                {/* Image Gallery */}
-                                {/* Image Gallery Cloudinary Upload */}
-                                <div className="p-4 bg-transparent rounded-xl space-y-4">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                                        <div className="flex items-center">
+                                {/* Image Gallery Card */}
+                                <div className="p-5 bg-gray-900/20 rounded-2xl border border-gray-700/50 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
                                             <ImageIcon className="h-4 w-4 mr-2 text-blue-500" />
                                             <span>Gallery Images</span>
-                                        </div>
-                                        <span className="text-xs text-gray-500">
+                                        </h4>
+                                        <span className="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded-full font-bold">
                                             {formData.images.filter(i => i).length + selectedFiles.length} selected
                                         </span>
-                                    </label>
+                                    </div>
 
-                                    {/* File Input */}
+                                    {/* Upload Trigger */}
                                     <div className="relative group">
                                         <input
                                             type="file"
@@ -666,77 +850,87 @@ const AdminPropertyModal = ({ isOpen, onClose, onSave, property = null, initialS
                                             accept="image/*"
                                             onChange={handleFileChange}
                                             className="hidden"
-                                            id="gallery-upload"
+                                            id="gallery-upload-v2"
                                         />
                                         <label
-                                            htmlFor="gallery-upload"
-                                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50 dark:bg-gray-800/50 transition-colors"
+                                            htmlFor="gallery-upload-v2"
+                                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all duration-300"
                                         >
-                                            <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                                            <span className="text-sm text-gray-500">Click to upload images</span>
+                                            <Upload className="h-10 w-10 text-gray-500 mb-2 group-hover:scale-110 transition-transform" />
+                                            <span className="text-sm font-medium text-gray-400 group-hover:text-blue-400">Click to upload images</span>
                                         </label>
                                     </div>
 
                                     {/* Preview Grid */}
-                                    <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                    <div className="grid grid-cols-4 gap-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
                                         {/* Existing URLs */}
                                         {formData.images.filter(img => img && img.trim() !== '').map((img, idx) => (
-                                            <div key={`exist-${idx}`} className="relative aspect-square rounded-lg overflow-hidden group">
-                                                <img src={img} alt={`Existing ${idx}`} className="w-full h-full object-cover" />
+                                            <div key={`exist-${idx}`} className="relative aspect-square rounded-lg overflow-hidden group border border-gray-700 shadow-lg">
+                                                <img src={img} alt="" className="w-full h-full object-cover" />
                                                 <button
                                                     type="button"
                                                     onClick={() => removeExistingImage(idx)}
-                                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
                                                 >
-                                                    <X className="h-3 w-3" />
+                                                    <Trash2 className="h-3 w-3" />
                                                 </button>
-                                                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[8px] px-1 py-0.5 truncate">
-                                                    Existing
-                                                </div>
                                             </div>
                                         ))}
 
                                         {/* New Selected Files */}
                                         {selectedFiles.map((file, idx) => (
-                                            <div key={`new-${idx}`} className="relative aspect-square rounded-lg overflow-hidden group">
-                                                <img src={URL.createObjectURL(file)} alt={`New ${idx}`} className="w-full h-full object-cover" />
+                                            <div key={`new-${idx}`} className="relative aspect-square rounded-lg overflow-hidden group border border-blue-500/50 shadow-lg">
+                                                <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-blue-600/20 pointer-events-none" />
                                                 <button
                                                     type="button"
                                                     onClick={() => removeFile(idx)}
-                                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
                                                 >
-                                                    <X className="h-3 w-3" />
+                                                    <Trash2 className="h-3 w-3" />
                                                 </button>
-                                                <div className="absolute bottom-0 left-0 right-0 bg-blue-600/80 text-white text-[8px] px-1 py-0.5 truncate">
-                                                    New
-                                                </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-gray-500">Images will be uploaded to Cloudinary on save.</p>
+                                    <p className="text-[10px] text-gray-500 text-center font-medium">first image will be the cover image</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-6 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
-                            >
-                                {uploading ? 'Uploading & Saving...' : (property ? 'Update Property' : 'Create Property')}
-                            </button>
+                        {/* Unified Submission Area */}
+                        <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 pt-8 border-t border-gray-700/50 mt-8">
+                            <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                                <Info className="h-4 w-4" />
+                                <span>All fields are synchronized in real-time across layouts.</span>
+                            </div>
+                            <div className="flex items-center space-x-3 w-full md:w-auto">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 md:flex-initial px-8 py-3 rounded-xl border border-gray-600 text-gray-300 font-bold hover:bg-gray-700 hover:text-white transition-all active:scale-95"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={uploading}
+                                    className="flex-1 md:flex-initial px-10 py-3 rounded-xl bg-green-600 text-white font-black uppercase tracking-widest hover:bg-green-500 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center space-x-2"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Processing...</span>
+                                        </>
+                                    ) : (
+                                        <span>{property ? 'Update Property' : 'Create Property'}</span>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

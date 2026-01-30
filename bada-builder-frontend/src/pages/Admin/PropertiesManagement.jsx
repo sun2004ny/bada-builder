@@ -222,7 +222,11 @@ const PropertiesManagement = () => {
             <span>Export</span>
           </button>
           <button
-            onClick={() => setShowSelection(true)}
+            onClick={() => {
+              setSelectedSource('By Bada Builder');
+              setShowAddModal(true);
+              setSelectedProperty(null);
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
           >
             <Plus className="h-4 w-4" />
@@ -502,79 +506,6 @@ const PropertiesManagement = () => {
           <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No properties found</h3>
           <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
-        </div>
-      )}
-      {/* Selection Overlay */}
-      {showSelection && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-4xl w-full border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Choose Project Type</h2>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Select the type of listing you want to create</p>
-              </div>
-              <button
-                onClick={() => setShowSelection(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-500 transition-colors"
-              >
-                <Plus className="h-6 w-6 rotate-45" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  id: 'Individual',
-                  title: 'Individual',
-                  desc: 'Standard residential or commercial listings from individual owners.',
-                  icon: Users,
-                  color: 'text-blue-600',
-                  bg: 'bg-blue-100 dark:bg-blue-900/30'
-                },
-                {
-                  id: 'Developer',
-                  title: 'Developer',
-                  desc: 'New projects, complexes, and townships from builders/developers.',
-                  icon: Building,
-                  color: 'text-purple-600',
-                  bg: 'bg-purple-100 dark:bg-purple-900/30'
-                },
-                {
-                  id: 'By Bada Builder',
-                  title: 'By Bada Builder',
-                  desc: 'Exclusive high-yield properties curated and managed by Bada Builder.',
-                  icon: Star,
-                  color: 'text-orange-600',
-                  bg: 'bg-orange-100 dark:bg-orange-900/30'
-                }
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setSelectedSource(item.id);
-                    setShowSelection(false);
-                    setShowAddModal(true);
-                    setSelectedProperty(null);
-                  }}
-                  className="group relative flex flex-col p-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl border-2 border-transparent hover:border-blue-500 hover:bg-white dark:hover:bg-gray-700 transition-all duration-300 text-left shadow-sm hover:shadow-xl"
-                >
-                  <div className={`p-3 rounded-lg w-fit mb-4 ${item.bg}`}>
-                    <item.icon className={`h-6 w-6 ${item.color}`} />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{item.title}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">{item.desc}</p>
-                  <div className="mt-auto flex items-center text-blue-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                    <span>Select Option</span>
-                    <Plus className="h-4 w-4 ml-2" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </motion.div>
         </div>
       )}
 
