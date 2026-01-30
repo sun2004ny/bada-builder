@@ -6,7 +6,7 @@ import shortStayVideo from '../../assets/videos/shortstay_hero.mp4';
 import './ShortStayLanding.css';
 import { shortStayAPI } from '../../services/shortStayApi';
 import { useAuth } from '../../context/AuthContext';
-import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch, FaArrowRight } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch, FaArrowRight, FaTimes } from 'react-icons/fa';
 
 
 
@@ -26,7 +26,7 @@ const ShortStayLanding = () => {
     location: '',
     checkIn: '',
     checkOut: '',
-    guests: { adults: 1, children: 0, infants: 0, pets: 0 },
+    guests: { adults: 0, children: 0, infants: 0, pets: 0 },
     type: ''
   });
 
@@ -130,7 +130,7 @@ const ShortStayLanding = () => {
   const getGuestLabel = () => {
     const { adults, children, infants, pets } = searchParams.guests;
     const total = adults + children;
-    if (total === 1 && infants === 0 && pets === 0) return "Add guests";
+    if (total === 0) return "Add guests";
     let label = `${total} Guest${total !== 1 ? 's' : ''}`;
     if (infants > 0) label += `, ${infants} Infant${infants !== 1 ? 's' : ''}`;
     if (pets > 0) label += `, ${pets} Pet${pets !== 1 ? 's' : ''}`;
@@ -145,6 +145,16 @@ const ShortStayLanding = () => {
 
 
 
+
+  const handleClearGuests = (e) => {
+    e.stopPropagation();
+    setSearchParams(prev => ({
+      ...prev,
+      guests: { adults: 0, children: 0, infants: 0, pets: 0 }
+    }));
+  };
+
+  const hasGuests = searchParams.guests.adults > 0 || searchParams.guests.children > 0 || searchParams.guests.infants > 0 || searchParams.guests.pets > 0;
 
   return (
     <div className="short-stay-page">
@@ -228,7 +238,7 @@ const ShortStayLanding = () => {
                       </div>
                       {searchParams.checkIn && (
                         <button className="clear-date-btn" onClick={handleClearDates}>
-                          &times;
+                          <FaTimes />
                         </button>
                       )}
                     </div>
@@ -241,8 +251,15 @@ const ShortStayLanding = () => {
                     onClick={() => setActivePopup('guests')}
                   >
                     <label>Who</label>
-                    <div className={`pill-display-value ${searchParams.guests.adults + searchParams.guests.children === 1 && searchParams.guests.infants === 0 && searchParams.guests.pets === 0 ? 'value-placeholder' : ''}`}>
-                      {getGuestLabel()}
+                    <div className="pill-value-container">
+                        <div className={`pill-display-value ${!hasGuests ? 'value-placeholder' : ''}`}>
+                          {getGuestLabel()}
+                        </div>
+                        {hasGuests && (
+                            <button className="clear-date-btn" onClick={handleClearGuests}>
+                                <FaTimes />
+                            </button>
+                        )}
                     </div>
                   </div>
 

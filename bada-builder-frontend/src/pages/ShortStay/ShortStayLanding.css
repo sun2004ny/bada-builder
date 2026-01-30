@@ -230,24 +230,26 @@
 }
 
 .clear-date-btn {
-  background: #f7f7f7;
+  background: transparent;
   border: none;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  color: #222222;
+  font-size: 12px; /* Smaller for SVG */
+  color: #717171; /* Muted color by default */
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   margin-left: 8px;
   flex-shrink: 0;
+  padding: 0; /* Remove text alignment hack */
 }
 
 .clear-date-btn:hover {
-  background: #ebebeb;
+  background: #EBEBEB;
+  color: #222222;
 }
 
 .pill-display-value {
@@ -351,32 +353,32 @@
 }
 
 .nav-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: #F7F7F7;
-  /* Light background for visibility */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: transparent !important; /* Force transparent */
+  padding: 0 !important; /* Reset padding from global button */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   cursor: pointer;
-  color: #222222;
+  color: #222222 !important;
   pointer-events: all;
   transition: all 0.2s;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: none !important;
 }
 
 .nav-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 14px; /* Refined size */
+  height: 14px;
   display: block;
+  stroke-width: 1; /* Thinner stroke appearance if supported or via icon choice */
 }
 
 .nav-btn:hover {
-  background: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transform: scale(1.1);
+  background: #F7F7F7; /* Light circle on hover */
+  transform: none; /* Remove scaling */
 }
 
 .calendar-container {
