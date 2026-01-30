@@ -8,7 +8,8 @@ import {
   Plus, Search, TowerControl as Tower, Building2,
   Trash2, Edit, Eye, Save, X, ChevronRight, ChevronDown,
   ChevronLeft, LayoutGrid, List, CheckCircle2, AlertCircle,
-  ArrowLeft, Lock, DollarSign, Home, Map as MapIcon, Store, Briefcase, ShoppingBag, Box, Car, RefreshCw
+  ArrowLeft, Lock, DollarSign, Home, Map as MapIcon, Store, Briefcase, ShoppingBag, Box, Car, RefreshCw,
+  Image as ImageIcon
 } from 'lucide-react';
 import { liveGroupDynamicAPI } from '../../services/api';
 import TwoDView from '../../pages/Exhibition/TwoDView'; // Import the 2D View component
@@ -205,14 +206,29 @@ const AdminLiveGrouping = () => {
 
       // --- ATOMIC SAVE LOGIC ---
       // 1. Construct Full Hierarchy Object (Towers + Nested Units)
-      const hierarchy = towers.map((tower, idx) => {
+      const hierarchy = [];
+      for (let idx = 0; idx < towers.length; idx++) {
+        const tower = towers[idx];
         const towerConfig = towerUnits[idx] || {};
         const compiledUnits = [];
 
-        Object.keys(towerConfig).forEach(floorNum => {
-          if (!towerConfig[floorNum]) return;
+        for (const floorNum of Object.keys(towerConfig)) {
+          if (!towerConfig[floorNum]) continue;
 
-          towerConfig[floorNum].forEach(unit => {
+          for (const unit of towerConfig[floorNum]) {
+            // UPLOAD UNIT IMAGE IF EXISTS
+            let uploadedImageUrl = unit.unit_image_url || null;
+            if (unit.unit_image_file) {
+              console.log(`📸 Uploading image for unit: ${unit.unit_number}...`);
+              try {
+                const uploadRes = await liveGroupDynamicAPI.uploadUnitImage(unit.unit_image_file);
+                uploadedImageUrl = uploadRes.imageUrl;
+              } catch (uploadErr) {
+                console.error("Unit image upload failed:", uploadErr);
+                // Continue without image or fail? Requirement says optional, so we can continue
+              }
+            }
+
             // Sanitize numeric fields before sending
             const sanitizedUnit = {
               ...unit,
@@ -222,20 +238,26 @@ const AdminLiveGrouping = () => {
               super_built_up_area: parseFloat(unit.super_built_up_area) || 0,
               price: parseFloat(unit.price) || 0,
               price_per_sqft: parseFloat(unit.price_per_sqft) || 0,
-              discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null
+              discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null,
+              unit_image_url: uploadedImageUrl
             };
-            compiledUnits.push(sanitizedUnit);
-          });
-        });
 
-        return {
-          tower_name: tower.name, // API expects snake_case usually? Check addTower payload: { tower_name }
+            // Remove local file objects and previews before sending
+            delete sanitizedUnit.unit_image_file;
+            delete sanitizedUnit.localImagePreview;
+
+            compiledUnits.push(sanitizedUnit);
+          }
+        }
+
+        hierarchy.push({
+          tower_name: tower.name,
           total_floors: parseInt(tower.floors) || (projectData.type === 'Bungalow' ? 1 : 0),
           layout_columns: tower.layout_columns || null,
           layout_rows: tower.layout_rows || null,
           units: compiledUnits
-        };
-      });
+        });
+      }
 
       console.log('🚀 Submitting Partial Hierarchy:', hierarchy);
 
@@ -1164,93 +1186,95 @@ const AdminLiveGrouping = () => {
                     </div>
 
                     <div className="unit-configurator-container">
-                      <div className="global-defaults-wrapper mb-8">
-                        {/* GLOBAL DEFAULTS SECTION */}
-                        <div className={`global-defaults-panel bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${isGlobalDefaultsCollapsed ? 'max-h-14' : 'max-h-96'}`}>
-                          <div
-                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                            onClick={() => setIsGlobalDefaultsCollapsed(!isGlobalDefaultsCollapsed)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                <Tower size={20} />
-                              </div>
-                              <div>
-                                <h4 className="font-bold text-slate-800 text-sm">Default Unit Configuration (Global)</h4>
-                                {!isGlobalDefaultsCollapsed && <p className="text-[10px] text-slate-500 uppercase font-semibold">Applied to all default units</p>}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {isGlobalDefaultsCollapsed && (
-                                <div className="hidden md:flex gap-3 mr-4">
-                                  <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.unitType}</span>
-                                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.sbua} SqFt</span>
-                                  <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">₹{globalUnitDefaults.baseRate}</span>
+                      {/* GLOBAL DEFAULTS SECTION - Hidden for Bungalows as per requirements */}
+                      {projectData.type !== 'Bungalow' && (
+                        <div className="global-defaults-wrapper mb-8">
+                          <div className={`global-defaults-panel bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${isGlobalDefaultsCollapsed ? 'max-h-14' : 'max-h-96'}`}>
+                            <div
+                              className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                              onClick={() => setIsGlobalDefaultsCollapsed(!isGlobalDefaultsCollapsed)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                  <Tower size={20} />
                                 </div>
-                              )}
-                              <button className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
-                                {isGlobalDefaultsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-                              </button>
+                                <div>
+                                  <h4 className="font-bold text-slate-800 text-sm">Default Unit Configuration (Global)</h4>
+                                  {!isGlobalDefaultsCollapsed && <p className="text-[10px] text-slate-500 uppercase font-semibold">Applied to all default units</p>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {isGlobalDefaultsCollapsed && (
+                                  <div className="hidden md:flex gap-3 mr-4">
+                                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.unitType}</span>
+                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.sbua} SqFt</span>
+                                    <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">₹{globalUnitDefaults.baseRate}</span>
+                                  </div>
+                                )}
+                                <button className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
+                                  {isGlobalDefaultsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                                </button>
+                              </div>
                             </div>
-                          </div>
 
-                          {!isGlobalDefaultsCollapsed && (
-                            <div className="p-6 pt-2 bg-gradient-to-r from-white to-blue-50/30">
-                              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                <div className="input-field-group">
-                                  <label>Default Type</label>
-                                  <select
-                                    className="text-xs border rounded p-2 w-full"
-                                    value={globalUnitDefaults.unitType}
-                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, unitType: e.target.value })}
-                                  >
-                                    <option value="Flat">Flat</option>
-                                    <option value="Shop">Shop</option>
-                                    <option value="Office">Office</option>
-                                    <option value="Showroom">Showroom</option>
-                                  </select>
-                                </div>
-                                <div className="input-field-group">
-                                  <label>SBUA (SQFT)</label>
-                                  <input
-                                    type="number"
-                                    className="text-xs border rounded p-2 w-full"
-                                    value={globalUnitDefaults.sbua}
-                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, sbua: parseFloat(e.target.value) || 0 })}
-                                  />
-                                </div>
-                                <div className="input-field-group">
-                                  <label>Carpet (SQFT)</label>
-                                  <input
-                                    type="number"
-                                    className="text-xs border rounded p-2 w-full"
-                                    value={globalUnitDefaults.carpetArea}
-                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, carpetArea: parseFloat(e.target.value) || 0 })}
-                                  />
-                                </div>
-                                <div className="input-field-group">
-                                  <label>Base Rate (₹)</label>
-                                  <input
-                                    type="number"
-                                    className="text-xs border rounded p-2 w-full"
-                                    value={globalUnitDefaults.baseRate}
-                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, baseRate: parseFloat(e.target.value) || 0 })}
-                                  />
-                                </div>
-                                <div className="input-field-group">
-                                  <label>Discount Rate (₹)</label>
-                                  <input
-                                    type="number"
-                                    className="text-xs border rounded p-2 w-full"
-                                    value={globalUnitDefaults.discountRate}
-                                    onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, discountRate: parseFloat(e.target.value) || 0 })}
-                                  />
+                            {!isGlobalDefaultsCollapsed && (
+                              <div className="p-6 pt-2 bg-gradient-to-r from-white to-blue-50/30">
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                  <div className="input-field-group">
+                                    <label>Default Type</label>
+                                    <select
+                                      className="text-xs border rounded p-2 w-full"
+                                      value={globalUnitDefaults.unitType}
+                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, unitType: e.target.value })}
+                                    >
+                                      <option value="Flat">Flat</option>
+                                      <option value="Shop">Shop</option>
+                                      <option value="Office">Office</option>
+                                      <option value="Showroom">Showroom</option>
+                                    </select>
+                                  </div>
+                                  <div className="input-field-group">
+                                    <label>SBUA (SQFT)</label>
+                                    <input
+                                      type="number"
+                                      className="text-xs border rounded p-2 w-full"
+                                      value={globalUnitDefaults.sbua}
+                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, sbua: parseFloat(e.target.value) || 0 })}
+                                    />
+                                  </div>
+                                  <div className="input-field-group">
+                                    <label>Carpet (SQFT)</label>
+                                    <input
+                                      type="number"
+                                      className="text-xs border rounded p-2 w-full"
+                                      value={globalUnitDefaults.carpetArea}
+                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, carpetArea: parseFloat(e.target.value) || 0 })}
+                                    />
+                                  </div>
+                                  <div className="input-field-group">
+                                    <label>Base Rate (₹)</label>
+                                    <input
+                                      type="number"
+                                      className="text-xs border rounded p-2 w-full"
+                                      value={globalUnitDefaults.baseRate}
+                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, baseRate: parseFloat(e.target.value) || 0 })}
+                                    />
+                                  </div>
+                                  <div className="input-field-group">
+                                    <label>Discount Rate (₹)</label>
+                                    <input
+                                      type="number"
+                                      className="text-xs border rounded p-2 w-full"
+                                      value={globalUnitDefaults.discountRate}
+                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, discountRate: parseFloat(e.target.value) || 0 })}
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       {towers.map((tower, towerIdx) => {
                         const isTowerCollapsed = collapsedTowers.includes(towerIdx);
                         return (
@@ -1424,6 +1448,15 @@ const AdminLiveGrouping = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
             >
+              {selectedUnit.unit_image_url && (
+                <div className="w-full h-40 mb-6 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50">
+                  <img
+                    src={selectedUnit.unit_image_url}
+                    alt={`Unit ${selectedUnit.unit_number}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
               <div className="flex justify-between items-start mb-6">
                 <div className="flex gap-4 items-center">
                   {(() => {
@@ -1817,6 +1850,17 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
               </div>
 
               <div className="card-inner-layout p-3">
+                {/* UNIT IMAGE PREVIEW */}
+                {(unit.unit_image_url || unit.localImagePreview) && (
+                  <div className="unit-card-image mb-3 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 h-28 w-full group-hover:h-32 transition-all duration-300">
+                    <img
+                      src={unit.localImagePreview || unit.unit_image_url}
+                      alt="Unit Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 <div className="unit-card-header border-b border-slate-100 pb-2 mb-2">
                   <div className="flex flex-col gap-1 w-full">
                     <label className="text-[9px] font-bold text-slate-400 uppercase">Unit Label</label>
@@ -1915,6 +1959,48 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
                     </div>
                   )}
 
+                  {/* UNIT IMAGE UPLOAD - Only for Custom Units */}
+                  {unit.isCustom && (
+                    <div className="unit-image-upload mt-2 pt-2 border-t border-slate-50">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Unit Image</label>
+                      <div className="flex items-center gap-2">
+                        <label className="cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
+                          <ImageIcon size={12} />
+                          {unit.unit_image_url || unit.localImagePreview ? 'Change Image' : 'Upload Image'}
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  onUpdate(uIdx, 'localImagePreview', reader.result);
+                                  onUpdate(uIdx, 'unit_image_file', file);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                        {(unit.unit_image_url || unit.localImagePreview) && (
+                          <button
+                            onClick={() => {
+                              onUpdate(uIdx, 'unit_image_url', null);
+                              onUpdate(uIdx, 'localImagePreview', null);
+                              onUpdate(uIdx, 'unit_image_file', null);
+                            }}
+                            className="text-red-500 hover:text-red-700 p-1"
+                            title="Remove Image"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="action-buttons flex justify-between items-center">
                     {!unit.isCustom ? (
                       <button
@@ -1932,6 +2018,9 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
                             onUpdate(uIdx, 'area', globalDefaults.sbua);
                             onUpdate(uIdx, 'price_per_sqft', globalDefaults.baseRate);
                             onUpdate(uIdx, 'discount_price_per_sqft', globalDefaults.discountRate);
+                            onUpdate(uIdx, 'unit_image_url', null);
+                            onUpdate(uIdx, 'localImagePreview', null);
+                            onUpdate(uIdx, 'unit_image_file', null);
                           }
                         }}
                         className="text-[9px] font-bold text-green-600 hover:text-green-700 underline underline-offset-2"

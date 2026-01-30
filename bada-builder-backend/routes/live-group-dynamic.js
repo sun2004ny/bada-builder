@@ -329,7 +329,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                             discount_price_per_sqft: unit.discount_price_per_sqft || null,
                             status: unit.status || 'available',
                             facing: unit.facing || null,
-                            is_corner: unit.is_corner || false
+                            is_corner: unit.is_corner || false,
+                            unit_image_url: unit.unit_image_url || null
                         });
                         totalUnitsGenerated++;
                     }
@@ -349,7 +350,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                         unit.tower_id, unit.floor_number, unit.unit_number, unit.unit_type,
                         unit.area, unit.carpet_area, unit.super_built_up_area, unit.price,
                         unit.price_per_sqft, unit.discount_price_per_sqft, unit.status,
-                        unit.facing, unit.is_corner
+                        unit.facing, unit.is_corner, unit.unit_image_url
                     ];
 
                     cols.forEach(val => {
@@ -364,7 +365,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     INSERT INTO live_group_units (
                         tower_id, floor_number, unit_number, unit_type, 
                         area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, status,
-                        facing, is_corner
+                        facing, is_corner, unit_image_url
                     ) VALUES ${placeholders.join(', ')}
                 `;
                 await client.query(insertQuery, values);
@@ -571,7 +572,7 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
         const unitId = req.params.id;
         const {
             unit_number, unit_type, floor_number, area, carpet_area, super_built_up_area,
-            price_per_sqft, discount_price_per_sqft, status, facing, is_corner
+            price_per_sqft, discount_price_per_sqft, status, facing, is_corner, unit_image_url
         } = req.body;
 
         const existingResult = await pool.query('SELECT * FROM live_group_units WHERE id = $1', [unitId]);
@@ -612,14 +613,16 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 carpet_area = $9,
                 super_built_up_area = $10,
                 facing = $11,
-                is_corner = $12
-            WHERE id = $13 RETURNING *`,
+                is_corner = $12,
+                unit_image_url = $13
+            WHERE id = $14 RETURNING *`,
             [
                 finalUnitNumber, finalUnitType, finalFloorNumber, finalArea,
                 finalPricePerSqft, finalDiscountPricePerSqft, finalStatus,
                 totalPrice, finalCarpetArea, finalSuperBuiltUpArea,
                 facing !== undefined ? facing : existingUnit.facing,
                 is_corner !== undefined ? is_corner : existingUnit.is_corner,
+                unit_image_url !== undefined ? unit_image_url : existingUnit.unit_image_url,
                 unitId
             ]
         );
@@ -654,6 +657,20 @@ router.patch('/admin/projects/:id/status', authenticate, isAdmin, async (req, re
     } catch (error) {
         console.error('Admin update status error:', error);
         res.status(500).json({ error: 'Failed to update project status' });
+    }
+});
+
+// Single Image Upload (Generic for Units/Misc)
+router.post('/admin/upload-image', authenticate, isAdmin, upload.single('images'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+        const imageUrl = await uploadImage(req.file.buffer, 'live_group_units');
+        res.json({ imageUrl });
+    } catch (error) {
+        console.error('Image upload error:', error);
+        res.status(500).json({ error: 'Failed to upload image' });
     }
 });
 
