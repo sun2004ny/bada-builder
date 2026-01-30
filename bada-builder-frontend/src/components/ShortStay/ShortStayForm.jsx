@@ -1067,15 +1067,22 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                             />
                             <span className="per-night-label">/ night</span>
                         </div>
+                        {formData.pricing.perNight > 0 && (
+                            <div style={{ fontSize: '12px', color: '#717171', marginTop: '4px', textAlign: 'center' }}>
+                                Guest pays: ₹{Math.ceil(formData.pricing.perNight * 1.05).toLocaleString()} (includes 5% fees)
+                            </div>
+                        )}
 
                          <div className="form-row">
                              <div className="form-group">
                                 <label>Weekly Price (Optional)</label>
                                 <input type="number" name="weekly" value={formData.pricing.weekly} onChange={handlePricingChange} className="premium-input" placeholder="₹" />
+                                {formData.pricing.weekly > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.weekly * 1.05).toLocaleString()}</small>}
                             </div>
                              <div className="form-group">
                                 <label>Monthly Price (Optional)</label>
                                 <input type="number" name="monthly" value={formData.pricing.monthly} onChange={handlePricingChange} className="premium-input" placeholder="₹" />
+                                {formData.pricing.monthly > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.monthly * 1.05).toLocaleString()}</small>}
                             </div>
                         </div>
                         
@@ -1085,16 +1092,19 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                              <div className="form-group">
                                 <label>Cleaning Fee</label>
                                 <input type="number" name="cleaning" value={formData.pricing.cleaning} onChange={handlePricingChange} className="premium-input" placeholder="₹0" />
+                                {formData.pricing.cleaning > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.cleaning * 1.05).toLocaleString()}</small>}
                             </div>
                              <div className="form-group">
                                 <label>Security Deposit</label>
                                 <input type="number" name="securityDeposit" value={formData.pricing.securityDeposit} onChange={handlePricingChange} className="premium-input" placeholder="₹0" />
+                                {formData.pricing.securityDeposit > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.securityDeposit * 1.05).toLocaleString()}</small>}
                             </div>
                         </div>
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Extra Guest Charge</label>
                                 <input type="number" name="extraGuest" value={formData.pricing.extraGuest} onChange={handlePricingChange} className="premium-input" placeholder="₹0" />
+                                {formData.pricing.extraGuest > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.extraGuest * 1.05).toLocaleString()}</small>}
                             </div>
                              <div className="form-group">
                                 <label>Taxes (GST)</label>

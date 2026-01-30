@@ -61,6 +61,21 @@ router.post('/', authenticate, upload.array('images', 30), async (req, res) => {
   }
 });
 
+// Helper to calculate guest pricing (Host Price + 5%)
+const calculateGuestPricing = (pricing) => {
+  if (!pricing) return null;
+  const markup = 1.05;
+  const guestPricing = { ...pricing };
+
+  if (guestPricing.perNight) guestPricing.perNight = Math.ceil(Number(guestPricing.perNight) * markup);
+  if (guestPricing.weekly) guestPricing.weekly = Math.ceil(Number(guestPricing.weekly) * markup);
+  if (guestPricing.monthly) guestPricing.monthly = Math.ceil(Number(guestPricing.monthly) * markup);
+  if (guestPricing.cleaning) guestPricing.cleaning = Math.ceil(Number(guestPricing.cleaning) * markup);
+  if (guestPricing.security) guestPricing.security = Math.ceil(Number(guestPricing.security) * markup);
+  
+  return guestPricing;
+};
+
 // --- 2. Get All Listings (Search & Filters) ---
 router.get('/', optionalAuth, async (req, res) => {
   try {
@@ -95,22 +110,19 @@ router.get('/', optionalAuth, async (req, res) => {
       paramCount++;
     }
 
-    // Basic Price Filter (using perNight)
+    // Price Filter (Adjusted for 5% Markup)
+    // User filters by Guest Price (e.g., Max 1000). Host Price should be <= 1000 / 1.05
     if (minPrice) {
       query += ` AND (pricing->>'perNight')::numeric >= $${paramCount++}`;
-      params.push(minPrice);
+      params.push(Math.floor(Number(minPrice) / 1.05));
     }
     if (maxPrice) {
       query += ` AND (pricing->>'perNight')::numeric <= $${paramCount++}`;
-      params.push(maxPrice);
+      params.push(Math.ceil(Number(maxPrice) / 1.05));
     }
     
     // Guest Capacity Filter
     if (guests) {
-      // Assuming 'pricing' JSON has 'maxGuests' or checking specific details for capacity
-      // For now, let's look in specific_details OR standard capacity field if we had one.
-      // Let's assume specific_details has 'maxGuests' for all types or we query it loosely.
-      // A better approach is to ensure maxGuests is in specific_details.
       query += ` AND (specific_details->>'maxGuests')::int >= $${paramCount++}`;
       params.push(guests);
     }
@@ -120,8 +132,13 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const result = await pool.query(query, params);
     
+    const propertiesWithGuestPricing = result.rows.map(p => ({
+      ...p,
+      guest_pricing: calculateGuestPricing(p.pricing)
+    }));
+
     res.json({ 
-      properties: result.rows,
+      properties: propertiesWithGuestPricing,
       count: result.rows.length
     });
 
@@ -147,8 +164,11 @@ router.get('/:id', optionalAuth, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Property not found' });
     }
+    
+    const property = result.rows[0];
+    property.guest_pricing = calculateGuestPricing(property.pricing);
 
-    res.json({ property: result.rows[0] });
+    res.json({ property });
 
   } catch (error) {
     console.error('Fetch Property Details Error:', error);
@@ -163,7 +183,11 @@ router.get('/user/my-listings', authenticate, async (req, res) => {
       `SELECT * FROM short_stay_properties WHERE user_id = $1 ORDER BY created_at DESC`,
       [req.user.id]
     );
-    res.json({ properties: result.rows });
+     const propertiesWithGuestPricing = result.rows.map(p => ({
+      ...p,
+      guest_pricing: calculateGuestPricing(p.pricing)
+    }));
+    res.json({ properties: propertiesWithGuestPricing });
   } catch (error) {
     console.error('Fetch My Listings Error:', error);
     res.status(500).json({ error: 'Failed to fetch your listings' });
@@ -296,7 +320,11 @@ router.get('/user/favorites', authenticate, async (req, res) => {
        ORDER BY f.created_at DESC`,
       [req.user.id]
     );
-    res.json({ favorites: result.rows });
+     const propertiesWithGuestPricing = result.rows.map(p => ({
+      ...p,
+      guest_pricing: calculateGuestPricing(p.pricing)
+    }));
+    res.json({ favorites: propertiesWithGuestPricing });
   } catch (error) {
     console.error('Fetch Favorites Error:', error);
     res.status(500).json({ error: 'Failed to fetch favorites' });

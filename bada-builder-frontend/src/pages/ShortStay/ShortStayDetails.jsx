@@ -140,10 +140,13 @@ const ShortStayDetails = () => {
     if (!property) return <div className="short-stay-page error">Property not found</div>;
 
     const {
-        title, description, location, pricing, 
+        title, description, location, pricing, guest_pricing,
         rules, policies, amenities, specific_details,
         images, host_name, host_photo, rating, host_joined_at
     } = property;
+
+    // Use guest pricing for display if available
+    const displayPricing = guest_pricing || pricing;
 
     // Fill images array to at least 5 for grid
     const displayImages = (images && Array.isArray(images)) ? [...images] : [];
@@ -316,7 +319,7 @@ const ShortStayDetails = () => {
                         <div className="booking-widget">
                             <div className="widget-header">
                                 <div>
-                                    <span className="price-large">₹{pricing?.perNight}</span>
+                                    <span className="price-large">₹{displayPricing?.perNight?.toLocaleString()}</span>
                                     <span className="night-label"> night</span>
                                 </div>
                                 <div className="rating-badge">
@@ -368,16 +371,16 @@ const ShortStayDetails = () => {
 
                             <div className="price-summary">
                                 <div className="summary-row">
-                                    <span>₹{pricing?.perNight} x 5 nights</span>
-                                    <span>₹{pricing?.perNight * 5}</span>
+                                    <span>₹{displayPricing?.perNight?.toLocaleString()} x 5 nights</span>
+                                    <span>₹{(displayPricing?.perNight * 5).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-row">
                                     <span>Cleaning fee</span>
-                                    <span>₹{pricing?.cleaning || 0}</span>
+                                    <span>₹{displayPricing?.cleaning?.toLocaleString() || 0}</span>
                                 </div>
                                 <div className="summary-row total">
                                     <span>Total before taxes</span>
-                                    <span>₹{(pricing?.perNight * 5) + Number(pricing?.cleaning || 0)}</span>
+                                    <span>₹{((displayPricing?.perNight * 5) + Number(displayPricing?.cleaning || 0)).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>

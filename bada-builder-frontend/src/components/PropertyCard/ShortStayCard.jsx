@@ -61,7 +61,7 @@ const ShortStayCard = ({ listing, index = 0, favorites, onToggleFavorite }) => {
 
                 <div className="short-stay-property-footer">
                     <div className="short-stay-property-price">
-                        <span className="short-stay-price-amount">₹{listing.pricing?.perNight?.toLocaleString() || 'N/A'}</span>
+                        <span className="short-stay-price-amount">₹{(listing.guest_pricing?.perNight || listing.pricing?.perNight || 0).toLocaleString()}</span>
                         <span className="short-stay-price-unit">/ night</span>
                     </div>
                 </div>
