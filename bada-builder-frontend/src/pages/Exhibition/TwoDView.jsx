@@ -164,6 +164,12 @@ const renderUnitCard = (unit, config, onUnitClick, isAdminView, activeMenu, setA
         );
     }
 
+    console.log(`🗂️ Rendering Unit Card: ${unit.unit_number}`, {
+        hasImageUrl: !!unit.unit_image_url,
+        imageUrl: unit.unit_image_url,
+        status: unit.status
+    });
+
     return (
         <motion.button
             key={unit.id}
@@ -214,9 +220,29 @@ const renderUnitCard = (unit, config, onUnitClick, isAdminView, activeMenu, setA
 
             {/* Top Section */}
             <div className="w-full flex flex-col items-center gap-1.5">
-                <div className={`p-1 rounded-lg ${config.bg} ${config.color}`}>
-                    <TypeIcon size={14} />
-                </div>
+                {(() => {
+                    const imgUrl = unit.unit_image_url || unit.image_url || (unit.images && unit.images[0]);
+                    if (imgUrl) {
+                        return (
+                            <div className="w-full h-12 mb-1 rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
+                                <img
+                                    src={imgUrl}
+                                    alt={`Unit ${unit.unit_number}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        console.error('❌ TwoDView Image Load Error:', imgUrl);
+                                        e.target.style.display = 'none';
+                                    }}
+                                />
+                            </div>
+                        );
+                    }
+                    return (
+                        <div className={`p-1 rounded-lg ${config.bg} ${config.color}`}>
+                            <TypeIcon size={14} />
+                        </div>
+                    );
+                })()}
                 <span className={`w-full text-[7px] md:text-[8px] font-black uppercase px-1 py-0.5 rounded-md ${config.bg} ${config.color} border ${config.border} text-center leading-none truncate`}>
                     {config.label}
                 </span>

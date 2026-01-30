@@ -741,7 +741,7 @@ const PropertyDetails = () => {
               className="fullscreen-image-container"
               onClick={(e) => e.stopPropagation()} // Prevent close on image click
             >
-              <motion.img
+              <Motion.img
                 key={currentImageIndex}
                 src={propertyImages[currentImageIndex]}
                 alt={`Full Screen Image ${currentImageIndex + 1}`}

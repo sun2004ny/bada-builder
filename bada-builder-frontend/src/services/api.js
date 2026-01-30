@@ -506,6 +506,18 @@ export const liveGroupDynamicAPI = {
       body: JSON.stringify({ status }),
     });
   },
+
+  uploadUnitImage: async (file) => {
+    const formData = new FormData();
+    formData.append('images', file); // Backend expects 'images' field for live_grouping
+    // We can use the generic property upload or a specific one. 
+    // Let's add a generic image upload endpoint if needed, but for now we can reuse property upload logic 
+    // or just assume we'll use a new route /api/users/profile-photo style if we want single upload.
+    // Actually, propertiesAPI.create uses /properties.
+    // Let's add a dedicated upload endpoint in backend if it's missing, but wait, 
+    // I can just add a simple upload route in live-group-dynamic.js.
+    return uploadFile('/live-grouping-dynamic/admin/upload-image', formData);
+  }
 };
 
 // ==================== COMPLAINTS API ====================

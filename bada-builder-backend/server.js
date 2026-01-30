@@ -3,6 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import dns from 'node:dns';
+
+// Fix for ENOTFOUND errors on some Windows/Node versions preferring IPv6
+dns.setDefaultResultOrder('ipv4first');
 
 // Import routes
 import authRoutes from './routes/auth.js';

@@ -625,7 +625,10 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                             position={[xPos, 0, zPos]}
                             index={idx}
                             units={b.units}
-                            onUnitClick={onUnitClick}
+                            onUnitClick={(u) => {
+                                console.log('🏘️ SharedTwinVilla Clicked:', u);
+                                onUnitClick(u);
+                            }}
                         />
                     );
                 } else if (b.type === 'Plot') {
@@ -634,7 +637,10 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                             key={`plot-${idx}`}
                             position={[xPos, 0, zPos]}
                             unit={b.units[0]}
-                            onUnitClick={onUnitClick}
+                            onUnitClick={(u) => {
+                                console.log('🗺️ Plot Clicked:', u);
+                                onUnitClick(u);
+                            }}
                         />
                     );
                 } else {
@@ -644,7 +650,10 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                             position={[xPos, 0, zPos]}
                             index={idx}
                             unit={b.units[0]}
-                            onUnitClick={onUnitClick}
+                            onUnitClick={(u) => {
+                                console.log('🏠 Bungalow Clicked:', u);
+                                onUnitClick(u);
+                            }}
                         />
                     );
                 }
@@ -1528,6 +1537,7 @@ const ThreeDView = () => {
             return;
         }
 
+        console.log('🎯 Selected Unit Details:', unit);
         setSelectedUnit(unit);
         setShowHoldOptions(false);
     };
@@ -1826,19 +1836,39 @@ const ThreeDView = () => {
 
                 {/* Selection Modal */}
                 {selectedUnit && (
-                    <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-all duration-300">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
+                            className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 relative flex flex-col overflow-hidden"
+                            style={{ maxHeight: 'min(92vh, 850px)' }}
                         >
-                            <div className="p-6">
+                            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                                {(() => {
+                                    const imgUrl = selectedUnit.unit_image_url || selectedUnit.image_url || (selectedUnit.images && selectedUnit.images[0]);
+                                    if (!imgUrl) return null;
+
+                                    console.log('🖼️ Selection Modal Image URL:', imgUrl);
+                                    return (
+                                        <div className="w-full h-44 mb-0.5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 shrink-0">
+                                            <img
+                                                src={imgUrl}
+                                                alt={`Unit ${selectedUnit.unit_number}`}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    console.error('❌ Selection Modal Image Load Error:', imgUrl);
+                                                    e.target.style.display = 'none';
+                                                }}
+                                            />
+                                        </div>
+                                    );
+                                })()}
                                 {/* Close & Header */}
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="space-y-0.5">
+                                <div className="flex justify-between items-start mb-0.5">
+                                    <div className="space-y-0">
                                         <div className="flex items-center gap-2">
-                                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                                            <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
                                                 {selectedUnit.floor_number === -1 ? 'Slot' : 'Unit'} {selectedUnit.unit_number}
                                             </h2>
                                             {selectedUnit.status === 'locked' && (
@@ -1847,7 +1877,7 @@ const ThreeDView = () => {
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider leading-tight">
                                             {project.type === 'Plot'
                                                 ? `${selectedUnit.unit_type || 'Plot'}${selectedUnit.is_corner ? ' • Corner' : ''}${selectedUnit.facing ? ` • ${selectedUnit.facing} Facing` : ''}`
                                                 : selectedUnit.floor_number === -1
@@ -1860,9 +1890,9 @@ const ThreeDView = () => {
                                     </div>
                                     <button
                                         onClick={() => setSelectedUnit(null)}
-                                        className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                                        className="p-2 hover:bg-slate-100 rounded-2xl transition-all active:scale-95 text-slate-400 hover:text-slate-600 shadow-sm border border-slate-100"
                                     >
-                                        <X size={18} />
+                                        <X size={20} strokeWidth={3} />
                                     </button>
                                 </div>
 
@@ -1871,8 +1901,8 @@ const ThreeDView = () => {
                                     const { finalPrice, bookingAmount, area } = getEffectiveUnitDetails(selectedUnit, project);
 
                                     return (
-                                        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 mb-4 space-y-3">
-                                            <div className="flex justify-between items-center border-b border-slate-200/50 pb-2.5">
+                                        <div className="bg-slate-50/80 rounded-2xl p-2 border border-slate-100 mb-1 space-y-1.5">
+                                            <div className="flex justify-between items-center border-b border-slate-200/50 pb-1.5">
                                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
                                                 <span className="text-xl font-black text-slate-900">
                                                     {finalPrice >= 100000
@@ -1902,7 +1932,7 @@ const ThreeDView = () => {
 
                                 {/* Action Area */}
                                 {!showHoldOptions ? (
-                                    <div className="space-y-4">
+                                    <div className="space-y-2.5">
                                         {/* Real-time Status Disclaimer */}
                                         {(() => {
                                             const { bookingAmount } = getEffectiveUnitDetails(selectedUnit, project);
@@ -1952,10 +1982,10 @@ const ThreeDView = () => {
                                             </button>
                                         </div>
 
-                                        <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-[0.2em]">Secure Encryption Active</p>
+                                        <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-[0.2em] mt-1">Secure Encryption Active</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4 animate-in slide-in-from-bottom-5 duration-300">
+                                    <div className="space-y-3 animate-in slide-in-from-bottom-5 duration-300">
                                         <div className="flex items-center gap-3 justify-center mb-2">
                                             <div className="h-px bg-slate-100 flex-1"></div>
                                             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Select Duration</h3>
@@ -1993,114 +2023,118 @@ const ThreeDView = () => {
                 )}
 
                 {/* 3D Canvas */}
-                {viewMode === '3d' && (
-                    <Canvas
-                        shadows={property?.type !== 'Plot'}
-                        className="w-full h-full"
-                        style={{ background: property?.type === 'Plot' ? '#4d7c32' : '#0f172a' }}
-                        frameloop="always"
-                    >
-                        <PerspectiveCamera
-                            makeDefault
-                            position={project?.type === 'Plot' ? [40, 30, 40] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [40, 20, 50] : [50, 50, 100]}
-                            fov={40}
-                        />
-                        <Sky sunPosition={[100, 20, 50]} />
-                        <ambientLight intensity={0.7} />
-                        <directionalLight
-                            position={[50, 100, 50]}
-                            intensity={1.5}
-                            castShadow
-                            shadow-mapSize={[2048, 2048]}
-                        />
-                        <OrbitControls
-                            ref={controlsRef}
-                            target={project?.type === 'Plot' ? [0, 0, 0] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
-                            maxPolarAngle={Math.PI / 2.1}
-                            enableDamping={true}
-                            dampingFactor={0.12} // Increased for snappier stops
-                            rotateSpeed={0.5}   // Reduced sensitivity
-                            panSpeed={0.5}      // Reduced sensitivity
-                            zoomSpeed={0.7}     // Reduced sensitivity
-                        />
-                        <CameraController movement={movement} controlsRef={controlsRef} />
+                {
+                    viewMode === '3d' && (
+                        <Canvas
+                            shadows={property?.type !== 'Plot'}
+                            className="w-full h-full"
+                            style={{ background: property?.type === 'Plot' ? '#4d7c32' : '#0f172a' }}
+                            frameloop="always"
+                        >
+                            <PerspectiveCamera
+                                makeDefault
+                                position={project?.type === 'Plot' ? [40, 30, 40] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [40, 20, 50] : [50, 50, 100]}
+                                fov={40}
+                            />
+                            <Sky sunPosition={[100, 20, 50]} />
+                            <ambientLight intensity={0.7} />
+                            <directionalLight
+                                position={[50, 100, 50]}
+                                intensity={1.5}
+                                castShadow
+                                shadow-mapSize={[2048, 2048]}
+                            />
+                            <OrbitControls
+                                ref={controlsRef}
+                                target={project?.type === 'Plot' ? [0, 0, 0] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
+                                maxPolarAngle={Math.PI / 2.1}
+                                enableDamping={true}
+                                dampingFactor={0.12} // Increased for snappier stops
+                                rotateSpeed={0.5}   // Reduced sensitivity
+                                panSpeed={0.5}      // Reduced sensitivity
+                                zoomSpeed={0.7}     // Reduced sensitivity
+                            />
+                            <CameraController movement={movement} controlsRef={controlsRef} />
 
-                        {/* Normalizing Type for Robust Comparison */}
-                        {(() => {
-                            const typeNorm = (property?.type || '').toLowerCase().trim();
-                            // Use ResidentialColony for anything that isn't an Apartment (Mixed, Plot, Bungalow, Villa, etc.)
-                            const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
+                            {/* Normalizing Type for Robust Comparison */}
+                            {(() => {
+                                const typeNorm = (property?.type || '').toLowerCase().trim();
+                                // Use ResidentialColony for anything that isn't an Apartment (Mixed, Plot, Bungalow, Villa, etc.)
+                                const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
 
-                            if (!isApartment) {
-                                const isStrictlyPlot = typeNorm.includes('plot') || typeNorm.includes('land');
+                                if (!isApartment) {
+                                    const isStrictlyPlot = typeNorm.includes('plot') || typeNorm.includes('land');
 
-                                if (isStrictlyPlot) {
+                                    if (isStrictlyPlot) {
+                                        return (
+                                            <PlotColony
+                                                position={[0, 0, 0]}
+                                                propertyData={property}
+                                                project={project}
+                                                onUnitClick={handleUnitClick}
+                                                showPremium={true}
+                                                selectedUnit={selectedUnit}
+                                            />
+                                        );
+                                    }
+
                                     return (
-                                        <PlotColony
+                                        <ResidentialColony
                                             position={[0, 0, 0]}
                                             propertyData={property}
                                             project={project}
                                             onUnitClick={handleUnitClick}
-                                            showPremium={true}
-                                            selectedUnit={selectedUnit}
                                         />
                                     );
+                                } else {
+                                    return (
+                                        <group>
+                                            {project.towers.map((tower, idx) => {
+                                                const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                                                const towerUnits = tower.units || [];
+                                                const lowestFloor = towerUnits.length > 0
+                                                    ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
+                                                    : 1;
+                                                return (
+                                                    <Tower
+                                                        key={tower.id}
+                                                        tower={tower}
+                                                        position={[posX, 0, 0]}
+                                                        onUnitClick={handleUnitClick}
+                                                        lowestFloor={lowestFloor}
+                                                    />
+                                                );
+                                            })}
+                                        </group>
+                                    );
                                 }
+                            })()}
 
-                                return (
-                                    <ResidentialColony
-                                        position={[0, 0, 0]}
-                                        propertyData={property}
-                                        project={project}
-                                        onUnitClick={handleUnitClick}
-                                    />
-                                );
-                            } else {
-                                return (
-                                    <group>
-                                        {project.towers.map((tower, idx) => {
-                                            const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
-                                            const towerUnits = tower.units || [];
-                                            const lowestFloor = towerUnits.length > 0
-                                                ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
-                                                : 1;
-                                            return (
-                                                <Tower
-                                                    key={tower.id}
-                                                    tower={tower}
-                                                    position={[posX, 0, 0]}
-                                                    onUnitClick={handleUnitClick}
-                                                    lowestFloor={lowestFloor}
-                                                />
-                                            );
-                                        })}
-                                    </group>
-                                );
-                            }
-                        })()}
-
-                        {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
-                        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-                            <planeGeometry args={[1000, 1000]} />
-                            <meshStandardMaterial color="#e2e8f0" />
-                        </mesh>
-                        <gridHelper args={[200, 40]} position={[0, -0.4, 0]} colorCenterLine="#94a3b8" />
-                    </Canvas>
-                )}
+                            {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
+                            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+                                <planeGeometry args={[1000, 1000]} />
+                                <meshStandardMaterial color="#e2e8f0" />
+                            </mesh>
+                            <gridHelper args={[200, 40]} position={[0, -0.4, 0]} colorCenterLine="#94a3b8" />
+                        </Canvas>
+                    )
+                }
 
                 {/* 2D View Overlay - Also contained within the frame */}
-                {viewMode === '2d' && (
-                    <div className="absolute inset-0 z-0 bg-slate-50">
-                        <TwoDView
-                            project={project}
-                            onUnitClick={handleUnitClick}
-                        />
-                    </div>
-                )}
-            </div>
+                {
+                    viewMode === '2d' && (
+                        <div className="absolute inset-0 z-0 bg-slate-50">
+                            <TwoDView
+                                project={project}
+                                onUnitClick={handleUnitClick}
+                            />
+                        </div>
+                    )
+                }
+            </div >
 
 
-        </div>
+        </div >
     );
 };
 

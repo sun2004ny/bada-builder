@@ -22,6 +22,7 @@ import {
   Building,
   TrendingUp,
   MessageSquare,
+  Users,
   Star
 } from 'lucide-react';
 import { adminAPI } from '../../services/adminApi';
@@ -42,6 +43,8 @@ const PropertiesManagement = () => {
   const [selectedProperties, setSelectedProperties] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSelection, setShowSelection] = useState(false);
+  const [selectedSource, setSelectedSource] = useState('Individual');
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -220,8 +223,9 @@ const PropertiesManagement = () => {
           </button>
           <button
             onClick={() => {
-              setSelectedProperty(null);
+              setSelectedSource('By Bada Builder');
               setShowAddModal(true);
+              setSelectedProperty(null);
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
           >
@@ -504,6 +508,7 @@ const PropertiesManagement = () => {
           <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
         </div>
       )}
+
       {/* Add/Edit Modal */}
       <AdminPropertyModal
         isOpen={showAddModal || showEditModal}
@@ -514,6 +519,7 @@ const PropertiesManagement = () => {
         }}
         onSave={handleSave}
         property={selectedProperty}
+        initialSource={selectedSource}
       />
     </div>
   );
