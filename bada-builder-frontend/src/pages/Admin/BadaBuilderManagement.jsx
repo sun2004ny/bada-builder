@@ -18,6 +18,9 @@ import {
   Upload,
   Settings
 } from 'lucide-react';
+import AdminPropertyModal from './AdminPropertyModal';
+import { adminAPI } from '../../services/adminApi';
+import { motion } from 'framer-motion';
 
 const BadaBuilderManagement = () => {
   const [projects, setProjects] = useState([]);
@@ -26,6 +29,9 @@ const BadaBuilderManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedProjects, setSelectedProjects] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     fetchBadaBuilderProjects();
@@ -34,7 +40,7 @@ const BadaBuilderManagement = () => {
   const fetchBadaBuilderProjects = async () => {
     try {
       setLoading(true);
-      
+
       // Mock data for Bada Builder exclusive projects
       const mockProjects = [
         {
@@ -150,12 +156,12 @@ const BadaBuilderManagement = () => {
           green_certified: false
         }
       ];
-      
+
       setTimeout(() => {
         setProjects(mockProjects);
         setLoading(false);
       }, 500);
-      
+
     } catch (error) {
       console.error('Error fetching Bada Builder projects:', error);
       setLoading(false);
@@ -164,24 +170,24 @@ const BadaBuilderManagement = () => {
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.type.toLowerCase().includes(searchTerm.toLowerCase());
+      project.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.type.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || project.category === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
   const handleStatusChange = (projectId, newStatus) => {
-    setProjects(projects.map(project => 
-      project.id === projectId 
+    setProjects(projects.map(project =>
+      project.id === projectId
         ? { ...project, status: newStatus }
         : project
     ));
   };
 
   const handleFeaturedToggle = (projectId) => {
-    setProjects(projects.map(project => 
-      project.id === projectId 
+    setProjects(projects.map(project =>
+      project.id === projectId
         ? { ...project, featured: !project.featured }
         : project
     ));
@@ -240,7 +246,13 @@ const BadaBuilderManagement = () => {
             <Download className="h-4 w-4" />
             <span>Export</span>
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+          <button
+            onClick={() => {
+              setSelectedProject(null);
+              setIsModalOpen(true);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
             <span>Add Project</span>
           </button>
@@ -367,7 +379,7 @@ const BadaBuilderManagement = () => {
                 )}
               </div>
             </div>
-            
+
             <div className="p-6">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{project.title}</h3>
@@ -376,7 +388,7 @@ const BadaBuilderManagement = () => {
                   <span className="text-sm text-gray-600 dark:text-gray-400">{project.rating}</span>
                 </div>
               </div>
-              
+
               <div className="space-y-2 mb-4">
                 <div className="flex items-center justify-between">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(project.category)}`}>
@@ -401,7 +413,7 @@ const BadaBuilderManagement = () => {
                   <span>{project.completion_percentage}%</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-600 h-2 rounded-full"
                     style={{ width: `${project.completion_percentage}%` }}
                   ></div>
@@ -448,15 +460,20 @@ const BadaBuilderManagement = () => {
                 </button>
                 <button
                   onClick={() => handleFeaturedToggle(project.id)}
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    project.featured 
-                      ? 'bg-yellow-600 text-white hover:bg-yellow-700' 
-                      : 'bg-gray-600 text-white hover:bg-gray-700'
-                  }`}
+                  className={`px-3 py-2 rounded-lg transition-colors ${project.featured
+                    ? 'bg-yellow-600 text-white hover:bg-yellow-700'
+                    : 'bg-gray-600 text-white hover:bg-gray-700'
+                    }`}
                 >
                   <Star className="h-4 w-4" />
                 </button>
-                <button className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <button
+                  onClick={() => {
+                    setSelectedProject(project);
+                    setIsModalOpen(true);
+                  }}
+                  className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
                   <Edit className="h-4 w-4" />
                 </button>
                 <select
@@ -476,13 +493,26 @@ const BadaBuilderManagement = () => {
         ))}
       </div>
 
-      {filteredProjects.length === 0 && (
-        <div className="text-center py-12">
-          <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No projects found</h3>
-          <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
-        </div>
-      )}
+      <AdminPropertyModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        initialSource="By Bada Builder"
+        property={selectedProject}
+        onSave={async (data) => {
+          try {
+            if (selectedProject) {
+              await adminAPI.updateAdminProperty(selectedProject.id, data);
+            } else {
+              await adminAPI.addAdminProperty(data);
+            }
+            setIsModalOpen(false);
+            fetchBadaBuilderProjects(); // Refresh list
+          } catch (error) {
+            console.error('Error saving property:', error);
+            alert('Failed to save property. Please try again.');
+          }
+        }}
+      />
     </div>
   );
 };

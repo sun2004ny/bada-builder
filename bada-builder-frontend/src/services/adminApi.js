@@ -179,7 +179,7 @@ export const adminAPI = {
     try {
       return await apiRequest('/admin/properties', {
         method: 'POST',
-        body: propertyData
+        body: JSON.stringify(propertyData)
       });
     } catch (error) {
       console.error('Error adding admin property:', error);
@@ -191,7 +191,7 @@ export const adminAPI = {
     try {
       return await apiRequest(`/admin/properties/${propertyId}`, {
         method: 'PUT',
-        body: propertyData
+        body: JSON.stringify(propertyData)
       });
     } catch (error) {
       console.error('Error updating admin property:', error);
