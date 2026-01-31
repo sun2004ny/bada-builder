@@ -64,6 +64,7 @@
     justify-content: center;
     font-size: 14px;
     transition: background 0.1s;
+    color: #222;
 }
 
 .back-circle:hover {
@@ -84,7 +85,6 @@
 }
 
 
-
 .trip-info-row {
     display: flex;
     justify-content: space-between;
@@ -100,106 +100,77 @@
 }
 
 .trip-info-row span {
-    display: block;
     font-size: 16px;
     color: #717171;
 }
 
-.edit-btn {
-    background: none;
-    border: none;
-    text-decoration: underline;
+.edit-link {
     font-weight: 600;
-    font-size: 16px;
-    cursor: pointer;
+    text-decoration: underline;
     color: #222;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 16px;
 }
 
-.divider {
+.section-divider {
     height: 1px;
     background: #ddd;
     margin: 32px 0;
 }
 
-/* Payment Options */
-.payment-options {
+/* Payment Methods */
+.payment-methods {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-.payment-card {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 16px;
+.payment-option {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 16px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border 0.2s;
 }
 
-.payment-card.selected {
+.payment-option.selected {
     border: 2px solid #222;
     background: #f7f7f7;
 }
 
-.payment-icon {
-    width: 40px;
+.payment-label {
     display: flex;
     align-items: center;
-}
-
-.payment-details span {
-    font-weight: 600;
+    gap: 12px;
     font-size: 16px;
+    font-weight: 500;
 }
 
-.radio-circle {
+.radio-circle input {
     width: 20px;
     height: 20px;
-    border-radius: 50%;
-    border: 1px solid #b0b0b0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    accent-color: #222;
 }
 
-.payment-card.selected .radio-circle {
-    border-color: #222;
-    background: #222;
-}
-
-.radio-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: white;
-}
-
-/* Ground Rules */
-.reserve-rules ul {
-    margin-top: 16px;
-    padding-left: 20px;
-    color: #222;
-}
-
-.reserve-rules li {
-    margin-bottom: 8px;
-}
 
 /* Confirm Button */
 .confirm-pay-btn {
+    width: 100%;
+    max-width: 320px; /* Or full width depending on design choice */
+    padding: 14px 24px;
     background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D80565 100%);
     color: white;
-    width: 100%;
-    max-width: 400px; /* Or 100% depending on design pref */
-    padding: 14px 24px;
-    font-size: 18px;
-    font-weight: 600;
     border: none;
     border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
+    margin-top: 16px;
     transition: transform 0.1s;
 }
 
@@ -212,104 +183,108 @@
     cursor: not-allowed;
 }
 
-/* Right Column (Sticky Card) */
+
+/* Right Column - Sticky Price Card */
 .reserve-right {
     position: relative;
 }
 
-.price-card-sticky {
-    position: sticky;
-    top: 120px;
+.price-card {
     border: 1px solid #ddd;
     border-radius: 12px;
     padding: 24px;
     background: white;
+    position: sticky;
+    top: 100px;
 }
 
-.property-preview-header {
+/* Price Card Header */
+.price-card-header {
     display: flex;
     gap: 16px;
     margin-bottom: 24px;
 }
 
-.property-preview-header img {
-    width: 100px;
-    height: 100px; /* Square per Airbnb design usually, or 4:3 */
+.price-card-img {
+    width: 104px;
+    height: 104px;
     object-fit: cover;
     border-radius: 8px;
 }
 
-.property-preview-info {
+.price-card-info {
     flex: 1;
 }
 
-.property-type {
+.superhost-tag {
     font-size: 12px;
     color: #717171;
     margin-bottom: 4px;
     display: block;
 }
 
-.property-preview-info h4 {
+.price-card-info h4 {
     font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    line-height: 1.25rem;
+    font-weight: 400;
+    margin-bottom: 4px;
+    line-height: 1.4;
     color: #717171;
 }
 
-.preview-rating {
-    font-size: 12px;
+.mini-rating {
     display: flex;
     align-items: center;
     gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
-.divider-light {
-    height: 1px;
-    background: #eaeaea;
-    margin: 16px 0;
-}
-
-.price-breakdown h3 {
+/* Price Breakdown */
+.price-card-breakdown h3 {
     font-size: 22px;
     font-weight: 600;
     margin-bottom: 24px;
 }
 
-.breakdown-row {
+.price-row {
     display: flex;
     justify-content: space-between;
     margin-bottom: 12px;
+    font-size: 16px;
     color: #222;
 }
 
-.breakdown-row.total {
-    font-weight: 800;
-    font-size: 16px;
-    margin-top: 24px;
+.price-row span:last-child {
+    font-weight: 400;
 }
 
-/* Mobile Responsive */
-@media (max-width: 900px) {
+.price-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
     .reserve-main-grid {
         grid-template-columns: 1fr;
+        padding: 24px;
         gap: 40px;
     }
 
+    .reserve-right {
+        order: -1; /* Show price card on top in mobile? Or keep bottom? Airbnb usually keeps top summary or bottom. */
+        /* For "Confirm and pay", details usually first. */
+        order: 1; 
+    }
+    
+    .price-card {
+        position: static;
+    }
+    
     .reserve-left {
         padding-right: 0;
-        order: 2; /* On mobile, sometimes details come first, but usually form is primary. Let's keep normal order for now or swap if needed */
-    }
-
-    .reserve-right {
-        order: 1;
-        margin-bottom: 24px;
-    }
-
-    .price-card-sticky {
-        position: static;
-        border: none; /* Often cleaner on mobile to just look like a section */
-        padding: 0;
     }
 }

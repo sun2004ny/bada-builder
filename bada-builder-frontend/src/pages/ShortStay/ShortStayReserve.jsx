@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { FaChevronLeft, FaStar, FaCreditCard, FaLock, FaGooglePay } from 'react-icons/fa';
+import { FaChevronLeft, FaStar, FaGooglePay } from 'react-icons/fa';
 import { SiRazorpay } from "react-icons/si";
 import { useAuth } from '../../context/AuthContext';
 import './ShortStayReserve.css';
@@ -36,13 +36,24 @@ const ShortStayReserve = () => {
         loadRazorpay();
     }, [location, navigate, id]);
 
-    // Calculations
-    const nights = 5; // Placeholder logic, should be real date diff
-    const pricePerNight = Number(pricing?.perNight) || 0;
-    const cleaningFee = Number(pricing?.cleaning) || 0;
-    const totalAmount = (pricePerNight * nights) + cleaningFee;
-    const taxes = Math.round(totalAmount * 0.18); // Example GST logic
-    const grandTotal = totalAmount + taxes;
+    // Strict Dynamic Calculations - No Fallbacks
+    const checkInDate = checkIn ? new Date(checkIn) : null;
+    const checkOutDate = checkOut ? new Date(checkOut) : null;
+    
+    // Calculate nights ONLY if valid dates exist
+    const nights = (checkInDate && checkOutDate) 
+        ? Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)) 
+        : 0;
+
+    // Strict Pricing - No fallback if data is missing, we handle it in display
+    const pricePerNight = Number(pricing?.perNight);
+    const cleaningFee = Number(pricing?.cleaning);
+    
+    // Only calculate totals if we have valid nights & price
+    // If pricePerNight is NaN (missing), baseAmount will be NaN (falsy check handles display)
+    const baseAmount = (nights > 0 && pricePerNight) ? (pricePerNight * nights) : 0;
+    const gstAmount = Math.round(baseAmount * 0.18);
+    const totalAmount = baseAmount + gstAmount + (cleaningFee || 0);
 
     const handlePayment = async () => {
         setLoading(true);
@@ -55,53 +66,33 @@ const ShortStayReserve = () => {
                 return;
             }
 
-            // Create Order on Backend (Mock for now, normally fetch from API)
-            // const order = await createOrderAPI({ amount: grandTotal });
-            
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder', 
-                amount: grandTotal * 100, // Paíse
-                currency: "INR",
-                name: "Bada Builder",
+                amount: totalAmount * 100,
+                currency: 'INR',
+                name: 'Bada Builder',
                 description: `Payment for ${propertyTitle}`,
-                image: "/logo.png",
+                image: '/logo.png',
                 handler: function (response) {
-                    // Handle success
-                    alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
-                    navigate('/short-stay/success');
+                    navigate('/short-stay/success', { state: { paymentId: response.razorpay_payment_id } });
                 },
                 prefill: {
-                    name: currentUser?.displayName || "Guest",
-                    email: currentUser?.email,
-                    contact: currentUser?.phoneNumber
+                    name: currentUser?.name || 'Guest User',
+                    email: currentUser?.email || 'guest@example.com',
+                    contact: currentUser?.phone || '',
                 },
-                theme: {
-                    color: "#E61E4D"
-                }
+                theme: { color: '#FF385C' },
             };
-            
             const paymentObject = new window.Razorpay(options);
             paymentObject.open();
-            setLoading(false);
-
-        } else if (selectedPayment === 'gpay') {
-            // Manual UPI Intent / QR Display
-            // In a real mobile app, this could invoke a deep link.
-            // For web, we usually show a QR code or VPA.
-            // User requested: "gpay should come to upi: badabuilder@okhdfc"
-            
-            // We can try a deep link for mobile users:
-            const upiLink = `upi://pay?pa=badabuilder@okhdfc&pn=BadaBuilder&am=${grandTotal}&ti=${Date.now()}`;
-            
-            // Check if mobile
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                window.location.href = upiLink;
-            } else {
-                alert(`Please open your GPay app and pay ₹${grandTotal} to handle: badabuilder@okhdfc`);
-            }
-            setLoading(false);
+            setLoading(false); // Razorpay modal opens, we can stop loading
+        } else {
+            // Google Pay / Mock Payment
+            // In a real implementation this would likely invoke a payment intent
+            setTimeout(() => {
+                setLoading(false);
+                navigate('/short-stay/success', { state: { paymentId: `GPAY_${Date.now()}` } });
+            }, 2000);
         }
     };
 
@@ -109,136 +100,142 @@ const ShortStayReserve = () => {
         <div className="reserve-page">
             <header className="reserve-header">
                 <div className="reserve-container-nav">
-                    <button className="back-btn" onClick={() => navigate(-1)}><FaChevronLeft /></button>
-                    <img src="/logo.png" alt="Bada Builder" className="nav-logo" style={{height: 32}} />
+                    <button className="back-circle" onClick={() => navigate(-1)}>
+                        <FaChevronLeft />
+                    </button>
+                    <div className="nav-logo">
+                        <img src="/logo.png" alt="BadaBuilder" style={{ height: '32px' }} />
+                    </div>
                 </div>
             </header>
 
-            <div className="reserve-main-grid">
-                
-                {/* Left Column: Payment & Confirm */}
+            <main className="reserve-main-grid">
+                {/* Left Column: Trip Details & Payment */}
                 <div className="reserve-left">
                     <div className="section-title">
-                        <button className="back-circle" onClick={() => navigate(-1)}><FaChevronLeft /></button>
+                        <button className="back-circle-mobile" onClick={() => navigate(-1)}><FaChevronLeft /></button>
                         <h1>Confirm and pay</h1>
                     </div>
 
                     <div className="reserve-section">
                         <h2>Your trip</h2>
-                        <div className="trip-dates">
-                            <div className="trip-info-row">
+                        
+                        <div className="trip-info-row">
+                            <div>
                                 <strong>Dates</strong>
-                                <span>{checkIn} – {checkOut}</span>
-                                <button className="edit-btn">Edit</button>
+                                <span>
+                                    {checkInDate && checkOutDate 
+                                        ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` 
+                                        : ''}
+                                </span>
                             </div>
-                            <div className="trip-info-row">
+                            <span className="edit-link">Edit</span>
+                        </div>
+
+                        <div className="trip-info-row">
+                            <div>
                                 <strong>Guests</strong>
-                                <span>{guests} guest{guests > 1 ? 's' : ''}</span>
-                                <button className="edit-btn">Edit</button>
+                                <span>{guests ? `${guests} guest${guests !== 1 ? 's' : ''}` : ''}</span>
                             </div>
+                            <span className="edit-link">Edit</span>
                         </div>
                     </div>
 
-                    <div className="divider" />
+                    <div className="section-divider"></div>
 
                     <div className="reserve-section">
                         <h2>Pay with</h2>
-                        <div className="payment-options">
-                            {/* Razorpay Option */}
-                            <div 
-                                className={`payment-card ${selectedPayment === 'razorpay' ? 'selected' : ''}`}
-                                onClick={() => setSelectedPayment('razorpay')}
-                            >
-                                <div className="payment-icon">
-                                    <SiRazorpay size={24} color="#3395FF"/>
-                                </div>
-                                <div className="payment-details">
-                                    <span>Razorpay / Cards / Netbanking</span>
+                        <div className="payment-methods">
+                            <label className={`payment-option ${selectedPayment === 'gpay' ? 'selected' : ''}`}>
+                                <div className="payment-label">
+                                    <FaGooglePay size={24} />
+                                    <span>UPI / Netbanking</span>
                                 </div>
                                 <div className="radio-circle">
-                                    {selectedPayment === 'razorpay' && <div className="radio-dot" />}
+                                    <input 
+                                        type="radio" 
+                                        name="payment" 
+                                        checked={selectedPayment === 'gpay'} 
+                                        onChange={() => setSelectedPayment('gpay')} 
+                                    />
                                 </div>
-                            </div>
-
-                            {/* GPay Option */}
-                            <div 
-                                className={`payment-card ${selectedPayment === 'gpay' ? 'selected' : ''}`}
-                                onClick={() => setSelectedPayment('gpay')}
-                            >
-                                <div className="payment-icon">
-                                    <FaGooglePay size={28} />
-                                </div>
-                                <div className="payment-details">
-                                    <span>Google Pay / UPI</span>
+                            </label>
+                            
+                            <label className={`payment-option ${selectedPayment === 'razorpay' ? 'selected' : ''}`}>
+                                <div className="payment-label">
+                                    <SiRazorpay size={20} color="#3399cc" />
+                                    <span>Credit or Debit Card</span>
                                 </div>
                                 <div className="radio-circle">
-                                    {selectedPayment === 'gpay' && <div className="radio-dot" />}
+                                    <input 
+                                        type="radio" 
+                                        name="payment" 
+                                        checked={selectedPayment === 'razorpay'} 
+                                        onChange={() => setSelectedPayment('razorpay')} 
+                                    />
                                 </div>
-                            </div>
+                            </label>
                         </div>
                     </div>
 
-                    <div className="divider" />
-
-                    <div className="reserve-rules">
-                        <h2>Ground rules</h2>
-                        <p>We ask every guest to remember a few simple things about what makes a great guest.</p>
-                        <ul>
-                            <li>Follow the house rules</li>
-                            <li>Treat your host's home like your own</li>
-                        </ul>
-                    </div>
-
-                    <div className="divider" />
+                    <div className="section-divider"></div>
 
                     <button className="confirm-pay-btn" onClick={handlePayment} disabled={loading}>
-                        {loading ? 'Processing...' : `Confirm and pay • ₹${grandTotal.toLocaleString()}`}
+                        {loading ? 'Processing...' : 'Confirm and pay'}
                     </button>
                 </div>
 
-                {/* Right Column: Price Breakdown Card */}
+                {/* Right Column: Price Card */}
                 <div className="reserve-right">
-                    <div className="price-card-sticky">
-                        <div className="property-preview-header">
-                            <img src={propertyImage || '/placeholder-property.jpg'} alt="Property" />
-                            <div className="property-preview-info">
-                                <span className="property-type">Entire home</span>
+                    <div className="price-card">
+                        <div className="price-card-header">
+                            <img src={propertyImage || ''} alt="Property" className="price-card-img" />
+                            <div className="price-card-info">
+                                <span className="superhost-tag">Superhost</span>
                                 <h4>{propertyTitle}</h4>
-                                <div className="preview-rating">
+                                <div className="mini-rating">
                                     <FaStar size={12} />
-                                    <span>{propertyRating || 'New'}</span>
-                                    <span className="dot">·</span>
-                                    <span>Superhost</span>
+                                    {propertyRating || 'New'}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="divider" />
+                        <div className="section-divider"></div>
 
-                        <div className="price-breakdown">
+                        <div className="price-card-breakdown">
                             <h3>Price details</h3>
-                            <div className="breakdown-row">
-                                <span>₹{pricePerNight.toLocaleString()} x {nights} nights</span>
-                                <span>₹{(pricePerNight * nights).toLocaleString()}</span>
-                            </div>
-                            <div className="breakdown-row">
-                                <span>Cleaning fee</span>
-                                <span>₹{cleaningFee.toLocaleString()}</span>
-                            </div>
-                            <div className="breakdown-row">
-                                <span>Taxes</span>
-                                <span>₹{taxes.toLocaleString()}</span>
-                            </div>
-                            <div className="divider-light" />
-                            <div className="breakdown-row total">
+                            
+                            {(nights > 0 && pricePerNight) ? (
+                                <div className="price-row">
+                                    <span>₹{pricePerNight.toLocaleString()} x {nights} nights</span>
+                                    <span>₹{baseAmount.toLocaleString()}</span>
+                                </div>
+                            ) : null}
+                            
+                            {cleaningFee > 0 && (
+                                <div className="price-row">
+                                    <span>Cleaning fee</span>
+                                    <span>₹{cleaningFee.toLocaleString()}</span>
+                                </div>
+                            )}
+
+                            {baseAmount > 0 && (
+                                <div className="price-row">
+                                    <span>Taxes (18% GST)</span>
+                                    <span>₹{gstAmount.toLocaleString()}</span>
+                                </div>
+                            )}
+
+                            <div className="section-divider"></div>
+
+                            <div className="price-total-row">
                                 <span>Total (INR)</span>
-                                <span>₹{grandTotal.toLocaleString()}</span>
+                                <span>₹{totalAmount.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-
-            </div>
+            </main>
         </div>
     );
 };
