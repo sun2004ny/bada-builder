@@ -816,13 +816,13 @@ const ShortStayDetails = () => {
                                                     <span>₹{(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))).toLocaleString()}</span>
                                                 </div>
                                                 <div className="price-row">
-                                                    <span>Bada Builder Service fee</span>
-                                                    <span>₹{Math.round(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 0.14).toLocaleString()}</span>
+                                                    <span>GST</span>
+                                                    <span>₹{Math.round(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 0.18).toLocaleString()}</span>
                                                 </div>
                                                 <div className="section-divider" />
                                                 <div className="price-total">
-                                                    <span>Total before taxes</span>
-                                                    <span>₹{(Math.round(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 1.14)).toLocaleString()}</span>
+                                                    <span>Total</span>
+                                                    <span>₹{(Math.round(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 1.18)).toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         )}
@@ -834,18 +834,27 @@ const ShortStayDetails = () => {
                                              
                                              // Calculate 5 days before check-in for moderate/flexible
                                              const refundDate = new Date(startDate);
+                                             const now = new Date();
                                              
                                              if (policy.toLowerCase().includes('strict')) {
                                                 refundText = 'Non-refundable';
                                              } else if (policy.toLowerCase().includes('moderate')) {
                                                 refundDate.setDate(refundDate.getDate() - 5);
-                                                const d = refundDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-                                                refundText = `Partial refund before ${d}`;
+                                                if (refundDate < now) {
+                                                    refundText = 'Non-refundable';
+                                                } else {
+                                                    const d = refundDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                                                    refundText = `Partial refund before ${d}`;
+                                                }
                                              } else {
                                                 // Flexible - 24 hours before
                                                 refundDate.setDate(refundDate.getDate() - 1);
-                                                const d = refundDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
-                                                refundText = `Free cancellation before ${d}`;
+                                                if (refundDate < now) {
+                                                    refundText = 'Non-refundable';
+                                                } else {
+                                                    const d = refundDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+                                                    refundText = `Free cancellation before ${d}`;
+                                                }
                                              }
                                              
                                              return (
