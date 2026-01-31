@@ -1,0 +1,315 @@
+/* ShortStayReserve.css - Airbnb Clone Style */
+
+.reserve-page {
+    background-color: white;
+    min-height: 100vh;
+    padding-bottom: 80px;
+}
+
+.reserve-header {
+    height: 80px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.reserve-container-nav {
+    max-width: 1120px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-logo {
+    display: block;
+}
+
+.reserve-main-grid {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    display: grid;
+    grid-template-columns: 1fr 400px; /* 1fr for left, fixed for right card */
+    gap: 80px;
+}
+
+/* Left Column */
+.reserve-left {
+    padding-right: 24px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 48px;
+}
+
+.back-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.1s;
+}
+
+.back-circle:hover {
+    background: #f7f7f7;
+}
+
+.section-title h1 {
+    font-size: 32px;
+    font-weight: 600;
+    color: #222;
+}
+
+.reserve-section h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #222;
+}
+
+
+
+.trip-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.trip-info-row strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.trip-info-row span {
+    display: block;
+    font-size: 16px;
+    color: #717171;
+}
+
+.edit-btn {
+    background: none;
+    border: none;
+    text-decoration: underline;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    color: #222;
+}
+
+.divider {
+    height: 1px;
+    background: #ddd;
+    margin: 32px 0;
+}
+
+/* Payment Options */
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.payment-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.payment-card.selected {
+    border: 2px solid #222;
+    background: #f7f7f7;
+}
+
+.payment-icon {
+    width: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.payment-details span {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.radio-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #b0b0b0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-card.selected .radio-circle {
+    border-color: #222;
+    background: #222;
+}
+
+.radio-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+}
+
+/* Ground Rules */
+.reserve-rules ul {
+    margin-top: 16px;
+    padding-left: 20px;
+    color: #222;
+}
+
+.reserve-rules li {
+    margin-bottom: 8px;
+}
+
+/* Confirm Button */
+.confirm-pay-btn {
+    background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D80565 100%);
+    color: white;
+    width: 100%;
+    max-width: 400px; /* Or 100% depending on design pref */
+    padding: 14px 24px;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.confirm-pay-btn:active {
+    transform: scale(0.98);
+}
+
+.confirm-pay-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Right Column (Sticky Card) */
+.reserve-right {
+    position: relative;
+}
+
+.price-card-sticky {
+    position: sticky;
+    top: 120px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 24px;
+    background: white;
+}
+
+.property-preview-header {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.property-preview-header img {
+    width: 100px;
+    height: 100px; /* Square per Airbnb design usually, or 4:3 */
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.property-preview-info {
+    flex: 1;
+}
+
+.property-type {
+    font-size: 12px;
+    color: #717171;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.property-preview-info h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.25rem;
+    color: #717171;
+}
+
+.preview-rating {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.divider-light {
+    height: 1px;
+    background: #eaeaea;
+    margin: 16px 0;
+}
+
+.price-breakdown h3 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    color: #222;
+}
+
+.breakdown-row.total {
+    font-weight: 800;
+    font-size: 16px;
+    margin-top: 24px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+    .reserve-main-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .reserve-left {
+        padding-right: 0;
+        order: 2; /* On mobile, sometimes details come first, but usually form is primary. Let's keep normal order for now or swap if needed */
+    }
+
+    .reserve-right {
+        order: 1;
+        margin-bottom: 24px;
+    }
+
+    .price-card-sticky {
+        position: static;
+        border: none; /* Often cleaner on mobile to just look like a section */
+        padding: 0;
+    }
+}
