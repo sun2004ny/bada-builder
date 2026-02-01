@@ -456,6 +456,20 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
     else if (unit?.status === 'locked') color = '#f59e0b';
     else if (hovered && isAvailable) color = '#0fb9b1';
 
+    // --- INNER GRASS EFFECT (Minimalist, sparse clumps) ---
+    const foliagePositions = useMemo(() => {
+        const count = 1; // Further reduced from 2
+        const pos = [];
+        for (let i = 0; i < count; i++) {
+            pos.push([
+                (Math.random() - 0.5) * (plotW * 0.7),
+                0.08,
+                (Math.random() - 0.5) * (plotD * 0.7)
+            ]);
+        }
+        return pos;
+    }, [plotW, plotD]);
+
     return (
         <group position={position}>
             {/* 1. Plot Surface */}
@@ -482,11 +496,18 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
                 <planeGeometry key={`geo-p-${plotW}-${plotD}`} args={[plotW, plotD]} />
                 <meshStandardMaterial
                     color={color}
-                    roughness={0.6}
-                    transparent
-                    opacity={0.9}
+                    roughness={1.0} // Pure matte for grass effect
+                    metalness={0.0}
                 />
             </mesh>
+
+            {/* Inner Grass Clumps (The "Effect") */}
+            {foliagePositions.map((p, i) => (
+                <mesh key={`foliage-${i}`} position={p}>
+                    <sphereGeometry args={[0.55, 6, 6]} />
+                    <meshStandardMaterial color="#1ea350" roughness={0.8} />
+                </mesh>
+            ))}
 
             {/* Side Dimension Labels - Dynamic, Flat Layout, Arrow Format, High Contrast */}
             <group position={[0, dynamicLift, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -664,17 +685,33 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
     const ROAD_COLOR = '#94a3b8'; // Clean Slate
     const GROUND_COLOR = '#f1f5f9'; // Clean Light Grey
 
-    // Tree generation for Plots (Reduced, Perimeter Only)
+    // Tree generation for Plots (Balanced Perimeter)
     const treePositions = useMemo(() => {
         const positions = [];
-        // Boundary trees ONLY - Scaling with colWidth/colDepth
-        for (let x = -colWidth / 2 - 10; x <= colWidth / 2 + 10; x += 20) {
-            positions.push([x, 0, -colDepth / 2 - 10]);
-            positions.push([x, 0, colDepth / 2 + 10]);
+        // Boundary trees - Medium density (Step 12-14 instead of 8)
+        for (let x = -colWidth / 2 - 12; x <= colWidth / 2 + 12; x += 14) {
+            positions.push([x, 0, -colDepth / 2 - 12]);
+            positions.push([x, 0, colDepth / 2 + 12]);
         }
-        for (let z = -colDepth / 2 - 10; z <= colDepth / 2 + 10; z += 20) {
-            positions.push([-colWidth / 2 - 10, 0, z]);
-            positions.push([colWidth / 2 + 10, 0, z]);
+        for (let z = -colDepth / 2 - 12; z <= colDepth / 2 + 12; z += 14) {
+            positions.push([-colWidth / 2 - 12, 0, z]);
+            positions.push([colWidth / 2 + 12, 0, z]);
+        }
+        return positions;
+    }, [colWidth, colDepth]);
+
+    // Ground Grass / Bush Clumps (Strictly inside the perimeter fence)
+    const groundFoliage = useMemo(() => {
+        const positions = [];
+        const count = 24; // Further 20% reduction from 30
+        const areaW = colWidth + 8; // Fence is at +10, keep inside
+        const areaD = colDepth + 8;
+        for (let i = 0; i < count; i++) {
+            positions.push([
+                (Math.random() - 0.5) * areaW,
+                -0.34, // Sit on top of the grey base
+                (Math.random() - 0.5) * areaD
+            ]);
         }
         return positions;
     }, [colWidth, colDepth]);
@@ -693,12 +730,18 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                 <lineBasicMaterial color="#2d3436" linewidth={4} />
             </lineSegments>
 
-            {/* 3. Instanced Trees (Perimeter) */}
+            {/* 3. Instanced Details (Perimeter Trees + Scattered Ground Grass) */}
             <InstancedFoliage
                 count={treePositions.length}
                 positions={treePositions}
                 scales={treePositions.map(() => 1.5 + Math.random() * 1.0)}
                 rotations={treePositions.map(() => Math.random() * Math.PI)}
+            />
+            <InstancedFoliage
+                type="bush"
+                count={groundFoliage.length}
+                positions={groundFoliage}
+                scales={groundFoliage.map(() => 2.5 + Math.random() * 2.5)} // Bolder, hero-like clumps
             />
 
             {/* 4. Internal Roads - Horizontal (Mathematically aligned) */}
