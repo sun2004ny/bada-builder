@@ -435,10 +435,20 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
     const leftLabel = unit?.left_side || unit?.plot_depth || 0;
     const rightLabel = unit?.right_side || unit?.plot_depth || 0;
 
-    const labelSize = 0.28; // Reduced from 0.5 for better proportion
-    const labelColor = "#ffffff";
-    const outlineColor = "#000000";
-    const outlineWidth = 0.02;
+    // --- DYNAMIC SCALING FOR LABELS (Professional CAD style) ---
+    const avgDim = (plotW + plotD) / 2;
+    // Scale up for larger plots
+    const scaleFactor = Math.max(1, avgDim / 18);
+
+    const dynamicLabelSize = 0.5 * scaleFactor; // Increased text size
+    const dynamicLift = 0.25 * scaleFactor; // Slightly higher
+    const dynamicOffset = 0.6 * scaleFactor; // Slightly further out
+
+    const labelColor = "#ffffff"; // Pure white
+    const outlineWidth = 0; // Pure white look, no effect
+
+    // Formatting with arrows: <──── 70.00 ft ────>
+    const formatLabel = (val) => `<──── ${val} ft ────>`;
 
     // Image-matched colors: Vibrant Green for available, Vibrant Red for booked
     let color = '#2ecc71';
@@ -478,63 +488,79 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
                 />
             </mesh>
 
-            {/* Side Dimension Labels - Laid Flat on Ground plane */}
-            <group position={[0, 0.07, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                {/* 1. Front (Positive local Y = World Front) */}
-                <Text
-                    position={[0, -plotD / 2 - 0.4, 0]}
-                    rotation={[0, 0, 0]}
-                    fontSize={labelSize}
-                    color={labelColor}
-                    outlineColor={outlineColor}
-                    outlineWidth={outlineWidth}
-                    anchorX="center"
-                    anchorY="middle"
-                >
-                    {frontLabel} ft
-                </Text>
+            {/* Side Dimension Labels - Dynamic, Flat Layout, Arrow Format, High Contrast */}
+            <group position={[0, dynamicLift, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                {/* 1. Front */}
+                <group position={[0, -plotD / 2 - dynamicOffset, 0]}>
+                    <mesh scale={[dynamicLabelSize * 15, dynamicLabelSize * 1.6, 1]}>
+                        <planeGeometry />
+                        <meshBasicMaterial color="#000000" transparent opacity={0.8} />
+                    </mesh>
+                    <Text
+                        fontSize={dynamicLabelSize}
+                        color={labelColor}
+                        anchorX="center"
+                        anchorY="middle"
+                        position={[0, 0, 0.01]}
+                        fontProps={{ weight: 'bold' }}
+                    >
+                        {formatLabel(frontLabel)}
+                    </Text>
+                </group>
 
-                {/* 2. Back (Negative local Y = World Back) */}
-                <Text
-                    position={[0, plotD / 2 + 0.4, 0]}
-                    rotation={[0, 0, Math.PI]}
-                    fontSize={labelSize}
-                    color={labelColor}
-                    outlineColor={outlineColor}
-                    outlineWidth={outlineWidth}
-                    anchorX="center"
-                    anchorY="middle"
-                >
-                    {backLabel} ft
-                </Text>
+                {/* 2. Back */}
+                <group position={[0, plotD / 2 + dynamicOffset, 0]} rotation={[0, 0, Math.PI]}>
+                    <mesh scale={[dynamicLabelSize * 15, dynamicLabelSize * 1.6, 1]}>
+                        <planeGeometry />
+                        <meshBasicMaterial color="#000000" transparent opacity={0.8} />
+                    </mesh>
+                    <Text
+                        fontSize={dynamicLabelSize}
+                        color={labelColor}
+                        anchorX="center"
+                        anchorY="middle"
+                        position={[0, 0, 0.01]}
+                        fontProps={{ weight: 'bold' }}
+                    >
+                        {formatLabel(backLabel)}
+                    </Text>
+                </group>
 
-                {/* 3. Left (Negative local X = World Left) */}
-                <Text
-                    position={[-plotW / 2 - 0.4, 0, 0]}
-                    rotation={[0, 0, -Math.PI / 2]}
-                    fontSize={labelSize}
-                    color={labelColor}
-                    outlineColor={outlineColor}
-                    outlineWidth={outlineWidth}
-                    anchorX="center"
-                    anchorY="middle"
-                >
-                    {leftLabel} ft
-                </Text>
+                {/* 3. Left */}
+                <group position={[-plotW / 2 - dynamicOffset, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+                    <mesh scale={[dynamicLabelSize * 15, dynamicLabelSize * 1.6, 1]}>
+                        <planeGeometry />
+                        <meshBasicMaterial color="#000000" transparent opacity={0.8} />
+                    </mesh>
+                    <Text
+                        fontSize={dynamicLabelSize}
+                        color={labelColor}
+                        anchorX="center"
+                        anchorY="middle"
+                        position={[0, 0, 0.01]}
+                        fontProps={{ weight: 'bold' }}
+                    >
+                        {formatLabel(leftLabel)}
+                    </Text>
+                </group>
 
-                {/* 4. Right (Positive local X = World Right) */}
-                <Text
-                    position={[plotW / 2 + 0.4, 0, 0]}
-                    rotation={[0, 0, Math.PI / 2]}
-                    fontSize={labelSize}
-                    color={labelColor}
-                    outlineColor={outlineColor}
-                    outlineWidth={outlineWidth}
-                    anchorX="center"
-                    anchorY="middle"
-                >
-                    {rightLabel} ft
-                </Text>
+                {/* 4. Right */}
+                <group position={[plotW / 2 + dynamicOffset, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                    <mesh scale={[dynamicLabelSize * 15, dynamicLabelSize * 1.6, 1]}>
+                        <planeGeometry />
+                        <meshBasicMaterial color="#000000" transparent opacity={0.8} />
+                    </mesh>
+                    <Text
+                        fontSize={dynamicLabelSize}
+                        color={labelColor}
+                        anchorX="center"
+                        anchorY="middle"
+                        position={[0, 0, 0.01]}
+                        fontProps={{ weight: 'bold' }}
+                    >
+                        {formatLabel(rightLabel)}
+                    </Text>
+                </group>
             </group>
 
             {/* 2. Thin White Border */}
@@ -548,7 +574,7 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
                 <Billboard position={[0, 1.2, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
                     <mesh castShadow>
                         <boxGeometry args={[4.2, 2.2, 0.1]} />
-                        <meshStandardMaterial color="#1a202c" roughness={0.1} />
+                        <meshBasicMaterial color="#111827" />
                     </mesh>
                     <Text
                         position={[0, 0.35, 0.08]}
