@@ -49,7 +49,13 @@ router.get('/:id/full', optionalAuth, async (req, res) => {
             FROM live_group_projects p WHERE p.id = $1`,
             [projectId]
         );
-        if (projectResult.rows.length === 0) return res.status(404).json({ error: 'Project not found' });
+
+        console.log(`🔍 [DEBUG] Hierarchy Fetch for ID: ${projectId}. Result Rows: ${projectResult.rows.length}`);
+
+        if (projectResult.rows.length === 0) {
+            console.error(`❌ [ERROR] Project ${projectId} NOT FOUND in live_group_projects table.`);
+            return res.status(404).json({ error: 'Project not found' });
+        }
 
         const project = projectResult.rows[0];
 
@@ -313,6 +319,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     [project.id, towerData.tower_name || towerData.name, towerData.total_floors || 0, towerData.layout_columns || null, towerData.layout_rows || null]
                 );
                 const towerId = towerResult.rows[0].id;
+                console.log(`  Tower ${towerId} created.`);
 
                 if (towerData.units && Array.isArray(towerData.units)) {
                     for (const unit of towerData.units) {
@@ -327,6 +334,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                             price: unit.price || 0,
                             price_per_sqft: unit.price_per_sqft || 0,
                             discount_price_per_sqft: unit.discount_price_per_sqft || null,
+                            plot_width: unit.plot_width || null,
+                            plot_depth: unit.plot_depth || null,
                             status: unit.status || 'available',
                             facing: unit.facing || null,
                             is_corner: unit.is_corner || false,
@@ -349,8 +358,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     const cols = [
                         unit.tower_id, unit.floor_number, unit.unit_number, unit.unit_type,
                         unit.area, unit.carpet_area, unit.super_built_up_area, unit.price,
-                        unit.price_per_sqft, unit.discount_price_per_sqft, unit.status,
-                        unit.facing, unit.is_corner, unit.unit_image_url
+                        unit.price_per_sqft, unit.discount_price_per_sqft, unit.plot_width, unit.plot_depth,
+                        unit.status, unit.facing, unit.is_corner, unit.unit_image_url
                     ];
 
                     cols.forEach(val => {
@@ -364,8 +373,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                 const insertQuery = `
                     INSERT INTO live_group_units (
                         tower_id, floor_number, unit_number, unit_type, 
-                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, status,
-                        facing, is_corner, unit_image_url
+                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, plot_width, plot_depth,
+                        status, facing, is_corner, unit_image_url
                     ) VALUES ${placeholders.join(', ')}
                 `;
                 await client.query(insertQuery, values);
@@ -572,7 +581,8 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
         const unitId = req.params.id;
         const {
             unit_number, unit_type, floor_number, area, carpet_area, super_built_up_area,
-            price_per_sqft, discount_price_per_sqft, status, facing, is_corner, unit_image_url
+            price_per_sqft, discount_price_per_sqft, status, facing, is_corner, unit_image_url,
+            plot_width, plot_depth
         } = req.body;
 
         const existingResult = await pool.query('SELECT * FROM live_group_units WHERE id = $1', [unitId]);
@@ -597,6 +607,9 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
         }
 
         const finalStatus = status !== undefined ? status : existingUnit.status;
+        const finalPlotWidth = plot_width !== undefined ? (plot_width ? parseFloat(plot_width) : null) : existingUnit.plot_width;
+        const finalPlotDepth = plot_depth !== undefined ? (plot_depth ? parseFloat(plot_depth) : null) : existingUnit.plot_depth;
+
         const effectiveRate = finalDiscountPricePerSqft !== null ? finalDiscountPricePerSqft : finalPricePerSqft;
         const totalPrice = finalArea * effectiveRate;
 
@@ -614,8 +627,10 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 super_built_up_area = $10,
                 facing = $11,
                 is_corner = $12,
-                unit_image_url = $13
-            WHERE id = $14 RETURNING *`,
+                unit_image_url = $13,
+                plot_width = $14,
+                plot_depth = $15
+            WHERE id = $16 RETURNING *`,
             [
                 finalUnitNumber, finalUnitType, finalFloorNumber, finalArea,
                 finalPricePerSqft, finalDiscountPricePerSqft, finalStatus,
@@ -623,6 +638,8 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 facing !== undefined ? facing : existingUnit.facing,
                 is_corner !== undefined ? is_corner : existingUnit.is_corner,
                 unit_image_url !== undefined ? unit_image_url : existingUnit.unit_image_url,
+                finalPlotWidth,
+                finalPlotDepth,
                 unitId
             ]
         );

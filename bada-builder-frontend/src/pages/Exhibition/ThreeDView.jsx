@@ -396,19 +396,47 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
     const isBooked = unit?.status === 'booked';
     const isAvailable = unit?.status === 'available';
 
-    // Image-matched colors: Vibrant Green for available, Vibrant Red for booked
-    let color = '#2ecc71'; // Vibrant Emerald Green
-    if (isBooked) color = '#eb3b5a'; // Red
-    else if (unit?.status === 'locked') color = '#f59e0b'; // Amber
-    else if (hovered && isAvailable) color = '#0fb9b1'; // Teal hover
+    // Image-matched colors will be set below
 
-    // Image-matched proportions: Deep plots
-    const plotW = 14;
-    const plotD = 18;
+    // Robust numeric conversion helper
+    const toNum = (val) => {
+        if (!val) return 0;
+        if (typeof val === 'number') return val;
+        return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 0;
+    };
+
+    const uW = toNum(unit?.plot_width);
+    const uD = toNum(unit?.plot_depth);
+    const uArea = toNum(unit?.area);
+
+    // Scaling factor (LOCKED LOGIC)
+    const UNIT_SCALE = 0.2;
+
+    let prePlotW, prePlotD;
+
+    if (uW > 0 && uD > 0) {
+        prePlotW = uW * UNIT_SCALE;
+        prePlotD = uD * UNIT_SCALE;
+    } else {
+        const area = uArea || 1200;
+        const side = Math.sqrt(area);
+        prePlotW = side * UNIT_SCALE;
+        prePlotD = side * UNIT_SCALE;
+    }
+
+    // Simplified final dimensions (LOCKED LOGIC)
+    const plotW = Math.max(2, Math.min(prePlotW, 500));
+    const plotD = Math.max(2, Math.min(prePlotD, 500));
+
+    // Image-matched colors: Vibrant Green for available, Vibrant Red for booked
+    let color = '#2ecc71';
+    if (isBooked) color = '#eb3b5a';
+    else if (unit?.status === 'locked') color = '#f59e0b';
+    else if (hovered && isAvailable) color = '#0fb9b1';
 
     return (
         <group position={position}>
-            {/* 1. Plot Surface (Vibrant) */}
+            {/* 1. Plot Surface */}
             <mesh
                 rotation={[-Math.PI / 2, 0, 0]}
                 position={[0, 0.05, 0]}
@@ -428,7 +456,8 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
                     document.body.style.cursor = 'default';
                 }}
             >
-                <planeGeometry args={[plotW, plotD]} />
+                {/* Use key to force geometry update when dimensions change */}
+                <planeGeometry key={`geo-p-${plotW}-${plotD}`} args={[plotW, plotD]} />
                 <meshStandardMaterial
                     color={color}
                     roughness={0.6}
@@ -439,11 +468,11 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
 
             {/* 2. Thin White Border */}
             <lineSegments position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <edgesGeometry args={[new THREE.PlaneGeometry(plotW, plotD)]} />
-                <lineBasicMaterial color="white" transparent opacity={0.4} />
+                <edgesGeometry key={`edge-p-${plotW}-${plotD}`} args={[new THREE.PlaneGeometry(plotW, plotD)]} />
+                <lineBasicMaterial color="white" transparent opacity={0.8} />
             </lineSegments>
 
-            {/* 3. Floating Floating Black Badge */}
+            {/* 3. Floating Label Badge */}
             {unit && (
                 <group position={[0, 1.2, 0]}>
                     <mesh castShadow>
@@ -515,65 +544,59 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
     const isMixed = buildings.some((b, idx, arr) => idx > 0 && b.type !== arr[0].type);
     const isOnlyPlots = buildings.every(b => b.type === 'Plot');
 
-    // Spacing configuration (prefer project data for "modern/dynamic" layout)
+    // Spacing configuration (Strictly following user requirements)
     const SCALE = 0.2;
     const projectRW = parseFloat(project?.road_width || 20) * SCALE;
-    const projectPW = parseFloat(project?.plot_size_width || (isOnlyPlots ? 100 : 120)) * SCALE;
-    const projectPD = parseFloat(project?.plot_size_depth || (isOnlyPlots ? 90 : 100)) * SCALE;
-    const projectGap = parseFloat(project?.plot_gap || (isOnlyPlots ? 5 : 10)) * SCALE;
 
-    const SPACING_X = projectPW + projectGap + (isMixed ? 4 : 0);
-    const SPACING_Z = projectPD + projectRW;
+    // Layout Constants (The "Old Proportions")
+    const plotW = 14;
+    const plotD = 18;
+    const GAP = 4;
     const ROAD_WIDTH = projectRW || 4;
 
-    const bPerRow = project?.layout_columns || Math.ceil(Math.sqrt(buildings.length));
-    const totalRows = Math.ceil(buildings.length / bPerRow);
-    const colWidth = bPerRow * SPACING_X + ROAD_WIDTH * 2;
-    const colDepth = totalRows * SPACING_Z + ROAD_WIDTH * 2;
+    const SPACING_X = plotW + GAP;
+    const SPACING_Z = plotD + ROAD_WIDTH;
 
-    const ROAD_COLOR = '#6b7280';
-    const GREEN_SPACE_COLOR = '#7cb342';
+    // Strict Grid: Use user-provided columns/rows (Checking project root and towers)
+    const columns = parseInt(project?.layout_columns) || parseInt(project?.towers?.[0]?.layout_columns) || 4;
+    const rows = parseInt(project?.layout_rows) || parseInt(project?.towers?.[0]?.layout_rows) || Math.ceil(buildings.length / columns);
 
-    // Tree generation for Plots
+    const colWidth = columns * SPACING_X;
+    const colDepth = rows * SPACING_Z;
+
+    const ROAD_COLOR = '#94a3b8'; // Clean Slate
+    const GROUND_COLOR = '#f1f5f9'; // Clean Light Grey
+
+    // Tree generation for Plots (Reduced, Perimeter Only)
     const treePositions = useMemo(() => {
         const positions = [];
-        // Boundary trees
-        for (let x = -colWidth / 2 - 5; x <= colWidth / 2 + 5; x += 15) {
-            positions.push([x, 0, -colDepth / 2 - 5]);
-            positions.push([x, 0, colDepth / 2 + 5]);
+        // Boundary trees ONLY - Scaling with colWidth/colDepth
+        for (let x = -colWidth / 2 - 10; x <= colWidth / 2 + 10; x += 20) {
+            positions.push([x, 0, -colDepth / 2 - 10]);
+            positions.push([x, 0, colDepth / 2 + 10]);
         }
-        for (let z = -colDepth / 2 - 5; z <= colDepth / 2 + 5; z += 15) {
-            positions.push([-colWidth / 2 - 5, 0, z]);
-            positions.push([colWidth / 2 + 5, 0, z]);
-        }
-        // Scattered interior trees
-        if (isOnlyPlots) {
-            for (let i = 0; i < 40; i++) {
-                positions.push([
-                    (Math.random() - 0.5) * (colWidth + 20),
-                    0,
-                    (Math.random() - 0.5) * (colDepth + 20)
-                ]);
-            }
+        for (let z = -colDepth / 2 - 10; z <= colDepth / 2 + 10; z += 20) {
+            positions.push([-colWidth / 2 - 10, 0, z]);
+            positions.push([colWidth / 2 + 10, 0, z]);
         }
         return positions;
-    }, [colWidth, colDepth, isOnlyPlots]);
+    }, [colWidth, colDepth]);
 
     return (
         <group position={position}>
-            {/* 1. Colony Ground Base (Lush Green) */}
+            {/* 1. Colony Ground Base (Neutral Grey) - Dynamic Scaling */}
             <mesh position={[0, -0.5, 0]} receiveShadow>
-                <boxGeometry args={[colWidth + 60, 0.3, colDepth + 60]} />
-                <meshStandardMaterial color="#5d8233" roughness={1} />
+                <boxGeometry args={[colWidth + 40, 0.3, colDepth + 40]} />
+                <meshStandardMaterial color={GROUND_COLOR} roughness={0.9} />
             </mesh>
 
-            {/* 2. Compound Boundary Fence */}
+            {/* 2. Compound Boundary Fence - Dynamic Scaling */}
             <lineSegments position={[0, 1, 0]}>
-                <edgesGeometry args={[new THREE.BoxGeometry(colWidth + 15, 2, colDepth + 15)]} />
+                <edgesGeometry args={[new THREE.BoxGeometry(colWidth + 10, 2, colDepth + 10)]} />
                 <lineBasicMaterial color="#2d3436" linewidth={4} />
             </lineSegments>
 
-            {/* 3. Instanced Trees (Perimeter & Scattered) */}
+            {/* 3. Instanced Trees (Perimeter) */}
             <InstancedFoliage
                 count={treePositions.length}
                 positions={treePositions}
@@ -581,42 +604,29 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                 rotations={treePositions.map(() => Math.random() * Math.PI)}
             />
 
-            {/* 4. Internal Roads */}
-            {Array.from({ length: totalRows + 1 }).map((_, i) => (
-                <mesh key={`road-h-${i}`} position={[0, -0.35, -colDepth / 2 + i * SPACING_Z]} receiveShadow>
-                    <boxGeometry args={[colWidth, 0.1, ROAD_WIDTH]} />
-                    <meshStandardMaterial color="#a5b1c2" roughness={0.4} />
-                </mesh>
-            ))}
-
-            {/* 4. Internal Roads - Vertical */}
-            {Array.from({ length: bPerRow + 1 }).map((_, i) => (
-                <mesh key={`road-v-${i}`} position={[-colWidth / 2 + i * SPACING_X, -0.35, 0]} receiveShadow>
-                    <boxGeometry args={[ROAD_WIDTH, 0.1, colDepth]} />
+            {/* 4. Internal Roads - Horizontal (Mathematically aligned) */}
+            {Array.from({ length: rows + 1 }).map((_, i) => (
+                <mesh key={`road-h-${i}`} position={[0, -0.35, -(rows * SPACING_Z) / 2 + i * SPACING_Z]} receiveShadow>
+                    <boxGeometry args={[colWidth + 10, 0.1, ROAD_WIDTH]} />
                     <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
                 </mesh>
             ))}
 
-            {/* 5. Random Green Spaces */}
-            {Array.from({ length: Math.floor(buildings.length / 3) }).map((_, i) => {
-                const r = (i * 3) % totalRows;
-                const c = (i * 2) % bPerRow;
-                const x = -colWidth / 2 + c * SPACING_X + SPACING_X / 2;
-                const z = -colDepth / 2 + r * SPACING_Z + SPACING_Z / 2;
-                return (
-                    <mesh key={`green-${i}`} position={[x, -0.28, z]} receiveShadow>
-                        <boxGeometry args={[8, 0.1, 8]} />
-                        <meshStandardMaterial color={GREEN_SPACE_COLOR} roughness={0.8} />
-                    </mesh>
-                );
-            })}
+            {/* 4. Internal Roads - Vertical (Mathematically aligned) */}
+            {Array.from({ length: columns + 1 }).map((_, i) => (
+                <mesh key={`road-v-${i}`} position={[-(columns * SPACING_X) / 2 + i * SPACING_X, -0.35, 0]} receiveShadow>
+                    <boxGeometry args={[ROAD_WIDTH, 0.1, colDepth + 10]} />
+                    <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                </mesh>
+            ))}
 
-            {/* Render Buildings */}
+            {/* Render Buildings (Strictly centered positioning) */}
             {buildings.map((b, idx) => {
-                const row = Math.floor(idx / bPerRow);
-                const col = idx % bPerRow;
-                const xPos = -colWidth / 2 + col * SPACING_X + SPACING_X / 2;
-                const zPos = -colDepth / 2 + row * SPACING_Z + SPACING_Z / 2;
+                const col = idx % columns;
+                const row = Math.floor(idx / columns);
+
+                const xPos = -((columns - 1) * SPACING_X) / 2 + col * SPACING_X;
+                const zPos = -((rows - 1) * SPACING_Z) / 2 + row * SPACING_Z;
 
                 if (b.type === 'TwinVilla') {
                     return (
@@ -1457,11 +1467,13 @@ const ThreeDView = () => {
 
     const fetchHierarchy = useCallback(async () => {
         try {
+            console.log('📡 Fetching Hierarchy for Property ID:', property?.id);
             setLoading(true);
             const data = await liveGroupDynamicAPI.getFullHierarchy(property.id);
+            console.log('✅ Fetched Project:', data.project?.id, data.project?.name);
             setProject(data.project);
         } catch (error) {
-            console.error('Error fetching project hierarchy:', error);
+            console.error('❌ Error fetching project hierarchy:', error);
         } finally {
             setLoading(false);
         }
@@ -2063,21 +2075,8 @@ const ThreeDView = () => {
                                 const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
 
                                 if (!isApartment) {
-                                    const isStrictlyPlot = typeNorm.includes('plot') || typeNorm.includes('land');
-
-                                    if (isStrictlyPlot) {
-                                        return (
-                                            <PlotColony
-                                                position={[0, 0, 0]}
-                                                propertyData={property}
-                                                project={project}
-                                                onUnitClick={handleUnitClick}
-                                                showPremium={true}
-                                                selectedUnit={selectedUnit}
-                                            />
-                                        );
-                                    }
-
+                                    // Use ResidentialColony for everything that isn't an Apartment.
+                                    // It handles Plots, Bungalows, Mixed, etc. with individual scaling.
                                     return (
                                         <ResidentialColony
                                             position={[0, 0, 0]}

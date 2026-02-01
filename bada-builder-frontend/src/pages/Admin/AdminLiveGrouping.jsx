@@ -239,6 +239,8 @@ const AdminLiveGrouping = () => {
               price: parseFloat(unit.price) || 0,
               price_per_sqft: parseFloat(unit.price_per_sqft) || 0,
               discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null,
+              plot_width: (unit.plot_width) ? parseFloat(unit.plot_width) : null,
+              plot_depth: (unit.plot_depth) ? parseFloat(unit.plot_depth) : null,
               unit_image_url: uploadedImageUrl
             };
 
@@ -471,28 +473,33 @@ const AdminLiveGrouping = () => {
     });
   };
 
-  const updateUnitConfig = (towerIdx, floorNum, unitIdx, field, value) => {
+  const updateUnitConfig = (towerIdx, floorNum, unitIdx, fieldOrObj, value) => {
     setTowerUnits(prev => {
-      // Defensive: Check if path exists
       if (!prev[towerIdx] || !prev[towerIdx][floorNum] || !prev[towerIdx][floorNum][unitIdx]) {
         console.warn('Attempted to update non-existent unit:', { towerIdx, floorNum, unitIdx });
         return prev;
       }
 
-      // Deep clone only the necessary parts or full object for safety
       const nextState = structuredClone(prev);
       const unit = nextState[towerIdx][floorNum][unitIdx];
 
-      if (field === 'sync_floor') {
-        // Special logic for sync if needed, otherwise ignore
-        return prev;
+      // Handle both single field update and multiple fields as an object
+      if (typeof fieldOrObj === 'object') {
+        Object.keys(fieldOrObj).forEach(key => {
+          unit[key] = fieldOrObj[key];
+        });
+      } else {
+        unit[fieldOrObj] = value;
       }
 
-      // Update Field
-      // If updating numeric fields, ensure we don't set NaN? 
-      // User might want to type empty string, so allow string if needed, 
-      // but calculations need valid numbers.
-      unit[field] = value;
+      // Logic for Plots: Auto-calculate area from width/depth
+      if (unit.unit_type === 'Plot') {
+        const w = parseFloat(unit.plot_width) || 0;
+        const d = parseFloat(unit.plot_depth) || 0;
+        if (w > 0 && d > 0) {
+          unit.area = w * d;
+        }
+      }
 
       // Auto-mark as Custom if user manually edits it
       if (!unit.isCustom) {
@@ -502,9 +509,6 @@ const AdminLiveGrouping = () => {
       // Recalculate Price Logic
       let calcArea = parseFloat(unit.area) || 0;
       if (projectData.type === 'Bungalow') {
-        // For Bungalow, usually Plot Area (area) or SBUA is used? 
-        // Let's stick to 'area' if that's the primary, or SBUA.
-        // The wizard initialized 'area' as 2500 (Plot Area).
         calcArea = parseFloat(unit.area) || parseFloat(unit.super_built_up_area) || 0;
       }
 
@@ -514,9 +518,6 @@ const AdminLiveGrouping = () => {
         : null;
 
       const effectiveRate = disc !== null ? disc : reg;
-
-      // Update Price ONLY if it's not a manually overridden fixed price (unless we want auto-calc)
-      // Usually in this wizard, we auto-calc.
       unit.price = calcArea * effectiveRate;
 
       return nextState;
@@ -590,12 +591,13 @@ const AdminLiveGrouping = () => {
           unit_number: `P-${k + 1}`,
           unit_type: 'Plot',
           area: projectData.area || 1200,
-          facing: 'North',
-          is_corner: false,
+          plot_width: projectData.plot_size_width || 30,  // Use Land Layout default
+          plot_depth: projectData.plot_size_depth || 40,  // Use Land Layout default
           price: 0,
           discount_price: null,
           price_per_sqft: projectData.regular_price_per_sqft || 0,
-          discount_price_per_sqft: projectData.group_price_per_sqft || null
+          discount_price_per_sqft: projectData.group_price_per_sqft || null,
+          isCustom: false  // Mark as default initially
         });
       }
       newConfig[0] = plotUnits;
@@ -1186,95 +1188,97 @@ const AdminLiveGrouping = () => {
                     </div>
 
                     <div className="unit-configurator-container">
-                      {/* GLOBAL DEFAULTS SECTION - Hidden for Bungalows as per requirements */}
-                      {projectData.type !== 'Bungalow' && (
-                        <div className="global-defaults-wrapper mb-8">
-                          <div className={`global-defaults-panel bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${isGlobalDefaultsCollapsed ? 'max-h-14' : 'max-h-96'}`}>
-                            <div
-                              className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                              onClick={() => setIsGlobalDefaultsCollapsed(!isGlobalDefaultsCollapsed)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                  <Tower size={20} />
-                                </div>
-                                <div>
-                                  <h4 className="font-bold text-slate-800 text-sm">Default Unit Configuration (Global)</h4>
-                                  {!isGlobalDefaultsCollapsed && <p className="text-[10px] text-slate-500 uppercase font-semibold">Applied to all default units</p>}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {isGlobalDefaultsCollapsed && (
-                                  <div className="hidden md:flex gap-3 mr-4">
-                                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.unitType}</span>
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.sbua} SqFt</span>
-                                    <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">₹{globalUnitDefaults.baseRate}</span>
+                      {/* GLOBAL DEFAULTS SECTION - Hidden for Bungalows, Plots, Twin Villas (non-apartment types) */}
+                      {projectData.type !== 'Bungalow' &&
+                        projectData.type !== 'Plot' &&
+                        projectData.type !== 'Twin Villa' && (
+                          <div className="global-defaults-wrapper mb-8">
+                            <div className={`global-defaults-panel bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${isGlobalDefaultsCollapsed ? 'max-h-14' : 'max-h-96'}`}>
+                              <div
+                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                                onClick={() => setIsGlobalDefaultsCollapsed(!isGlobalDefaultsCollapsed)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                    <Tower size={20} />
                                   </div>
-                                )}
-                                <button className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
-                                  {isGlobalDefaultsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-                                </button>
+                                  <div>
+                                    <h4 className="font-bold text-slate-800 text-sm">Default Unit Configuration (Global)</h4>
+                                    {!isGlobalDefaultsCollapsed && <p className="text-[10px] text-slate-500 uppercase font-semibold">Applied to all default units</p>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {isGlobalDefaultsCollapsed && (
+                                    <div className="hidden md:flex gap-3 mr-4">
+                                      <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.unitType}</span>
+                                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.sbua} SqFt</span>
+                                      <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">₹{globalUnitDefaults.baseRate}</span>
+                                    </div>
+                                  )}
+                                  <button className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
+                                    {isGlobalDefaultsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                                  </button>
+                                </div>
                               </div>
-                            </div>
 
-                            {!isGlobalDefaultsCollapsed && (
-                              <div className="p-6 pt-2 bg-gradient-to-r from-white to-blue-50/30">
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                  <div className="input-field-group">
-                                    <label>Default Type</label>
-                                    <select
-                                      className="text-xs border rounded p-2 w-full"
-                                      value={globalUnitDefaults.unitType}
-                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, unitType: e.target.value })}
-                                    >
-                                      <option value="Flat">Flat</option>
-                                      <option value="Shop">Shop</option>
-                                      <option value="Office">Office</option>
-                                      <option value="Showroom">Showroom</option>
-                                    </select>
-                                  </div>
-                                  <div className="input-field-group">
-                                    <label>SBUA (SQFT)</label>
-                                    <input
-                                      type="number"
-                                      className="text-xs border rounded p-2 w-full"
-                                      value={globalUnitDefaults.sbua}
-                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, sbua: parseFloat(e.target.value) || 0 })}
-                                    />
-                                  </div>
-                                  <div className="input-field-group">
-                                    <label>Carpet (SQFT)</label>
-                                    <input
-                                      type="number"
-                                      className="text-xs border rounded p-2 w-full"
-                                      value={globalUnitDefaults.carpetArea}
-                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, carpetArea: parseFloat(e.target.value) || 0 })}
-                                    />
-                                  </div>
-                                  <div className="input-field-group">
-                                    <label>Base Rate (₹)</label>
-                                    <input
-                                      type="number"
-                                      className="text-xs border rounded p-2 w-full"
-                                      value={globalUnitDefaults.baseRate}
-                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, baseRate: parseFloat(e.target.value) || 0 })}
-                                    />
-                                  </div>
-                                  <div className="input-field-group">
-                                    <label>Discount Rate (₹)</label>
-                                    <input
-                                      type="number"
-                                      className="text-xs border rounded p-2 w-full"
-                                      value={globalUnitDefaults.discountRate}
-                                      onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, discountRate: parseFloat(e.target.value) || 0 })}
-                                    />
+                              {!isGlobalDefaultsCollapsed && (
+                                <div className="p-6 pt-2 bg-gradient-to-r from-white to-blue-50/30">
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="input-field-group">
+                                      <label>Default Type</label>
+                                      <select
+                                        className="text-xs border rounded p-2 w-full"
+                                        value={globalUnitDefaults.unitType}
+                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, unitType: e.target.value })}
+                                      >
+                                        <option value="Flat">Flat</option>
+                                        <option value="Shop">Shop</option>
+                                        <option value="Office">Office</option>
+                                        <option value="Showroom">Showroom</option>
+                                      </select>
+                                    </div>
+                                    <div className="input-field-group">
+                                      <label>SBUA (SQFT)</label>
+                                      <input
+                                        type="number"
+                                        className="text-xs border rounded p-2 w-full"
+                                        value={globalUnitDefaults.sbua}
+                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, sbua: parseFloat(e.target.value) || 0 })}
+                                      />
+                                    </div>
+                                    <div className="input-field-group">
+                                      <label>Carpet (SQFT)</label>
+                                      <input
+                                        type="number"
+                                        className="text-xs border rounded p-2 w-full"
+                                        value={globalUnitDefaults.carpetArea}
+                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, carpetArea: parseFloat(e.target.value) || 0 })}
+                                      />
+                                    </div>
+                                    <div className="input-field-group">
+                                      <label>Base Rate (₹)</label>
+                                      <input
+                                        type="number"
+                                        className="text-xs border rounded p-2 w-full"
+                                        value={globalUnitDefaults.baseRate}
+                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, baseRate: parseFloat(e.target.value) || 0 })}
+                                      />
+                                    </div>
+                                    <div className="input-field-group">
+                                      <label>Discount Rate (₹)</label>
+                                      <input
+                                        type="number"
+                                        className="text-xs border rounded p-2 w-full"
+                                        value={globalUnitDefaults.discountRate}
+                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, discountRate: parseFloat(e.target.value) || 0 })}
+                                      />
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                       {towers.map((tower, towerIdx) => {
                         const isTowerCollapsed = collapsedTowers.includes(towerIdx);
                         return (
@@ -1925,36 +1929,30 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
                     </div>
                   </div>
 
-                  {projectType === 'Plot' && (
+                  {/* PLOT DIMENSIONS - Only for Plot units */}
+                  {unit.unit_type === 'Plot' && (
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       <div className="input-field-group">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Facing</label>
-                        <select
-                          className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50"
-                          value={unit.facing || 'North'}
-                          onChange={e => onUpdate(uIdx, 'facing', e.target.value)}
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Plot Width (ft)</label>
+                        <input
+                          type="number"
+                          className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                          value={unit.plot_width || ''}
+                          onChange={e => onUpdate(uIdx, 'plot_width', parseFloat(e.target.value) || 0)}
                           disabled={!unit.isCustom}
-                        >
-                          <option value="North">North</option>
-                          <option value="South">South</option>
-                          <option value="East">East</option>
-                          <option value="West">West</option>
-                          <option value="North-East">North-East</option>
-                          <option value="North-West">North-West</option>
-                          <option value="South-East">South-East</option>
-                          <option value="South-West">South-West</option>
-                        </select>
+                          placeholder="e.g. 30"
+                        />
                       </div>
-                      <div className="input-field-group flex items-end">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-2 cursor-pointer mb-1">
-                          <input
-                            type="checkbox"
-                            checked={unit.is_corner || false}
-                            onChange={e => onUpdate(uIdx, 'is_corner', e.target.checked)}
-                            disabled={!unit.isCustom}
-                          />
-                          Is Corner?
-                        </label>
+                      <div className="input-field-group">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Plot Depth (ft)</label>
+                        <input
+                          type="number"
+                          className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                          value={unit.plot_depth || ''}
+                          onChange={e => onUpdate(uIdx, 'plot_depth', parseFloat(e.target.value) || 0)}
+                          disabled={!unit.isCustom}
+                          placeholder="e.g. 40"
+                        />
                       </div>
                     </div>
                   )}
