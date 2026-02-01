@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Sky, Text, PerspectiveCamera, Html } from '@react-three/drei';
+import { OrbitControls, Sky, Text, PerspectiveCamera, Html, Billboard } from '@react-three/drei';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import { ChevronLeft, Layers, Box, Info, Timer, X, CreditCard, ChevronUp, ChevronDown, ChevronRight, Plus, Minus, Move } from 'lucide-react';
@@ -428,6 +428,18 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
     const plotW = Math.max(2, Math.min(prePlotW, 500));
     const plotD = Math.max(2, Math.min(prePlotD, 500));
 
+    // --- SIDE DIMENSION LABELS (Visual Only) ---
+    // Fallback logic: Side Specific > Plot Width/Depth > 0
+    const frontLabel = unit?.front_side || unit?.plot_width || 0;
+    const backLabel = unit?.back_side || unit?.plot_width || 0;
+    const leftLabel = unit?.left_side || unit?.plot_depth || 0;
+    const rightLabel = unit?.right_side || unit?.plot_depth || 0;
+
+    const labelSize = 0.28; // Reduced from 0.5 for better proportion
+    const labelColor = "#ffffff";
+    const outlineColor = "#000000";
+    const outlineWidth = 0.02;
+
     // Image-matched colors: Vibrant Green for available, Vibrant Red for booked
     let color = '#2ecc71';
     if (isBooked) color = '#eb3b5a';
@@ -466,15 +478,74 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
                 />
             </mesh>
 
+            {/* Side Dimension Labels - Laid Flat on Ground plane */}
+            <group position={[0, 0.07, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                {/* 1. Front (Positive local Y = World Front) */}
+                <Text
+                    position={[0, -plotD / 2 - 0.4, 0]}
+                    rotation={[0, 0, 0]}
+                    fontSize={labelSize}
+                    color={labelColor}
+                    outlineColor={outlineColor}
+                    outlineWidth={outlineWidth}
+                    anchorX="center"
+                    anchorY="middle"
+                >
+                    {frontLabel} ft
+                </Text>
+
+                {/* 2. Back (Negative local Y = World Back) */}
+                <Text
+                    position={[0, plotD / 2 + 0.4, 0]}
+                    rotation={[0, 0, Math.PI]}
+                    fontSize={labelSize}
+                    color={labelColor}
+                    outlineColor={outlineColor}
+                    outlineWidth={outlineWidth}
+                    anchorX="center"
+                    anchorY="middle"
+                >
+                    {backLabel} ft
+                </Text>
+
+                {/* 3. Left (Negative local X = World Left) */}
+                <Text
+                    position={[-plotW / 2 - 0.4, 0, 0]}
+                    rotation={[0, 0, -Math.PI / 2]}
+                    fontSize={labelSize}
+                    color={labelColor}
+                    outlineColor={outlineColor}
+                    outlineWidth={outlineWidth}
+                    anchorX="center"
+                    anchorY="middle"
+                >
+                    {leftLabel} ft
+                </Text>
+
+                {/* 4. Right (Positive local X = World Right) */}
+                <Text
+                    position={[plotW / 2 + 0.4, 0, 0]}
+                    rotation={[0, 0, Math.PI / 2]}
+                    fontSize={labelSize}
+                    color={labelColor}
+                    outlineColor={outlineColor}
+                    outlineWidth={outlineWidth}
+                    anchorX="center"
+                    anchorY="middle"
+                >
+                    {rightLabel} ft
+                </Text>
+            </group>
+
             {/* 2. Thin White Border */}
             <lineSegments position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                 <edgesGeometry key={`edge-p-${plotW}-${plotD}`} args={[new THREE.PlaneGeometry(plotW, plotD)]} />
                 <lineBasicMaterial color="white" transparent opacity={0.8} />
             </lineSegments>
 
-            {/* 3. Floating Label Badge */}
+            {/* 3. Floating Label Badge (Billboarded to face camera) */}
             {unit && (
-                <group position={[0, 1.2, 0]}>
+                <Billboard position={[0, 1.2, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
                     <mesh castShadow>
                         <boxGeometry args={[4.2, 2.2, 0.1]} />
                         <meshStandardMaterial color="#1a202c" roughness={0.1} />
@@ -495,7 +566,7 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
                     >
                         {unit.area || '1200'} sq ft
                     </Text>
-                </group>
+                </Billboard>
             )}
         </group>
     );

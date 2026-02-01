@@ -336,6 +336,10 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                             discount_price_per_sqft: unit.discount_price_per_sqft || null,
                             plot_width: unit.plot_width || null,
                             plot_depth: unit.plot_depth || null,
+                            front_side: unit.front_side || null,
+                            back_side: unit.back_side || null,
+                            left_side: unit.left_side || null,
+                            right_side: unit.right_side || null,
                             status: unit.status || 'available',
                             facing: unit.facing || null,
                             is_corner: unit.is_corner || false,
@@ -359,6 +363,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                         unit.tower_id, unit.floor_number, unit.unit_number, unit.unit_type,
                         unit.area, unit.carpet_area, unit.super_built_up_area, unit.price,
                         unit.price_per_sqft, unit.discount_price_per_sqft, unit.plot_width, unit.plot_depth,
+                        unit.front_side, unit.back_side, unit.left_side, unit.right_side,
                         unit.status, unit.facing, unit.is_corner, unit.unit_image_url
                     ];
 
@@ -373,7 +378,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                 const insertQuery = `
                     INSERT INTO live_group_units (
                         tower_id, floor_number, unit_number, unit_type, 
-                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, plot_width, plot_depth,
+                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, 
+                        plot_width, plot_depth, front_side, back_side, left_side, right_side,
                         status, facing, is_corner, unit_image_url
                     ) VALUES ${placeholders.join(', ')}
                 `;
@@ -582,7 +588,7 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
         const {
             unit_number, unit_type, floor_number, area, carpet_area, super_built_up_area,
             price_per_sqft, discount_price_per_sqft, status, facing, is_corner, unit_image_url,
-            plot_width, plot_depth
+            plot_width, plot_depth, front_side, back_side, left_side, right_side
         } = req.body;
 
         const existingResult = await pool.query('SELECT * FROM live_group_units WHERE id = $1', [unitId]);
@@ -610,6 +616,11 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
         const finalPlotWidth = plot_width !== undefined ? (plot_width ? parseFloat(plot_width) : null) : existingUnit.plot_width;
         const finalPlotDepth = plot_depth !== undefined ? (plot_depth ? parseFloat(plot_depth) : null) : existingUnit.plot_depth;
 
+        const finalFrontSide = front_side !== undefined ? (front_side ? parseFloat(front_side) : null) : existingUnit.front_side;
+        const finalBackSide = back_side !== undefined ? (back_side ? parseFloat(back_side) : null) : existingUnit.back_side;
+        const finalLeftSide = left_side !== undefined ? (left_side ? parseFloat(left_side) : null) : existingUnit.left_side;
+        const finalRightSide = right_side !== undefined ? (right_side ? parseFloat(right_side) : null) : existingUnit.right_side;
+
         const effectiveRate = finalDiscountPricePerSqft !== null ? finalDiscountPricePerSqft : finalPricePerSqft;
         const totalPrice = finalArea * effectiveRate;
 
@@ -629,8 +640,12 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 is_corner = $12,
                 unit_image_url = $13,
                 plot_width = $14,
-                plot_depth = $15
-            WHERE id = $16 RETURNING *`,
+                plot_depth = $15,
+                front_side = $16,
+                back_side = $17,
+                left_side = $18,
+                right_side = $19
+            WHERE id = $20 RETURNING *`,
             [
                 finalUnitNumber, finalUnitType, finalFloorNumber, finalArea,
                 finalPricePerSqft, finalDiscountPricePerSqft, finalStatus,
@@ -640,6 +655,10 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 unit_image_url !== undefined ? unit_image_url : existingUnit.unit_image_url,
                 finalPlotWidth,
                 finalPlotDepth,
+                finalFrontSide,
+                finalBackSide,
+                finalLeftSide,
+                finalRightSide,
                 unitId
             ]
         );

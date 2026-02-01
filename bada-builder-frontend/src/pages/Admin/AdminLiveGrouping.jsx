@@ -1930,31 +1930,86 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
                   </div>
 
                   {/* PLOT DIMENSIONS - Only for Plot units */}
-                  {unit.unit_type === 'Plot' && (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div className="input-field-group">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Plot Width (ft)</label>
-                        <input
-                          type="number"
-                          className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
-                          value={unit.plot_width || ''}
-                          onChange={e => onUpdate(uIdx, 'plot_width', parseFloat(e.target.value) || 0)}
-                          disabled={!unit.isCustom}
-                          placeholder="e.g. 30"
-                        />
+                  {/* PLOT DIMENSIONS - Shown for all units in land-based projects or Plot types */}
+                  {(unit.unit_type === 'Plot' || projectData.type === 'residential_land') && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="input-field-group">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Plot Width (ft)</label>
+                          <input
+                            type="number"
+                            className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                            value={unit.plot_width || ''}
+                            onChange={e => onUpdate(uIdx, 'plot_width', parseFloat(e.target.value) || 0)}
+                            disabled={!unit.isCustom}
+                            placeholder="e.g. 30"
+                          />
+                        </div>
+                        <div className="input-field-group">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Plot Depth (ft)</label>
+                          <input
+                            type="number"
+                            className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
+                            value={unit.plot_depth || ''}
+                            onChange={e => onUpdate(uIdx, 'plot_depth', parseFloat(e.target.value) || 0)}
+                            disabled={!unit.isCustom}
+                            placeholder="e.g. 40"
+                          />
+                        </div>
                       </div>
-                      <div className="input-field-group">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Plot Depth (ft)</label>
-                        <input
-                          type="number"
-                          className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
-                          value={unit.plot_depth || ''}
-                          onChange={e => onUpdate(uIdx, 'plot_depth', parseFloat(e.target.value) || 0)}
-                          disabled={!unit.isCustom}
-                          placeholder="e.g. 40"
-                        />
+
+                      {/* Four Side Dimensions */}
+                      <div className="mt-3 p-2 bg-blue-50/30 rounded-lg border border-blue-100/50">
+                        <label className="text-[9px] font-bold text-blue-600 uppercase mb-2 block">Visual Side Dimensions (optional)</label>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                          <div className="input-field-group">
+                            <label className="text-[8px] font-semibold text-slate-500 uppercase">Front (ft)</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full bg-white"
+                              value={unit.front_side || ''}
+                              onChange={e => onUpdate(uIdx, 'front_side', e.target.value)}
+                              disabled={!unit.isCustom}
+                              placeholder="Front"
+                            />
+                          </div>
+                          <div className="input-field-group">
+                            <label className="text-[8px] font-semibold text-slate-500 uppercase">Back (ft)</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full bg-white"
+                              value={unit.back_side || ''}
+                              onChange={e => onUpdate(uIdx, 'back_side', e.target.value)}
+                              disabled={!unit.isCustom}
+                              placeholder="Back"
+                            />
+                          </div>
+                          <div className="input-field-group">
+                            <label className="text-[8px] font-semibold text-slate-500 uppercase">Left (ft)</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full bg-white"
+                              value={unit.left_side || ''}
+                              onChange={e => onUpdate(uIdx, 'left_side', e.target.value)}
+                              disabled={!unit.isCustom}
+                              placeholder="Left"
+                            />
+                          </div>
+                          <div className="input-field-group">
+                            <label className="text-[8px] font-semibold text-slate-500 uppercase">Right (ft)</label>
+                            <input
+                              type="number"
+                              className="text-[10px] border rounded p-1 w-full bg-white"
+                              value={unit.right_side || ''}
+                              onChange={e => onUpdate(uIdx, 'right_side', e.target.value)}
+                              disabled={!unit.isCustom}
+                              placeholder="Right"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[8px] text-blue-400 mt-1 italic">Note: These values are for 3D visual display only.</p>
                       </div>
-                    </div>
+                    </>
                   )}
 
                   {/* UNIT IMAGE UPLOAD - Only for Custom Units */}
