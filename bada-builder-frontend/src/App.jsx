@@ -30,6 +30,8 @@ import Exhibition from './pages/Exhibition';
 import Working from './pages/Working';
 import Services from './pages/Services';
 import Marketing from './pages/Marketing/Marketing';
+import MarketingTerms from './pages/Marketing/MarketingTerms';
+import MarketingRules from './pages/Marketing/MarketingRules';
 import SubscriptionPlans from './pages/SubscriptionPlans';
 import DeveloperPlan from './pages/DeveloperPlan';
 import IndividualPlan from './pages/IndividualPlan';
@@ -143,7 +145,7 @@ function AppContent() {
       <ScrollToTop />
       <Preloader />
       {!isMessagesPage && !isAdminPanel && <Header />}
-      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && location.pathname !== '/short-stay/list-property' && !location.pathname.startsWith('/short-stay/') && location.pathname !== '/services/marketing' && <GlobalSearchBar />}
+      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && location.pathname !== '/short-stay/list-property' && !location.pathname.startsWith('/short-stay/') && location.pathname !== '/services/marketing' && location.pathname !== '/services/marketing/terms-conditions' && location.pathname !== '/services/marketing/rules-regulations' && <GlobalSearchBar />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
       {!isMessagesPage && !isAdminPanel && <Chatbot />}
       {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
@@ -171,6 +173,8 @@ function AppContent() {
             {/* <Route path="/projects" element={<Projects />} /> */}
             <Route path="/services" element={<Services />} />
             <Route path="/services/marketing" element={<Marketing />} />
+            <Route path="/services/marketing/terms-conditions" element={<MarketingTerms />} />
+            <Route path="/services/marketing/rules-regulations" element={<MarketingRules />} />
             <Route path="/investments" element={<Investments />} />
             <Route path="/exhibition" element={<Exhibition />} />
             <Route path="/exhibition/individual" element={<ByIndividual />} />

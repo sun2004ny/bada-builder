@@ -26,6 +26,7 @@ import wishlistRoutes from './routes/wishlists.js';
 import adminRoutes from './routes/admin.js';
 import adminPropertiesRoutes from './routes/adminProperties.js';
 import shortStayRoutes from './routes/shortStay.js';
+import marketingRoutes from './routes/marketing.js';
 
 
 // Import database
@@ -130,6 +131,7 @@ app.use('/api/favorites', mutationLimiter, favoritesRoutes);
 app.use('/api/admin/properties', mutationLimiter, adminPropertiesRoutes);
 app.use('/api/admin', readLimiter, adminRoutes);
 app.use('/api/short-stay', mutationLimiter, shortStayRoutes);
+app.use('/api/marketing', mutationLimiter, marketingRoutes);
 
 
 // 404 handler

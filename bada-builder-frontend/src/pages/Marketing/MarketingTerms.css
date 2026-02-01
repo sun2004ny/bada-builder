@@ -1,0 +1,438 @@
+.marketing-terms-page {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    color: #F8FAFC;
+    padding: 40px 20px;
+}
+
+.terms-header {
+    width: 95%;
+    margin: 0 auto 40px;
+    text-align: center;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #E2E8F0;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 30px;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(-5px);
+}
+
+.terms-header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    margin: 0 0 15px 0;
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    text-decoration: none;
+}
+
+.terms-header h1::after {
+    display: none;
+}
+
+.terms-subtitle {
+    font-size: 16px;
+    color: #94A3B8;
+    margin: 0;
+}
+
+.terms-intro {
+    width: 95%;
+    margin: 0 auto 40px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 16px;
+    padding: 30px;
+    line-height: 1.8;
+}
+
+.terms-intro p {
+    margin: 0 0 15px 0;
+    color: #CBD5E1;
+    font-size: 15px;
+}
+
+.terms-intro p:last-child {
+    margin-bottom: 0;
+}
+
+.terms-highlight {
+    background: rgba(14, 165, 233, 0.1);
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #F8FAFC !important;
+}
+
+.terms-sections {
+    width: 95%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.terms-section {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.terms-section.active {
+    border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
+}
+
+.terms-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.terms-section-header:hover {
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.terms-section-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #F8FAFC;
+}
+
+.terms-section-header svg {
+    color: #38BDF8;
+    font-size: 16px;
+    transition: transform 0.3s;
+}
+
+.terms-section.active .terms-section-header svg {
+    transform: rotate(180deg);
+}
+
+.terms-section-content {
+    padding: 0 25px 25px 25px;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.terms-section-content pre {
+    margin: 20px 0 0 0;
+    font-family: inherit;
+    white-space: pre-wrap;
+    color: #CBD5E1;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.terms-footer {
+    width: 95%;
+    margin: 60px auto 0;
+    text-align: center;
+    padding-top: 40px;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.terms-footer p {
+    margin: 10px 0;
+    color: #94A3B8;
+    font-size: 14px;
+}
+
+.terms-footer a {
+    color: #38BDF8;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.terms-footer a:hover {
+    color: #0EA5E9;
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .marketing-terms-page {
+        padding: 20px 15px;
+    }
+
+    .terms-header h1 {
+        font-size: 32px;
+    }
+
+    .terms-subtitle {
+        font-size: 14px;
+    }
+
+    .terms-intro {
+        padding: 20px;
+    }
+
+    .terms-section-header {
+        padding: 15px 20px;
+    }
+
+    .terms-section-header h3 {
+        font-size: 16px;
+    }
+
+    .terms-section-content {
+        padding: 0 20px 20px 20px;
+    }
+}
+
+/* ========================================
+   ENHANCED RESPONSIVE DESIGN - ALL DEVICES
+   ======================================== */
+
+/* Extra Small Devices - Phones (320px - 480px) */
+@media (max-width: 480px) {
+    .marketing-terms-page {
+        padding: 15px 12px !important;
+    }
+
+    .terms-header {
+        padding: 30px 16px;
+    }
+
+    .back-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+
+    .terms-header h1 {
+        font-size: 26px !important;
+        margin-bottom: 10px;
+    }
+
+    .terms-subtitle {
+        font-size: 12px !important;
+    }
+
+    .terms-intro {
+        padding: 16px !important;
+        font-size: 13px;
+    }
+
+    .terms-highlight {
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+
+    .terms-section {
+        margin-bottom: 12px;
+    }
+
+    .terms-section-header {
+        padding: 12px 16px !important;
+    }
+
+    .terms-section-header h3 {
+        font-size: 14px !important;
+    }
+
+    .terms-section-content {
+        padding: 0 16px 16px 16px !important;
+        font-size: 13px;
+    }
+
+    .terms-section-content pre {
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .terms-footer {
+        padding: 20px 16px;
+        font-size: 12px;
+    }
+}
+
+/* Small Devices - Large Phones & Small Tablets (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .marketing-terms-page {
+        padding: 20px 16px;
+    }
+
+    .terms-header {
+        padding: 40px 20px;
+    }
+
+    .back-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+
+    .terms-header h1 {
+        font-size: 32px;
+    }
+
+    .terms-subtitle {
+        font-size: 14px;
+    }
+
+    .terms-intro {
+        padding: 20px;
+        font-size: 14px;
+    }
+
+    .terms-section-header {
+        padding: 15px 20px;
+    }
+
+    .terms-section-header h3 {
+        font-size: 16px;
+    }
+
+    .terms-section-content {
+        padding: 0 20px 20px 20px;
+        font-size: 14px;
+    }
+}
+
+/* Medium Devices - Tablets & iPads (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .marketing-terms-page {
+        padding: 30px 24px;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .terms-header, 
+    .terms-intro, 
+    .terms-sections, 
+    .terms-footer {
+        width: 95%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .terms-header {
+        padding: 50px 24px;
+    }
+
+    .terms-header h1 {
+        font-size: 38px;
+    }
+
+    .terms-intro {
+        padding: 24px;
+    }
+
+    .terms-section-header {
+        padding: 18px 24px;
+    }
+
+    .terms-section-content {
+        padding: 0 24px 24px 24px;
+    }
+}
+
+/* Large Devices - Laptops & Desktops (1025px+) */
+@media (min-width: 1025px) {
+    .marketing-terms-page {
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .terms-header, 
+    .terms-intro, 
+    .terms-sections, 
+    .terms-footer {
+        width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* Foldable Phones - Unfolded State (landscape) */
+@media (min-width: 600px) and (max-width: 900px) and (orientation: landscape) {
+    .marketing-terms-page {
+        padding: 20px;
+    }
+
+    .terms-header {
+        padding: 30px 20px;
+    }
+
+    .terms-header h1 {
+        font-size: 30px;
+    }
+}
+
+/* Nest Hub & Similar Devices */
+@media (min-width: 1024px) and (max-height: 600px) {
+    .terms-header {
+        padding: 30px 24px;
+    }
+
+    .terms-section {
+        margin-bottom: 12px;
+    }
+}
+
+/* Ultra-wide screens */
+@media (min-width: 1920px) {
+    .marketing-terms-page {
+        width: 100%;
+        max-width: none;
+    }
+
+    .terms-header, 
+    .terms-intro, 
+    .terms-sections, 
+    .terms-footer {
+        width: 80%;
+        max-width: none;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* Small Height Devices - Landscape phones */
+@media (max-height: 600px) and (orientation: landscape) {
+    .terms-header {
+        padding: 20px;
+    }
+
+    .terms-header h1 {
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+
+    .terms-subtitle {
+        font-size: 13px;
+    }
+
+    .terms-intro {
+        padding: 16px;
+    }
+
+    .terms-section {
+        margin-bottom: 10px;
+    }
+
+    .terms-section-header {
+        padding: 12px 20px;
+    }
+}

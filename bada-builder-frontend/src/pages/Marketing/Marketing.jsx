@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaVideo, FaBullhorn, FaUserTie, FaHandshake, FaChevronDown, FaChevronUp, FaCheckCircle, FaHelicopter } from 'react-icons/fa';
+import { FaVideo, FaBullhorn, FaUserTie, FaHandshake, FaChevronDown, FaChevronUp, FaCheckCircle, FaHelicopter, FaTimes, FaChevronRight } from 'react-icons/fa';
+import axios from 'axios';
 import './Marketing.css';
 
 const packages = [
@@ -39,14 +41,17 @@ const packages = [
     },
     {
         id: 3,
-        title: "Shoot + Digital Marketing",
+        title: "Shoot (DSLR + Drone) + Digital Marketing",
         target: "Individuals & Developers",
         icon: <FaBullhorn size={24} />,
         videos: "5 Videos (3 mins each)",
         price: "1%",
         priceSub: "of property price",
         features: [
-            "DSLR + Drone Coverage",
+            "Professional Aerial Drone Shots",
+            "DSLR Interior Walkthrough",
+            "Premium Editing & Transitions",
+            "Complete Property Coverage",
             "Meta Ads (FB & Insta) Setup",
             "Lead Generation Campaigns",
             "Targeted Audience Reach"
@@ -56,14 +61,20 @@ const packages = [
     },
     {
         id: 4,
-        title: "Shoot + Meta Ads + Influencer",
+        title: "Influencer Marketing",
         target: "Individuals & Developers",
         icon: <FaUserTie size={24} />,
         videos: "5 Videos (3 mins each)",
         price: "2%",
         priceSub: "of property price",
         features: [
-            "Everything in Package 3",
+            "Professional Aerial Drone Shots",
+            "DSLR Interior Walkthrough",
+            "Premium Editing & Transitions",
+            "Complete Property Coverage",
+            "Meta Ads (FB & Insta) Setup",
+            "Lead Generation Campaigns",
+            "Targeted Audience Reach",
             "Real Estate Influencer Promotion",
             "Brand Building & Trust",
             "Higher Engagement Rates"
@@ -76,15 +87,24 @@ const packages = [
         title: "Sole Selling + Marketing Agent",
         target: "Developers Only",
         icon: <FaHandshake size={24} />,
-        videos: "Unlimited",
+        videos: "Unlimited Video Content",
         price: "4%",
         priceSub: "of project price",
         features: [
+            "Professional Aerial Drone Shots",
+            "DSLR Interior Walkthrough",
+            "Premium Editing & Transitions",
+            "Complete Property Coverage",
+            "Meta Ads (FB & Insta) Setup",
+            "Lead Generation Campaigns",
+            "Targeted Audience Reach",
+            "Real Estate Influencer Promotion",
+            "Brand Building & Trust",
+            "Higher Engagement Rates",
             "Exclusive Selling Rights",
             "Dedicated Real Estate Agent",
             "On-desk Enquiry Handling",
-            "Possession & Record Maintenance",
-            "Unlimited Video Content"
+            "Possession & Record Maintenance"
         ],
         payment: "Payment starts after selling properties (from buyer collections)",
         popular: false
@@ -94,11 +114,24 @@ const packages = [
         title: "Sole Selling + RISG Guarantee",
         target: "Developers Only",
         icon: <FaCheckCircle size={24} />,
-        videos: "Unlimited",
+        videos: "Unlimited Video Content",
         price: "8%",
         priceSub: "of project price",
         features: [
-            "Everything in Package 5",
+             "Professional Aerial Drone Shots",
+            "DSLR Interior Walkthrough",
+            "Premium Editing & Transitions",
+            "Complete Property Coverage",
+            "Meta Ads (FB & Insta) Setup",
+            "Lead Generation Campaigns",
+            "Targeted Audience Reach",
+            "Real Estate Influencer Promotion",
+            "Brand Building & Trust",
+            "Higher Engagement Rates",
+            "Exclusive Selling Rights",
+            "Dedicated Real Estate Agent",
+            "On-desk Enquiry Handling",
+            "Possession & Record Maintenance",
             "RISG: Rental Income Substitution Guarantee",
             "Upfront Monthly Rental till Sale",
             "Guaranteed Cash Flow",
@@ -132,15 +165,201 @@ const TermsAccordion = ({ title, children, isOpen, onClick }) => {
     );
 };
 
-const Marketing = () => {
-    const [openSection, setOpenSection] = useState(null);
+const PackageInquiryModal = ({ isOpen, onClose, packageData }) => {
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        propertyPrice: '',
+        address: ''
+    });
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState('');
 
-    const toggleSection = (section) => {
-        setOpenSection(openSection === section ? null : section);
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            await axios.post('http://localhost:5000/api/marketing/inquiry', {
+                ...formData,
+                packageTitle: packageData.title,
+                packagePrice: packageData.price + ' ' + packageData.priceSub,
+                packageTarget: packageData.target
+            });
+            setSuccess(true);
+            setTimeout(() => {
+                setSuccess(false);
+                onClose();
+                setFormData({ name: '', phone: '', propertyPrice: '', address: '' });
+                setAgreedToTerms(false);
+            }, 3000);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to send inquiry. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen || !packageData) return null;
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="marketing-modal-overlay" onClick={onClose}>
+                    <motion.div 
+                        className="marketing-modal-content"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button className="modal-close" onClick={onClose}>
+                            <FaTimes />
+                        </button>
+                        
+                        {!success ? (
+                            <>
+                                {/* Package Details First */}
+                                <div className="selected-package">
+                                    <div className="pkg-icon">{packageData.icon}</div>
+                                    <div>
+                                        <h4>{packageData.title}</h4>
+                                        <p className="pkg-meta">{packageData.target}</p>
+                                        <p className="pkg-price">{packageData.price} <span>{packageData.priceSub}</span></p>
+                                    </div>
+                                </div>
+
+                                {/* Form Section Header */}
+                                <div className="form-section-header">
+                                    <h3>Your Details</h3>
+                                    <p>Fill in your information to inquire about this package</p>
+                                </div>
+
+                                <form onSubmit={handleSubmit} className="inquiry-form">
+                                    <div className="form-group">
+                                        <label>Name</label>
+                                        <input 
+                                            type="text" 
+                                            name="name" 
+                                            value={formData.name} 
+                                            onChange={handleChange} 
+                                            required 
+                                            placeholder="Your full name"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Phone Number</label>
+                                        <input 
+                                            type="tel" 
+                                            name="phone" 
+                                            value={formData.phone} 
+                                            onChange={handleChange} 
+                                            required 
+                                            placeholder="+91 98765 43210"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Property Price (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            name="propertyPrice" 
+                                            value={formData.propertyPrice} 
+                                            onChange={handleChange} 
+                                            required 
+                                            placeholder="50,00,000"
+                                            min="0"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Property Location</label>
+                                        <textarea 
+                                            name="address" 
+                                            value={formData.address} 
+                                            onChange={handleChange} 
+                                            required 
+                                            placeholder="Enter complete property address"
+                                            rows="3"
+                                        ></textarea>
+                                    </div>
+
+                                    {error && <p className="error-msg">{error}</p>}
+
+                                    <div className="terms-agreement">
+                                        <label className="checkbox-container">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={agreedToTerms}
+                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                            />
+                                            <span className="checkmark"></span>
+                                            <span className="agreement-text">
+                                                I agree to the{' '}
+                                                <a 
+                                                    href="/services/marketing/terms-conditions" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    Terms & Conditions
+                                                </a>
+                                                {' '}and{' '}
+                                                <a 
+                                                    href="/services/marketing/rules-regulations" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    Rules & Regulations
+                                                </a>
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <button type="submit" className="submit-btn" disabled={loading || !agreedToTerms}>
+                                        {loading ? 'Sending...' : 'Send Inquiry'}
+                                    </button>
+                                </form>
+                            </>
+                        ) : (
+                            <div className="success-message">
+                                <FaCheckCircle size={64} color="#10B981" />
+                                <h3>Inquiry Sent Successfully!</h3>
+                                <p>Our team will contact you shortly.</p>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+const Marketing = () => {
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedPackage, setSelectedPackage] = useState(null);
+
+    const handlePackageSelect = (pkg) => {
+        setSelectedPackage(pkg);
+        setModalOpen(true);
     };
 
     return (
         <div className="marketing-page">
+            <PackageInquiryModal 
+                isOpen={modalOpen} 
+                onClose={() => setModalOpen(false)} 
+                packageData={selectedPackage} 
+            />
             <div className="marketing-hero">
                 <video 
                     autoPlay 
@@ -184,6 +403,7 @@ const Marketing = () => {
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: index * 0.1 }}
                         >
+                            <div className="package-number">Package {pkg.id}</div>
                             <div className="card-badge-row">
                                 <span className="package-target">{pkg.target}</span>
                                 {pkg.popular && <span className="popular-badge">High Demand</span>}
@@ -217,56 +437,37 @@ const Marketing = () => {
                                 <p>{pkg.payment}</p>
                             </div>
 
-                            <button className="book-btn">Select Package</button>
+                            <button className="book-btn" onClick={() => handlePackageSelect(pkg)}>Select Package</button>
                         </motion.div>
                     ))}
                 </div>
             </div>
 
             <div className="info-section">
-                <h2>Terms & Regulations</h2>
+                <h2>Legal Information</h2>
+                <p className="section-subtitle">Click to view complete legal documentation</p>
                 
-                <TermsAccordion 
-                    title="Terms and Conditions" 
-                    isOpen={openSection === 'terms'} 
-                    onClick={() => toggleSection('terms')}
-                >
-                    <h4>1. Service Scope</h4>
-                    <p>Includes Videography (DSLR/Drone), Editing, Meta Ads, Influencer promotions, and Sole selling based on package.</p>
-                    
-                    <h4>2. Eligibility</h4>
-                    <ul>
-                        <li>Pack 1-4: Owners & Developers</li>
-                        <li>Pack 5-6: Developers Only</li>
-                    </ul>
+                <div className="legal-cards-container">
+                    <a href="/services/marketing/terms-conditions" className="legal-card">
+                        <div className="legal-card-icon">📋</div>
+                        <h3>Terms & Conditions</h3>
+                        <p>Complete service agreement covering all 6 marketing packages, payment terms, brokerage calculations, and RISG guarantee details.</p>
+                        <div className="legal-card-footer">
+                            <span>View Full Document</span>
+                            <FaChevronRight />
+                        </div>
+                    </a>
 
-                    <h4>3. Payment Terms</h4>
-                    <p>Pack 1-2: 100% after shoot. Pack 3-4: 20% Brokerage upfront. Pack 5-6: From buyer collections.</p>
-
-                    <h4>11. RISG (Guaranteed Rent)</h4>
-                    <p>Only for Residential properties in Pack 6. Paid monthly until sold after project completion.</p>
-
-                    <h4>12. Refund Policy</h4>
-                    <p>No refund if shoot/marketing has started. Pro-rata if Bada Builder fails to deliver.</p>
-                </TermsAccordion>
-
-                <TermsAccordion 
-                    title="Rules and Regulations" 
-                    isOpen={openSection === 'rules'} 
-                    onClick={() => toggleSection('rules')}
-                >
-                    <h4>1. Property Verification</h4>
-                    <p>Must submit Ownership proof and Government ID. No illegal properties.</p>
-                    
-                    <h4>2. Pricing Honesty</h4>
-                    <p>Any under-reporting or hidden deals will result in contract termination and forfeiture.</p>
-                    
-                    <h4>3. Exclusive Rights (Pack 5 & 6)</h4>
-                    <p>Developer cannot sell independently or appoint other brokers.</p>
-                    
-                    <h4>6. Lead Handling</h4>
-                    <p>All leads generated must be handled through Bada Builder.</p>
-                </TermsAccordion>
+                    <a href="/services/marketing/rules-regulations" className="legal-card">
+                        <div className="legal-card-icon">⚖️</div>
+                        <h3>Rules & Regulations</h3>
+                        <p>Property verification requirements, pricing policies, exclusive rights agreements, and lead handling procedures.</p>
+                        <div className="legal-card-footer">
+                            <span>View Full Document</span>
+                            <FaChevronRight />
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
     );
