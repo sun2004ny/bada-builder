@@ -13,6 +13,14 @@ const services = [
     link: null
   },
   {
+    id: 8,
+    title: 'Marketing Services',
+    description: 'Premium videography, drone shoots, and digital marketing strategies',
+    icon: '📢',
+    features: ['DSLR & Drone Shoots', 'Meta Ads', 'Influencer Marketing'],
+    link: '/services/marketing'
+  },
+  {
     id: 2,
     title: 'Home Loans',
     description: 'Get the best home loan deals with competitive interest rates',

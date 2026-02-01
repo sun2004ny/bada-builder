@@ -29,6 +29,7 @@ import InvestmentListing from './pages/InvestmentListing';
 import Exhibition from './pages/Exhibition';
 import Working from './pages/Working';
 import Services from './pages/Services';
+import Marketing from './pages/Marketing/Marketing';
 import SubscriptionPlans from './pages/SubscriptionPlans';
 import DeveloperPlan from './pages/DeveloperPlan';
 import IndividualPlan from './pages/IndividualPlan';
@@ -142,7 +143,7 @@ function AppContent() {
       <ScrollToTop />
       <Preloader />
       {!isMessagesPage && !isAdminPanel && <Header />}
-      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && location.pathname !== '/short-stay/list-property' && !location.pathname.startsWith('/short-stay/') && <GlobalSearchBar />}
+      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && location.pathname !== '/short-stay/list-property' && !location.pathname.startsWith('/short-stay/') && location.pathname !== '/services/marketing' && <GlobalSearchBar />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
       {!isMessagesPage && !isAdminPanel && <Chatbot />}
       {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
@@ -169,6 +170,7 @@ function AppContent() {
             <Route path="/" element={<RecommendedProjects />} />
             {/* <Route path="/projects" element={<Projects />} /> */}
             <Route path="/services" element={<Services />} />
+            <Route path="/services/marketing" element={<Marketing />} />
             <Route path="/investments" element={<Investments />} />
             <Route path="/exhibition" element={<Exhibition />} />
             <Route path="/exhibition/individual" element={<ByIndividual />} />
