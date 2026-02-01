@@ -116,7 +116,7 @@ const ProfilePage = () => {
       title: 'Joined Live Groups',
       icon: <FiUsers className="activity-icon" />,
       count: loadingActivity ? '...' : activityCounts.joinedLiveGroups,
-      path: '/exhibition/live-grouping',
+      path: '/profile/joined-live-groups',
       color: 'purple'
     },
     {

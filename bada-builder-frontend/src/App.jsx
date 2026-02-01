@@ -59,6 +59,7 @@ import DataCentreDetails from './pages/Investments/DataCentreDetails';
 import RegisterComplaint from './pages/Complaints/RegisterComplaint';
 import MyComplaints from './pages/Complaints/MyComplaints';
 import ProfilePage from './pages/ProfilePage';
+import JoinedLiveGroups from './pages/JoinedLiveGroups';
 import MessagesPage from './pages/MessagesPage';
 import MyInvestments from './pages/MyInvestments';
 import MyProperties from './pages/MyProperties';
@@ -187,7 +188,7 @@ function AppContent() {
             <Route path="/short-stay/:id" element={<ShortStayDetails />} />
             <Route path="/short-stay/reserve/:id" element={<ShortStayReserve />} />
             <Route path="/hosting" element={<HostingDashboard />} />
-            
+
             <Route path="/home-loans" element={<HomeLoans />} />
             <Route path="/long-live/browse" element={<LongLiveBrowse />} />
             <Route path="/long-live/post" element={<LongLivePost />} />
@@ -203,6 +204,7 @@ function AppContent() {
             <Route path="/individual-plan" element={<IndividualPlan />} />
             <Route path="/post-property" element={<PostProperty />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/joined-live-groups" element={<JoinedLiveGroups />} />
             <Route path="/my-complaints" element={<MyComplaints />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/profile/favorites" element={<BookmarkedProperties />} />

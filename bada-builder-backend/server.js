@@ -27,6 +27,7 @@ import adminRoutes from './routes/admin.js';
 import adminPropertiesRoutes from './routes/adminProperties.js';
 import shortStayRoutes from './routes/shortStay.js';
 import marketingRoutes from './routes/marketing.js';
+import joinedLiveGroupsRoutes from './routes/joined-live-groups.js';
 
 
 // Import database
@@ -132,6 +133,7 @@ app.use('/api/admin/properties', mutationLimiter, adminPropertiesRoutes);
 app.use('/api/admin', readLimiter, adminRoutes);
 app.use('/api/short-stay', mutationLimiter, shortStayRoutes);
 app.use('/api/marketing', mutationLimiter, marketingRoutes);
+app.use('/api/joined-live-groups', readLimiter, joinedLiveGroupsRoutes);
 
 
 // 404 handler
