@@ -21,31 +21,48 @@ const LiveGroupingDetails = () => {
         const project = data.project;
 
         if (project) {
-          // Map to expected format
           const processedProject = {
             ...project,
             title: project.title || 'Untitled Project',
-            location: project.location || 'Location not specified',
-            pricePerSqFt: parseFloat(project.original_price?.replace(/[^0-9.]/g, '') || 0),
-            groupPricePerSqFt: parseFloat(project.group_price?.replace(/[^0-9.]/g, '') || 0),
+            location: project.location || project.map_address || 'Location not specified',
             images: project.images || (project.image ? [project.image] : ['/placeholder-property.jpg']),
-            benefits: project.benefits || ["Group Discount", "Premium Location", "Verified Builder"],
-            facilities: project.facilities || ["Swimming Pool", "Gym", "Parking", "Security"],
-            advantages: Array.isArray(project.advantages) ? project.advantages : [],
+
+            // Map Form Fields
+            builder_name: project.builder_name || project.developer || '',
+            property_type: project.property_type || project.type || '',
+            unit_configuration: project.unit_configuration || '',
+            description: project.description || 'No description available.',
+
+            // Progress
             filledSlots: project.filled_slots || 0,
-            totalSlots: project.total_slots || 0,
+            totalSlots: project.total_slots || 0, // Using total_slots as target participants
             minBuyers: project.min_buyers || 0,
-            reraNumber: project.rera_number || 'Applied',
-            timeLeft: project.time_left || '15 Days',
-            savedAmt: project.savings || '0',
+
+            // Timers & Status
+            timeLeft: project.offer_expiry_datetime ? new Date(project.offer_expiry_datetime).toLocaleDateString() : (project.time_left || 'Limited Time'),
+            status: project.status || 'live',
+
+            // Plot Specifics
+            road_width: project.road_width,
+            plot_gap: project.plot_gap,
+
+            // Pricing Mappings
+            pricePerSqFt: parseFloat(project.regular_price_per_sqft) || parseFloat(project.price_min_reg) || 0,
+            pricePerSqFtMax: parseFloat(project.regular_price_per_sqft_max) || parseFloat(project.price_max_reg) || null,
+            groupPricePerSqFt: parseFloat(project.group_price_per_sqft) || parseFloat(project.price_min_disc) || 0,
+            groupPricePerSqFtMax: parseFloat(project.group_price_per_sqft_max) || parseFloat(project.price_max_disc) || null,
+
+            totalSavingsMin: parseFloat(project.total_savings_min) || null,
+            totalSavingsMax: parseFloat(project.total_savings_max) || null,
+
+            regular_price_min: project.regular_price_min,
+            regular_price_max: project.regular_price_max,
+            discounted_total_price_min: project.discounted_total_price_min,
+            discounted_total_price_max: project.discounted_total_price_max,
+
             latitude: project.latitude,
             longitude: project.longitude,
             map_address: project.map_address,
-            groupDetails: project.group_details || {
-              refundPolicy: "100% refund if group doesn't fill",
-              closingDate: "Not specified",
-              expectedCompletion: project.possession || "TBD"
-            }
           };
           setProperty(processedProject);
         } else {
@@ -100,7 +117,7 @@ const LiveGroupingDetails = () => {
 
   const handleJoinGroup = () => {
     // Navigate to 3D view to join the group
-    navigate(`/exhibition/live-grouping-details/${id}`);
+    navigate('/exhibition/3d-view', { state: { property: property } });
   };
 
   const handleDownloadBrochure = () => {
@@ -156,12 +173,9 @@ const LiveGroupingDetails = () => {
               <h1>{property.title}</h1>
               <p className="location">📍 {property.location}</p>
               <div className="property-meta">
-                <span className="meta-item">{property.type}</span>
-                <span className="meta-item">{property.area}</span>
-                <span className="meta-item">Possession: {property.possession}</span>
-              </div>
-              <div className="rera-badge">
-                RERA ✅ {property.reraNumber}
+                <span className="meta-item">{property.property_type}</span>
+                {property.unit_configuration && <span className="meta-item">{property.unit_configuration}</span>}
+                {property.area && <span className="meta-item">{property.area} Sq Ft</span>}
               </div>
             </Motion.div>
 
@@ -201,86 +215,26 @@ const LiveGroupingDetails = () => {
               </p>
             </Motion.div>
 
-            {/* Description */}
-            <Motion.div
-              className="description-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <h2>About This Property</h2>
-              <p>{property.description}</p>
-            </Motion.div>
 
-            {/* Group Benefits */}
-            <Motion.div
-              className="benefits-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <h2>Exclusive Group Benefits</h2>
-              <div className="benefits-grid">
-                {property.benefits.map((benefit, idx) => (
-                  <div key={idx} className="benefit-card">
-                    <span className="benefit-icon">✓</span>
-                    <span className="benefit-text">{benefit}</span>
+
+            {/* Developer Info - ONLY if builder_name exists */}
+            {property.builder_name && (
+              <Motion.div
+                className="developer-section"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <h2>Developer</h2>
+                <div className="developer-card">
+                  <div className="developer-icon">🏢</div>
+                  <div className="developer-info">
+                    <h3>{property.builder_name}</h3>
+                    <p>Trusted Real Estate Developer</p>
                   </div>
-                ))}
-              </div>
-            </Motion.div>
-
-            {/* Facilities */}
-            <Motion.div
-              className="facilities-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              <h2>Amenities & Facilities</h2>
-              <div className="facilities-grid">
-                {property.facilities.map((facility, idx) => (
-                  <div key={idx} className="facility-item">
-                    {facility}
-                  </div>
-                ))}
-              </div>
-            </Motion.div>
-
-            {/* Location Advantages */}
-            <Motion.div
-              className="location-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-            >
-              <h2>Location Advantages</h2>
-              <div className="advantages-grid">
-                {property.advantages.map((item, idx) => (
-                  <div key={idx} className="advantage-card">
-                    <p className="advantage-place">{item.place}</p>
-                    <p className="advantage-distance">{item.distance}</p>
-                  </div>
-                ))}
-              </div>
-            </Motion.div>
-
-            {/* Developer Info */}
-            <Motion.div
-              className="developer-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.7 }}
-            >
-              <h2>Developer</h2>
-              <div className="developer-card">
-                <div className="developer-icon">🏢</div>
-                <div className="developer-info">
-                  <h3>{property.developer}</h3>
-                  <p>Trusted Real Estate Developer</p>
                 </div>
-              </div>
-            </Motion.div>
+              </Motion.div>
+            )}
           </div>
 
           {/* Right Column - Sticky Pricing Card */}
@@ -298,107 +252,194 @@ const LiveGroupingDetails = () => {
                 </span>
               </div>
 
-              <div className="price-comparison-large">
-                <div className="original-price-large">
-                  <span className="label">Regular Price</span>
-                  <span className="amount strikethrough">₹{property.pricePerSqFt?.toLocaleString() || 'N/A'} / sq ft</span>
+              {/* REPLICATED PRICING SECTION FROM CARD */}
+              <div className="price-header-group" style={{ textAlign: 'center', marginBottom: '24px' }}>
+
+                {/* Regular Price Box (Top) */}
+                <div className="regular-price-box" style={{ marginBottom: '16px', padding: '10px' }}>
+                  <div style={{
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: '4px'
+                  }}>
+                    Regular Price (PER SQ FT)
+                  </div>
+                  <div style={{ display: 'none' }}>
+                    {property.pricePerSqFtMax
+                      ? `₹${property.pricePerSqFt?.toLocaleString()} - ₹${property.pricePerSqFtMax?.toLocaleString()} / sq ft`
+                      : `₹${property.pricePerSqFt?.toLocaleString() || 'N/A'} / sq ft`
+                    }
+                  </div>
+                  {/* Orange Bar for Regular Price */}
+                  <div className="range-bar-orange" style={{ height: '8px', marginBottom: '2px' }}></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>
+                    <span style={{ textDecoration: 'line-through' }}>{property.pricePerSqFt ? `₹${property.pricePerSqFt.toLocaleString()} / sq ft` : ''}</span>
+                    <span style={{ textDecoration: 'line-through' }}>{property.pricePerSqFtMax ? `₹${property.pricePerSqFtMax.toLocaleString()} / sq ft` : ''}</span>
+                  </div>
                 </div>
-                <div className="group-price-large">
-                  <span className="label">🎯 Live Grouping Price</span>
-                  <span className="amount group-highlight">₹{property.groupPricePerSqFt?.toLocaleString() || 'N/A'} / sq ft</span>
+
+                {/* Live Group Price Bar (Top) */}
+                <div className="live-price-bar" style={{
+                  background: 'linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%)',
+                  borderRadius: '16px',
+                  padding: '16px 12px',
+                  position: 'relative',
+                  border: '1px solid #86efac',
+                  boxShadow: '0 4px 12px rgba(74, 222, 128, 0.15)'
+                }}>
+                  <div className="floating-label" style={{
+                    position: 'absolute',
+                    top: '-12px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'white',
+                    padding: '4px 14px',
+                    borderRadius: '16px',
+                    fontSize: '10px',
+                    fontWeight: '800',
+                    color: '#166534',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    whiteSpace: 'nowrap',
+                    border: '1px solid #86efac'
+                  }}>
+                    <span>🏠</span> LIVE GROUP PRICE RANGE (PER SQ FT)
+                  </div>
+
+                  {/* Green Bar for Group Price */}
+                  <div className="range-bar-green" style={{ height: '10px', marginBottom: '4px' }}></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#166534', fontWeight: '700' }}>
+                    <span>{property.groupPricePerSqFt ? `₹${property.groupPricePerSqFt.toLocaleString()} / sq ft` : ''}</span>
+                    <span>{property.groupPricePerSqFtMax ? `₹${property.groupPricePerSqFtMax.toLocaleString()} / sq ft` : ''}</span>
+                  </div>
                 </div>
-                {property.savings && (
-                  <div className="savings-highlight-mini">
-                    <span>💰 Total Savings: </span>
-                    <strong>{property.savings}</strong>
+              </div>
+
+              {/* V2 Yellow Pricing Container */}
+              <div className="yellow-pricing-container-v2">
+
+                {/* Row 1 & 2: Regular Price Range Box */}
+                <div className="price-box-v2 regular-price-box">
+                  <div className="regular-price-row">
+                    <div className="label-col">
+                      <span className="icon">🏠</span>
+                      <span className="label">REGULAR PRICE RANGE (per unit):</span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Orange Range Bar */}
+                  <div className="range-bar-orange"></div>
+                  <div className="range-limits-labels text-slate-500">
+                    <span style={{ textDecoration: 'line-through' }}>
+                      {property.regular_price_min
+                        ? `₹${(parseFloat(property.regular_price_min) / 100000).toFixed(2)} Lakhs`
+                        : (property.original_price ? property.original_price : 'N/A')
+                      }
+                    </span>
+                    <span style={{ textDecoration: 'line-through' }}>
+                      {property.regular_price_max
+                        ? `₹${(parseFloat(property.regular_price_max) / 100000).toFixed(2)} Lakhs`
+                        : ''
+                      }
+                    </span>
+                  </div>
+                </div>
+
+                {/* Row 3: Group Price Box (Green) */}
+                <div className="price-box-v2 group-price-box">
+                  <div className="group-price-row">
+                    <div className="label-col">
+                      <span className="icon">🎯</span>
+                      <span className="label">LIVE GROUP PRICE RANGE (per unit):</span>
+                    </div>
+                  </div>
+
+                  {/* Green Range Bar */}
+                  <div className="range-bar-green"></div>
+                  <div className="range-limits-labels text-emerald-700">
+                    <span>
+                      {property.discounted_total_price_min
+                        ? `₹${(parseFloat(property.discounted_total_price_min) / 100000).toFixed(2)} Lakhs`
+                        : ''
+                      }
+                    </span>
+                    <span>
+                      {property.discounted_total_price_max
+                        ? `₹${(parseFloat(property.discounted_total_price_max) / 100000).toFixed(2)} Lakhs`
+                        : ''
+                      }
+                    </span>
+                  </div>
+                </div>
+
+                {/* Savings Display (Conditional) */}
+                {(property.totalSavingsMin || property.totalSavingsMax) && (
+                  <div className="price-box-v2 savings-box" style={{ background: '#eff6ff', border: '1px solid #93c5fd' }}>
+                    <div className="group-price-row">
+                      <div className="label-col">
+                        <span className="icon">💰</span>
+                        <span className="label" style={{ color: '#1e40af' }}>TOTAL SAVINGS (per unit):</span>
+                      </div>
+                    </div>
+
+                    {/* Blue Range Bar */}
+                    <div className="range-bar-blue"></div>
+                    <div className="range-limits-labels text-blue-700">
+                      <span>
+                        {property.totalSavingsMin ? `₹${property.totalSavingsMin.toLocaleString()}` : ''}
+                      </span>
+                      <span>
+                        {property.totalSavingsMax ? `₹${property.totalSavingsMax.toLocaleString()}` : ''}
+                      </span>
+                    </div>
                   </div>
                 )}
+
+                {/* Row 4: Dashed Separator */}
+                <div className="dashed-separator"></div>
+
+                {/* Row 5: Available Units */}
+                <div className="available-units-section">
+                  <div className="section-label">Types of Units:</div>
+                  <div className="units-grid">
+                    {property.unit_configuration && property.unit_configuration.includes(',') ? (
+                      property.unit_configuration.split(',').map((u, i) => (
+                        <div key={i} className="unit-pill">{u.trim()}</div>
+                      ))
+                    ) : (property.unit_configuration ? (
+                      <div className="unit-pill">{property.unit_configuration}</div>
+                    ) : (
+                      <>
+                        {property.units && property.units.map((unit, idx) => (
+                          <div key={idx} className="unit-pill">{unit.name} ({unit.area} sq ft)</div>
+                        ))}
+                      </>
+                    ))}
+                  </div>
+                </div>
+
               </div>
 
-              {/* Price Range for Multiple Units */}
-              {property.units && property.units.length > 0 && (
-                <div className="price-range-section-details">
-                  <h4>Price Range (Multiple Units)</h4>
-
-                  <div className="range-item-details">
-                    <span className="range-label-details">Regular Price Range:</span>
-                    <span className="range-value-details">
-                      {formatPriceRange(calculatePriceRange(property.pricePerSqFt, property.units))}
-                    </span>
-                  </div>
-
-                  {/* Visual Range Bar */}
-                  <div className="range-bar-container-details">
-                    <div className="range-bar-details">
-                      <div className="range-bar-fill-details regular"></div>
-                    </div>
-                    <div className="range-labels-details">
-                      <span className="range-min-details">
-                        {formatCurrency(calculatePriceRange(property.pricePerSqFt, property.units).min)}
-                      </span>
-                      <span className="range-max-details">
-                        {formatCurrency(calculatePriceRange(property.pricePerSqFt, property.units).max)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="range-item-details group-range-details">
-                    <span className="range-label-details">🎯 Group Price Range:</span>
-                    <span className="range-value-details highlight">
-                      {formatPriceRange(calculatePriceRange(property.groupPricePerSqFt, property.units))}
-                    </span>
-                  </div>
-
-                  {/* Visual Range Bar for Group Price */}
-                  <div className="range-bar-container-details">
-                    <div className="range-bar-details">
-                      <div className="range-bar-fill-details group"></div>
-                    </div>
-                    <div className="range-labels-details">
-                      <span className="range-min-details group">
-                        {formatCurrency(calculatePriceRange(property.groupPricePerSqFt, property.units).min)}
-                      </span>
-                      <span className="range-max-details group">
-                        {formatCurrency(calculatePriceRange(property.groupPricePerSqFt, property.units).max)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="units-info-details">
-                    <span className="units-label-details">Available Units:</span>
-                    <div className="units-list-details">
-                      {property.units.map((unit, idx) => (
-                        <span key={idx} className="unit-badge-details">
-                          {unit.name} ({unit.area} sq ft)
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="pricing-note">
-                <p>💡 <strong>Note:</strong> Final price depends on total area selected</p>
-                <p className="area-info">Property Area: {property.area}</p>
-              </div>
-
-              <div className="group-details">
-                <h4>Group Details</h4>
-                <div className="detail-row">
-                  <span className="detail-label">Token Amount:</span>
-                  <span className="detail-value token-highlight">
-                    {formatCurrency(calculateTokenAmount(property.groupPricePerSqFt, property.area))}
-                    <span className="token-note">(0.5% of discounted price)</span>
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Closing Date:</span>
-                  <span className="detail-value">{property.groupDetails.closingDate}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Refund Policy:</span>
-                  <span className="detail-value">{property.groupDetails.refundPolicy}</span>
-                </div>
+              <div className="final-price-disclaimer" style={{
+                marginTop: '8px',
+                padding: '8px 12px',
+                background: '#eff6ff',
+                border: '1px dashed #bfdbfe',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontSize: '12px',
+                color: '#64748b',
+                fontStyle: 'italic'
+              }}>
+                <span style={{ fontSize: '13px' }}>💡</span>Final price depends on unit & area selected
               </div>
 
               <button
@@ -414,14 +455,7 @@ const LiveGroupingDetails = () => {
                 </div>
               </button>
 
-              <button
-                className="threed-view-btn"
-                onClick={() => navigate(`/exhibition/live-grouping-details/${id}`)}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <span>🏗️</span> View 3D Visualization
-                </div>
-              </button>
+
 
               <button
                 className="contact-btn"
