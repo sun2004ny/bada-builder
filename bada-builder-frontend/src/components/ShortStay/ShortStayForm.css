@@ -20,7 +20,8 @@
 
 /* Modal Container */
 .short-stay-modal {
-    background: rgba(30, 41, 59, 0.95); /* Slate 800 */
+    background: rgba(30, 41, 59, 0.95);
+    /* Slate 800 */
     border: 1px solid rgba(255, 255, 255, 0.1);
     width: 100%;
     max-width: 650px;
@@ -141,16 +142,20 @@
 }
 
 .step-subtitle {
-    color: #cbd5e1 !important; /* Lighter slate */
+    color: #cbd5e1 !important;
+    /* Lighter slate */
     margin-bottom: 32px;
     font-size: 14px;
 }
 
-label {
+
+.short-stay-modal label,
+.short-stay-form-inline label {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: #ffffff !important; /* Force White */
+    color: #ffffff !important;
+    /* Force White */
     margin-bottom: 8px;
     letter-spacing: 0.5px;
 }
@@ -158,11 +163,13 @@ label {
 /* Premium Inputs */
 .premium-input {
     width: 100%;
-    background: #0f172a !important; /* Force Dark Background */
+    background: #0f172a !important;
+    /* Force Dark Background */
     border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 16px;
     border-radius: 12px;
-    color: #ffffff !important; /* Force White Text */
+    color: #ffffff !important;
+    /* Force White Text */
     font-size: 16px;
     transition: all 0.3s;
 }
@@ -175,7 +182,8 @@ label {
 }
 
 .premium-input::placeholder {
-    color: #94a3b8 !important; /* Light Slate for visibility */
+    color: #94a3b8 !important;
+    /* Light Slate for visibility */
     background: transparent !important;
     box-shadow: none !important;
 }
@@ -438,7 +446,8 @@ label {
     cursor: not-allowed;
 }
 
-.next-btn-premium, .submit-btn-premium {
+.next-btn-premium,
+.submit-btn-premium {
     background: linear-gradient(135deg, #FF385C, #E31C5F);
     color: white;
     border: none;
@@ -453,7 +462,8 @@ label {
     gap: 8px;
 }
 
-.next-btn-premium:hover, .submit-btn-premium:hover {
+.next-btn-premium:hover,
+.submit-btn-premium:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(255, 56, 92, 0.4);
 }
@@ -468,12 +478,19 @@ label {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* Responsive */
@@ -484,20 +501,20 @@ label {
         max-height: 100%;
         border-radius: 0;
     }
-    
+
     .select-cards {
         grid-template-columns: 1fr;
     }
-    
+
     .form-row {
         flex-direction: column;
         gap: 0;
     }
-    
+
     .modal-body-premium {
         padding: 20px;
     }
-    
+
     .price-input-large input {
         font-size: 36px;
     }
@@ -543,34 +560,39 @@ label {
 
 .binary-toggle-btn.active {
     color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .binary-toggle-btn.active.yes {
-    background: #10b981; /* Emerald 500 */
+    background: #10b981;
+    /* Emerald 500 */
 }
 
 .binary-toggle-btn.active.no {
-    background: #ef4444; /* Red 500 */
+    background: #ef4444;
+    /* Red 500 */
 }
 
 .binary-toggle-btn:hover:not(.active) {
     color: #cbd5e1;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
 }
+
 /* Inline Mode Overrides */
 /* Inline Mode Overrides - Airbnb Replica */
 .short-stay-form-inline {
     background: #ffffff;
     color: #222;
     width: 100%;
-    max-width: 630px; /* Standard Airbnb Content Width */
+    max-width: 630px;
+    /* Standard Airbnb Content Width */
     margin: 0 auto;
     border-radius: 0;
     box-shadow: none;
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 80px); /* Fill remaining height */
+    min-height: calc(100vh - 80px);
+    /* Fill remaining height */
     position: relative;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
@@ -742,6 +764,7 @@ label {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
 @media (max-width: 480px) {
     .category-selection-grid {
         grid-template-columns: 1fr;
@@ -776,7 +799,8 @@ label {
     justify-content: space-between;
     padding: 0 40px;
     z-index: 100;
-    max-width: 100% !important; /* Override inline width constraint */
+    max-width: 100% !important;
+    /* Override inline width constraint */
     width: 100%;
 }
 
@@ -800,7 +824,8 @@ label {
     left: 0;
     height: 2px;
     background: #222;
-    width: var(--progress-width, 0%); /* CSS Variable for progress */
+    width: var(--progress-width, 0%);
+    /* CSS Variable for progress */
     z-index: 2;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -808,21 +833,26 @@ label {
 .short-stay-form-inline .back-btn-premium {
     font-size: 16px;
     font-weight: 600;
-    text-decoration: none; /* Removed constant underline */
+    text-decoration: none;
+    /* Removed constant underline */
     background: none;
     border: none;
-    outline: none; /* Remove focus ring */
+    outline: none;
+    /* Remove focus ring */
     cursor: pointer;
     color: #222;
-    padding: 10px 20px; /* Added padding for better click area */
-    border-radius: 8px; /* Rounded corners for hover background */
+    padding: 10px 20px;
+    /* Added padding for better click area */
+    border-radius: 8px;
+    /* Rounded corners for hover background */
     transition: background 0.2s;
 }
 
 .short-stay-form-inline .back-btn-premium:hover {
     background: #f7f7f7;
     color: #000;
-    text-decoration: underline; /* Add underline only on hover */
+    text-decoration: underline;
+    /* Add underline only on hover */
 }
 
 .short-stay-form-inline .next-btn-premium,
@@ -840,7 +870,8 @@ label {
 
 .short-stay-form-inline .next-btn-premium:hover,
 .short-stay-form-inline .submit-btn-premium:hover {
-    background: #333333 !important; /* Slightly lighter on hover */
+    background: #333333 !important;
+    /* Slightly lighter on hover */
     transform: none;
 }
 

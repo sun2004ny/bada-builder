@@ -37,7 +37,9 @@ const developerPlan = [
     features: [
       'Post 20 properties',
       'Featured listing for 1 year',
-      'Priority support'
+      'Priority support',
+      'RERA verification assistance',
+      'Project showcase'
     ],
     bestValue: true
   }
