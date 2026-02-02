@@ -3,6 +3,7 @@ import pool from '../config/database.js';
 import { authenticate, optionalAuth, isAdmin } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { uploadImage, uploadMultipleImages, uploadFile } from '../services/cloudinary.js';
+import { sendGroupPropertyBookingEmail, sendAdminGroupBookingNotification } from '../services/groupBookingEmailService.js'; // SMTP for group bookings
 
 const router = express.Router();
 
@@ -171,6 +172,77 @@ router.post('/units/:id/book', authenticate, async (req, res) => {
             // For now, updating the status in units is the primary goal
 
             await client.query('COMMIT');
+
+            // Send booking confirmation email (non-blocking)
+            // Fetch complete booking details for email
+            pool.query(`
+                SELECT 
+                    u.id as unit_id,
+                    u.unit_number,
+                    u.floor_number,
+                    u.unit_type,
+                    u.area,
+                    u.price,
+                    u.booked_at,
+                    t.tower_name,
+                    p.id as project_id,
+                    p.title as project_title,
+                    p.location as project_location,
+                    p.developer,
+                    usr.name as user_name,
+                    usr.email as user_email,
+                    usr.phone as user_phone
+                FROM live_group_units u
+                JOIN live_group_towers t ON u.tower_id = t.id
+                JOIN live_group_projects p ON t.project_id = p.id
+                JOIN users usr ON u.booked_by = usr.id
+                WHERE u.id = $1
+            `, [unitId])
+                .then(result => {
+                    if (result.rows.length > 0) {
+                        const booking = result.rows[0];
+
+                        // Send confirmation email via SMTP
+                        sendGroupPropertyBookingEmail({
+                            booking_id: booking.unit_id,
+                            user_name: booking.user_name,
+                            user_email: booking.user_email,
+                            user_phone: booking.user_phone || 'Not provided',
+                            property_name: booking.project_title || 'Untitled Project',
+                            unit_details: `${booking.tower_name} - Floor ${booking.floor_number}, Unit ${booking.unit_number}`,
+                            amount: parseFloat(booking.price) || 0,
+                            join_date: booking.booked_at,
+                            project_location: booking.project_location || 'Not Specified',
+                            developer: booking.developer || 'Bada Builder',
+                            unit_type: booking.unit_type,
+                            area: booking.area
+                        }).catch(err => {
+                            console.error('❌ [Group Booking] Email sending failed (non-critical):', err.message);
+                        });
+
+                        // Send Admin Notification
+                        sendAdminGroupBookingNotification({
+                            booking_id: booking.unit_id,
+                            user_name: booking.user_name,
+                            user_email: booking.user_email,
+                            user_phone: booking.user_phone || 'Not provided',
+                            property_name: booking.project_title || 'Untitled Project',
+                            unit_details: `${booking.tower_name} - Floor ${booking.floor_number}, Unit ${booking.unit_number}`,
+                            amount: parseFloat(booking.price) || 0,
+                            join_date: booking.booked_at,
+                            project_location: booking.project_location || 'Not Specified',
+                            developer: booking.developer || 'Bada Builder',
+                            unit_type: booking.unit_type,
+                            area: booking.area
+                        }).catch(err => {
+                            console.error('❌ [Group Booking] Admin email sending failed:', err.message);
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('❌ [Group Booking] Failed to fetch booking details for email:', err.message);
+                });
+
             res.json({ message: 'Unit successfully booked', unitId });
         } catch (e) {
             await client.query('ROLLBACK');

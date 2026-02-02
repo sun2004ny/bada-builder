@@ -4,6 +4,7 @@ import pool from '../config/database.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { uploadMultipleImages } from '../services/cloudinary.js';
+import { sendComplaintRegistrationEmail, sendAdminComplaintNotification } from '../services/complaintEmailService.js'; // SMTP for complaint confirmations
 
 const router = express.Router();
 
@@ -62,7 +63,39 @@ router.post(
         ]
       );
 
-      res.status(201).json({ complaint: result.rows[0] });
+      const complaint = result.rows[0];
+
+      // Send complaint registration confirmation email (non-blocking)
+      sendComplaintRegistrationEmail({
+        complaint_id: complaint.id,
+        user_name: complaint.name,
+        user_email: complaint.email,
+        user_phone: complaint.phone,
+        complaint_type: complaint.complaint_type,
+        location: complaint.location,
+        description: complaint.description,
+        created_date: complaint.created_at,
+        status: complaint.status
+      }).catch(err => {
+        console.error('❌ [Complaint] Email sending failed (non-critical):', err.message);
+      });
+
+      // Send admin notification
+      sendAdminComplaintNotification({
+        complaint_id: complaint.id,
+        user_name: complaint.name,
+        user_email: complaint.email,
+        user_phone: complaint.phone,
+        complaint_type: complaint.complaint_type,
+        location: complaint.location,
+        description: complaint.description,
+        created_date: complaint.created_at,
+        status: complaint.status
+      }).catch(err => {
+        console.error('❌ [Complaint] Admin email sending failed:', err.message);
+      });
+
+      res.status(201).json({ complaint });
     } catch (error) {
       console.error('Create complaint error:', error);
       res.status(500).json({ error: 'Failed to create complaint' });

@@ -87,9 +87,9 @@ const BookSiteVisit = () => {
       city?.trim(),
       pincode?.trim()
     ].filter(part => part && part.length > 0);
-    
+
     const combinedAddress = addressParts.join(', ');
-    
+
     setLocationData({
       ...newLocationData,
       address: combinedAddress
@@ -418,7 +418,7 @@ const BookSiteVisit = () => {
         newData.city?.trim(),
         newData.pincode?.trim()
       ].filter(part => part && part.length > 0);
-      
+
       newData.address = addressParts.join(', ');
 
       setLocationData(newData);
@@ -588,8 +588,8 @@ const BookSiteVisit = () => {
 
     // Prepare booking data
     const bookingData = {
-      property_id: property?.id || 'unknown',
-      property_title: property?.title || 'Unknown Property',
+      property_id: property?.id || null,
+      property_title: property?.title || 'General Site Visit',
       user_id: currentUser.id || currentUser.uid,
       user_email: currentUser.email,
       visit_date: formData.date,
@@ -702,7 +702,7 @@ const BookSiteVisit = () => {
           </div>
         </div>
       )}
-      
+
       <div className="form-section ui-bg">
         <h2>Book a Site Visit</h2>
 
@@ -746,6 +746,7 @@ const BookSiteVisit = () => {
             <label>
               Visit Time:
               <select name="time" value={formData.time} onChange={handleChange} required className="time-select">
+                <option value="" disabled>Select a time slot</option>
                 <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
                 <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
                 <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
@@ -835,7 +836,7 @@ const BookSiteVisit = () => {
                         onChange={handleBuildingChange}
                         placeholder="Building / Street"
                         className="address-field building-field"
-                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
                         required
                       />
                     </div>
@@ -850,7 +851,7 @@ const BookSiteVisit = () => {
                         onChange={handleAreaChange}
                         placeholder="Area / Locality"
                         className="address-field area-field"
-                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
                         required
                       />
                     </div>
@@ -862,7 +863,7 @@ const BookSiteVisit = () => {
                         onChange={handleCityChange}
                         placeholder="City"
                         className="address-field city-field"
-                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
                         required
                       />
                     </div>
@@ -879,7 +880,7 @@ const BookSiteVisit = () => {
                         className="address-field pincode-field"
                         pattern="[0-9]{6}"
                         maxLength="6"
-                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
+                        style={{ width: '100%', padding: '0.8rem', backgroundColor: '#2a2a3e', border: '2px solid #444', color: 'white', borderRadius: '8px' }}
                         required
                       />
                     </div>
@@ -889,13 +890,13 @@ const BookSiteVisit = () => {
                         className="maps-button-inline"
                         onClick={openMapModal}
                         title="Select location on map"
-                        style={{ 
-                          width: '100%', 
-                          padding: '0.8rem', 
-                          backgroundColor: '#9e4efb', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '8px', 
+                        style={{
+                          width: '100%',
+                          padding: '0.8rem',
+                          backgroundColor: '#9e4efb',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
                           cursor: 'pointer',
                           fontWeight: 'bold',
                           display: 'flex',
@@ -908,7 +909,7 @@ const BookSiteVisit = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Location from Map field */}
                   <div className="address-row map-location-row" style={{ marginBottom: '1rem' }}>
                     <div style={{ position: 'relative' }}>
@@ -946,12 +947,12 @@ const BookSiteVisit = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Hidden fields for backend */}
                 <input type="hidden" name="address" value={locationData.address} required />
                 <input type="hidden" name="latitude" value={locationData.latitude || ''} />
                 <input type="hidden" name="longitude" value={locationData.longitude || ''} />
-                
+
                 <small className="address-help">
                   Fill in your complete address details manually. Use map selection for location reference only.
                   {locationData.address && locationData.address.length < 15 && (
@@ -1074,156 +1075,156 @@ const BookSiteVisit = () => {
             </div>
 
             <div className="map-modal-scrollable-content">
-            {/* Map Controls */}
-            <div className="map-controls">
-              <div className="location-options">
-                <button
-                  type="button"
-                  className="current-location-btn"
-                  onClick={getCurrentLocation}
-                  disabled={currentLocationLoading}
-                >
-                  {currentLocationLoading ? (
-                    <>
-                      <div className="location-spinner"></div>
-                      Getting Location...
-                    </>
-                  ) : (
-                    <>
-                      📍 Use My Location
-                    </>
-                  )}
-                </button>
+              {/* Map Controls */}
+              <div className="map-controls">
+                <div className="location-options">
+                  <button
+                    type="button"
+                    className="current-location-btn"
+                    onClick={getCurrentLocation}
+                    disabled={currentLocationLoading}
+                  >
+                    {currentLocationLoading ? (
+                      <>
+                        <div className="location-spinner"></div>
+                        Getting Location...
+                      </>
+                    ) : (
+                      <>
+                        📍 Use My Location
+                      </>
+                    )}
+                  </button>
 
-                <div className="search-location" style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    placeholder="Search for a location..."
-                    className="map-search-input"
-                    value={searchQuery}
-                    onChange={handleSearchInputChange}
-                    onFocus={() => searchQuery.length >= 3 && setShowSearchResults(true)}
+                  <div className="search-location" style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      placeholder="Search for a location..."
+                      className="map-search-input"
+                      value={searchQuery}
+                      onChange={handleSearchInputChange}
+                      onFocus={() => searchQuery.length >= 3 && setShowSearchResults(true)}
+                    />
+                    {showSearchResults && searchResults.length > 0 && (
+                      <div className="pac-container" style={{ display: 'block', top: '100%', width: '100%' }}>
+                        {searchResults.map((result, idx) => (
+                          <div
+                            key={idx}
+                            className="pac-item"
+                            onClick={() => selectSearchResult(result)}
+                          >
+                            <span className="pac-icon pac-icon-marker"></span>
+                            <span className="pac-item-query">{result.display_name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="location-help">
+                  <small>
+                    <strong>How to select:</strong> Click on map, drag marker, or use "My Location" button.
+                  </small>
+                </div>
+              </div>
+
+              {/* Map Container - Leaflet */}
+              <div className="map-container" style={{ position: 'relative' }}>
+                <div className="map-overlay-tooltip">
+                  <div className="tooltip-text">
+                    📍 Click anywhere to set pickup location
+                  </div>
+                </div>
+
+                <div className="map-loading-overlay" style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(26, 26, 46, 0.8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  opacity: addressLoading ? 1 : 0,
+                  transition: 'opacity 0.3s ease',
+                  pointerEvents: addressLoading ? 'auto' : 'none'
+                }}>
+                  <div style={{ textAlign: 'center', color: '#ffffff' }}>
+                    <div className="location-spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p>Loading address...</p>
+                  </div>
+                </div>
+
+                <MapContainer
+                  center={mapCenter}
+                  zoom={13}
+                  style={{ width: '100%', height: '100%', minHeight: '500px', zIndex: 1 }}
+                  scrollWheelZoom={true}
+                  zoomControl={true}
+                  doubleClickZoom={true}
+                  touchZoom={true}
+                  dragging={true}
+                  className="leaflet-map-container"
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
-                  {showSearchResults && searchResults.length > 0 && (
-                    <div className="pac-container" style={{ display: 'block', top: '100%', width: '100%' }}>
-                      {searchResults.map((result, idx) => (
-                        <div
-                          key={idx}
-                          className="pac-item"
-                          onClick={() => selectSearchResult(result)}
-                        >
-                          <span className="pac-icon pac-icon-marker"></span>
-                          <span className="pac-item-query">{result.display_name}</span>
-                        </div>
-                      ))}
+                  <Marker
+                    position={markerPosition}
+                    draggable={true}
+                    eventHandlers={{
+                      dragend: handleMarkerDragEnd,
+                    }}
+                  />
+                  <MapEvents onMapClick={handleMapClick} />
+                  <MapController center={mapCenter} />
+                </MapContainer>
+              </div>
+
+              {/* Map Footer */}
+              <div className="map-modal-footer">
+                {selectedLocation ? (
+                  <div className="selected-location-info">
+                    <div className="location-success-header">
+                      <span className="success-icon">✅</span>
+                      <strong>Location Selected</strong>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="location-help">
-                <small>
-                  <strong>How to select:</strong> Click on map, drag marker, or use "My Location" button.
-                </small>
-              </div>
-            </div>
-
-            {/* Map Container - Leaflet */}
-            <div className="map-container" style={{ position: 'relative' }}>
-              <div className="map-overlay-tooltip">
-                <div className="tooltip-text">
-                  📍 Click anywhere to set pickup location
-                </div>
-              </div>
-
-              <div className="map-loading-overlay" style={{ 
-                position: 'absolute', 
-                top: 0, 
-                left: 0, 
-                right: 0, 
-                bottom: 0, 
-                background: 'rgba(26, 26, 46, 0.8)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                zIndex: 1000,
-                opacity: addressLoading ? 1 : 0,
-                transition: 'opacity 0.3s ease',
-                pointerEvents: addressLoading ? 'auto' : 'none'
-              }}>
-                <div style={{ textAlign: 'center', color: '#ffffff' }}>
-                  <div className="location-spinner" style={{ margin: '0 auto 1rem' }}></div>
-                  <p>Loading address...</p>
-                </div>
-              </div>
-
-              <MapContainer
-                center={mapCenter}
-                zoom={13}
-                style={{ width: '100%', height: '100%', minHeight: '500px', zIndex: 1 }}
-                scrollWheelZoom={true}
-                zoomControl={true}
-                doubleClickZoom={true}
-                touchZoom={true}
-                dragging={true}
-                className="leaflet-map-container"
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Marker
-                  position={markerPosition}
-                  draggable={true}
-                  eventHandlers={{
-                    dragend: handleMarkerDragEnd,
-                  }}
-                />
-                <MapEvents onMapClick={handleMapClick} />
-                <MapController center={mapCenter} />
-              </MapContainer>
-            </div>
-
-            {/* Map Footer */}
-            <div className="map-modal-footer">
-              {selectedLocation ? (
-                <div className="selected-location-info">
-                  <div className="location-success-header">
-                    <span className="success-icon">✅</span>
-                    <strong>Location Selected</strong>
+                    <div className="selected-address">
+                      <strong>Selected Address:</strong>
+                      <p>{selectedLocation.address}</p>
+                      <span className="coordinates-info">
+                        Coordinates: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="selected-address">
-                    <strong>Selected Address:</strong>
-                    <p>{selectedLocation.address}</p>
-                    <span className="coordinates-info">
-                      Coordinates: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
-                    </span>
+                ) : (
+                  <div className="location-instructions">
+                    <p>📍 Select pickup location</p>
                   </div>
-                </div>
-              ) : (
-                <div className="location-instructions">
-                  <p>📍 Select pickup location</p>
-                </div>
-              )}
+                )}
 
-              <div className="map-modal-actions">
-                <button
-                  type="button"
-                  className="cancel-location-btn"
-                  onClick={cancelLocationSelection}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="confirm-location-btn"
-                  onClick={confirmLocation}
-                  disabled={!selectedLocation}
-                >
-                  Confirm Location
-                </button>
+                <div className="map-modal-actions">
+                  <button
+                    type="button"
+                    className="cancel-location-btn"
+                    onClick={cancelLocationSelection}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="confirm-location-btn"
+                    onClick={confirmLocation}
+                    disabled={!selectedLocation}
+                  >
+                    Confirm Location
+                  </button>
+                </div>
               </div>
-            </div>
             </div>
           </div>
         </div>

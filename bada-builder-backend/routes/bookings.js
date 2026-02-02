@@ -3,16 +3,18 @@ import { body, validationResult } from 'express-validator';
 import pool from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
 import { createOrder, verifyPayment } from '../services/razorpay.js';
-import { sendEmail } from '../utils/sendEmail.js';
+import { sendEmail } from '../utils/sendEmail.js'; // Brevo API - for OTP/auth only
+import { sendBookingConfirmationEmail, sendAdminBookingNotification } from '../services/bookingEmailService.js'; // SMTP - for bookings
 
 const router = express.Router();
 
+// Create booking
 // Create booking
 router.post(
   '/',
   authenticate,
   [
-    body('property_id').isInt(),
+    body('property_id').optional({ nullable: true }).isInt(),
     body('visit_date').notEmpty(),
     body('visit_time').notEmpty(),
     body('person1_name').trim().notEmpty(),
@@ -20,6 +22,7 @@ router.post(
   ],
   async (req, res) => {
     try {
+      console.log('📦 Booking Request Body:', req.body); // DEBUG LOG
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -38,15 +41,33 @@ router.post(
         latitude,
         longitude,
         payment_method = 'postvisit',
+        property_title, // Allow frontend to send title for generic visits
       } = req.body;
 
-      // Get property details
-      const propertyResult = await pool.query('SELECT * FROM properties WHERE id = $1', [property_id]);
-      if (propertyResult.rows.length === 0) {
-        return res.status(404).json({ error: 'Property not found' });
+      let bookingPropertyTitle = property_title || 'General Site Visit';
+      let bookingPropertyLocation = 'Not Specified';
+      let bookingPropertyId = null;
+
+      // Normalize property_id
+      let finalPropertyId = property_id;
+      if (finalPropertyId === 'null' || finalPropertyId === 'undefined' || finalPropertyId === 'unknown') {
+        finalPropertyId = null;
       }
 
-      const property = propertyResult.rows[0];
+      // If property_id is provided, verify it exists and get details
+      if (finalPropertyId) {
+        const propertyResult = await pool.query('SELECT * FROM properties WHERE id = $1', [finalPropertyId]);
+        if (propertyResult.rows.length > 0) {
+          const property = propertyResult.rows[0];
+          bookingPropertyTitle = property.title;
+          bookingPropertyLocation = property.location;
+          bookingPropertyId = property.id;
+        } else {
+          // If ID provided but not found, fail or treat as generic? 
+          // Failing is safer to avoid data inconsistency if client intended valid property
+          return res.status(404).json({ error: `Property not found (ID: ${finalPropertyId})` });
+        }
+      }
 
       // Get user email
       const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [req.user.id]);
@@ -62,9 +83,9 @@ router.post(
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING *`,
         [
-          property_id,
-          property.title,
-          property.location,
+          bookingPropertyId,
+          bookingPropertyTitle,
+          bookingPropertyLocation,
           req.user.id,
           userEmail,
           visit_date,
@@ -87,7 +108,7 @@ router.post(
       if (payment_method === 'razorpay_previsit') {
         try {
           const order = await createOrder(300, 'INR', `booking_${booking.id}`);
-          
+
           res.status(201).json({
             booking,
             payment: {
@@ -105,20 +126,38 @@ router.post(
           });
         }
       } else {
-        // Send confirmation email
-        sendEmail({
-          to: userEmail,
-          subject: `Site Visit Booking Confirmed - ${process.env.APP_NAME || 'Bada Builder'}`,
-          htmlContent: `
-            <h2>Site Visit Confirmed!</h2>
-            <p>Your site visit has been booked successfully.</p>
-            <p><strong>Date:</strong> ${new Date(booking.visit_date).toLocaleDateString()}</p>
-            <p><strong>Time:</strong> ${booking.visit_time}</p>
-          `,
-          textContent: `Site visit confirmed! Date: ${new Date(booking.visit_date).toLocaleDateString()}, Time: ${booking.visit_time}`
-        }).catch(err => 
-          console.error('Confirmation email failed:', err)
-        );
+        // Post-visit payment - send confirmation email via SMTP
+        sendBookingConfirmationEmail({
+          booking_id: booking.id,
+          property_name: booking.property_title,
+          visit_date: booking.visit_date,
+          visit_time: booking.visit_time,
+          amount: 0, // Post-visit, no upfront payment
+          user_email: userEmail,
+          user_phone: req.user.phone || 'Not provided',
+          person1_name: booking.person1_name,
+          person2_name: booking.person2_name,
+          person3_name: booking.person3_name
+        }).catch(err => {
+          console.error('❌ [Booking] Email sending failed (non-critical):', err.message);
+        });
+
+        // 2. Send Admin Notification
+        sendAdminBookingNotification({
+          booking_id: booking.id,
+          property_name: booking.property_title,
+          property_location: bookingPropertyLocation,
+          visit_date: booking.visit_date,
+          visit_time: booking.visit_time,
+          amount: 0,
+          payment_method: 'Post-Visit (Pay at Site)',
+          user_email: userEmail,
+          user_phone: req.user.phone || 'Not provided',
+          person1_name: booking.person1_name,
+          person2_name: booking.person2_name,
+          person3_name: booking.person3_name,
+          pickup_address: pickup_address
+        }).catch(err => console.error('Error sending admin email:', err));
 
         res.status(201).json({ booking });
       }
@@ -162,21 +201,40 @@ router.post('/verify-payment', authenticate, async (req, res) => {
 
     const booking = result.rows[0];
 
-    // Send confirmation email
-    sendEmail({
-      to: booking.user_email,
-      subject: `Site Visit Booking Confirmed - ${process.env.APP_NAME || 'Bada Builder'}`,
-      htmlContent: `
-        <h2>Site Visit Confirmed!</h2>
-        <p>Your site visit has been booked and payment confirmed.</p>
-        <p><strong>Date:</strong> ${new Date(booking.visit_date).toLocaleDateString()}</p>
-        <p><strong>Time:</strong> ${booking.visit_time}</p>
-        <p><strong>Amount Paid:</strong> ₹300</p>
-      `,
-      textContent: `Site visit confirmed! Date: ${new Date(booking.visit_date).toLocaleDateString()}, Time: ${booking.visit_time}, Amount: ₹300`
-    }).catch(err =>
-      console.error('Confirmation email failed:', err)
-    );
+    // Send booking confirmation email via SMTP (to user + admin BCC)
+    // This runs asynchronously and won't block the response
+    sendBookingConfirmationEmail({
+      booking_id: booking.id,
+      property_name: booking.property_title,
+      visit_date: booking.visit_date,
+      visit_time: booking.visit_time,
+      amount: booking.payment_amount || 300,
+      user_email: booking.user_email,
+      user_phone: req.user.phone || 'Not provided',
+      person1_name: booking.person1_name,
+      person2_name: booking.person2_name,
+      person3_name: booking.person3_name
+    }).catch(err => {
+      // Log error but don't fail the request
+      console.error('❌ [Booking] Email sending failed (non-critical):', err.message);
+    });
+
+    // Send Admin Notification
+    sendAdminBookingNotification({
+      booking_id: booking.id,
+      property_name: booking.property_title,
+      property_location: 'Not available in payment context', // Ideally fetch or store this
+      visit_date: booking.visit_date,
+      visit_time: booking.visit_time,
+      amount: booking.payment_amount || 300,
+      payment_method: 'Online Payment (Razorpay)',
+      user_email: booking.user_email,
+      user_phone: req.user.phone || 'Not provided',
+      person1_name: booking.person1_name,
+      person2_name: booking.person2_name,
+      person3_name: booking.person3_name,
+      pickup_address: booking.pickup_address
+    }).catch(err => console.error('Error sending admin email:', err));
 
     res.json({ booking, message: 'Payment verified successfully' });
   } catch (error) {
