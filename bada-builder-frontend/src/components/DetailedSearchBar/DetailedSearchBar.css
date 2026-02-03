@@ -227,20 +227,21 @@
 /* Search Button with Icon */
 .search-button {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #0bf017 0%, #e6fd18 100%);
+  background: linear-gradient(135deg, #58335e 0%, #6d4575 100%);
   color: #ffffff;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  outline: none;
   cursor: pointer;
   font-weight: 700;
   font-size: 15px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 15px rgba(88, 51, 94, 0.3);
   white-space: nowrap;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
   position: relative;
   overflow: hidden;
   min-width: 140px;
@@ -262,9 +263,9 @@
 }
 
 .search-button:hover {
-  background-position: 100% 0;
+  background: linear-gradient(135deg, #6d4575 0%, #7d5585 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(88, 51, 94, 0.4);
 }
 
 .search-button:active {

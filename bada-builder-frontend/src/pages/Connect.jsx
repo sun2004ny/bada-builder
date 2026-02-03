@@ -1,13 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import PageTransition from '../components/Motion/PageTransition';
-import { sendForm, init } from '@emailjs/browser'
+import { leadsAPI } from '../services/api';
 import {
-    RiInstagramFill,
-    RiFacebookFill,
-    RiTwitterFill,
-    RiYoutubeFill,
+
     RiSendPlaneFill,
     RiCheckLine,
     RiErrorWarningLine
@@ -142,16 +139,11 @@ const Connect = () => {
         message: ''
     });
 
-    useEffect(() => {
-        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
-        if (publicKey) init(publicKey);
-    }, []);
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (sending) return;
 
@@ -166,30 +158,29 @@ const Connect = () => {
 
         setSending(true);
 
-        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
-        const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
-        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
+        try {
+            // Map form data to leads API schema
+            // Schema: name, requirement_type, location, phone
+            const leadData = {
+                name: `${formData.first_name} ${formData.last_name}`,
+                phone: formData.phone,
+                location: formData.company || 'Online Inquiry',
+                // Combining email and message into requirement_type since it's the specific field we have
+                requirement_type: `Email: ${formData.user_email} - Msg: ${formData.message}`
+            };
 
-        if (!serviceId || !templateId || !publicKey) {
+            await leadsAPI.create(leadData);
+
+            setStatus('success');
+            setStatusMessage('Message sent! Returning soon.');
+            setTimeout(() => navigate('/'), 3000);
+        } catch (error) {
+            console.error('Failed to send message:', error);
             setStatus('error');
-            setStatusMessage('System configuration error.');
+            setStatusMessage('Failed to send message. Please try again.');
+        } finally {
             setSending(false);
-            return;
         }
-
-        sendForm(serviceId, templateId, formRef.current, publicKey)
-            .then(() => {
-                setStatus('success');
-                setStatusMessage('Message sent! Returning soon.');
-                setTimeout(() => navigate('/'), 3000);
-            })
-            .catch(() => {
-                setStatus('error');
-                setStatusMessage('Failed to send message.');
-            })
-            .finally(() => {
-                setSending(false);
-            });
     };
 
     const containerVariants = {
@@ -300,11 +291,11 @@ const Connect = () => {
 
                             <motion.button
                                 variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                                whileHover={{ scale: 1.02 }}
+                                whileHover={{ scale: 1.02, backgroundPosition: "100% center" }}
                                 whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 disabled={sending || !agreed}
-                                className="group relative w-full overflow-hidden rounded-2xl bg-primary py-4 px-6 text-white font-bold transition-all duration-300 hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
+                                className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 bg-[length:200%_auto] py-4 px-6 text-white font-bold transition-all duration-500 hover:shadow-lg hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20"
                             >
                                 <AnimatePresence mode="wait">
                                     {sending ? (
@@ -315,7 +306,7 @@ const Connect = () => {
                                     ) : (
                                         <motion.div key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
                                             Let's talk
-                                            <RiSendPlaneFill className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                            <RiSendPlaneFill className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -324,27 +315,7 @@ const Connect = () => {
                     </div>
                 </motion.div>
 
-                {/* Footer Info */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1 }}
-                    className="relative mt-10 flex flex-col items-center z-10"
-                >
-                    <div className="flex gap-6 mb-8 text-neutral-400 dark:text-neutral-600">
-                        {[RiFacebookFill, RiTwitterFill, RiInstagramFill, RiYoutubeFill].map((Icon, i) => (
-                            <motion.a key={i} whileHover={{ y: -3, color: 'var(--primary)' }} href="#" className="transition-colors duration-300">
-                                <Icon className="text-2xl" />
-                            </motion.a>
-                        ))}
-                    </div>
-                    <div className="text-center space-y-2">
-                        <p className="text-primary font-bold">info@headstart.co.in</p>
-                        <p className="text-sm text-neutral-500 max-w-xs leading-relaxed">
-                            608-A, Pinnacle Business Park, Ahmedabad
-                        </p>
-                    </div>
-                </motion.div>
+
             </div>
         </PageTransition>
     )

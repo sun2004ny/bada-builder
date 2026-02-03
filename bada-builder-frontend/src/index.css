@@ -136,6 +136,7 @@ html.dark button {
 /* Suppress specific Google Maps error messages */
 div[jsaction*="dismiss"] {
   display: none !important;
+  visibility: hidden !important;
 }
 
 /* Hide "This page can't load Google Maps correctly" popup */
@@ -191,4 +192,65 @@ div[style*="background-color: white"][style*="border: 1px solid"] {
     width: 50px;
     height: 40px;
   }
+}
+
+/* Fix for Leaflet Map Tiles not rendering with Tailwind CSS */
+.leaflet-pane img,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container {
+  z-index: 0;
+  isolation: isolate;
+}
+
+/* Animation Keyframes */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Custom Animation Utilities */
+.custom-spin {
+  animation: spin 1s linear infinite !important;
+  will-change: transform;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards !important;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out forwards !important;
 }
