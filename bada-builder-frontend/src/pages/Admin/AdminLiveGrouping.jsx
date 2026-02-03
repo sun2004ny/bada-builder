@@ -106,7 +106,7 @@ const AdminLiveGrouping = () => {
 
 
   const [towers, setTowers] = useState([
-    { name: 'Tower A', floors: 10, unitsPerFloor: 4, layout_columns: '', layout_rows: '' }
+    { name: '', floors: 10, unitsPerFloor: 4, layout_columns: '', layout_rows: '' }
   ]);
 
 

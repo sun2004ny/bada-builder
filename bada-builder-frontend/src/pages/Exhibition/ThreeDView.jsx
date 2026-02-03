@@ -418,7 +418,7 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
         prePlotW = uW * UNIT_SCALE;
         prePlotD = uD * UNIT_SCALE;
     } else {
-        const area = uArea || 1200;
+        const area = uArea || 0;
         const side = Math.sqrt(area);
         prePlotW = side * UNIT_SCALE;
         prePlotD = side * UNIT_SCALE;
@@ -611,7 +611,7 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
                         color="#a0aec0"
                         anchorX="center"
                     >
-                        {unit.area || '1200'} sq ft
+                        {unit.area || ''}{unit.area ? ' sq ft' : ''}
                     </Text>
                 </Billboard>
             )}
@@ -630,8 +630,8 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
     const SCALE = 0.4;
 
     // Grid Spacing
-    const unitW = parseFloat(project?.plot_size_width || 30) * SCALE;
-    const unitD = parseFloat(project?.plot_size_depth || 40) * SCALE;
+    const unitW = parseFloat(project?.plot_size_width || 20) * SCALE;
+    const unitD = parseFloat(project?.plot_size_depth || 30) * SCALE;
     const gap = 2 * SCALE;
     const roadW = projectRW * SCALE;
 
@@ -649,6 +649,20 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
                 <boxGeometry args={[colWidth + 40, 0.3, colDepth + 40]} />
                 <meshStandardMaterial color="#334155" roughness={0.8} />
             </mesh>
+
+            {/* Perimeter Boundary */}
+            <PerimeterBoundary width={colWidth + 10} depth={colDepth + 10} />
+
+            {/* Project Title Label - Professional Hero Style */}
+            <Text
+                position={[0, 10, -colDepth / 2 - 12]}
+                fontSize={5}
+                color="#0f172a"
+                anchorX="center"
+                fontProps={{ weight: 'bold' }}
+            >
+                {project?.title || ''}
+            </Text>
 
             {/* Internal Roads */}
             {Array.from({ length: rows + 1 }).map((_, i) => (
@@ -682,8 +696,8 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
 const CommercialUnit = ({ position, unit, onUnitClick, floorCount = 1 }) => {
     const [hovered, setHovered] = useState(false);
     const SCALE = 0.4;
-    const w = parseFloat(unit.plot_width || 30) * SCALE;
-    const d = parseFloat(unit.plot_depth || 40) * SCALE;
+    const w = parseFloat(unit.plot_width || 20) * SCALE;
+    const d = parseFloat(unit.plot_depth || 30) * SCALE;
     const hPerFloor = 7;
     const isBooked = unit.status === 'booked';
     const isLocked = unit.status === 'locked';
@@ -997,7 +1011,7 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                 color="#1e293b"
                 anchorX="center"
             >
-                {propertyData?.title || 'Residential Project'}
+                {propertyData?.title || ''}
             </Text>
         </group>
     );
