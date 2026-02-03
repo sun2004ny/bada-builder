@@ -452,7 +452,7 @@ const Header = () => {
               </div>
             ) : (
               <Link to="/login" onClick={handleLoginClick}>
-                <button className="bg-[#58335e] text-white px-5 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-opacity-90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#58335e] focus:ring-opacity-50 font-medium text-sm tracking-wide transform hover:scale-105 active:scale-95 whitespace-nowrap">
+                <button className="header-login-btn">
                   Login
                 </button>
               </Link>
@@ -558,7 +558,7 @@ const Header = () => {
                     </button>
                   </div>
                 ) : (
-                  <Link to="/login" onClick={handleLoginClick} className="mobile-login-btn">
+                  <Link to="/login" onClick={handleLoginClick} className="mobile-login-btn-premium">
                     🔐 Login / Sign Up
                   </Link>
                 )}
@@ -742,7 +742,7 @@ const Header = () => {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={cancelLogout}
-                className="px-6 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
+                className="modal-cancel-btn"
                 disabled={logoutLoading}
               >
                 Cancel
@@ -750,7 +750,7 @@ const Header = () => {
               <button
                 onClick={confirmLogout}
                 disabled={logoutLoading}
-                className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
+                className="modal-logout-confirm-btn"
               >
                 {logoutLoading ? (
                   <>

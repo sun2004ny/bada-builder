@@ -730,14 +730,14 @@ body.mobile-menu-open {
 }
 
 /* Mobile Login Button - Vibrant and Modern */
-.mobile-login-btn {
+.mobile-login-btn-premium {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   padding: 18px;
-  background: linear-gradient(135deg, #58335e 0%, #8b5a94 100%);
-  color: white;
+  background: linear-gradient(135deg, #58335e 0%, #8b5a94 100%) !important;
+  color: white !important;
   font-weight: 800;
   font-size: 16px;
   border-radius: 20px;
@@ -748,10 +748,10 @@ body.mobile-menu-open {
   margin-top: 10px;
 }
 
-.mobile-login-btn:hover {
+.mobile-login-btn-premium:hover {
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 15px 35px rgba(88, 51, 94, 0.35);
-  background: linear-gradient(135deg, #6d4575 0%, #9c67a3 100%);
+  background: linear-gradient(135deg, #6d4575 0%, #9c67a3 100%) !important;
 }
 
 /* ===== MOBILE PROFILE SECTION STYLES ===== */
@@ -1180,4 +1180,69 @@ body.modal-open {
 .clean-avatar-btn:hover {
   transform: scale(1.05) !important;
   background: transparent !important;
+}
+
+/* Header Login Button */
+.header-login-btn {
+  background-color: #58335e !important;
+  color: white !important;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.header-login-btn:hover {
+  background-color: #4a2b4f !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.header-login-btn:active {
+  transform: translateY(0);
+}
+
+/* Modal Buttons */
+.modal-cancel-btn {
+  padding: 10px 24px;
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.modal-cancel-btn:hover {
+  background-color: #e5e7eb !important;
+}
+
+.modal-logout-confirm-btn {
+  padding: 10px 24px;
+  background-color: #dc2626 !important;
+  color: white !important;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-logout-confirm-btn:hover {
+  background-color: #b91c1c !important;
+  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
+}
+
+.modal-logout-confirm-btn:disabled {
+  background-color: #9ca3af !important;
+  cursor: not-allowed;
 }

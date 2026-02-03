@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { liveGroupDynamicAPI } from '../../services/api';
 import ViewToggle from '../../components/ViewToggle/ViewToggle';
@@ -7,8 +7,23 @@ import PropertyCard from '../../components/PropertyCard/PropertyCard';
 import useViewPreference from '../../hooks/useViewPreference';
 import { calculateTokenAmount, formatCurrency, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
 import './Exhibition.css';
-import './Exhibition.css';
 import './LiveGrouping.css';
+
+const Highlight = ({ text, highlight }) => {
+  if (!highlight || !text) return <>{text}</>;
+  const parts = text.toString().split(new RegExp(`(${highlight})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === highlight.toLowerCase() ? (
+          <span key={i} style={{ fontWeight: 'bold', color: 'inherit' }}>{part}</span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
 
 const Countdown = ({ targetDate }) => {
   const [timeLeft, setTimeLeft] = useState('');
@@ -38,6 +53,72 @@ const Countdown = ({ targetDate }) => {
   return <span>{timeLeft}</span>;
 };
 
+const CustomDropdown = ({ label, value, options, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="custom-dropdown-container" ref={dropdownRef}>
+      <motion.div
+        className={`dropdown-trigger ${value !== 'All' ? 'active' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        whileHover={{ color: '#6366f1' }}
+      >
+        <div className="trigger-label">
+          <span className="actual-label">{label}</span>
+          <span className="current-value">{value === 'All' ? 'Any' : value}</span>
+        </div>
+        <motion.svg
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </motion.svg>
+      </motion.div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="dropdown-menu"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            {options.map((option) => (
+              <div
+                key={option}
+                className={`menu-item ${value === option ? 'selected' : ''}`}
+                onClick={() => {
+                  onChange(option);
+                  setIsOpen(false);
+                }}
+              >
+                {option}
+                {value === option && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                )}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const LiveGrouping = () => {
 
   const navigate = useNavigate();
@@ -48,6 +129,224 @@ const LiveGrouping = () => {
   const [view, setView] = useViewPreference();
   const [activeGroups, setActiveGroups] = useState([]);
   const [closedGroups, setClosedGroups] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [filterType, setFilterType] = useState('All');
+  const [filterBudget, setFilterBudget] = useState('All');
+  const [filterArea, setFilterArea] = useState('All');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const searchContainerRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Enhanced Search Logic
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults([]);
+      return;
+    }
+
+    const lowerQuery = searchQuery.toLowerCase();
+    const results = [];
+    const allGroups = [...activeGroups, ...closedGroups];
+
+    // 0. Pre-filter by Type and Budget
+    let filteredGroups = allGroups;
+
+    if (filterType !== 'All') {
+      filteredGroups = filteredGroups.filter(group => {
+        const type = (group.property_type || group.type || '').toLowerCase();
+        return type.includes(filterType.toLowerCase());
+      });
+    }
+
+    if (filterBudget !== 'All') {
+      filteredGroups = filteredGroups.filter(group => {
+        const price = parseFloat(group.discounted_total_price_min || group.group_price || 0);
+        if (!price) return true;
+        if (filterBudget === 'Under 50L') return price < 5000000;
+        if (filterBudget === '50L - 1Cr') return price >= 5000000 && price <= 10000000;
+        if (filterBudget === 'Above 1Cr') return price > 10000000;
+        return true;
+      });
+    }
+
+    if (filterArea !== 'All') {
+      filteredGroups = filteredGroups.filter(group => {
+        const location = (group.location || '').toLowerCase();
+        return location.includes(filterArea.toLowerCase());
+      });
+    }
+
+    filteredGroups.forEach(group => {
+      // 1. Property Name Match
+      if (group.title?.toLowerCase().includes(lowerQuery)) {
+        results.push({
+          type: 'Property',
+          text: group.title,
+          group: group,
+          matchTerm: group.title
+        });
+      }
+
+      // 2. Builder/Developer Match
+      const devName = group.developer || group.builder_name || '';
+      if (devName.toLowerCase().includes(lowerQuery)) {
+        results.push({
+          type: 'Builder',
+          text: devName,
+          group: group,
+          matchTerm: devName
+        });
+      }
+
+      // 2.5 Location Match
+      if (group.location?.toLowerCase().includes(lowerQuery)) {
+        results.push({
+          type: 'Location',
+          text: group.location,
+          group: group,
+          matchTerm: group.location
+        });
+      }
+
+      // 2.6 Type Match
+      const propType = group.property_type || group.type || '';
+      if (propType.toLowerCase().includes(lowerQuery)) {
+        results.push({
+          type: 'Type',
+          text: propType,
+          group: group,
+          matchTerm: propType
+        });
+      }
+
+      // 3. Benefits Match
+      if (group.benefits && Array.isArray(group.benefits)) {
+        group.benefits.forEach(benefit => {
+          if (benefit.toLowerCase().includes(lowerQuery)) {
+            // Check for duplicates
+            const exists = results.find(r => r.type === 'Benefit' && r.group.id === group.id && r.text === benefit);
+            if (!exists) {
+              results.push({
+                type: 'Benefit',
+                text: benefit,
+                group: group,
+                matchTerm: benefit
+              });
+            }
+          }
+        });
+      }
+
+      // 4. Live Offers / Status Match
+      const statusText = group.timeLeft || '';
+      if (statusText.toLowerCase().includes(lowerQuery) || 'live'.includes(lowerQuery)) {
+        results.push({
+          type: 'Offer',
+          text: group.status === 'active' ? 'Live Offer' : statusText,
+          group: group,
+          matchTerm: statusText
+        });
+      }
+    });
+
+    // We limit results to avoid huge dropdowns
+    setSearchResults(results.slice(0, 10)); // Top 10 matches
+    setShowDropdown(results.length > 0);
+  }, [searchQuery, filterType, filterBudget, activeGroups, closedGroups]);
+
+  const scrollToGroup = (groupId) => {
+    // Wait for state updates/filtering to complete potentially
+    setTimeout(() => {
+      const element = document.getElementById(`group-${groupId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Add a temporary flash effect
+        element.style.transition = 'box-shadow 0.3s ease';
+        element.style.boxShadow = '0 0 0 4px rgba(22, 163, 74, 0.5)';
+        setTimeout(() => {
+          element.style.boxShadow = '';
+        }, 1500);
+        setShowDropdown(false);
+      }
+    }, 100);
+  };
+
+  const handleSearchSubmit = () => {
+    if (searchResults.length > 0) {
+      scrollToGroup(searchResults[0].group.id);
+    } else if (filteredActiveGroups.length > 0) {
+      scrollToGroup(filteredActiveGroups[0].id);
+    } else if (filteredClosedGroups.length > 0) {
+      scrollToGroup(filteredClosedGroups[0].id);
+    }
+  };
+
+  const filterGroups = (groups) => {
+    let filtered = groups;
+
+    // 1. Text Search
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(group => {
+        const titleMatch = group.title?.toLowerCase().includes(lowerQuery);
+        const devName = group.developer || group.builder_name || '';
+        const devMatch = devName.toLowerCase().includes(lowerQuery);
+        const locMatch = group.location?.toLowerCase().includes(lowerQuery);
+        const typeMatch = (group.property_type || group.type)?.toLowerCase().includes(lowerQuery);
+        const benefitMatch = group.benefits?.some(b => b.toLowerCase().includes(lowerQuery));
+        const statusMatch = group.timeLeft?.toLowerCase().includes(lowerQuery) || 'live'.includes(lowerQuery);
+        return titleMatch || devMatch || locMatch || typeMatch || benefitMatch || statusMatch;
+      });
+    }
+
+    // 2. Type Filter
+    if (filterType !== 'All') {
+      filtered = filtered.filter(group => {
+        const type = (group.property_type || group.type || '').toLowerCase();
+        return type.includes(filterType.toLowerCase());
+      });
+    }
+
+    // 3. Budget Filter
+    if (filterBudget !== 'All') {
+      filtered = filtered.filter(group => {
+        // Use discounted total price min if available, fallback to something reasonable
+        const price = parseFloat(group.discounted_total_price_min || group.group_price || 0);
+        if (!price) return true; // Keep if no price data
+
+        if (filterBudget === 'Under 50L') return price < 5000000;
+        if (filterBudget === '50L - 1Cr') return price >= 5000000 && price <= 10000000;
+        if (filterBudget === 'Above 1Cr') return price > 10000000;
+        return true;
+      });
+    }
+
+    return filtered;
+  };
+
+  const filteredActiveGroups = filterGroups(activeGroups);
+  const filteredClosedGroups = filterGroups(closedGroups);
 
   // Scroll Restoration Logic
   useLayoutEffect(() => {
@@ -182,6 +481,205 @@ const LiveGrouping = () => {
           </div>
         </motion.div>
 
+        {/* Modernized Search Bar */}
+        <motion.div
+          className="modern-search-container"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{
+            opacity: 1,
+            y: [0, -4, 0],
+            transition: {
+              opacity: { duration: 0.8 },
+              y: { repeat: Infinity, duration: 4, ease: "easeInOut" }
+            }
+          }}
+          whileHover={{ y: -8, transition: { duration: 0.3 } }}
+          style={{ marginTop: '-67px', zIndex: 500 }}
+        >
+          <div className={`search-glass-pill ${isFocused ? 'focused' : ''}`}>
+            {/* Search Input Section */}
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                placeholder="Search properties, builders, or locations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                className="modern-input"
+              />
+            </div>
+
+            {/* Desktop Filters Section */}
+            {!isMobile && (
+              <div className="filters-wrapper">
+                <div className="divider-v"></div>
+                <CustomDropdown
+                  label="Type"
+                  value={filterType}
+                  options={['All', 'Apartment', 'Villa', 'Plot/Land', 'Commercial']}
+                  onChange={setFilterType}
+                />
+                <div className="divider-v"></div>
+                <CustomDropdown
+                  label="Area"
+                  value={filterArea}
+                  options={['All', 'Sarjapur', 'Whitefield', 'North Bangalore', 'South Bangalore', 'East Bangalore', 'West Bangalore']}
+                  onChange={setFilterArea}
+                />
+                <div className="divider-v"></div>
+                <CustomDropdown
+                  label="Budget"
+                  value={filterBudget}
+                  options={['All', 'Under 50L', '50L - 1Cr', 'Above 1Cr']}
+                  onChange={setFilterBudget}
+                />
+              </div>
+            )}
+
+            {/* Search Action Button */}
+            <motion.button
+              className="modern-search-btn"
+              whileHover={{ scale: 1.05, boxShadow: '0 8px 20px rgba(99, 102, 241, 0.4)' }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleSearchSubmit}
+            >
+              <span className="btn-text">{isMobile ? 'Search' : ''}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </motion.button>
+          </div>
+
+          {/* Mobile Filter Toggle Chip */}
+          {isMobile && (
+            <motion.div
+              className="mobile-filter-chip"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              whileTap={{ scale: 0.9 }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              <span>{showMobileFilters ? 'Hide Filters' : 'Show Filters'}</span>
+            </motion.div>
+          )}
+
+          {/* Mobile Filters Drawer - Bottom Sheet Style */}
+          <AnimatePresence>
+            {isMobile && showMobileFilters && (
+              <>
+                <motion.div
+                  className="mobile-filters-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowMobileFilters(false)}
+                />
+                <motion.div
+                  className="mobile-filters-sheet"
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                >
+                  <div className="sheet-header">
+                    <div className="drag-handle"></div>
+                    <h3>Filters</h3>
+                  </div>
+                  <div className="sheet-content">
+                    <div className="filter-group">
+                      <label>Property Type</label>
+                      <div className="pill-grid">
+                        {['All', 'Apartment', 'Villa', 'Plot/Land', 'Commercial'].map(t => (
+                          <div
+                            key={t}
+                            className={`filter-pill ${filterType === t ? 'active' : ''}`}
+                            onClick={() => setFilterType(t)}
+                          >
+                            {t}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="filter-group">
+                      <label>Area</label>
+                      <div className="pill-grid">
+                        {['All', 'Sarjapur', 'Whitefield', 'North Bangalore', 'South Bangalore'].map(a => (
+                          <div
+                            key={a}
+                            className={`filter-pill ${filterArea === a ? 'active' : ''}`}
+                            onClick={() => setFilterArea(a)}
+                          >
+                            {a}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="filter-group">
+                      <label>Budget Range</label>
+                      <div className="pill-grid">
+                        {['All', 'Under 50L', '50L - 1Cr', 'Above 1Cr'].map(b => (
+                          <div
+                            key={b}
+                            className={`filter-pill ${filterBudget === b ? 'active' : ''}`}
+                            onClick={() => setFilterBudget(b)}
+                          >
+                            {b}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Search Results Dropdown */}
+        <AnimatePresence>
+          {showDropdown && searchResults.length > 0 && (
+            <motion.div
+              className="search-results-dropdown-v2"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              <div className="results-scroll-area">
+                {searchResults.map((result, index) => (
+                  <motion.div
+                    key={`${result.group.id}-${index}`}
+                    className="result-item-v2"
+                    whileHover={{ backgroundColor: 'rgba(99, 102, 241, 0.05)', x: 5 }}
+                    onClick={() => {
+                      scrollToGroup(result.group.id);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <div className={`result-category ${result.type.toLowerCase()}`}>
+                      {result.type}
+                    </div>
+                    <div className="result-content">
+                      <span className="group-title">{result.group.title}</span>
+                      <div className="match-text">
+                        <Highlight text={result.text} highlight={searchQuery} />
+                      </div>
+                    </div>
+                    <svg className="result-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+
         {/* Navigation Tabs */}
         <motion.div
           className="exhibition-tabs"
@@ -207,11 +705,13 @@ const LiveGrouping = () => {
         </motion.div>
 
         {/* View Toggle */}
-        {!loading && (activeGroups.length > 0 || closedGroups.length > 0) && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-            <ViewToggle view={view} onViewChange={setView} />
-          </div>
-        )}
+        {
+          !loading && (activeGroups.length > 0 || closedGroups.length > 0) && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+              <ViewToggle view={view} onViewChange={setView} />
+            </div>
+          )
+        }
 
         {/* How It Works Section */}
         <motion.div
@@ -266,21 +766,22 @@ const LiveGrouping = () => {
                   </div>
                 </div>
               ))
-            ) : activeGroups.length === 0 ? (
+            ) : filteredActiveGroups.length === 0 ? (
               <p style={{ textAlign: 'center', padding: '40px', gridColumn: '1 / -1', color: '#666' }}>
                 No active groups available at the moment. Check back soon!
               </p>
             ) : (
-              activeGroups.map((group, index) => (
+              filteredActiveGroups.map((group, index) => (
                 <motion.div
                   key={group.id}
+                  id={`group-${group.id}`}
                   className={`property-card live-group-card ${group.status}`}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   whileHover={{ y: -8 }}
                   onClick={() => handleNavigateToDetails(group.id)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', scrollMarginTop: '150px' }}
                 >
                   <div className="property-image">
                     <img src={group.image} alt={group.title} />
@@ -303,10 +804,10 @@ const LiveGrouping = () => {
 
 
                   <div className="property-info">
-                    <h3>{group.title}</h3>
-                    <p className="owner">🏢 {group.developer || group.builder_name || 'Verified Builder'}</p>
-                    <p className="location">📍 {group.location}</p>
-                    <p className="type-info">{group.property_type || group.type}</p>
+                    <h3><Highlight text={group.title} highlight={searchQuery} /></h3>
+                    <p className="owner">🏢 <Highlight text={group.developer || group.builder_name || 'Verified Builder'} highlight={searchQuery} /></p>
+                    <p className="location">📍 <Highlight text={group.location} highlight={searchQuery} /></p>
+                    <p className="type-info"><Highlight text={group.property_type || group.type} highlight={searchQuery} /></p>
 
                     {/* Progress Bar */}
                     <div className="group-progress">
@@ -628,9 +1129,10 @@ const LiveGrouping = () => {
               <h2 className="section-title closed-section">✅ Closed Live Groups</h2>
               <p className="section-subtitle">These groups have been successfully filled</p>
               <div className={`properties-grid ${view === 'list' ? 'list-view' : 'grid-view'}`}>
-                {closedGroups.map((group, index) => (
+                {filteredClosedGroups.map((group, index) => (
                   <motion.div
                     key={group.id}
+                    id={`group-${group.id}`}
                     className="property-card live-group-card closed"
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -647,10 +1149,10 @@ const LiveGrouping = () => {
                     </div>
 
                     <div className="property-info">
-                      <h3>{group.title}</h3>
-                      <p className="owner">🏢 {group.developer}</p>
-                      <p className="location">📍 {group.location}</p>
-                      <p className="type-info">{group.type}</p>
+                      <h3><Highlight text={group.title} highlight={searchQuery} /></h3>
+                      <p className="owner">🏢 <Highlight text={group.developer} highlight={searchQuery} /></p>
+                      <p className="location">📍 <Highlight text={group.location} highlight={searchQuery} /></p>
+                      <p className="type-info"><Highlight text={group.type} highlight={searchQuery} /></p>
 
                       {/* Progress Bar - Full */}
                       <div className="group-progress">
