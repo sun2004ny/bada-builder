@@ -679,6 +679,9 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
                 const xPos = -((columns - 1) * spacingX) / 2 + col * spacingX;
                 const zPos = -((rows - 1) * spacingZ) / 2 + row * spacingZ;
 
+                // Calculate visual number: left to right, top to bottom (1-indexed)
+                const visualNumber = idx + 1;
+
                 return (
                     <CommercialUnit
                         key={unit.id || idx}
@@ -686,6 +689,7 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
                         unit={unit}
                         onUnitClick={onUnitClick}
                         floorCount={parseInt(project?.commercial_floor_count) || 1}
+                        visualNumber={visualNumber}
                     />
                 );
             })}
@@ -693,7 +697,7 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
     );
 };
 
-const CommercialUnit = ({ position, unit, onUnitClick, floorCount = 1 }) => {
+const CommercialUnit = ({ position, unit, onUnitClick, floorCount = 1, visualNumber }) => {
     const [hovered, setHovered] = useState(false);
     const SCALE = 0.4;
     const w = parseFloat(unit.plot_width || 20) * SCALE;
@@ -715,6 +719,9 @@ const CommercialUnit = ({ position, unit, onUnitClick, floorCount = 1 }) => {
     const roofColor = isHovered ? '#007799' : roofBase;
 
     const glassColor = '#94a3b8';
+
+    // Use visualNumber if provided, otherwise fall back to unit.unit_number
+    const displayNumber = visualNumber !== undefined ? visualNumber : unit.unit_number;
 
     return (
         <group
@@ -809,7 +816,7 @@ const CommercialUnit = ({ position, unit, onUnitClick, floorCount = 1 }) => {
                     outlineWidth={0.1}
                     outlineColor="#000"
                 >
-                    {unit.unit_number}
+                    {visualNumber !== undefined ? visualNumber : unit.unit_number}
                 </Text>
             </Billboard>
         </group>
@@ -2019,8 +2026,13 @@ const ThreeDView = () => {
                 <div className="absolute top-0 left-0 w-full z-50 p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-to-b from-slate-900/90 via-slate-900/40 to-transparent pointer-events-none space-y-4 md:space-y-0 text-shadow-sm">
                     <div className="pointer-events-auto flex items-center gap-4 w-full md:w-auto">
                         <button
-                            className="bg-white/10 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 flex items-center gap-2 group shadow-lg shadow-black/5"
+                            className="threed-back-btn bg-white/10 backdrop-blur-md !text-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 flex items-center gap-2 group shadow-lg shadow-black/5"
                             onClick={() => navigate(-1)}
+                            style={{
+                                color: 'white',
+                                backgroundColor: 'rgba(15, 23, 42, 0.8)', // Slate-900 with opacity
+                                zIndex: 60
+                            }}
                         >
                             <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                             <span className="hidden sm:inline">Back</span>
@@ -2035,7 +2047,7 @@ const ThreeDView = () => {
                                         <span className="w-1 h-1 rounded-full bg-white/50"></span>
                                         Plot / Land
                                     </>
-                                ) : (project.type !== 'Bungalow' && project.type !== 'Colony') && (
+                                ) : (project.type !== 'Bungalow' && project.type !== 'Colony' && !project.type.toLowerCase().includes('commercial')) && (
                                     <>
                                         <span className="w-1 h-1 rounded-full bg-white/50"></span>
                                         {project.towers.length} Towers
@@ -2056,15 +2068,22 @@ const ThreeDView = () => {
                                 <button
                                     key={mode}
                                     onClick={() => setViewMode(mode)}
-                                    className={`relative z-10 px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${viewMode === mode ? 'text-slate-900' : 'text-slate-200 hover:text-white'
+                                    className={`threed-toggle-btn relative z-10 px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${viewMode === mode ? '!text-black' : '!text-white'
                                         }`}
+                                    style={{
+                                        color: viewMode === mode ? 'black' : 'white',
+                                        backgroundColor: 'transparent', // Force transparent to override global button styles
+                                        mixBlendMode: 'normal',
+                                        border: 'none',
+                                        outline: 'none'
+                                    }}
                                 >
                                     {viewMode === mode && (
                                         <motion.div
                                             layoutId="toggle-bg"
                                             className="absolute inset-0 bg-white rounded-full shadow-lg"
                                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                            style={{ zIndex: -1 }}
+                                            style={{ zIndex: -1, backgroundColor: 'white' }}
                                         />
                                     )}
                                     {mode === '3d' ? <Box size={14} strokeWidth={2.5} /> : <Layers size={14} strokeWidth={2.5} />}
