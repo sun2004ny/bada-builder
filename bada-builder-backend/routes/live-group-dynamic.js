@@ -312,7 +312,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             primary_cta_text, secondary_cta_text, details_page_url,
             layout_columns, layout_rows,
             latitude, longitude, map_address,
-            road_width, plot_gap, plot_size_width, plot_size_depth
+            road_width, plot_gap, plot_size_width, plot_size_depth,
+            orientation, parking_type, parking_slots, entry_points
         } = req.body;
 
         // 1. Handle Files (DO THIS BEFORE OPENING DB CONNECTION)
@@ -354,11 +355,12 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     regular_price_per_sqft_max, group_price_per_sqft_max,
                     layout_columns, layout_rows,
                     latitude, longitude, map_address,
-                    road_width, plot_gap, plot_size_width, plot_size_depth
+                    road_width, plot_gap, plot_size_width, plot_size_depth,
+                    orientation, parking_type, parking_slots, entry_points
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
                     $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42,
-                    $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53
+                    $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57
                 ) RETURNING *`,
                 [
                     title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
@@ -372,7 +374,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     regular_price_per_sqft_max, group_price_per_sqft_max,
                     layout_columns, layout_rows,
                     latitude || null, longitude || null, map_address || null,
-                    road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null
+                    road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null,
+                    orientation || null, parking_type || 'Front', parking_slots || 0, entry_points || null
                 ]
             );
 

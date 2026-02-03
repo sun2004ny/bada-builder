@@ -619,7 +619,188 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
     );
 };
 
-// --- Unified Residential Colony (Handles Bungalow, Twin Villa, and Plot with Pairing) ---
+// --- Commercial Colony Component ---
+const CommercialColony = ({ position, project, onUnitClick }) => {
+    const rawUnits = project?.towers?.reduce((units, tower) => {
+        return [...units, ...(tower.units || [])];
+    }, []) || [];
+
+    const columns = parseInt(project?.layout_columns) || parseInt(project?.towers?.[0]?.layout_columns) || 5;
+    const projectRW = parseFloat(project?.road_width || 40);
+    const SCALE = 0.4;
+
+    // Grid Spacing
+    const unitW = parseFloat(project?.plot_size_width || 30) * SCALE;
+    const unitD = parseFloat(project?.plot_size_depth || 40) * SCALE;
+    const gap = 2 * SCALE;
+    const roadW = projectRW * SCALE;
+
+    const spacingX = unitW + gap;
+    const spacingZ = unitD + roadW;
+
+    const rows = Math.ceil(rawUnits.length / columns);
+    const colWidth = columns * spacingX;
+    const colDepth = rows * spacingZ;
+
+    return (
+        <group position={position}>
+            {/* Ground Base */}
+            <mesh position={[0, -0.5, 0]} receiveShadow>
+                <boxGeometry args={[colWidth + 40, 0.3, colDepth + 40]} />
+                <meshStandardMaterial color="#334155" roughness={0.8} />
+            </mesh>
+
+            {/* Internal Roads */}
+            {Array.from({ length: rows + 1 }).map((_, i) => (
+                <mesh key={`road-${i}`} position={[0, -0.35, -(rows * spacingZ) / 2 + i * spacingZ]} receiveShadow>
+                    <boxGeometry args={[colWidth + 20, 0.1, roadW]} />
+                    <meshStandardMaterial color="#475569" roughness={0.4} />
+                </mesh>
+            ))}
+
+            {/* Render Units */}
+            {rawUnits.map((unit, idx) => {
+                const col = idx % columns;
+                const row = Math.floor(idx / columns);
+                const xPos = -((columns - 1) * spacingX) / 2 + col * spacingX;
+                const zPos = -((rows - 1) * spacingZ) / 2 + row * spacingZ;
+
+                return (
+                    <CommercialUnit
+                        key={unit.id || idx}
+                        position={[xPos, 0, zPos]}
+                        unit={unit}
+                        onUnitClick={onUnitClick}
+                        floorCount={parseInt(project?.commercial_floor_count) || 1}
+                    />
+                );
+            })}
+        </group>
+    );
+};
+
+const CommercialUnit = ({ position, unit, onUnitClick, floorCount = 1 }) => {
+    const [hovered, setHovered] = useState(false);
+    const SCALE = 0.4;
+    const w = parseFloat(unit.plot_width || 30) * SCALE;
+    const d = parseFloat(unit.plot_depth || 40) * SCALE;
+    const hPerFloor = 7;
+    const isBooked = unit.status === 'booked';
+    const isLocked = unit.status === 'locked';
+
+    // Base Colors
+    const bodyBase = isBooked ? '#ef4444' : (isLocked ? '#f59e0b' : '#f8fafc');
+    const roofBase = isBooked ? '#ef4444' : (isLocked ? '#f59e0b' : '#000000');
+
+    // Intense Hover: vibrant cyan for available units only
+    const highlightColor = '#00d1ff';
+    const canHover = !isBooked && !isLocked;
+    const isHovered = hovered && canHover;
+
+    const bodyColor = isHovered ? '#b0eaff' : bodyBase;
+    const roofColor = isHovered ? '#007799' : roofBase;
+
+    const glassColor = '#94a3b8';
+
+    return (
+        <group
+            position={position}
+            onPointerOver={(e) => {
+                if (canHover) {
+                    e.stopPropagation();
+                    setHovered(true);
+                }
+            }}
+            onPointerOut={() => setHovered(false)}
+            onClick={(e) => {
+                e.stopPropagation();
+                onUnitClick(unit);
+            }}
+        >
+            {/* Main Building Body */}
+            <mesh position={[0, (hPerFloor * floorCount) / 2, 0]} castShadow receiveShadow>
+                <boxGeometry args={[w, hPerFloor * floorCount, d]} />
+                <meshStandardMaterial
+                    color={bodyColor}
+                    emissive={highlightColor}
+                    emissiveIntensity={isHovered ? 0.4 : 0}
+                    metalness={0.1}
+                    roughness={0.8}
+                />
+            </mesh>
+
+            {/* Front Storefront Frame (Architectural Distinction) */}
+            <group position={[0, (hPerFloor * floorCount) / 2, d / 2 + 0.02]}>
+                {/* Outer Frame */}
+                <mesh>
+                    <boxGeometry args={[w * 0.94, hPerFloor * floorCount * 0.85, 0.05]} />
+                    <meshStandardMaterial color={isBooked || isLocked ? bodyBase : "#cbd5e1"} />
+                </mesh>
+                {/* Inner Bezel for Depth */}
+                <mesh position={[0, 0, 0.03]}>
+                    <boxGeometry args={[w * 0.88, hPerFloor * floorCount * 0.78, 0.02]} />
+                    <meshStandardMaterial color={isBooked || isLocked ? bodyBase : "#94a3b8"} />
+                </mesh>
+            </group>
+
+            {/* Front Glass Panels */}
+            {Array.from({ length: floorCount }).map((_, i) => (
+                <mesh key={i} position={[0, hPerFloor * i + 2.5, d / 2 + 0.08]}>
+                    <boxGeometry args={[w * 0.82, 4.2, 0.05]} />
+                    <meshStandardMaterial
+                        color={glassColor}
+                        transparent
+                        opacity={0.6}
+                        metalness={0.9}
+                        roughness={0.1}
+                    />
+                </mesh>
+            ))}
+
+            {/* Rooftop Slab */}
+            <mesh position={[0, hPerFloor * floorCount + 0.1, 0]} castShadow>
+                <boxGeometry args={[w + 0.4, 0.4, d + 0.4]} />
+                <meshStandardMaterial
+                    color={roofColor}
+                    emissive={highlightColor}
+                    emissiveIntensity={isHovered ? 0.5 : 0}
+                    metalness={0.2}
+                    roughness={0.5}
+                />
+            </mesh>
+
+            {/* High-Contrast Hover Outline Shell */}
+            {isHovered && (
+                <mesh position={[0, (floorCount * hPerFloor) / 2, 0]}>
+                    <boxGeometry args={[w + 0.4, floorCount * hPerFloor + 0.4, d + 0.4]} />
+                    <meshStandardMaterial
+                        color={highlightColor}
+                        transparent
+                        opacity={0.4}
+                        wireframe
+                        wireframeLinewidth={3}
+                        emissive={highlightColor}
+                        emissiveIntensity={1}
+                    />
+                </mesh>
+            )}
+
+            {/* Unit ID Label - Floating Billboard */}
+            <Billboard position={[0, floorCount * hPerFloor + 2, 0]}>
+                <Text
+                    fontSize={1.2}
+                    color="white"
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.1}
+                    outlineColor="#000"
+                >
+                    {unit.unit_number}
+                </Text>
+            </Billboard>
+        </group>
+    );
+};
 const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => {
     const rawUnits = project?.towers?.reduce((units, tower) => {
         return [...units, ...(tower.units || [])];
@@ -2208,15 +2389,23 @@ const ThreeDView = () => {
                             />
                             <CameraController movement={movement} controlsRef={controlsRef} />
 
-                            {/* Normalizing Type for Robust Comparison */}
+                            {/* Visualization Bridge: Directing to specialized colony builders */}
                             {(() => {
                                 const typeNorm = (property?.type || '').toLowerCase().trim();
-                                // Use ResidentialColony for anything that isn't an Apartment (Mixed, Plot, Bungalow, Villa, etc.)
                                 const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
+                                const isCommercial = typeNorm.includes('commercial');
+
+                                if (isCommercial) {
+                                    return (
+                                        <CommercialColony
+                                            position={[0, 0, 0]}
+                                            project={project}
+                                            onUnitClick={handleUnitClick}
+                                        />
+                                    );
+                                }
 
                                 if (!isApartment) {
-                                    // Use ResidentialColony for everything that isn't an Apartment.
-                                    // It handles Plots, Bungalows, Mixed, etc. with individual scaling.
                                     return (
                                         <ResidentialColony
                                             position={[0, 0, 0]}
@@ -2225,28 +2414,28 @@ const ThreeDView = () => {
                                             onUnitClick={handleUnitClick}
                                         />
                                     );
-                                } else {
-                                    return (
-                                        <group>
-                                            {project.towers.map((tower, idx) => {
-                                                const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
-                                                const towerUnits = tower.units || [];
-                                                const lowestFloor = towerUnits.length > 0
-                                                    ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
-                                                    : 1;
-                                                return (
-                                                    <Tower
-                                                        key={tower.id}
-                                                        tower={tower}
-                                                        position={[posX, 0, 0]}
-                                                        onUnitClick={handleUnitClick}
-                                                        lowestFloor={lowestFloor}
-                                                    />
-                                                );
-                                            })}
-                                        </group>
-                                    );
                                 }
+
+                                return (
+                                    <group>
+                                        {project.towers.map((tower, idx) => {
+                                            const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                                            const towerUnits = tower.units || [];
+                                            const lowestFloor = towerUnits.length > 0
+                                                ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
+                                                : 1;
+                                            return (
+                                                <Tower
+                                                    key={tower.id || idx}
+                                                    tower={tower}
+                                                    position={[posX, 0, 0]}
+                                                    onUnitClick={handleUnitClick}
+                                                    lowestFloor={lowestFloor}
+                                                />
+                                            );
+                                        })}
+                                    </group>
+                                );
                             })()}
 
                             {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}

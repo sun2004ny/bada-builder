@@ -94,7 +94,14 @@ const AdminLiveGrouping = () => {
     road_width: '',
     plot_gap: '',
     plot_size_width: '',
-    plot_size_depth: ''
+    plot_size_depth: '',
+    // Commercial specific
+    orientation: '',
+    parking_type: 'Front',
+    parking_slots: '',
+    entry_points: '',
+    total_units: '',
+    commercial_floor_count: 1
   });
 
 
@@ -149,6 +156,49 @@ const AdminLiveGrouping = () => {
       labels.push(`Flat ${String.fromCharCode(65 + i)}`);
     }
     return labels;
+  };
+
+  // Validation Logic
+  const getWizardSteps = () => {
+    if (projectData.type === 'Commercial') {
+      return [
+        { id: 1, label: 'Type' },
+        { id: 2, label: 'Basics' },
+        { id: 3, label: 'Configuration' },
+        { id: 4, label: 'Access' },
+        { id: 5, label: 'Preview' }
+      ];
+    }
+    return [
+      { id: 1, label: 'Type' },
+      { id: 2, label: 'Basics' },
+      { id: 3, label: 'Hierarchy' },
+      { id: 4, label: 'Summary' }
+    ];
+  };
+
+  const validateWizardStep = (step) => {
+    if (step === 1) return !!projectData.type;
+
+    if (step === 2) {
+      // User requested ability to proceed without filling fields
+      return true;
+    }
+
+    if (projectData.type === 'Commercial') {
+      if (step === 3) {
+        if (!projectData.layout_columns || parseInt(projectData.layout_columns) <= 0) return false;
+        if (!projectData.plot_size_width || parseFloat(projectData.plot_size_width) < 5 || parseFloat(projectData.plot_size_width) > 50) return false;
+        if (!projectData.plot_size_depth || parseFloat(projectData.plot_size_depth) < 5 || parseFloat(projectData.plot_size_depth) > 50) return false;
+        if (!projectData.commercial_floor_count || parseInt(projectData.commercial_floor_count) > 4) return false;
+        return true;
+      }
+    } else {
+      if (step === 3) {
+        return towers.length > 0;
+      }
+    }
+    return true;
   };
 
   useEffect(() => {
@@ -207,58 +257,88 @@ const AdminLiveGrouping = () => {
       // --- ATOMIC SAVE LOGIC ---
       // 1. Construct Full Hierarchy Object (Towers + Nested Units)
       const hierarchy = [];
-      for (let idx = 0; idx < towers.length; idx++) {
-        const tower = towers[idx];
-        const towerConfig = towerUnits[idx] || {};
+
+      if (projectData.type === 'Commercial') {
+        const totalUnits = parseInt(projectData.total_units) || 0;
+        const cols = parseInt(projectData.layout_columns) || 1;
         const compiledUnits = [];
 
-        for (const floorNum of Object.keys(towerConfig)) {
-          if (!towerConfig[floorNum]) continue;
-
-          for (const unit of towerConfig[floorNum]) {
-            // UPLOAD UNIT IMAGE IF EXISTS
-            let uploadedImageUrl = unit.unit_image_url || null;
-            if (unit.unit_image_file) {
-              console.log(`📸 Uploading image for unit: ${unit.unit_number}...`);
-              try {
-                const uploadRes = await liveGroupDynamicAPI.uploadUnitImage(unit.unit_image_file);
-                uploadedImageUrl = uploadRes.imageUrl;
-              } catch (uploadErr) {
-                console.error("Unit image upload failed:", uploadErr);
-                // Continue without image or fail? Requirement says optional, so we can continue
-              }
-            }
-
-            // Sanitize numeric fields before sending
-            const sanitizedUnit = {
-              ...unit,
-              floor_number: parseInt(floorNum),
-              area: parseFloat(unit.area) || 0,
-              carpet_area: parseFloat(unit.carpet_area) || 0,
-              super_built_up_area: parseFloat(unit.super_built_up_area) || 0,
-              price: parseFloat(unit.price) || 0,
-              price_per_sqft: parseFloat(unit.price_per_sqft) || 0,
-              discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null,
-              plot_width: (unit.plot_width) ? parseFloat(unit.plot_width) : null,
-              plot_depth: (unit.plot_depth) ? parseFloat(unit.plot_depth) : null,
-              unit_image_url: uploadedImageUrl
-            };
-
-            // Remove local file objects and previews before sending
-            delete sanitizedUnit.unit_image_file;
-            delete sanitizedUnit.localImagePreview;
-
-            compiledUnits.push(sanitizedUnit);
-          }
+        for (let i = 1; i <= totalUnits; i++) {
+          const unitArea = (parseFloat(projectData.plot_size_width) * parseFloat(projectData.plot_size_depth)) || 0;
+          compiledUnits.push({
+            unit_number: `C-${i}`,
+            unit_type: 'Commercial Unit',
+            floor_number: 0,
+            area: unitArea,
+            price: (unitArea * (parseFloat(projectData.regular_price_per_sqft) || 0)) || 0,
+            price_per_sqft: parseFloat(projectData.regular_price_per_sqft) || 0,
+            plot_width: parseFloat(projectData.plot_size_width) || null,
+            plot_depth: parseFloat(projectData.plot_size_depth) || null,
+            status: 'available'
+          });
         }
 
         hierarchy.push({
-          tower_name: tower.name,
-          total_floors: parseInt(tower.floors) || (projectData.type === 'Bungalow' ? 1 : 0),
-          layout_columns: tower.layout_columns || null,
-          layout_rows: tower.layout_rows || null,
+          tower_name: 'Commercial Block',
+          total_floors: parseInt(projectData.commercial_floor_count) || 1,
+          layout_columns: cols,
+          layout_rows: Math.ceil(totalUnits / cols),
           units: compiledUnits
         });
+      } else {
+        for (let idx = 0; idx < towers.length; idx++) {
+          const tower = towers[idx];
+          const towerConfig = towerUnits[idx] || {};
+          const compiledUnits = [];
+
+          for (const floorNum of Object.keys(towerConfig)) {
+            if (!towerConfig[floorNum]) continue;
+
+            for (const unit of towerConfig[floorNum]) {
+              // UPLOAD UNIT IMAGE IF EXISTS
+              let uploadedImageUrl = unit.unit_image_url || null;
+              if (unit.unit_image_file) {
+                console.log(`📸 Uploading image for unit: ${unit.unit_number}...`);
+                try {
+                  const uploadRes = await liveGroupDynamicAPI.uploadUnitImage(unit.unit_image_file);
+                  uploadedImageUrl = uploadRes.imageUrl;
+                } catch (uploadErr) {
+                  console.error("Unit image upload failed:", uploadErr);
+                  // Continue without image or fail? Requirement says optional, so we can continue
+                }
+              }
+
+              // Sanitize numeric fields before sending
+              const sanitizedUnit = {
+                ...unit,
+                floor_number: parseInt(floorNum),
+                area: parseFloat(unit.area) || 0,
+                carpet_area: parseFloat(unit.carpet_area) || 0,
+                super_built_up_area: parseFloat(unit.super_built_up_area) || 0,
+                price: parseFloat(unit.price) || 0,
+                price_per_sqft: parseFloat(unit.price_per_sqft) || 0,
+                discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null,
+                plot_width: (unit.plot_width) ? parseFloat(unit.plot_width) : null,
+                plot_depth: (unit.plot_depth) ? parseFloat(unit.plot_depth) : null,
+                unit_image_url: uploadedImageUrl
+              };
+
+              // Remove local file objects and previews before sending
+              delete sanitizedUnit.unit_image_file;
+              delete sanitizedUnit.localImagePreview;
+
+              compiledUnits.push(sanitizedUnit);
+            }
+          }
+
+          hierarchy.push({
+            tower_name: tower.name,
+            total_floors: parseInt(tower.floors) || (projectData.type === 'Bungalow' ? 1 : 0),
+            layout_columns: tower.layout_columns || null,
+            layout_rows: tower.layout_rows || null,
+            units: compiledUnits
+          });
+        }
       }
 
       console.log('🚀 Submitting Partial Hierarchy:', hierarchy);
@@ -296,6 +376,7 @@ const AdminLiveGrouping = () => {
         plot_gap: sanitizeNumeric(projectData.plot_gap),
         plot_size_width: sanitizeNumeric(projectData.plot_size_width),
         plot_size_depth: sanitizeNumeric(projectData.plot_size_depth),
+        parking_slots: sanitizeNumeric(projectData.parking_slots),
       };
 
       // 2. Send Single Bulk Request
@@ -768,25 +849,15 @@ const AdminLiveGrouping = () => {
               </div>
 
               <div className="wizard-stepper">
-                <div className={`step ${wizardStep >= 1 ? 'active' : ''} ${wizardStep > 1 ? 'completed' : ''}`}>
-                  <div className="node">1</div>
-                  <span>Type</span>
-                </div>
-                <div className="line"></div>
-                <div className={`step ${wizardStep >= 2 ? 'active' : ''} ${wizardStep > 2 ? 'completed' : ''}`}>
-                  <div className="node">2</div>
-                  <span>Basics</span>
-                </div>
-                <div className="line"></div>
-                <div className={`step ${wizardStep >= 3 ? 'active' : ''} ${wizardStep > 3 ? 'completed' : ''}`}>
-                  <div className="node">3</div>
-                  <span>Hierarchy</span>
-                </div>
-                <div className="line"></div>
-                <div className={`step ${wizardStep >= 4 ? 'active' : ''} ${wizardStep > 4 ? 'completed' : ''}`}>
-                  <div className="node">4</div>
-                  <span>Summary</span>
-                </div>
+                {getWizardSteps().map((s, idx) => (
+                  <Fragment key={s.id}>
+                    <div className={`step ${wizardStep >= s.id ? 'active' : ''} ${wizardStep > s.id ? 'completed' : ''}`}>
+                      <div className="node">{s.id}</div>
+                      <span>{s.label}</span>
+                    </div>
+                    {idx < getWizardSteps().length - 1 && <div className="line"></div>}
+                  </Fragment>
+                ))}
               </div>
 
               <div className="wizard-content">
@@ -803,7 +874,10 @@ const AdminLiveGrouping = () => {
                           <div
                             key={type.id}
                             className={`type-card ${projectData.type === type.id ? 'active' : ''}`}
-                            onClick={() => setProjectData({ ...projectData, type: type.id })}
+                            onClick={() => {
+                              setProjectData({ ...projectData, type: type.id });
+                              // Reset steps or set specific defaults if needed
+                            }}
                           >
                             <div className="type-icon">
                               <Icon size={32} />
@@ -822,18 +896,81 @@ const AdminLiveGrouping = () => {
                   </div>
                 )}
 
+
                 {wizardStep === 2 && (
                   <div className="step-pane">
                     <h3>Project Information</h3>
                     <div className="form-grid">
                       <div className="input-group">
-                        <label>Project Title</label>
-                        <input type="text" value={projectData.title || ''} onChange={e => setProjectData({ ...projectData, title: e.target.value })} placeholder="e.g. Skyline Residency" />
+                        <label>Project Title / Business Name <span style={{ color: 'red' }}>*</span></label>
+                        <input
+                          type="text"
+                          value={projectData.title || ''}
+                          onChange={e => setProjectData({ ...projectData, title: e.target.value })}
+                          placeholder="e.g. Skyline Residency"
+                          maxLength={100}
+                        />
+                        {projectData.title && projectData.title.length > 90 && (
+                          <p className="text-[10px] text-orange-500 mt-1">{100 - projectData.title.length} characters remaining</p>
+                        )}
                       </div>
                       <div className="input-group">
-                        <label>Location</label>
+                        <label>Min Buyers <span style={{ color: 'red' }}>*</span></label>
+                        <input
+                          type="number"
+                          value={projectData.min_buyers || ''}
+                          onChange={e => setProjectData({ ...projectData, min_buyers: e.target.value })}
+                          placeholder="e.g. 10"
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Location / Address <span style={{ color: 'red' }}>*</span></label>
                         <input type="text" value={projectData.location || ''} onChange={e => setProjectData({ ...projectData, location: e.target.value })} placeholder="e.g. Sector 45, Gurgaon" />
                       </div>
+
+                      {projectData.type === 'Commercial' && (
+                        <>
+                          <div className="input-group">
+                            <label>Total Land Area (SqFt) <span style={{ color: 'red' }}>*</span></label>
+                            <input
+                              type="number"
+                              value={projectData.area || ''}
+                              onChange={e => setProjectData({ ...projectData, area: e.target.value })}
+                              placeholder="e.g. 5000"
+                            />
+                          </div>
+                          <div className="input-group">
+                            <label>Front Road Width (Ft) <span style={{ color: 'red' }}>*</span></label>
+                            <input
+                              type="number"
+                              value={projectData.road_width || ''}
+                              onChange={e => setProjectData({ ...projectData, road_width: e.target.value })}
+                              placeholder="e.g. 60"
+                            />
+                          </div>
+                          <div className="input-group">
+                            <label>Orientation</label>
+                            <select
+                              value={projectData.orientation || ''}
+                              onChange={e => setProjectData({ ...projectData, orientation: e.target.value })}
+                              className="w-full p-2 border rounded"
+                            >
+                              <option value="">Select Orientation</option>
+                              <option value="North">North Facing</option>
+                              <option value="South">South Facing</option>
+                              <option value="East">East Facing</option>
+                              <option value="West">West Facing</option>
+                              <option value="NE">North-East</option>
+                              <option value="NW">North-West</option>
+                              <option value="SE">South-East</option>
+                              <option value="SW">South-West</option>
+                            </select>
+                          </div>
+                          <div className="input-group">
+                            {/* Placeholder to maintain grid if needed, or just leave it */}
+                          </div>
+                        </>
+                      )}
 
                       {/* Location Picker Integration */}
                       <div className="input-group full">
@@ -862,16 +999,6 @@ const AdminLiveGrouping = () => {
                       {/* --- EXTENDED OPTIONAL FIELDS --- */}
                       <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">Extended Information (Optional)</div>
 
-                      <div className="input-group">
-                        <label>Min Buyers <span style={{ color: 'red' }}>*</span></label>
-                        <input
-                          type="number"
-                          value={projectData.min_buyers || ''}
-                          onChange={e => setProjectData({ ...projectData, min_buyers: e.target.value })}
-                          placeholder="e.g. 10"
-                          required
-                        />
-                      </div>
 
 
                       <div className="input-group">
@@ -1001,7 +1128,145 @@ const AdminLiveGrouping = () => {
                   </div>
                 )}
 
-                {wizardStep === 3 && (
+                {wizardStep === 3 && projectData.type === 'Commercial' && (
+                  <div className="step-pane">
+                    <h3>Commercial Configuration</h3>
+                    <div className="form-grid">
+                      <div className="input-group">
+                        <label>Units per Row (Columns) <span className="text-red-500">*</span></label>
+                        <input
+                          type="number"
+                          value={projectData.layout_columns || ''}
+                          onChange={e => setProjectData({ ...projectData, layout_columns: e.target.value })}
+                          placeholder="e.g. 5"
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Total Units</label>
+                        <input
+                          type="number"
+                          value={projectData.total_units || ''}
+                          onChange={e => setProjectData({ ...projectData, total_units: e.target.value })}
+                          placeholder="e.g. 10"
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Frontage per Unit (Ft) <span className="text-red-500">*</span></label>
+                        <input
+                          type="number"
+                          value={projectData.plot_size_width || ''}
+                          onChange={e => setProjectData({ ...projectData, plot_size_width: e.target.value })}
+                          placeholder="Min 5, Max 50"
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Depth per Unit (Ft) <span className="text-red-500">*</span></label>
+                        <input
+                          type="number"
+                          value={projectData.plot_size_depth || ''}
+                          onChange={e => setProjectData({ ...projectData, plot_size_depth: e.target.value })}
+                          placeholder="Min 5, Max 50"
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Floor Count per Unit <span className="text-red-500">*</span></label>
+                        <select
+                          value={projectData.commercial_floor_count || 1}
+                          onChange={e => setProjectData({ ...projectData, commercial_floor_count: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        >
+                          <option value={1}>G + 0 (Ground only)</option>
+                          <option value={2}>G + 1</option>
+                          <option value={3}>G + 2</option>
+                          <option value={4}>G + 3 (Max)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 4 && projectData.type === 'Commercial' && (
+                  <div className="step-pane">
+                    <h3>Parking & Access</h3>
+                    <div className="form-grid">
+                      <div className="input-group">
+                        <label>Parking Type</label>
+                        <select
+                          value={projectData.parking_type || 'Front'}
+                          onChange={e => setProjectData({ ...projectData, parking_type: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        >
+                          <option value="Front">Front Parking</option>
+                          <option value="Back">Back Parking</option>
+                          <option value="Basement">Basement Parking</option>
+                          <option value="None">No Dedicated Parking</option>
+                        </select>
+                      </div>
+                      <div className="input-group">
+                        <label>Total Parking Slots</label>
+                        <input
+                          type="number"
+                          value={projectData.parking_slots || ''}
+                          onChange={e => setProjectData({ ...projectData, parking_slots: e.target.value })}
+                          placeholder="e.g. 50"
+                        />
+                      </div>
+                      <div className="input-group full">
+                        <label>Entry Points & Accessibility</label>
+                        <textarea
+                          value={projectData.entry_points || ''}
+                          onChange={e => setProjectData({ ...projectData, entry_points: e.target.value })}
+                          placeholder="e.g. Main entry from 60ft road, service entry from back lane."
+                          rows={3}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 5 && projectData.type === 'Commercial' && (
+                  <div className="step-pane">
+                    <h3>Live 3D Preview & Summary</h3>
+                    <div className="preview-container bg-slate-100 rounded-xl overflow-hidden mb-6 h-64 flex items-center justify-center border-2 border-dashed border-slate-300">
+                      <div className="text-center">
+                        <ImageIcon className="mx-auto text-slate-300 mb-2" size={48} />
+                        <p className="text-slate-400 font-medium">3D Preview will be generated here</p>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Real-time rendering active</p>
+                      </div>
+                    </div>
+                    <div className="summary-grid bg-white border border-slate-100 rounded-xl p-6 shadow-sm">
+                      <div className="flex justify-between items-center mb-4 pb-4 border-b">
+                        <h4 className="font-bold text-slate-800">Project Summary</h4>
+                        <span className="badge bg-green-100 text-green-700 text-[10px] font-black px-2 py-1 rounded-md uppercase">Ready to Create</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Project Name</p>
+                          <p className="text-sm font-bold text-slate-700">{projectData.title}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Type</p>
+                          <p className="text-sm font-bold text-slate-700">Commercial Hub</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Layout</p>
+                          <p className="text-sm font-bold text-slate-700">{projectData.layout_columns} Columns x {Math.ceil((parseInt(projectData.total_units) || 0) / (parseInt(projectData.layout_columns) || 1))} Rows</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Unit Dimensions</p>
+                          <p className="text-sm font-bold text-slate-700">{projectData.plot_size_width}ft x {projectData.plot_size_depth}ft</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Min Buyers</p>
+                          <p className="text-sm font-bold text-slate-700">{projectData.min_buyers} Required</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 3 && projectData.type !== 'Commercial' && (
                   <div className="step-pane">
                     <div className="pane-header">
                       <h3>{getLabel(projectData.type, 'parent')} Configuration</h3>
@@ -1176,7 +1441,7 @@ const AdminLiveGrouping = () => {
                   </div>
                 )}
 
-                {wizardStep === 4 && (
+                {wizardStep === 4 && projectData.type !== 'Commercial' && (
                   <div className="step-pane">
                     <div className="pane-header">
                       <h3>Building Units Configurator</h3>
@@ -1407,16 +1672,16 @@ const AdminLiveGrouping = () => {
                   {wizardStep === 1 ? 'Cancel' : 'Back'}
                 </button>
                 <div className="filler"></div>
-                {wizardStep < 4 ? (
+                {wizardStep < getWizardSteps().length ? (
                   <button
                     className="primary-btn"
                     onClick={() => setWizardStep(wizardStep + 1)}
-                    disabled={wizardStep === 1 && !projectData.type}
+                    disabled={!validateWizardStep(wizardStep)}
                   >
                     Next <ChevronRight size={18} />
                   </button>
                 ) : (
-                  <button className="primary-btn finish" onClick={handleCreateProject} disabled={saving}>
+                  <button className="primary-btn finish" onClick={handleCreateProject} disabled={saving || !validateWizardStep(wizardStep)}>
                     {saving ? 'Creating...' : 'Confirm & Generate'} <CheckCircle2 size={18} />
                   </button>
                 )}
