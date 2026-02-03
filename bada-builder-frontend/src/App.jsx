@@ -150,7 +150,7 @@ function AppContent() {
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
       {!isMessagesPage && !isAdminPanel && <Chatbot />}
       {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
-      <main style={{ minHeight: isMessagesPage || isAdminPanel ? '100vh' : '60vh' }}>
+      <main style={{ minHeight: '100vh' }}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             {/* Admin Panel Login Route */}

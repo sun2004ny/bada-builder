@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { liveGroupDynamicAPI } from '../../services/api';
 import ViewToggle from '../../components/ViewToggle/ViewToggle';
 import PropertyCard from '../../components/PropertyCard/PropertyCard';
@@ -41,12 +41,34 @@ const Countdown = ({ targetDate }) => {
 const LiveGrouping = () => {
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [liveGroups, setLiveGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useViewPreference();
   const [activeGroups, setActiveGroups] = useState([]);
   const [closedGroups, setClosedGroups] = useState([]);
+
+  // Scroll Restoration Logic
+  useLayoutEffect(() => {
+    // If we have a saved scroll position and we just finished loading
+    if (!loading && sessionStorage.getItem('liveGroupingScrollY')) {
+      const scrollY = parseInt(sessionStorage.getItem('liveGroupingScrollY'), 10);
+      window.scrollTo(0, scrollY);
+      // Clear it so it doesn't persist forever, or keep it if you want to support multiple backs
+      sessionStorage.removeItem('liveGroupingScrollY');
+    } else if (loading) {
+      // If loading, ensure we start at top (or keep current if minimizing jumpiness is priority, but here we prioritize header visibility)
+      // window.scrollTo(0, 0); 
+      // Commented out: Let ScrollToTop component handle initial scroll to top on navigation.
+    }
+  }, [loading]);
+
+  const handleNavigateToDetails = (id) => {
+    // Save current scroll position before navigating away
+    sessionStorage.setItem('liveGroupingScrollY', window.scrollY.toString());
+    navigate(`/exhibition/live-grouping/${id}`);
+  };
 
   useEffect(() => {
     fetchLiveGroups();
@@ -232,9 +254,18 @@ const LiveGrouping = () => {
           <h2 className="section-title">🔴 Active Live Groups</h2>
           <div className={`properties-grid ${view === 'list' ? 'list-view' : 'grid-view'}`}>
             {loading ? (
-              <p style={{ textAlign: 'center', padding: '40px', gridColumn: '1 / -1' }}>
-                Loading properties...
-              </p>
+              // Skeleton Loader
+              Array(6).fill(0).map((_, i) => (
+                <div key={i} className="property-card live-group-card skeleton-card">
+                  <div className="skeleton-image" />
+                  <div className="skeleton-content">
+                    <div className="skeleton-line title" />
+                    <div className="skeleton-line subtitle" />
+                    <div className="skeleton-line full" />
+                    <div className="skeleton-line full" />
+                  </div>
+                </div>
+              ))
             ) : activeGroups.length === 0 ? (
               <p style={{ textAlign: 'center', padding: '40px', gridColumn: '1 / -1', color: '#666' }}>
                 No active groups available at the moment. Check back soon!
@@ -248,7 +279,7 @@ const LiveGrouping = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   whileHover={{ y: -8 }}
-                  onClick={() => navigate(`/exhibition/live-grouping/${group.id}`)}
+                  onClick={() => handleNavigateToDetails(group.id)}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="property-image">
@@ -545,7 +576,7 @@ const LiveGrouping = () => {
                           if (group.details_page_url) {
                             window.open(group.details_page_url, '_blank');
                           } else {
-                            navigate(`/exhibition/live-grouping/${group.id}`);
+                            handleNavigateToDetails(group.id);
                           }
                         }}
                       >
@@ -604,7 +635,7 @@ const LiveGrouping = () => {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    onClick={() => navigate(`/exhibition/live-grouping/${group.id}`)}
+                    onClick={() => handleNavigateToDetails(group.id)}
                     style={{ cursor: 'pointer', opacity: 0.8 }}
                   >
                     <div className="property-image">

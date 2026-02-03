@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import MobileSearchOverlay from "./MobileSearchOverlay";
 import "./DetailedSearchBar.css";
@@ -31,6 +31,7 @@ const filterConfigs = {
 const DetailedSearchBar = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const routerLocation = useLocation();
 
     const [location, setLocation] = useState("");
     const [selectedProperties, setSelectedProperties] = useState([]);
@@ -41,6 +42,12 @@ const DetailedSearchBar = () => {
         status: "",
         postedBy: ""
     });
+
+    // Close mobile search on route change
+    useLayoutEffect(() => {
+        setIsMobileSearchOpen(false);
+    }, [routerLocation.pathname]);
+
     const [searchHistory, setSearchHistory] = useState([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 import SearchBar from '../SearchBar/SearchBar';
@@ -89,6 +89,14 @@ const Header = () => {
     setIsLoggedIn(!!currentUser);
     setLoading(authLoading);
   }, [currentUser, authLoading]);
+
+  // Close mobile menu and dropdowns on route change immediately to prevent flash
+  useLayoutEffect(() => {
+    setIsMobileMenuOpen(false);
+    setMobileLongLiveOpen(false);
+    setShowDropdown(false);
+    setShowProfileDropdown(false);
+  }, [location.pathname]);
 
   // ... existing effects ...
 
