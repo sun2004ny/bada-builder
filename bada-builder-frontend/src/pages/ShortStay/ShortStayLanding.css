@@ -137,6 +137,8 @@
   text-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   -webkit-text-stroke: 0 !important;
   background: none !important;
+  border: none !important; /* Ensure no global blue stripe */
+  text-decoration: none !important;
 }
 
 .short-stay-hero-subtitle {
@@ -246,6 +248,12 @@
     color: #222222;
     cursor: pointer;
     z-index: 10;
+}
+
+@media (min-width: 768px) {
+    .mobile-search-close-btn {
+        display: none !important;
+    }
 }
 
 
