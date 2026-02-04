@@ -700,6 +700,7 @@
     min-height: 80px;
 }
 
+/* Restored Submit Button Styles */
 .submit-btn {
     width: 100%;
     padding: 16px;
@@ -717,6 +718,60 @@
     position: relative;
     overflow: hidden;
     margin-top: 0 !important;
+}
+
+/* Book Button Premium Styles */
+.book-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: relative;
+    overflow: hidden;
+    margin-top: auto;
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2), 0 2px 4px -1px rgba(14, 165, 233, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 1;
+}
+
+.book-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.4s ease;
+}
+
+.book-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -5px rgba(14, 165, 233, 0.4), 0 4px 6px -2px rgba(14, 165, 233, 0.2);
+    letter-spacing: 0.1em;
+    color: white;
+}
+
+.book-btn:hover::before {
+    opacity: 1;
+}
+
+.book-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
 }
 
 .submit-btn::before {
@@ -1232,5 +1287,217 @@
     .form-group input,
     .form-group textarea {
         padding: 10px 14px;
+    }
+}
+
+/* ========================================
+   MODAL STEP SYTLES
+   ======================================== */
+
+.modal-step-1 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeInStep 0.3s ease-out;
+}
+
+.modal-step-2 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeInStep 0.3s ease-out;
+}
+
+@keyframes fadeInStep {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.selected-package-header {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.pkg-icon-large {
+    width: 64px;
+    height: 64px;
+    background: rgba(14, 165, 233, 0.1);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0EA5E9;
+    font-size: 32px;
+    margin: 0 auto 15px;
+}
+
+.selected-package-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 24px;
+    color: #F8FAFC;
+}
+
+.pkg-target-badge {
+    display: inline-block;
+    background: rgba(148, 163, 184, 0.1);
+    color: #94A3B8;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin: 0;
+}
+
+.pkg-price-large {
+    text-align: center;
+    font-size: 36px;
+    font-weight: 800;
+    color: #38BDF8;
+    margin-bottom: 10px;
+}
+
+.pkg-price-large span {
+    font-size: 16px;
+    color: #94A3B8;
+    font-weight: 400;
+}
+
+.pkg-features-list {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.pkg-features-list h4,
+.pkg-payment-info h4 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    color: #CBD5E1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pkg-features-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pkg-features-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: #E2E8F0;
+    line-height: 1.5;
+}
+
+.feature-check {
+    color: #10B981;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.pkg-payment-info {
+    background: rgba(14, 165, 233, 0.05);
+    border: 1px solid rgba(14, 165, 233, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.pkg-payment-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #38BDF8;
+}
+
+.next-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.back-step-btn {
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+}
+
+.back-step-btn:hover {
+    color: #F8FAFC;
+}
+
+.selected-package-summary {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.pkg-icon-small {
+    width: 40px;
+    height: 40px;
+    background: rgba(14, 165, 233, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0EA5E9;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.selected-package-summary h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #F8FAFC;
+}
+
+.pkg-price-small {
+    margin: 0;
+    font-size: 14px;
+    color: #38BDF8;
+    font-weight: 600;
+}
+
+/* Responsive Adjustments for Modal Steps */
+@media (max-width: 480px) {
+    .pkg-icon-large {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+    
+    .selected-package-header h3 {
+        font-size: 20px;
+    }
+
+    .pkg-price-large {
+        font-size: 28px;
+    }
+
+    .pkg-features-list {
+        padding: 15px;
+    }
+    
+    .pkg-features-list li {
+        font-size: 13px;
     }
 }

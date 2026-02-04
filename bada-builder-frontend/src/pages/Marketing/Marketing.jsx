@@ -165,9 +165,22 @@ const TermsAccordion = ({ title, children, isOpen, onClick }) => {
     );
 };
 
+// Load Razorpay Script
+const loadRazorpay = () => {
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
+
 const PackageInquiryModal = ({ isOpen, onClose, packageData }) => {
+    const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
+        email: '',
         phone: '',
         propertyPrice: '',
         address: ''
@@ -176,12 +189,105 @@ const PackageInquiryModal = ({ isOpen, onClose, packageData }) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+    
+    // For packages 1 & 2, we need user info before payment
+    const isPaymentPackage = packageData?.id === 1 || packageData?.id === 2;
+
+    // Reset step when modal opens/closes
+    React.useEffect(() => {
+        if (isOpen) {
+            setStep(1);
+            setSuccess(false);
+            setError('');
+        }
+    }, [isOpen]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e) => {
+    const handleNext = () => {
+        setStep(2);
+    };
+
+    const handleBack = () => {
+        setStep(1);
+    };
+
+    const handleRazorpayPayment = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        const res = await loadRazorpay();
+        if (!res) {
+            setError('Razorpay SDK failed to load. Are you online?');
+            setLoading(false);
+            return;
+        }
+
+        // Clean price string to number (remove ₹ and commas)
+        const priceString = packageData.price.replace(/[₹,]/g, '');
+        const amount = Number(priceString);
+
+        if (isNaN(amount)) {
+            setError('Invalid price format. Please contact support.');
+            setLoading(false);
+            return;
+        }
+
+        const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder', 
+            amount: amount * 100, // Amount in paisa
+            currency: 'INR',
+            name: 'Bada Builder',
+            description: `Payment for ${packageData.title}`,
+            image: '/logo.png',
+            handler: function (response) {
+                // Payment Success Handler
+                // Here you would typically verify signature on backend
+                // For now, we simulate success and save inquiry
+                handlePaymentSuccess(response);
+            },
+            prefill: {
+                name: formData.name,
+                email: formData.email,
+                contact: formData.phone,
+            },
+            theme: { color: '#0ea5e9' },
+        };
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+        setLoading(false);
+    };
+
+    const handlePaymentSuccess = async (response) => {
+        setLoading(true);
+        try {
+            await axios.post('http://localhost:5000/api/marketing/inquiry', {
+                ...formData,
+                packageTitle: packageData.title,
+                packagePrice: packageData.price + ' ' + packageData.priceSub,
+                packageTarget: packageData.target,
+                paymentId: response.razorpay_payment_id,
+                status: 'PAID'
+            });
+            setSuccess(true);
+            setTimeout(() => {
+                setSuccess(false);
+                onClose();
+                setFormData({ name: '', email: '', phone: '', propertyPrice: '', address: '' });
+                setAgreedToTerms(false);
+                setStep(1);
+            }, 3000);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Payment successful but failed to save order. Please contact support.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleInquirySubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
@@ -197,8 +303,9 @@ const PackageInquiryModal = ({ isOpen, onClose, packageData }) => {
             setTimeout(() => {
                 setSuccess(false);
                 onClose();
-                setFormData({ name: '', phone: '', propertyPrice: '', address: '' });
+                setFormData({ name: '', email: '', phone: '', propertyPrice: '', address: '' });
                 setAgreedToTerms(false);
+                setStep(1);
             }, 3000);
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to send inquiry. Please try again.');
@@ -226,115 +333,180 @@ const PackageInquiryModal = ({ isOpen, onClose, packageData }) => {
                         
                         {!success ? (
                             <>
-                                {/* Package Details First */}
-                                <div className="selected-package">
-                                    <div className="pkg-icon">{packageData.icon}</div>
-                                    <div>
-                                        <h4>{packageData.title}</h4>
-                                        <p className="pkg-meta">{packageData.target}</p>
-                                        <p className="pkg-price">{packageData.price} <span>{packageData.priceSub}</span></p>
+                                {/* Step 1: Package Details */}
+                                {step === 1 && (
+                                    <div className="modal-step-1">
+                                        <div className="selected-package-header">
+                                            <div className="pkg-icon-large">{packageData.icon}</div>
+                                            <h3>{packageData.title}</h3>
+                                            <p className="pkg-target-badge">{packageData.target}</p>
+                                        </div>
+
+                                        <div className="pkg-price-large">
+                                            {packageData.price} <span>{packageData.priceSub}</span>
+                                        </div>
+
+                                        <div className="pkg-features-list">
+                                            <h4>What's Included:</h4>
+                                            <ul>
+                                                <li>
+                                                    <FaVideo className="feature-check" /> 
+                                                    <span>{packageData.videos}</span>
+                                                </li>
+                                                {packageData.features.map((feature, idx) => (
+                                                    <li key={idx}>
+                                                        <FaCheckCircle className="feature-check" />
+                                                        <span>{feature}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <div className="pkg-payment-info">
+                                            <h4>Payment Terms</h4>
+                                            <p>{packageData.payment}</p>
+                                        </div>
+
+                                        <button className="submit-btn next-btn" onClick={handleNext}>
+                                            {isPaymentPackage ? 'Proceed to Pay' : 'Next'} <FaChevronRight />
+                                        </button>
                                     </div>
-                                </div>
+                                )}
 
-                                {/* Form Section Header */}
-                                <div className="form-section-header">
-                                    <h3>Your Details</h3>
-                                    <p>Fill in your information to inquire about this package</p>
-                                </div>
+                                {/* Step 2: Payment or Inquiry Form */}
+                                {step === 2 && (
+                                    <div className="modal-step-2">
+                                        <button className="back-step-btn" onClick={handleBack}>
+                                            <FaChevronRight style={{ transform: 'rotate(180deg)' }} /> Back
+                                        </button>
 
-                                <form onSubmit={handleSubmit} className="inquiry-form">
-                                    <div className="form-group">
-                                        <label>Name</label>
-                                        <input 
-                                            type="text" 
-                                            name="name" 
-                                            value={formData.name} 
-                                            onChange={handleChange} 
-                                            required 
-                                            placeholder="Your full name"
-                                        />
+                                        <div className="selected-package-summary">
+                                            <div className="pkg-icon-small">{packageData.icon}</div>
+                                            <div>
+                                                <h4>{packageData.title}</h4>
+                                                <p className="pkg-price-small">{packageData.price}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-section-header">
+                                            <h3>{isPaymentPackage ? 'Billing Details' : 'Your Details'}</h3>
+                                            <p>{isPaymentPackage ? 'Complete your payment securely' : 'Fill in your information to inquire about this package'}</p>
+                                        </div>
+
+                                        <form onSubmit={isPaymentPackage ? handleRazorpayPayment : handleInquirySubmit} className="inquiry-form">
+                                            <div className="form-group">
+                                                <label>Name</label>
+                                                <input 
+                                                    type="text" 
+                                                    name="name" 
+                                                    value={formData.name} 
+                                                    onChange={handleChange} 
+                                                    required 
+                                                    placeholder="Your full name"
+                                                />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label>Phone Number</label>
+                                                <input 
+                                                    type="tel" 
+                                                    name="phone" 
+                                                    value={formData.phone} 
+                                                    onChange={handleChange} 
+                                                    required 
+                                                    placeholder="+91 98765 43210"
+                                                />
+                                            </div>
+
+                                            {/* Email field needed for Payment Receipts */}
+                                            {isPaymentPackage && (
+                                                <div className="form-group">
+                                                    <label>Email Address</label>
+                                                    <input 
+                                                        type="email" 
+                                                        name="email" 
+                                                        value={formData.email} 
+                                                        onChange={handleChange} 
+                                                        required 
+                                                        placeholder="name@example.com"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {!isPaymentPackage && (
+                                                <>
+                                                    <div className="form-group">
+                                                        <label>Property Price (₹)</label>
+                                                        <input 
+                                                            type="number" 
+                                                            name="propertyPrice" 
+                                                            value={formData.propertyPrice} 
+                                                            onChange={handleChange} 
+                                                            required 
+                                                            placeholder="50,00,000"
+                                                            min="0"
+                                                        />
+                                                    </div>
+
+                                                    <div className="form-group">
+                                                        <label>Property Location</label>
+                                                        <textarea 
+                                                            name="address" 
+                                                            value={formData.address} 
+                                                            onChange={handleChange} 
+                                                            required 
+                                                            placeholder="Enter complete property address"
+                                                            rows="3"
+                                                        ></textarea>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {error && <p className="error-msg">{error}</p>}
+
+                                            <div className="terms-agreement">
+                                                <label className="checkbox-container">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={agreedToTerms}
+                                                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                                    />
+                                                    <span className="checkmark"></span>
+                                                    <span className="agreement-text">
+                                                        I agree to the{' '}
+                                                        <a 
+                                                            href="/services/marketing/terms-conditions" 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            Terms & Conditions
+                                                        </a>
+                                                        {' '}and{' '}
+                                                        <a 
+                                                            href="/services/marketing/rules-regulations" 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            Rules & Regulations
+                                                        </a>
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            <button type="submit" className="submit-btn" disabled={loading || !agreedToTerms}>
+                                                {loading ? 'Processing...' : (isPaymentPackage ? `Pay ${packageData.price}` : 'Send Inquiry')}
+                                            </button>
+                                        </form>
                                     </div>
-
-                                    <div className="form-group">
-                                        <label>Phone Number</label>
-                                        <input 
-                                            type="tel" 
-                                            name="phone" 
-                                            value={formData.phone} 
-                                            onChange={handleChange} 
-                                            required 
-                                            placeholder="+91 98765 43210"
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>Property Price (₹)</label>
-                                        <input 
-                                            type="number" 
-                                            name="propertyPrice" 
-                                            value={formData.propertyPrice} 
-                                            onChange={handleChange} 
-                                            required 
-                                            placeholder="50,00,000"
-                                            min="0"
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>Property Location</label>
-                                        <textarea 
-                                            name="address" 
-                                            value={formData.address} 
-                                            onChange={handleChange} 
-                                            required 
-                                            placeholder="Enter complete property address"
-                                            rows="3"
-                                        ></textarea>
-                                    </div>
-
-                                    {error && <p className="error-msg">{error}</p>}
-
-                                    <div className="terms-agreement">
-                                        <label className="checkbox-container">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={agreedToTerms}
-                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                            />
-                                            <span className="checkmark"></span>
-                                            <span className="agreement-text">
-                                                I agree to the{' '}
-                                                <a 
-                                                    href="/services/marketing/terms-conditions" 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    Terms & Conditions
-                                                </a>
-                                                {' '}and{' '}
-                                                <a 
-                                                    href="/services/marketing/rules-regulations" 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    Rules & Regulations
-                                                </a>
-                                            </span>
-                                        </label>
-                                    </div>
-
-                                    <button type="submit" className="submit-btn" disabled={loading || !agreedToTerms}>
-                                        {loading ? 'Sending...' : 'Send Inquiry'}
-                                    </button>
-                                </form>
+                                )}
                             </>
                         ) : (
                             <div className="success-message">
                                 <FaCheckCircle size={64} color="#10B981" />
-                                <h3>Inquiry Sent Successfully!</h3>
-                                <p>Our team will contact you shortly.</p>
+                                <h3>{isPaymentPackage ? 'Payment Successful!' : 'Inquiry Sent Successfully!'}</h3>
+                                <p>{isPaymentPackage ? 'Your package has been booked. You will receive a confirmation shortly.' : 'Our team will contact you shortly.'}</p>
                             </div>
                         )}
                     </motion.div>
@@ -422,7 +594,8 @@ const Marketing = () => {
                                 </div>
                             </div>
 
-                            <ul className="package-features">
+                            {/* Features list removed as it's now shown in the modal */}
+                            {/* <ul className="package-features">
                                 <li><FaVideo className="feature-icon" /> {pkg.videos}</li>
                                 {pkg.features.map((feature, idx) => (
                                     <li key={idx}>
@@ -430,14 +603,15 @@ const Marketing = () => {
                                         {feature}
                                     </li>
                                 ))}
-                            </ul>
+                            </ul> */}
 
-                            <div className="payment-terms">
+                            {/* Payment terms removed as shown in modal */}
+                            {/* <div className="payment-terms">
                                 <h4>Payment Terms</h4>
                                 <p>{pkg.payment}</p>
-                            </div>
+                            </div> */}
 
-                            <button className="book-btn" onClick={() => handlePackageSelect(pkg)}>Select Package</button>
+                            <button className="book-btn" onClick={() => handlePackageSelect(pkg)}>View More Details</button>
                         </motion.div>
                     ))}
                 </div>
