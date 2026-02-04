@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaVideo, FaBullhorn, FaUserTie, FaHandshake, FaChevronDown, FaChevronUp, FaCheckCircle, FaHelicopter, FaTimes, FaChevronRight } from 'react-icons/fa';
+import { FaVideo, FaBullhorn, FaUserTie, FaHandshake, FaChevronDown, FaChevronUp, FaCheckCircle, FaHelicopter, FaTimes, FaChevronRight, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
 import axios from 'axios';
 import './Marketing.css';
 
@@ -519,6 +519,14 @@ const PackageInquiryModal = ({ isOpen, onClose, packageData }) => {
 const Marketing = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState(null);
+    
+    // Video Audio Control
+    const videoRef = useRef(null);
+    const [isMuted, setIsMuted] = useState(true);
+
+    const toggleAudio = () => {
+        setIsMuted(!isMuted);
+    };
 
     const handlePackageSelect = (pkg) => {
         setSelectedPackage(pkg);
@@ -534,17 +542,27 @@ const Marketing = () => {
             />
             <div className="marketing-hero">
                 <video 
+                    ref={videoRef}
                     autoPlay 
                     loop 
-                    muted 
+                    muted={isMuted}
                     playsInline 
                     className="hero-bg-video"
-                    poster="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260"
+                    poster="/logo.png"
                 >
-                    <source src="https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-luxury-building-and-its-pool-10338-large.mp4" type="video/mp4" />
+                    <source src="/BadaBuilder_Marketing.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                 </video>
                 <div className="hero-overlay"></div>
+                
+                {/* Audio Control Button */}
+                <button 
+                    className="video-audio-toggle"
+                    onClick={toggleAudio}
+                    aria-label={isMuted ? "Unmute video" : "Mute video"}
+                >
+                    {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                </button>
                 
                 <div className="hero-content">
                     <motion.h1
