@@ -1,14 +1,18 @@
-/* ShortStayReserve.css - Airbnb Clone Style */
+/* ShortStayReserve.css - Airbnb Style Redesign */
 
 .reserve-page {
     background-color: white;
     min-height: 100vh;
     padding-bottom: 80px;
+    font-family: Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+    color: #222;
 }
 
+/* Header */
 .reserve-header {
     height: 80px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #ebebeb;
+    border-top: 1px solid #ebebeb;
     display: flex;
     align-items: center;
     background: white;
@@ -23,38 +27,15 @@
     width: 100%;
     padding: 0 24px;
     display: flex;
-    align-items: center;
+    align-items: center; /* Center vertically */
+    justify-content: flex-start; /* Align start */
     gap: 16px;
-}
-
-.nav-logo {
-    display: block;
-}
-
-.reserve-main-grid {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 40px 24px;
-    display: grid;
-    grid-template-columns: 1fr 400px; /* 1fr for left, fixed for right card */
-    gap: 80px;
-}
-
-/* Left Column */
-.reserve-left {
-    padding-right: 24px;
-}
-
-.section-title {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 48px;
+    position: relative;
 }
 
 .back-circle {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     border: none;
     background: transparent;
@@ -62,19 +43,103 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    transition: background 0.1s;
+    font-size: 16px;
     color: #222;
+    transition: background 0.1s;
+    margin-left: -12px;
 }
 
 .back-circle:hover {
     background: #f7f7f7;
 }
 
-.section-title h1 {
-    font-size: 32px;
+.header-title {
+    font-size: 18px; /* Mobile first */
     font-weight: 600;
     color: #222;
+    margin: 0 !important;
+    border: none !important;
+    text-decoration: none !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+    line-height: 1; /* Reset line height */
+    position: relative;
+    top: 0; /* Reset top */
+    display: flex;
+    align-items: center;
+    height: 48px; /* Match button height */
+}
+
+.header-title::after,
+.header-title::before {
+    display: none !important;
+    content: none !important;
+}
+
+/* Ensure container centers them */
+.reserve-container-nav {
+    align-items: center !important;
+}
+
+@media (min-width: 768px) {
+    .header-title {
+        font-size: 32px; /* Desktop size, but often hidden in header and shown in body */
+        display: none; /* Hide in header on desktop, show in main body */
+    }
+    
+    .reserve-container-nav {
+        padding: 0 40px;
+    }
+}
+
+/* Main Layout */
+.reserve-main-grid {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column-reverse; /* Mobile: Price stays bottom or top depending on design, Airbnb often stack */
+    gap: 40px;
+}
+
+@media (min-width: 950px) {
+    .reserve-main-grid {
+        display: grid;
+        grid-template-columns: 1fr 380px; /* 1fr / 380px fixed sidebar */
+        gap: 80px;
+        padding-top: 64px;
+        flex-direction: row;
+    }
+    
+    /* Reveal main title in body on desktop */
+    .desktop-title-area {
+        display: block;
+        margin-bottom: 48px;
+    }
+    
+    .desktop-title-area h1 {
+        font-size: 32px;
+        font-weight: 600;
+        margin: 0;
+        color: #222;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+}
+
+.desktop-title-area {
+    display: none; /* Hidden on mobile */
+}
+
+
+/* Left Column */
+.reserve-left {
+    width: 100%;
+}
+
+.reserve-section {
+    margin-bottom: 32px;
 }
 
 .reserve-section h2 {
@@ -82,26 +147,36 @@
     font-weight: 600;
     margin-bottom: 24px;
     color: #222;
+    border: none !important;
+    padding-left: 0 !important;
+    border-left: none !important;
+}
+
+.reserve-section h2::before,
+.reserve-section h2::after {
+    display: none !important;
+    content: none !important;
 }
 
 
+/* Trip Info Row (Dates/Guests) */
 .trip-info-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 24px;
+    font-size: 16px;
 }
 
 .trip-info-row strong {
     display: block;
-    font-size: 16px;
     font-weight: 600;
     margin-bottom: 4px;
+    color: #222;
 }
 
 .trip-info-row span {
-    font-size: 16px;
-    color: #717171;
+    color: #222;
 }
 
 .edit-link {
@@ -109,15 +184,18 @@
     text-decoration: underline;
     color: #222;
     cursor: pointer;
-    border: none;
     background: transparent;
+    border: none;
     font-size: 16px;
+    padding: 0;
 }
 
+/* Section Divider */
 .section-divider {
     height: 1px;
-    background: #ddd;
+    background: #dddddd;
     margin: 32px 0;
+    width: 100%;
 }
 
 /* Payment Methods */
@@ -127,50 +205,78 @@
     gap: 16px;
 }
 
-.payment-option {
+.payment-option-card {
+    border: 1px solid #ddd;
+    border-radius: 8px; /* Tighter radius */
+    padding: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    padding: 16px;
     cursor: pointer;
-    transition: border 0.2s;
+    transition: all 0.2s;
 }
 
-.payment-option.selected {
+/* Top/Bottom logic if we want connected inputs later, but separate cards is safer for now */
+
+.payment-option-card:hover {
+    background-color: #f7f7f7;
+}
+
+.payment-option-card.selected {
     border: 2px solid #222;
-    background: #f7f7f7;
+    background-color: #f7f7f7;
 }
 
-.payment-label {
+.payment-icon-label {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     font-size: 16px;
     font-weight: 500;
+    color: #222;
 }
 
-.radio-circle input {
+.custom-radio {
     width: 20px;
     height: 20px;
-    accent-color: #222;
+    border: 1px solid #b0b0b0;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+.payment-option-card.selected .custom-radio {
+    border-color: #222;
+    background: #222;
+}
+
+.custom-radio::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    display: none;
+}
+
+.payment-option-card.selected .custom-radio::after {
+    display: block;
+}
 
 /* Confirm Button */
 .confirm-pay-btn {
     width: 100%;
-    max-width: 320px; /* Or full width depending on design choice */
     padding: 14px 24px;
     background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D80565 100%);
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     cursor: pointer;
-    margin-top: 16px;
+    margin-top: 24px;
     transition: transform 0.1s;
 }
 
@@ -183,22 +289,25 @@
     cursor: not-allowed;
 }
 
-
-/* Right Column - Sticky Price Card */
+/* Right Column - Price Card */
 .reserve-right {
     position: relative;
 }
 
 .price-card {
-    border: 1px solid #ddd;
+    border: 1px solid #dddddd;
     border-radius: 12px;
     padding: 24px;
     background: white;
-    position: sticky;
-    top: 100px;
 }
 
-/* Price Card Header */
+@media (min-width: 950px) {
+    .price-card {
+        position: sticky;
+        top: 120px; /* Below header */
+    }
+}
+
 .price-card-header {
     display: flex;
     gap: 16px;
@@ -210,25 +319,37 @@
     height: 104px;
     object-fit: cover;
     border-radius: 8px;
+    flex-shrink: 0;
 }
 
 .price-card-info {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.superhost-tag {
+.superhost-label {
     font-size: 12px;
     color: #717171;
     margin-bottom: 4px;
-    display: block;
 }
 
-.price-card-info h4 {
+.price-card-title {
     font-size: 14px;
     font-weight: 400;
-    margin-bottom: 4px;
-    line-height: 1.4;
     color: #717171;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Compatibility */
+    line-clamp: 2; /* Standard */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.price-card-title strong {
+    color: #222;
+    font-weight: 400;
 }
 
 .mini-rating {
@@ -239,52 +360,297 @@
     font-weight: 600;
 }
 
-/* Price Breakdown */
-.price-card-breakdown h3 {
+.price-breakdown h3 {
     font-size: 22px;
     font-weight: 600;
     margin-bottom: 24px;
+    color: #222;
 }
 
 .price-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     font-size: 16px;
     color: #222;
 }
 
-.price-row span:last-child {
-    font-weight: 400;
+.price-row.total {
+    font-weight: 800;
+    font-size: 18px; /* Slightly larger total */
+    margin-top: 8px;
+    border-top: 1px solid #ddd;
+    padding-top: 24px;
 }
 
-.price-total-row {
+/* Price Card Inner Details */
+.card-trip-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.card-trip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-size: 16px; 
+}
+
+.card-trip-row strong {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #222;
+}
+
+.card-trip-row span {
+    color: #222;
+    font-size: 14px;
+    line-height: 1.4;
+    display: block;
+}
+
+.edit-link-card {
+    font-weight: 600;
+    text-decoration: underline;
+    color: #222;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    padding: 0;
+    white-space: nowrap;
+}
+
+
+/* Price Breakdown Link */
+.price-row.total-only {
     display: flex;
     justify-content: space-between;
     font-size: 16px;
     font-weight: 800;
-    margin-top: 8px;
+    color: #222;
+    margin-bottom: 8px;
 }
 
-/* Responsive */
+.price-breakdown-link {
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    color: #222;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+/* Price Modal */
+.price-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.price-modal {
+    background: white;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 12px;
+    animation: slideUp 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.price-modal-header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid #ddd;
+}
+
+.price-modal-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    flex: 1;
+    text-align: center;
+    margin: 0;
+}
+
+.empty-spacer { width: 32px; }
+
+.close-btn-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.close-btn-small:hover { background: #f7f7f7; }
+
+.price-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.price-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    color: #222;
+    font-size: 16px;
+}
+
+.price-detail-row span:first-child {
+    color: #4b4b4b; /* Slightly lighter gray for items */
+}
+
+.price-detail-row .underline {
+    text-decoration: underline;
+}
+
+.price-modal-footer {
+    padding: 24px;
+    border-top: 1px solid #ddd;
+}
+
+.price-detail-row.total {
+    font-weight: 800;
+    margin-bottom: 0;
+    color: #222;
+}
+
+.price-detail-row.total span:first-child {
+    color: #222;
+}
+
+/* Mobile Tweaks */
 @media (max-width: 768px) {
-    .reserve-main-grid {
-        grid-template-columns: 1fr;
-        padding: 24px;
-        gap: 40px;
+
+    .reserve-container-nav {
+        padding: 0 16px;
     }
 
+    .back-circle {
+        margin-left: -8px; 
+    }
+
+    .reserve-main-grid {
+        padding: 24px 16px;
+        gap: 32px;
+    }
+
+    /* Move price card summary to top conceptually if needed, or keeping it bottom is fine too, but usually key details first */
     .reserve-right {
-        order: -1; /* Show price card on top in mobile? Or keep bottom? Airbnb usually keeps top summary or bottom. */
-        /* For "Confirm and pay", details usually first. */
-        order: 1; 
+        margin-bottom: 24px;
     }
-    
+
     .price-card {
-        position: static;
+        border: none;
+        padding: 0; /* Integrate seamlessly on mobile */
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .price-card-breakdown {
+        display: none; /* Often hidden on mobile, user clicks "Show details", or kept simple */
     }
     
-    .reserve-left {
-        padding-right: 0;
+    /* We will keep it simple: Show card header always, breakdown at bottom or simplify */
+    
+    .confirm-pay-btn {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        border-radius: 0;
+        z-index: 1000;
+        margin: 0;
+        padding: 16px;
+        background: #E61E4D; /* Solid color for mobile bar usually */
+    }
+    
+    .reserve-page {
+        padding-bottom: 90px; /* Space for fixed button */
+    }
+
+    /* Steps visibility */
+    .mobile-hidden-step {
+        display: none !important; /* Hide step on mobile */
+    }
+
+    /* Fixed Mobile Footer for Buttons */
+    .mobile-fixed-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 16px 24px;
+        background: white;
+        border-top: 1px solid #ebebeb;
+        z-index: 1000;
+        display: block;
+    }
+
+    .confirm-pay-btn-mobile {
+        width: 100%;
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D80565 100%);
+        color: white;
+    }
+
+    .confirm-pay-btn-mobile.black-btn {
+        background: #222;
+        color: white;
+    }
+
+    /* Utilities to handle desktop/mobile show/hide logic cleanly */
+    .desktop-hidden {
+        display: block;
+    }
+    .mobile-hidden {
+        display: none !important;
+    }
+}
+
+@media (min-width: 950px) {
+    /* Reset visibility on desktop */
+    .mobile-hidden-step {
+        display: block !important;
+    }
+    
+    .desktop-hidden {
+        display: none !important;
+    }
+
+    .mobile-hidden {
+        display: block !important;
     }
 }

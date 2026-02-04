@@ -395,6 +395,8 @@ const ShortStayDetails = () => {
     const displayImages = (images && Array.isArray(images)) ? [...images] : [];
     while (displayImages.length < 5) displayImages.push('/placeholder-property.jpg');
 
+    const isOwner = user && property && (String(user.uid) === String(property.user_id || property.owner_id));
+
     return (
         <div className="short-stay-page details-page">
             <div className="details-container">
@@ -806,7 +808,10 @@ const ShortStayDetails = () => {
 
                                 <button 
                                     className="reserve-btn" 
+                                    disabled={isOwner}
+                                    style={isOwner ? { background: '#ccc', cursor: 'not-allowed' } : {}}
                                     onClick={() => {
+                                        if (isOwner) return;
                                         if (!checkIn || !checkOut) {
                                             setShowCalendarModal(true);
                                             return;
@@ -821,14 +826,16 @@ const ShortStayDetails = () => {
                                                 children, 
                                                 infants, 
                                                 pets,
-                                                pricing: displayPricing, 
+                                                pricing: displayPricing,
+                                                hostPricing: pricing, // Pass original host pricing 
                                                 propertyTitle: title, 
-                                                propertyImage: images?.[0] 
+                                                propertyImage: images?.[0],
+                                                policies: policies // Pass policies for display 
                                             }
                                         });
                                     }}
                                 >
-                                    {(!checkIn || !checkOut) ? 'Check availability' : 'Reserve'}
+                                    {isOwner ? 'You manage this listing' : ((!checkIn || !checkOut) ? 'Check availability' : 'Reserve')}
                                 </button>
                                 {((!checkIn || !checkOut) && !loading) ? null : (
                                     <div className="booking-info-footer">
