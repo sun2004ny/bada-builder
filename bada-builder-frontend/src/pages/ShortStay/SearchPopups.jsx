@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { FaPlus, FaMinus, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 
 /**
@@ -8,17 +9,28 @@ import { FaPlus, FaMinus, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
  */
 export const CalendarPopup = ({ checkIn, checkOut, onChange, onClose }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [isMobile, setIsMobile] = useState(false);
     const popupRef = useRef(null);
+
+    // Detect mobile for Portal usage
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Close on click outside
     useEffect(() => {
         const handleClickOutside = (event) => {
+            // If checking mobile portal, rely on overlay or ensure event delegation works
             if (popupRef.current && !popupRef.current.contains(event.target)) {
                 onClose();
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        // Use capture phase to ensure we catch clicks even in portal
+        document.addEventListener('mousedown', handleClickOutside, true);
+        return () => document.removeEventListener('mousedown', handleClickOutside, true);
     }, [onClose]);
 
     const getDaysInMonth = (year, month) => {
@@ -102,7 +114,7 @@ export const CalendarPopup = ({ checkIn, checkOut, onChange, onClose }) => {
 
     const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
 
-    return (
+    const popupContent = (
         <motion.div
             className="calendar-popup"
             ref={popupRef}
@@ -110,6 +122,7 @@ export const CalendarPopup = ({ checkIn, checkOut, onChange, onClose }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 15 }}
             onClick={(e) => e.stopPropagation()}
+            style={isMobile ? { position: 'fixed', zIndex: 9999 } : {}}
         >
             <div className="calendar-nav">
                 <button className="nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
@@ -133,13 +146,36 @@ export const CalendarPopup = ({ checkIn, checkOut, onChange, onClose }) => {
             </div>
         </motion.div>
     );
+
+    if (isMobile) {
+        return createPortal(
+            <div className="mobile-portal-overlay" style={{
+                position: 'fixed', inset: 0, zIndex: 9998,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+                {popupContent}
+            </div>,
+            document.body
+        );
+    }
+
+    return popupContent;
 };
 
 /**
  * Guest Selector with Airbnb-style counters and interdependent logic.
  */
 export const GuestPopup = ({ guests, onChange, onClose }) => {
+    const [isMobile, setIsMobile] = useState(false);
     const popupRef = useRef(null);
+
+    // Detect mobile for Portal usage
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -147,8 +183,8 @@ export const GuestPopup = ({ guests, onChange, onClose }) => {
                 onClose();
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('mousedown', handleClickOutside, true);
+        return () => document.removeEventListener('mousedown', handleClickOutside, true);
     }, [onClose]);
 
     const handleUpdate = (type, delta) => {
@@ -170,7 +206,7 @@ export const GuestPopup = ({ guests, onChange, onClose }) => {
         { id: 'pets', label: 'Pets', sub: 'Service animals welcome' },
     ];
 
-    return (
+    const popupContent = (
         <motion.div
             className="guest-popup"
             ref={popupRef}
@@ -178,6 +214,7 @@ export const GuestPopup = ({ guests, onChange, onClose }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 15 }}
             onClick={(e) => e.stopPropagation()}
+            style={isMobile ? { position: 'fixed', zIndex: 9999 } : {}}
         >
             {guestTypes.map(({ id, label, sub }) => (
                 <div key={id} className="guest-row">
@@ -208,4 +245,18 @@ export const GuestPopup = ({ guests, onChange, onClose }) => {
             </div>
         </motion.div>
     );
+
+    if (isMobile) {
+        return createPortal(
+            <div className="mobile-portal-overlay" style={{
+                position: 'fixed', inset: 0, zIndex: 9998,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+                {popupContent}
+            </div>,
+            document.body
+        );
+    }
+
+    return popupContent;
 };

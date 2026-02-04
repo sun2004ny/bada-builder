@@ -488,6 +488,12 @@
   color: #FFFFFF !important;
 }
 
+@media (max-width: 768px) {
+    .search-icon {
+        display: none !important;
+    }
+}
+
 /* --- POPUPS --- */
 
 .calendar-popup,
@@ -503,23 +509,49 @@
 
 /* Calendar Specific */
 .calendar-popup {
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: 90vw; /* Responsive width */
-  max-width: 700px;
-  min-width: 300px;
+  /* Mobile Centering & Compacting - Fixed Position */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) !important; /* Override Framer Motion animations to ensure centering */
+  right: auto;
+  bottom: auto; /* Ensure no bottom sticking */
+  margin: 0;
+  width: 90vw; 
+  max-width: 350px;
+  height: fit-content;
+  min-width: unset;
+  padding: 16px; 
+  z-index: 2000;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  border: 1px solid rgba(0,0,0,0.1);
+  overflow-y: auto;
+  max-height: 85vh;
 }
 
 @media (min-width: 768px) {
     .calendar-popup {
+        position: absolute;
+        inset: auto;
+        top: calc(100% + 12px);
+        left: 0;
+        right: 0;
+        bottom: auto;
+        margin: 0 auto;
+        transform: none !important; /* Reset transform */
         width: fit-content;
         min-width: 700px;
+        max-width: 850px;
+        padding: 24px;
+        z-index: 1000;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.15);
+        border: none;
+        overflow-y: visible;
+        max-height: none;
     }
 }
 
 .calendar-days-grid {
-    /* Ensure grid fits on mobile */
     gap: 0 !important; 
 }
 
@@ -536,17 +568,40 @@
 }
 
 .guest-popup {
-  right: 0;
-  width: 90vw; /* Responsive width on mobile */
-  max-width: 400px;
-  margin: 0 auto; /* Center on mobile if parent allows or if fixed pos */
-  left: 0; /* To ensure centering when margin: 0 auto is used with position: absolute/fixed */
+  /* Mobile Centering & Compacting - Fixed Position */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) !important;
+  right: auto;
+  bottom: auto;
+  margin: 0;
+  width: 90vw;
+  max-width: 340px; 
+  height: fit-content;
+  padding: 16px 20px; 
+  z-index: 2000;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 @media (min-width: 768px) {
     .guest-popup {
-        left: auto; /* Reset left for desktop to anchor right */
+        position: absolute;
+        inset: auto;
+        top: calc(100% + 12px);
+        left: auto; 
         right: 0;
+        bottom: auto;
+        transform: none !important;
+        width: 400px;
+        max-width: 400px;
+        padding: 24px;
+        z-index: 1000;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.15);
+        overflow-y: visible;
+        max-height: none;
     }
 }
 
