@@ -1652,10 +1652,22 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 12px;
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden; REMOVED to allow dropdowns */
 }
 
-.search-glass-pill::after {
+.shimmer-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.shimmer-layer::after {
   content: "";
   position: absolute;
   top: -50%;
@@ -1955,29 +1967,187 @@
     margin-bottom: 16px;
   }
 
-  .pill-grid {
+  /* New Mobile Search Styles - Unified */
+  .mobile-search-wrapper {
+    width: 100%;
+    margin-top: 10px;
+    position: relative;
+    padding: 0 5px;
+    /* Reduced padding to stretch width */
+  }
+
+  .mobile-search-unified-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+    align-items: center;
+    background: white;
+    border-radius: 12px;
+    /* Slightly tighter radius */
+    padding: 4px 6px;
+    /* Optimized padding */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    height: 52px;
+    /* Fixed height */
+    gap: 10px;
   }
 
-  .filter-pill {
-    padding: 12px 20px;
-    border-radius: 16px;
-    background: #f8fafc;
-    color: #475569;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 2px solid transparent;
+  .mobile-inner-btn {
+    width: 42px;
+    /* Slightly larger touch target */
+    height: 42px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    flex-shrink: 0;
+    transition: all 0.2s;
   }
 
-  .filter-pill.active {
+  /* Increase Icon Size */
+  .mobile-inner-btn svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2.5px;
+  }
+
+  .mobile-inner-btn.active {
     background: #eef2ff;
-    color: #4f46e5;
-    border-color: #6366f1;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+  }
+
+  .mobile-inner-btn.search {
+    background: #6366f1;
+    color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+  }
+
+  .mobile-inner-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    height: 100%;
+    font-size: 15px;
+    /* Larger font for readability */
+    font-weight: 600;
+    color: #1e293b;
+    padding: 0 4px;
+    min-width: 0;
+  }
+
+  .mobile-inner-input::placeholder {
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  /* Horizontal Filter Row - Fixed Size Distribution */
+  .mobile-filters-row {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    /* Small gap to fit 3 items */
+    overflow-x: visible;
+    /* No scroll wanted */
+    padding: 2px 2px 20px 2px;
+  }
+
+  /* Modified Dropdown for Mobile Row */
+  .custom-dropdown-container.mobile-dropdown {
+    flex: 1;
+    /* Share width equally */
+    width: auto;
+    margin-bottom: 0;
+    position: static;
+    min-width: 0;
+    /* Allow shrinking */
+  }
+
+  .custom-dropdown-container.mobile-dropdown .dropdown-trigger {
+    background: white;
+    padding: 8px 4px;
+    /* Reduced padding */
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    height: 48px;
+    /* Fixed height for consistency */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Space for arrow */
+    gap: 2px;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+
+  .custom-dropdown-container.mobile-dropdown .trigger-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .custom-dropdown-container.mobile-dropdown .trigger-label .actual-label {
+    font-size: 10px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .custom-dropdown-container.mobile-dropdown .trigger-label .current-value {
+    font-weight: 700;
+    color: #334155;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  /* Backdrop for Mobile Dropdown */
+  /* Backdrop for Mobile Dropdown */
+  .mobile-dropdown-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    z-index: 9990;
+  }
+
+  /* Fixed Position Menu - Adjusted */
+  .custom-dropdown-container.mobile-dropdown .dropdown-menu {
+    position: fixed;
+    left: 10px;
+    /* Inset from sides */
+    right: 10px;
+    top: 135px;
+    /* Brought up closer to filters (was 180px) */
+    bottom: auto;
+    /* Not attached to bottom */
+    width: auto;
+    margin-top: 0;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    border: 1px solid #f1f5f9;
+    padding: 8px;
+    z-index: 9999;
+    max-height: 60vh;
+    /* Increased max-height slightly */
+    overflow-y: auto;
+    /* Clean animation handled by framer-motion props */
+  }
+
+  @keyframes slideUp {
+    /* Removed as framer-motion handles it */
   }
 }
 

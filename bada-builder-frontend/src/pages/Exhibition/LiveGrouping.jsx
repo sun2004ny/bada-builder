@@ -53,69 +53,83 @@ const Countdown = ({ targetDate }) => {
   return <span>{timeLeft}</span>;
 };
 
-const CustomDropdown = ({ label, value, options, onChange }) => {
+const CustomDropdown = ({ label, value, options, onChange, mobileMode = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      // Only for desktop, mobile uses backdrop
+      if (!mobileMode && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    if (!mobileMode) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [mobileMode]);
 
   return (
-    <div className="custom-dropdown-container" ref={dropdownRef}>
-      <motion.div
-        className={`dropdown-trigger ${value !== 'All' ? 'active' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
-        whileHover={{ color: '#6366f1' }}
-      >
-        <div className="trigger-label">
-          <span className="actual-label">{label}</span>
-          <span className="current-value">{value === 'All' ? 'Any' : value}</span>
-        </div>
-        <motion.svg
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </motion.svg>
-      </motion.div>
+    <>
+      {/* Mobile Backdrop for clicking outside */}
+      {mobileMode && isOpen && (
+        <div
+          className="mobile-dropdown-backdrop"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            className="dropdown-menu"
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+      <div className={`custom-dropdown-container ${mobileMode ? 'mobile-dropdown' : ''}`} ref={dropdownRef}>
+        <motion.div
+          className={`dropdown-trigger ${value !== 'All' ? 'active' : ''}`}
+          onClick={() => setIsOpen(!isOpen)}
+          whileHover={!mobileMode ? { color: '#6366f1' } : {}}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="trigger-label">
+            <span className="actual-label">{label}</span>
+            <span className="current-value">{value === 'All' ? 'Any' : value}</span>
+          </div>
+          <motion.svg
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           >
-            {options.map((option) => (
-              <div
-                key={option}
-                className={`menu-item ${value === option ? 'selected' : ''}`}
-                onClick={() => {
-                  onChange(option);
-                  setIsOpen(false);
-                }}
-              >
-                {option}
-                {value === option && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                )}
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </motion.svg>
+        </motion.div>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              className="dropdown-menu"
+              initial={mobileMode ? { opacity: 0, y: 10 } : { opacity: 0, scale: 0.95, y: 10 }}
+              animate={mobileMode ? { opacity: 1, y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+              exit={mobileMode ? { opacity: 0, y: 10 } : { opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {options.map((option) => (
+                <div
+                  key={option}
+                  className={`menu-item ${value === option ? 'selected' : ''}`}
+                  onClick={() => {
+                    onChange(option);
+                    setIsOpen(false); // Always close on selection
+                  }}
+                >
+                  {option}
+                  {value === option && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  )}
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 };
 
@@ -133,12 +147,13 @@ const LiveGrouping = () => {
 
   const [filterType, setFilterType] = useState('All');
   const [filterBudget, setFilterBudget] = useState('All');
-  const [filterArea, setFilterArea] = useState('All');
+  const [filterArea, setFilterArea] = useState('Any'); // Default to 'Any'
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false); // New State
   const searchContainerRef = useRef(null);
 
   useEffect(() => {
@@ -493,26 +508,27 @@ const LiveGrouping = () => {
               y: { repeat: Infinity, duration: 4, ease: "easeInOut" }
             }
           }}
-          whileHover={{ y: -8, transition: { duration: 0.3 } }}
           style={{ marginTop: '-67px', zIndex: 500 }}
         >
-          <div className={`search-glass-pill ${isFocused ? 'focused' : ''}`}>
-            {/* Search Input Section */}
-            <div className="search-input-wrapper">
-              <input
-                type="text"
-                placeholder="Search properties, builders, or locations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                className="modern-input"
-              />
-            </div>
+          {!isMobile ? (
+            // DESKTOP LAYOUT
+            <div className={`search-glass-pill ${isFocused ? 'focused' : ''}`}>
+              <div className="shimmer-layer"></div>
+              {/* Search Input Section */}
+              <div className="search-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Search properties, builders, or locations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  className="modern-input"
+                />
+              </div>
 
-            {/* Desktop Filters Section */}
-            {!isMobile && (
+              {/* Desktop Filters Section */}
               <div className="filters-wrapper">
                 <div className="divider-v"></div>
                 <CustomDropdown
@@ -525,7 +541,7 @@ const LiveGrouping = () => {
                 <CustomDropdown
                   label="Area"
                   value={filterArea}
-                  options={['All', 'Sarjapur', 'Whitefield', 'North Bangalore', 'South Bangalore', 'East Bangalore', 'West Bangalore']}
+                  options={['Any', 'Below 800 sq ft', '800 – 1,500 sq ft', '1,500 – 2,500 sq ft', 'Above 2,500 sq ft']}
                   onChange={setFilterArea}
                 />
                 <div className="divider-v"></div>
@@ -536,107 +552,94 @@ const LiveGrouping = () => {
                   onChange={setFilterBudget}
                 />
               </div>
-            )}
 
-            {/* Search Action Button */}
-            <motion.button
-              className="modern-search-btn"
-              whileHover={{ scale: 1.05, boxShadow: '0 8px 20px rgba(99, 102, 241, 0.4)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSearchSubmit}
-            >
-              <span className="btn-text">{isMobile ? 'Search' : ''}</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </motion.button>
-          </div>
-
-          {/* Mobile Filter Toggle Chip */}
-          {isMobile && (
-            <motion.div
-              className="mobile-filter-chip"
-              onClick={() => setShowMobileFilters(!showMobileFilters)}
-              whileTap={{ scale: 0.9 }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-              </svg>
-              <span>{showMobileFilters ? 'Hide Filters' : 'Show Filters'}</span>
-            </motion.div>
-          )}
-
-          {/* Mobile Filters Drawer - Bottom Sheet Style */}
-          <AnimatePresence>
-            {isMobile && showMobileFilters && (
-              <>
-                <motion.div
-                  className="mobile-filters-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setShowMobileFilters(false)}
-                />
-                <motion.div
-                  className="mobile-filters-sheet"
-                  initial={{ y: "100%" }}
-                  animate={{ y: 0 }}
-                  exit={{ y: "100%" }}
-                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              {/* Search Action Button */}
+              <motion.button
+                className="modern-search-btn"
+                whileHover={{ scale: 1.05, boxShadow: '0 8px 20px rgba(99, 102, 241, 0.4)' }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSearchSubmit}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </motion.button>
+            </div>
+          ) : (
+            // MOBILE LAYOUT
+            <div className="mobile-search-wrapper">
+              <div className="mobile-search-unified-bar">
+                {/* Filter Toggle Button (Inside Left) */}
+                <motion.button
+                  className={`mobile-inner-btn filter ${showMobileFilters ? 'active' : ''}`}
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <div className="sheet-header">
-                    <div className="drag-handle"></div>
-                    <h3>Filters</h3>
-                  </div>
-                  <div className="sheet-content">
-                    <div className="filter-group">
-                      <label>Property Type</label>
-                      <div className="pill-grid">
-                        {['All', 'Apartment', 'Villa', 'Plot/Land', 'Commercial'].map(t => (
-                          <div
-                            key={t}
-                            className={`filter-pill ${filterType === t ? 'active' : ''}`}
-                            onClick={() => setFilterType(t)}
-                          >
-                            {t}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="filter-group">
-                      <label>Area</label>
-                      <div className="pill-grid">
-                        {['All', 'Sarjapur', 'Whitefield', 'North Bangalore', 'South Bangalore'].map(a => (
-                          <div
-                            key={a}
-                            className={`filter-pill ${filterArea === a ? 'active' : ''}`}
-                            onClick={() => setFilterArea(a)}
-                          >
-                            {a}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="filter-group">
-                      <label>Budget Range</label>
-                      <div className="pill-grid">
-                        {['All', 'Under 50L', '50L - 1Cr', 'Above 1Cr'].map(b => (
-                          <div
-                            key={b}
-                            className={`filter-pill ${filterBudget === b ? 'active' : ''}`}
-                            onClick={() => setFilterBudget(b)}
-                          >
-                            {b}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                  </svg>
+                </motion.button>
+
+                {/* Input Field (Middle) */}
+                <input
+                  type="text"
+                  placeholder="Find Your Dream Property"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
+                  className="mobile-inner-input"
+                />
+
+                {/* Search Action Button (Inside Right) */}
+                <motion.button
+                  className="mobile-inner-btn search"
+                  onClick={handleSearchSubmit}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </motion.button>
+              </div>
+
+              {/* Mobile Filters Section (Horizontal Row) */}
+              <AnimatePresence>
+                {showMobileFilters && (
+                  <motion.div
+                    className="mobile-filters-row"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <CustomDropdown
+                      label="Type"
+                      value={filterType}
+                      options={['All', 'Apartment', 'Villa', 'Plot/Land', 'Commercial']}
+                      onChange={setFilterType}
+                      mobileMode={true}
+                    />
+                    <CustomDropdown
+                      label="Area"
+                      value={filterArea}
+                      options={['Any', 'Below 800 sq ft', '800 – 1,500 sq ft', '1,500 – 2,500 sq ft', 'Above 2,500 sq ft']}
+                      onChange={setFilterArea}
+                      mobileMode={true}
+                    />
+                    <CustomDropdown
+                      label="Budget"
+                      value={filterBudget}
+                      options={['All', 'Under 50L', '50L - 1Cr', 'Above 1Cr']}
+                      onChange={setFilterBudget}
+                      mobileMode={true}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </motion.div>
 
         {/* Search Results Dropdown */}
