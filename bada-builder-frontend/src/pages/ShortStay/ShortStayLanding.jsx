@@ -156,11 +156,13 @@ const ShortStayLanding = () => {
 
   const hasGuests = searchParams.guests.adults > 0 || searchParams.guests.children > 0 || searchParams.guests.infants > 0 || searchParams.guests.pets > 0;
 
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   return (
     <div className="short-stay-page">
       {/* Hero Section */}
       <Motion.section
-        className="short-stay-hero-section"
+        className={`short-stay-hero-section ${mobileSearchOpen ? 'mobile-search-active' : ''}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -174,43 +176,71 @@ const ShortStayLanding = () => {
           <div className="short-stay-hero-container">
 
              
-            <div className="short-stay-hero-content">
-              <div className="short-stay-hero-text-box">
-                <Motion.h1
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.7, delay: 0.2 }}
-                >
-                  Find Your Perfect Short Stay
-                </Motion.h1>
-                <Motion.p
-                  className="short-stay-hero-subtitle"
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.7, delay: 0.3 }}
-                >
-                  Discover comfortable stays for your next trip
-                </Motion.p>
-                
-                 <Motion.button 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.8 }}
-                    onClick={() => navigate('/hosting')}
-                    className="switch-to-hosting-btn-hero-centered"
-                 >
-                    Switch to Hosting
-                 </Motion.button>
-              </div>
+            {!mobileSearchOpen && (
+                <div className="short-stay-hero-content">
+                <div className="short-stay-hero-text-box">
+                    <Motion.h1
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.7, delay: 0.2 }}
+                    >
+                    Find Your Perfect Short Stay
+                    </Motion.h1>
+                    <Motion.p
+                    className="short-stay-hero-subtitle"
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.7, delay: 0.3 }}
+                    >
+                    Discover comfortable stays for your next trip
+                    </Motion.p>
+                    
+                    <Motion.button 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.8 }}
+                        onClick={() => navigate('/hosting')}
+                        className="switch-to-hosting-btn-hero-centered"
+                    >
+                        Switch to Hosting
+                    </Motion.button>
+                </div>
+                </div>
+            )}
 
-              {/* Modern Airbnb Search Pill (v2) */}
+              {/* Mobile Compact Search Trigger */}
+              {!mobileSearchOpen && (
+                  <Motion.div 
+                    className="mobile-search-trigger"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    onClick={() => setMobileSearchOpen(true)}
+                  >
+                      <FaSearch className="mobile-search-icon" />
+                      <div className="mobile-search-text">
+                          <span className="mobile-search-title">Where to?</span>
+                          <span className="mobile-search-subtitle">Anywhere • Any week • Add guests</span>
+                      </div>
+                  </Motion.div>
+              )}
+
+              {/* Modern Airbnb Search Pill (v2) - Expanded */}
               <Motion.div
-                className="airbnb-search-pill-container"
+                className={`airbnb-search-pill-container ${mobileSearchOpen ? 'mobile-expanded' : ''}`}
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.4 }}
               >
                 <div className={`airbnb-search-pill ${activePopup ? 'search-pill-active' : ''}`}>
+                  {/* Mobile Close Button */}
+                  {mobileSearchOpen && (
+                      <button className="mobile-search-close-btn" onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileSearchOpen(false);
+                      }}>
+                          <FaTimes />
+                      </button>
+                  )}
                   <div
                     className={`search-pill-item where-item ${activePopup === 'where' ? 'item-active' : ''}`}
                     onClick={() => setActivePopup('where')}
@@ -289,11 +319,7 @@ const ShortStayLanding = () => {
                   </AnimatePresence>
                 </div>
               </Motion.div>
-
-
-
             </div>
-          </div>
         </BackgroundVideo>
       </Motion.section>
 

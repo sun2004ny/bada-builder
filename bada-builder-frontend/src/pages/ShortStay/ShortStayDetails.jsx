@@ -39,6 +39,23 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) =>
             } else {
                 setSelectedEnd(date);
                 setSelecting('checkIn');
+                
+                // Helper to format date as YYYY-MM-DD in local time
+                const formatLocalYYYYMMDD = (d) => {
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                // Auto-close when both dates are selected
+                setTimeout(() => {
+                    onSelectDates(
+                        formatLocalYYYYMMDD(selectedStart), 
+                        formatLocalYYYYMMDD(date)
+                    );
+                    onClose();
+                }, 200);
             }
         }
     };
@@ -93,6 +110,14 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) =>
 
     const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
 
+    // Helper to format date locally for manual close as well
+    const formatLocalYYYYMMDD = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     return (
         <div className="calendar-modal-overlay" onClick={onClose}>
             <div className="calendar-modal" onClick={e => e.stopPropagation()}>
@@ -140,13 +165,12 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) =>
                         <button className="close-btn-black" onClick={() => {
                             if (selectedStart && selectedEnd) {
                                 onSelectDates(
-                                    selectedStart.toISOString().split('T')[0], 
-                                    selectedEnd.toISOString().split('T')[0]
+                                    formatLocalYYYYMMDD(selectedStart), 
+                                    formatLocalYYYYMMDD(selectedEnd)
                                 );
                             }
                             onClose();
-                        }}>Close</button>
-                    </div>
+                        }}>Close</button>                    </div>
                 </div>
             </div>
         </div>

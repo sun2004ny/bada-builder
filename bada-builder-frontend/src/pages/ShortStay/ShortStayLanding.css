@@ -1,24 +1,42 @@
 /* ==========================================================================
-   SHORT STAY LANDING - AIRBNB-STYLE REDESIGN (ISOLATED)
+   SHORT STAY LANDING - AIRBNB-STYLE REDESIGN (MOBILE FIRST)
    ========================================================================== */
 
 .short-stay-page {
   --short-stay-primary: #FF385C;
-  /* Airbnb-style rose color */
   --short-stay-secondary: #0F172A;
-  --short-stay-accent: #008489;
   --short-stay-bg: #FFFFFF;
-  --short-stay-bg-soft: #F7F7F7;
   --short-stay-text: #222222;
   --short-stay-text-muted: #717171;
   --short-stay-border: #DDDDDD;
-  --short-stay-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
-  --short-stay-radius: 20px;
-
+  
+  /* Responsive Typography Variables */
+  --fs-hero: 28px;
+  --fs-subtitle: 16px;
+  --fs-section-title: 22px;
+  
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--short-stay-text);
   background: var(--short-stay-bg);
   min-height: 100vh;
+}
+
+/* Tablet Breakpoint */
+@media (min-width: 768px) {
+  .short-stay-page {
+    --fs-hero: 40px;
+    --fs-subtitle: 18px;
+    --fs-section-title: 26px;
+  }
+}
+
+/* Desktop Breakpoint */
+@media (min-width: 1024px) {
+  .short-stay-page {
+    --fs-hero: 56px;
+    --fs-subtitle: 20px;
+    --fs-section-title: 32px;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -27,9 +45,10 @@
 
 .short-stay-hero-section {
   position: relative;
-  height: 65vh !important;
-  min-height: 500px !important;
-  max-height: 700px !important;
+  /* Mobile height */
+  height: 50vh !important;
+  min-height: 400px !important;
+  max-height: 600px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -37,7 +56,14 @@
   z-index: 50;
 }
 
-/* Custom overlay to avoid global leakage */
+@media (min-width: 1024px) {
+  .short-stay-hero-section {
+    height: 65vh !important;
+    max-height: 700px !important;
+  }
+}
+
+/* Custom overlay */
 .short-stay-hero-overlay {
   position: absolute;
   inset: 0;
@@ -46,48 +72,13 @@
   pointer-events: none;
 }
 
-.switch-to-hosting-btn-hero {
-    position: absolute;
-    top: 24px;
-    right: 24px;
-    background: #FFFFFF;
-    color: #222222;
-    padding: 10px 20px;
-    border-radius: 24px;
-    font-weight: 600;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    transition: transform 0.2s, background 0.2s;
-    z-index: 100; /* Ensure clickable */
-}
-
-.switch-to-hosting-btn-hero:hover {
-    transform: scale(1.05);
-    background: #F7F7F7;
-}
-
-.short-stay-search-positioner {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%) translateY(50%);
-  width: 90%;
-  max-width: 1100px;
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .short-stay-hero-container {
   position: relative;
   z-index: 2;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px; /* Reduced mobile padding */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -95,55 +86,168 @@
 
 .short-stay-hero-content {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
+@media (min-width: 768px) {
+  .short-stay-hero-content {
+    margin-bottom: 40px;
+  }
+}
+
 .short-stay-hero-text-box {
   background: rgba(15, 23, 42, 0.3);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  padding: 48px;
-  border-radius: 32px;
-  margin-bottom: 48px;
+  padding: 24px; /* Reduced mobile padding */
+  border-radius: 24px;
+  margin-bottom: 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   max-width: 850px;
   width: 100%;
 }
 
+@media (min-width: 768px) {
+  .short-stay-hero-text-box {
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .short-stay-hero-text-box {
+    padding: 48px;
+    margin-bottom: 48px;
+    border-radius: 32px;
+  }
+}
+
 .short-stay-hero-content h1 {
-  font-size: 56px !important;
+  font-size: var(--fs-hero) !important;
   font-weight: 900 !important;
   color: #FFFFFF !important;
   letter-spacing: -0.02em !important;
   line-height: 1.1 !important;
-  margin-bottom: 20px !important;
+  margin-bottom: 12px !important;
   text-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   -webkit-text-stroke: 0 !important;
   background: none !important;
 }
 
 .short-stay-hero-subtitle {
-  font-size: 20px;
+  font-size: var(--fs-subtitle);
   color: #e0f2fe;
   font-weight: 500;
   margin-bottom: 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
   opacity: 0.95;
-  line-height: 1.5;
+  line-height: 1.4;
+  display: none; /* Hide subtitle on very small screens to save space */
+}
+
+@media (min-width: 480px) {
+  .short-stay-hero-subtitle {
+    display: block;
+  }
+}
+
+.switch-to-hosting-btn-hero-centered {
+  background: #FFFFFF;
+  color: #222222;
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  margin-top: 16px;
+  transition: transform 0.2s;
 }
 
 /* --------------------------------------------------------------------------
    SEARCH CARD (AIRBNB-STYLE)
    -------------------------------------------------------------------------- */
 
-.short-stay-search-icon {
-  font-size: 18px;
+/* --------------------------------------------------------------------------
+   SEARCH CARD (AIRBNB-STYLE)
+   -------------------------------------------------------------------------- */
+
+/* Mobile Search Trigger (Airbnb Style) */
+.mobile-search-trigger {
+  background: #FFFFFF;
+  border-radius: 40px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+  animation: slideUpFade 0.5s ease-out backwards;
 }
+
+@media (min-width: 768px) {
+    .mobile-search-trigger {
+        display: none !important;
+    }
+}
+
+.mobile-search-trigger:active {
+    transform: scale(0.96);
+}
+
+.mobile-search-icon {
+    font-size: 18px;
+    color: #FF385C; /* Brand Color */
+}
+
+.mobile-search-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.mobile-search-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #222222;
+}
+
+.mobile-search-subtitle {
+    font-size: 12px;
+    color: #717171;
+    margin-top: 2px;
+}
+
+/* Mobile Search Close Button */
+.mobile-search-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px; /* Moved to right to avoid overlap */
+    left: auto;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #F7F7F7;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #222222;
+    cursor: pointer;
+    z-index: 10;
+}
+
 
 /* --------------------------------------------------------------------------
    AIRBNB-STYLE SEARCH PILL (v2)
@@ -155,18 +259,43 @@
   margin: 0 auto;
   position: relative;
   z-index: 1000;
+  padding: 0 16px; /* Ensure padding on mobile */
+  
+  /* Mobile: Hidden by default, unless expanded */
+  display: none; 
+}
+
+.airbnb-search-pill-container.mobile-expanded {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@media (min-width: 768px) {
+    .airbnb-search-pill-container {
+        display: block !important; /* Always show on desktop */
+    }
 }
 
 .airbnb-search-pill {
   background: #FFFFFF;
   border: 1px solid #DDDDDD;
-  border-radius: 40px;
+  border-radius: 40px; /* Fully rounded on mobile too */
   display: flex;
-  align-items: center;
-  padding: 0;
+  flex-direction: column; /* Stack on mobile by default if complex, or keep row but simplified */
+  align-items: stretch;
+  padding: 8px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   position: relative;
+}
+
+@media (min-width: 768px) {
+  .airbnb-search-pill {
+    flex-direction: row;
+    align-items: center;
+    padding: 0;
+    border-radius: 40px;
+  }
 }
 
 .airbnb-search-pill:hover {
@@ -179,13 +308,25 @@
 
 .search-pill-item {
   flex: 1;
-  padding: 14px 32px;
+  padding: 12px 20px;
   border-radius: 32px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   transition: background-color 0.2s ease;
   min-width: 0;
+  border-bottom: 1px solid #f0f0f0; /* Separator on mobile */
+}
+
+@media (min-width: 768px) {
+  .search-pill-item {
+    padding: 14px 32px;
+    border-bottom: none;
+  }
+}
+
+.search-pill-item:last-child {
+  border-bottom: none;
 }
 
 .search-pill-item:hover {
@@ -238,13 +379,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px; /* Smaller for SVG */
-  color: #717171; /* Muted color by default */
+  font-size: 12px;
+  color: #717171;
   cursor: pointer;
   transition: all 0.2s;
   margin-left: 8px;
   flex-shrink: 0;
-  padding: 0; /* Remove text alignment hack */
+  padding: 0;
 }
 
 .clear-date-btn:hover {
@@ -267,33 +408,57 @@
 }
 
 .pill-divider {
-  width: 1px;
-  height: 32px;
+  width: 100%;
+  height: 1px;
   background-color: #DDDDDD;
   flex-shrink: 0;
+  display: none; /* Hide by default, handled by border-bottom on items for mobile */
+}
+
+@media (min-width: 768px) {
+  .pill-divider {
+    width: 1px;
+    height: 32px;
+    display: block;
+  }
 }
 
 .search-pill-btn-container {
-  padding-right: 8px;
+  padding: 12px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .search-pill-btn-container {
+    padding-right: 8px;
+    width: auto;
+  }
 }
 
 .airbnb-search-button {
-  background-color: #28a745 !important;
-  /* Vibrant Green */
+  background-color: #FF385C !important; /* Update to Airbnb Brand Color */
   color: #FFFFFF !important;
   border: none;
   border-radius: 32px;
-  padding: 12px 28px;
+  padding: 14px 28px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0, 1);
   white-space: nowrap;
-  min-width: 140px;
+  min-width: 100%; /* Full width on mobile */
+}
+
+@media (min-width: 768px) {
+  .airbnb-search-button {
+    min-width: 140px;
+    padding: 12px 28px;
+    gap: 16px;
+  }
 }
 
 .airbnb-search-button span {
@@ -305,9 +470,9 @@
 }
 
 .airbnb-search-button:hover {
-  background-color: #218838 !important;
+  background-color: #E31C5F !important;
   transform: scale(1.02);
-  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+  box-shadow: 0 6px 16px rgba(255, 56, 92, 0.4);
 }
 
 .search-icon {
@@ -324,7 +489,7 @@
   background: #FFFFFF;
   border-radius: 32px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.15);
-  padding: 32px;
+  padding: 24px;
   z-index: 1000;
 }
 
@@ -333,13 +498,123 @@
   left: 0;
   right: 0;
   margin: 0 auto;
-  width: fit-content;
-  min-width: 700px;
+  width: 90vw; /* Responsive width */
+  max-width: 700px;
+  min-width: 300px;
+}
+
+@media (min-width: 768px) {
+    .calendar-popup {
+        width: fit-content;
+        min-width: 700px;
+    }
+}
+
+.calendar-days-grid {
+    /* Ensure grid fits on mobile */
+    gap: 0 !important; 
+}
+
+.calendar-day {
+    width: 36px !important; /* Smaller touch targets if needed on very small screens */
+    height: 36px !important; 
+}
+
+@media (min-width: 400px) {
+    .calendar-day {
+        width: 40px !important;
+        height: 40px !important;
+    }
 }
 
 .guest-popup {
   right: 0;
-  width: 400px;
+  width: 90vw; /* Responsive width on mobile */
+  max-width: 400px;
+  margin: 0 auto; /* Center on mobile if parent allows or if fixed pos */
+  left: 0; /* To ensure centering when margin: 0 auto is used with position: absolute/fixed */
+}
+
+@media (min-width: 768px) {
+    .guest-popup {
+        left: auto; /* Reset left for desktop to anchor right */
+        right: 0;
+    }
+}
+
+.calendar-nav {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@media (min-width: 768px) {
+    .calendar-nav {
+        top: 32px;
+        left: 32px;
+        right: 32px;
+    }
+}
+
+.nav-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: white !important; /* Visible against header */
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
+  padding: 0 !important; 
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  color: #222222 !important;
+  pointer-events: all;
+  transition: all 0.2s;
+}
+
+.nav-btn svg {
+  width: 14px; 
+  height: 14px;
+  display: block;
+  stroke-width: 1; 
+}
+
+.nav-btn:hover {
+  background: #F7F7F7 !important; 
+  transform: scale(1.05);
+}
+
+.calendar-container {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+}
+
+/* Hide second month on mobile */
+.calendar-container > div:nth-child(3) { /* The second month render */
+    display: none;
+}
+
+.month-divider { /* The divider */
+    display: none;
+    width: 1px;
+    background: #EBEBEB;
+}
+
+@media (min-width: 768px) {
+    .calendar-container > div:nth-child(3) {
+        display: block;
+    }
+    
+    .month-divider {
+        display: block;
+    }
 }
 
 .calendar-nav {
@@ -780,25 +1055,59 @@
    PROPERTY CARDS
    -------------------------------------------------------------------------- */
 
+/* --------------------------------------------------------------------------
+   PROPERTY CARDS
+   -------------------------------------------------------------------------- */
+
 .short-stay-listings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 32px;
+  grid-template-columns: 1fr; /* Mobile: 1 column */
+  gap: 24px;
   margin-bottom: 80px;
+}
+
+/* Tablet: 2 columns */
+@media (min-width: 640px) {
+  .short-stay-listings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Laptop: 3 columns */
+@media (min-width: 1024px) {
+  .short-stay-listings-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Desktop: 4 columns */
+@media (min-width: 1440px) {
+  .short-stay-listings-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .short-stay-property-card {
   cursor: pointer;
   transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
 }
 
 .short-stay-property-image {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1; /* Square on mobile for impact */
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
+
+@media (min-width: 768px) {
+    .short-stay-property-image {
+        aspect-ratio: 20 / 19; /* Slightly taller than square on larger screens */
+    }
+}
+
 
 .short-stay-property-image img {
   width: 100%;
