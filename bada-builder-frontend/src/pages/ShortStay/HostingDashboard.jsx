@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion as Motion, AnimatePresence } from 'framer-motion'; // Used for animations
+import { useAuth } from '../../context/AuthContext';
 import HostingMessages from './HostingMessages';
 import './HostingDashboard.css';
 
 const HostingDashboard = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('today');
   const [todayFilter, setTodayFilter] = useState('today');
 
   const handleSwitchToTravelling = () => {
     navigate('/short-stay');
+  };
+
+  const handleMessagesClick = () => {
+    if (!isAuthenticated) {
+      // Redirect to login page if not authenticated
+      navigate('/login');
+    } else {
+      setActiveTab('messages');
+    }
   };
 
   return (
@@ -44,7 +55,7 @@ const HostingDashboard = () => {
             </button>
             <button 
                 className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
-                onClick={() => setActiveTab('messages')}
+                onClick={handleMessagesClick}
             >
                 Messages
             </button>
