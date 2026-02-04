@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
 import { FaPlus, FaMinus, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 
 /**
@@ -115,14 +114,10 @@ export const CalendarPopup = ({ checkIn, checkOut, onChange, onClose }) => {
     const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
 
     const popupContent = (
-        <motion.div
+        <div
             className="calendar-popup"
             ref={popupRef}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
             onClick={(e) => e.stopPropagation()}
-            style={isMobile ? { position: 'fixed', zIndex: 9999 } : {}}
         >
             <div className="calendar-nav">
                 <button className="nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
@@ -144,7 +139,7 @@ export const CalendarPopup = ({ checkIn, checkOut, onChange, onClose }) => {
                     <button className="flex-chip">± 2 days</button>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 
     if (isMobile) {
@@ -207,14 +202,10 @@ export const GuestPopup = ({ guests, onChange, onClose }) => {
     ];
 
     const popupContent = (
-        <motion.div
+        <div
             className="guest-popup"
             ref={popupRef}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
             onClick={(e) => e.stopPropagation()}
-            style={isMobile ? { position: 'fixed', zIndex: 9999 } : {}}
         >
             {guestTypes.map(({ id, label, sub }) => (
                 <div key={id} className="guest-row">
@@ -243,7 +234,7 @@ export const GuestPopup = ({ guests, onChange, onClose }) => {
             <div className="popup-footer">
                 <button className="done-btn" onClick={onClose}>Done</button>
             </div>
-        </motion.div>
+        </div>
     );
 
     if (isMobile) {
