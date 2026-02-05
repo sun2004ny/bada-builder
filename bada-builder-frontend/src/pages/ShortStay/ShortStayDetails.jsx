@@ -413,7 +413,7 @@ const ShortStayDetails = () => {
                 </div>
 
                 <div className="gallery-section">
-                    {displayImages.slice(0, 5).map((img, i) => (
+                    {displayImages.map((img, i) => (
                         <div key={i} className={`gallery-item ${i === 0 ? 'main' : ''}`} onClick={() => setShowPhotoTour(true)} style={{cursor: 'pointer'}}>
                             <img src={img} alt={`View ${i + 1}`} />
                         </div>
@@ -454,10 +454,6 @@ const ShortStayDetails = () => {
                             <>
                                 <div className="section-divider" />
                                 <div className="host-info-summary">
-                                    <div className="host-info-text">
-                                        <h3>Hosted by {host_name || 'Host'}</h3>
-                                        <p>{getJoinedText(host_joined_at)}{property.is_superhost ? ' · Superhost' : ''}</p>
-                                    </div>
                                     <div className="host-avatar-container">
                                         {host_photo ? (
                                             <img 
@@ -477,6 +473,10 @@ const ShortStayDetails = () => {
                                             <FaUser />
                                         </div>
                                         {property.is_superhost && <div className="superhost-badge-small"><FaStar /></div>}
+                                    </div>
+                                    <div className="host-info-text">
+                                        <h3>Hosted by {host_name || 'Host'}</h3>
+                                        <p>{getJoinedText(host_joined_at)}{property.is_superhost ? ' · Superhost' : ''}</p>
                                     </div>
                                 </div>
                                 <div className="section-divider" />
@@ -1007,6 +1007,47 @@ const ShortStayDetails = () => {
                     </div>
                 </div>
             )}
+
+            {/* Sticky Reserve Bar for Mobile */}
+            <div className="sticky-reserve-bar">
+                <div className="sticky-bar-info">
+                    <div className="sticky-price">
+                        ₹{displayPricing?.perNight?.toLocaleString()} <span> /night</span>
+                    </div>
+                    <div className="sticky-dates">
+                        {checkIn && checkOut ? `${new Date(checkIn).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${new Date(checkOut).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'Add dates'}
+                    </div>
+                </div>
+                <button 
+                    className="sticky-reserve-btn"
+                    onClick={() => {
+                         if (isOwner) return;
+                         if (!checkIn || !checkOut) {
+                             setShowCalendarModal(true);
+                             return;
+                         }
+                         const totalGuests = adults + children;
+                         navigate(`/short-stay/reserve/${id}`, {
+                             state: { 
+                                 checkIn, 
+                                 checkOut, 
+                                 guests: totalGuests, 
+                                 adults, 
+                                 children, 
+                                 infants, 
+                                 pets,
+                                 pricing: displayPricing,
+                                 hostPricing: pricing, 
+                                 propertyTitle: title, 
+                                 propertyImage: images?.[0],
+                                 policies: policies 
+                             }
+                         });
+                    }}
+                >
+                    {(!checkIn || !checkOut) ? 'Check availability' : 'Reserve'}
+                </button>
+            </div>
 
             <CalendarModal 
                 isOpen={showCalendarModal} 
