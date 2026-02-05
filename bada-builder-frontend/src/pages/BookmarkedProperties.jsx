@@ -5,6 +5,7 @@ import { shortStayAPI } from '../services/shortStayApi';
 import PropertyCard from '../components/PropertyCard/PropertyCard';
 import ShortStayCard from '../components/PropertyCard/ShortStayCard';
 import { FiHeart, FiSearch, FiPlus, FiFolder, FiTrash2, FiHome, FiBriefcase, FiMap } from 'react-icons/fi';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import WishlistModal from '../components/Wishlist/WishlistModal';
 import WishlistSelectionModal from '../components/Wishlist/WishlistSelectionModal';
