@@ -654,3 +654,43 @@
         display: block !important;
     }
 }
+
+/* Confirmed Modal */
+.confirmed-modal {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    animation: slideUp 0.3s ease-out;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+
+.confirmed-icon {
+    margin-bottom: 24px;
+    color: #222;
+}
+
+.confirmed-modal h2 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: #222;
+}
+
+.confirmed-modal p {
+    color: #717171;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.confirmed-dates {
+    font-weight: 600;
+    color: #222 !important;
+    margin-bottom: 24px !important;
+}
+
+.confirmed-actions {
+    display: flex;
+    justify-content: center;
+}

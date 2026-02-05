@@ -16,7 +16,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './ShortStayDetails.css';
 
-const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) => {
+const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates, bookedDates = [] }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedStart, setSelectedStart] = useState(checkIn ? new Date(checkIn) : null);
     const [selectedEnd, setSelectedEnd] = useState(checkOut ? new Date(checkOut) : null);
@@ -26,6 +26,21 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) =>
         if (checkIn) setSelectedStart(new Date(checkIn));
         if (checkOut) setSelectedEnd(new Date(checkOut));
     }, [checkIn, checkOut]);
+
+
+
+    const isDateBooked = (date) => {
+        return bookedDates.some(booking => {
+            const start = new Date(booking.check_in);
+            const end = new Date(booking.check_out);
+            // Normalize to YYYY-MM-DD to avoid time issues
+            const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            return d >= s && d < e; // Check-out day is usually available for check-in depending on policy, but simple overlap block for now. Actually typical is check-out day is available for new check-in.
+            // Let's stick to standard: [Start, End). Check-in allowed on Check-out date.
+        });
+    };
 
     const handleDateClick = (date) => {
         if (selecting === 'checkIn') {
@@ -37,6 +52,23 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) =>
                 setSelectedStart(date);
                 setSelectedEnd(null);
             } else {
+                // Check if any date in between is booked
+                let hasBookedInBetween = false;
+                let d = new Date(selectedStart);
+                d.setDate(d.getDate() + 1);
+                while (d <= date) {
+                     if (isDateBooked(d)) {
+                         hasBookedInBetween = true;
+                         break;
+                     }
+                     d.setDate(d.getDate() + 1);
+                }
+
+                if (hasBookedInBetween) {
+                    alert("Selected range includes booked dates. Please select available dates.");
+                    return;
+                }
+
                 setSelectedEnd(date);
                 setSelecting('checkIn');
                 
@@ -80,13 +112,15 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) =>
         
         for (let d = 1; d <= daysInMonth; d++) {
             const date = new Date(year, monthIndex, d);
-            const isDisabled = date < new Date().setHours(0,0,0,0);
+            const isBooked = isDateBooked(date);
+            const isDisabled = date < new Date().setHours(0,0,0,0) || isBooked;
             
             days.push(
                 <div 
                     key={d} 
-                    className={`day-cell ${isSelected(date) ? 'selected' : ''} ${isInRange(date) ? 'in-range' : ''} ${isDisabled ? 'disabled' : ''}`}
+                    className={`day-cell ${isSelected(date) ? 'selected' : ''} ${isInRange(date) ? 'in-range' : ''} ${isDisabled ? 'disabled' : ''} ${isBooked ? 'booked' : ''}`}
                     onClick={() => !isDisabled && handleDateClick(date)}
+                    title={isBooked ? 'Unavailable' : ''}
                 >
                     {d}
                 </div>
@@ -241,6 +275,7 @@ const ShortStayDetails = () => {
 
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showPhotoTour, setShowPhotoTour] = useState(false);
+    const [bookedDates, setBookedDates] = useState([]);
     
     // Booking state
     const [checkIn, setCheckIn] = useState('');
@@ -281,7 +316,8 @@ const ShortStayDetails = () => {
                     propertyTitle: property.title, 
                     propertyImage: property.images?.[0],
                     policies: property.policies,
-                    roomType: pendingRoomType.type // Optional: pass room type name for display
+                    roomType: pendingRoomType.type, // Optional: pass room type name for display
+                    hostId: property.user_id || property.owner_id
                 }
             });
         }
@@ -311,13 +347,15 @@ const ShortStayDetails = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [data, favorites] = await Promise.all([
+                const [data, favorites, availability] = await Promise.all([
                     shortStayAPI.getById(id),
-                    user ? shortStayAPI.getUserFavorites() : Promise.resolve({ favorites: [] })
+                    user ? shortStayAPI.getUserFavorites() : Promise.resolve({ favorites: [] }),
+                    shortStayAPI.getAvailability(id)
                 ]);
                 
                 const propertyData = data.property || data;
                 setProperty(propertyData);
+                setBookedDates(availability.bookedDates || []);
                 
                 if (user && favorites?.favorites) {
                     const isFav = favorites.favorites.some(fav => String(fav.id) === String(id));
@@ -623,7 +661,8 @@ const ShortStayDetails = () => {
                                                                             propertyTitle: title, 
                                                                             propertyImage: images?.[0],
                                                                             policies: policies,
-                                                                            roomType: room.type
+                                                                            roomType: room.type,
+                                                                            hostId: property.user_id || property.owner_id
                                                                         }
                                                                     });
                                                                 }
@@ -909,7 +948,8 @@ const ShortStayDetails = () => {
                                                 hostPricing: pricing, // Pass original host pricing 
                                                 propertyTitle: title, 
                                                 propertyImage: images?.[0],
-                                                policies: policies // Pass policies for display 
+                                                policies: policies, // Pass policies for display 
+                                                hostId: property.user_id || property.owner_id
                                             }
                                         });
                                     }}
@@ -1119,7 +1159,8 @@ const ShortStayDetails = () => {
                                  hostPricing: pricing, 
                                  propertyTitle: title, 
                                  propertyImage: images?.[0],
-                                 policies: policies 
+                                 policies: policies,
+                                 hostId: property.user_id || property.owner_id 
                              }
                          });
                     }}
@@ -1137,6 +1178,7 @@ const ShortStayDetails = () => {
                     setCheckIn(start);
                     setCheckOut(end);
                 }}
+                bookedDates={bookedDates}
             />
         </div>
     );

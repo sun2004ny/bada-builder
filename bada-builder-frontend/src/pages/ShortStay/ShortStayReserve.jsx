@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { FaChevronLeft, FaStar, FaGooglePay, FaCreditCard, FaChevronRight, FaKeyboard } from 'react-icons/fa';
+import { FaChevronLeft, FaStar, FaGooglePay, FaCreditCard, FaChevronRight, FaKeyboard, FaCheckCircle } from 'react-icons/fa';
 import { SiRazorpay } from "react-icons/si";
 import { FiPlus, FiMinus, FiX } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import { shortStayAPI } from '../../services/shortStayApi';
 import './ShortStayReserve.css';
 
 // --- Reused CalendarModal (from details page) ---
@@ -316,7 +317,8 @@ const ShortStayReserve = () => {
 
     const { 
         pricing, hostPricing, policies,
-        propertyTitle, propertyImage, propertyRating 
+        propertyTitle, propertyImage, propertyRating,
+        hostId, roomType 
     } = location.state || {};
     
     // Derived total guests
@@ -362,6 +364,28 @@ const ShortStayReserve = () => {
 
     // Modal State
     const [showPriceModal, setShowPriceModal] = useState(false);
+    const [showConfirmedModal, setShowConfirmedModal] = useState(false);
+
+    const processReservation = async (paymentId) => {
+        try {
+            await shortStayAPI.reserve({
+                propertyId: id,
+                checkIn: rCheckIn,
+                checkOut: rCheckOut,
+                guests: { adults: rAdults, children: rChildren, infants: rInfants, pets: rPets },
+                totalPrice: totalAmount,
+                paymentId,
+                hostId,
+                roomType // Also passing room type
+            });
+            setLoading(false);
+            setShowConfirmedModal(true);
+        } catch (error) {
+            console.error('Reservation Failed:', error);
+            alert(error.response?.data?.error || 'Failed to complete booking. Please try again.');
+            setLoading(false);
+        }
+    };
 
     const handlePayment = async () => {
         setLoading(true);
@@ -382,7 +406,7 @@ const ShortStayReserve = () => {
                 description: `Payment for ${propertyTitle}`,
                 image: '/logo.png',
                 handler: function (response) {
-                    navigate('/short-stay/success', { state: { paymentId: response.razorpay_payment_id } });
+                    processReservation(response.razorpay_payment_id);
                 },
                 prefill: {
                     name: currentUser?.name || 'Guest User',
@@ -393,12 +417,11 @@ const ShortStayReserve = () => {
             };
             const paymentObject = new window.Razorpay(options);
             paymentObject.open();
-            setLoading(false); 
+            // Loading false handled in handler or if dismissed (manual limit)
         } else {
             // Mock GPAY
             setTimeout(() => {
-                setLoading(false);
-                navigate('/short-stay/success', { state: { paymentId: `GPAY_${Date.now()}` } });
+                processReservation(`GPAY_${Date.now()}`);
             }, 2000);
         }
     };
@@ -629,6 +652,27 @@ const ShortStayReserve = () => {
                 infants={rInfants} setInfants={setRInfants}
                 pets={rPets} setPets={setRPets}
             />
+
+            {/* Booking Confirmed Modal */}
+            {showConfirmedModal && (
+                <div className="modal-overlay" style={{zIndex: 4000}}>
+                    <div className="confirmed-modal">
+                        <div className="confirmed-icon">
+                            <FaCheckCircle size={50} color="#222" />
+                        </div>
+                        <h2>Booking Confirmed!</h2>
+                        <p>Your reservation at {propertyTitle} is successfully booked.</p>
+                        <p className="confirmed-dates">
+                            {checkInDate?.toLocaleDateString()} – {checkOutDate?.toLocaleDateString()}
+                        </p>
+                        <div className="confirmed-actions">
+                            <button className="confirm-pay-btn" onClick={() => navigate('/short-stay')}>
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

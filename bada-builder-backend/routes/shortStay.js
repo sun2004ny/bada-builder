@@ -331,4 +331,95 @@ router.get('/user/favorites', authenticate, async (req, res) => {
   }
 });
 
+// --- 10. Create Reservation (POST /reserve) ---
+router.post('/reserve', authenticate, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { propertyId, checkIn, checkOut, guests, totalPrice, paymentId, hostId } = req.body;
+
+    // 1. Double Booking Check (Concurrency Safe)
+    await client.query('BEGIN');
+    
+    const availabilityCheck = await client.query(
+      `SELECT id FROM short_stay_reservations 
+       WHERE property_id = $1 
+       AND status = 'confirmed'
+       AND (
+         (check_in <= $2 AND check_out > $2) OR
+         (check_in < $3 AND check_out >= $3) OR
+         ($2 <= check_in AND $3 >= check_out)
+       )
+       FOR UPDATE`, 
+      [propertyId, checkIn, checkOut] // Overlap logic
+    );
+
+    if (availabilityCheck.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Property is not available for these dates' });
+    }
+
+    // 2. Create Reservation
+    const result = await client.query(
+      `INSERT INTO short_stay_reservations 
+       (property_id, user_id, host_id, check_in, check_out, guests, total_price, payment_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [propertyId, req.user.id, hostId, checkIn, checkOut, typeof guests === 'string' ? JSON.parse(guests) : guests, totalPrice, paymentId]
+    );
+
+    await client.query('COMMIT');
+
+    res.status(201).json({ 
+      message: 'Reservation confirmed', 
+      reservation: result.rows[0] 
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Create Reservation Error:', error);
+    res.status(500).json({ error: 'Failed to confirm reservation' });
+  } finally {
+    client.release();
+  }
+});
+
+// --- 11. Get Host Reservations (GET /reservations/host) ---
+router.get('/reservations/host', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*, 
+       p.title as property_title, p.images,
+       u.name as guest_name, u.email as guest_email, u.phone as guest_phone, u.profile_photo as guest_photo
+       FROM short_stay_reservations r
+       JOIN short_stay_properties p ON r.property_id = p.id
+       JOIN users u ON r.user_id = u.id
+       WHERE r.host_id = $1
+       ORDER BY r.check_in ASC`,
+       [req.user.id]
+    );
+
+    res.json({ reservations: result.rows });
+  } catch (error) {
+    console.error('Fetch Host Reservations Error:', error);
+    res.status(500).json({ error: 'Failed to fetch reservations' });
+  }
+});
+
+// --- 12. Get Property Availability (GET /availability/:id) ---
+router.get('/availability/:id', optionalAuth, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT check_in, check_out 
+             FROM short_stay_reservations 
+             WHERE property_id = $1 AND status = 'confirmed' 
+             AND check_out >= CURRENT_DATE`, // Only future/current bookings
+            [req.params.id]
+        );
+        res.json({ bookedDates: result.rows });
+    } catch (error) {
+        console.error('Fetch Availability Error:', error);
+        res.status(500).json({ error: 'Failed to fetch availability' });
+    }
+});
+
 export default router;

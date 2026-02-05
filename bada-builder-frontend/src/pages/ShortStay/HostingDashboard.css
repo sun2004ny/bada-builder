@@ -550,3 +550,66 @@ button:focus-visible,
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
+
+/* Reservation Cards */
+.reservation-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 24px 0;
+}
+
+.reservation-card-item {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.res-card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.status-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.status-badge.confirmed {
+    background: #e6fffa;
+    color: #007a5e;
+}
+
+.res-price {
+    font-weight: 600;
+}
+
+.res-card-body h4 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+}
+
+.res-property {
+    color: #717171;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.res-dates {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.res-guests {
+    font-size: 14px;
+    color: #717171;
+}

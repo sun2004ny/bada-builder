@@ -95,4 +95,22 @@ export const shortStayAPI = {
   getUserFavorites: async () => {
     return apiRequest('/short-stay/user/favorites');
   },
+
+  // --- Reservations ---
+  reserve: async (data) => {
+    return apiRequest('/short-stay/reserve', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    });
+  },
+
+  getHostReservations: async () => {
+    return apiRequest('/short-stay/reservations/host');
+  },
+
+  getAvailability: async (propertyId) => {
+    return apiRequest(`/short-stay/availability/${propertyId}`, {
+        includeAuth: false
+    });
+  },
 };
