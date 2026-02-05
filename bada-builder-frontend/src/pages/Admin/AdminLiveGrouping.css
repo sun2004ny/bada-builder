@@ -24,6 +24,9 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2.5rem;
+  padding-right: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .admin-header-v2 h1 {

@@ -21,7 +21,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      
+
       // Use mock data directly (no API calls)
       const mockUsers = [
         {
@@ -58,13 +58,13 @@ const UserManagement = () => {
           bookings_count: 0
         }
       ];
-      
+
       // Simulate loading delay
       setTimeout(() => {
         setUsers(mockUsers);
         setLoading(false);
       }, 500);
-      
+
     } catch (error) {
       console.error('Error fetching users:', error);
       setLoading(false);
@@ -73,7 +73,7 @@ const UserManagement = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterType === 'all' || user.user_type === filterType || user.status === filterType;
     return matchesSearch && matchesFilter;
   });
@@ -81,15 +81,15 @@ const UserManagement = () => {
   const handleUserAction = async (userId, action) => {
     try {
       console.log(`Performing ${action} on user ${userId}`);
-      
+
       // Update local state directly (no API calls)
       const newStatus = action === 'suspend' ? 'suspended' : 'active';
-      setUsers(users.map(user => 
-        user.id === userId 
+      setUsers(users.map(user =>
+        user.id === userId
           ? { ...user, status: newStatus }
           : user
       ));
-      
+
     } catch (error) {
       console.error(`Error performing ${action}:`, error);
     }
@@ -112,7 +112,7 @@ const UserManagement = () => {
       <div className="fixed inset-0 z-50 overflow-y-auto">
         <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
           <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose} />
-          
+
           <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">User Details</h3>
@@ -120,7 +120,7 @@ const UserManagement = () => {
                 <XCircle className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
@@ -131,7 +131,7 @@ const UserManagement = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">User Type</label>
@@ -139,11 +139,10 @@ const UserManagement = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.status === 'active' 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                  }`}>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.status === 'active'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    }`}>
                     {user.status}
                   </span>
                 </div>
@@ -168,7 +167,7 @@ const UserManagement = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex space-x-2 pt-4">
                 {user.status === 'active' ? (
                   <button
@@ -216,23 +215,23 @@ const UserManagement = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage and monitor user accounts</p>
+      <div className="flex flex-wrap items-center justify-between gap-4 pr-5">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">User Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 truncate">Manage and monitor user accounts</p>
         </div>
         <div className="flex space-x-2">
           {selectedUsers.length > 0 && (
             <div className="flex space-x-2">
               <button
                 onClick={() => handleBulkAction('activate')}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 py-2 !bg-green-600 !text-white rounded-lg hover:!bg-green-700 transition-colors"
               >
                 Activate Selected
               </button>
               <button
                 onClick={() => handleBulkAction('suspend')}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="px-4 py-2 !bg-red-600 !text-white rounded-lg hover:!bg-red-700 transition-colors"
               >
                 Suspend Selected
               </button>
@@ -335,22 +334,20 @@ const UserManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.user_type === 'admin' 
-                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                        : user.user_type === 'developer'
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.user_type === 'admin'
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                      : user.user_type === 'developer'
                         ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                    }`}>
+                      }`}>
                       {user.user_type}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.status === 'active' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.status === 'active'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      }`}>
                       {user.status}
                     </span>
                   </td>

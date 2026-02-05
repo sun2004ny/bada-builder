@@ -666,9 +666,9 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
 
             {/* Internal Roads */}
             {Array.from({ length: rows + 1 }).map((_, i) => (
-                <mesh key={`road-${i}`} position={[0, -0.35, -(rows * spacingZ) / 2 + i * spacingZ]} receiveShadow>
+                <mesh key={`road-${i}`} position={[0, 0.05, -(rows * spacingZ) / 2 + i * spacingZ]} receiveShadow>
                     <boxGeometry args={[colWidth + 20, 0.1, roadW]} />
-                    <meshStandardMaterial color="#475569" roughness={0.4} />
+                    <meshStandardMaterial color="#64748b" roughness={0.4} />
                 </mesh>
             ))}
 
@@ -946,19 +946,18 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                 scales={groundFoliage.map(() => 2.5 + Math.random() * 2.5)} // Bolder, hero-like clumps
             />
 
-            {/* 4. Internal Roads - Horizontal (Mathematically aligned) */}
+            {/* 1. Internal Roads - Horizontal (Along X-axis, varying Z) */}
             {Array.from({ length: rows + 1 }).map((_, i) => (
-                <mesh key={`road-h-${i}`} position={[0, -0.35, -(rows * SPACING_Z) / 2 + i * SPACING_Z]} receiveShadow>
+                <mesh key={`road-h-${i}`} position={[0, 0.05, -(rows * SPACING_Z) / 2 + i * SPACING_Z]} receiveShadow>
                     <boxGeometry args={[colWidth + 10, 0.1, ROAD_WIDTH]} />
-                    <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                    <meshStandardMaterial color="#64748b" roughness={0.4} />
                 </mesh>
             ))}
-
-            {/* 4. Internal Roads - Vertical (Mathematically aligned) */}
+            {/* 2. Internal Roads - Vertical (Along Z-axis, varying X) */}
             {Array.from({ length: columns + 1 }).map((_, i) => (
-                <mesh key={`road-v-${i}`} position={[-(columns * SPACING_X) / 2 + i * SPACING_X, -0.35, 0]} receiveShadow>
+                <mesh key={`road-v-${i}`} position={[-(columns * SPACING_X) / 2 + i * SPACING_X, 0.05, 0]} receiveShadow>
                     <boxGeometry args={[ROAD_WIDTH, 0.1, colDepth + 10]} />
-                    <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                    <meshStandardMaterial color="#64748b" roughness={0.4} />
                 </mesh>
             ))}
 
@@ -1344,11 +1343,13 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
 
             {/* Carved Land / Plot Surface (Slightly elevated above roads) */}
             <group position={[0, -0.05, 0]}>
-                {/* Main Grass Surface with patches */}
+                {/* Main Grass Surface Removed to fix road visibility */}
+                {/* 
                 <mesh rotation={[-Math.PI / 2, 0, 0]}>
                     <planeGeometry args={[colonyWidth + 10, colonyDepth + 10]} />
                     <meshStandardMaterial color="#367a4d" roughness={0.9} />
-                </mesh>
+                </mesh> 
+                */}
                 {showPremium && Array.from({ length: 45 }).map((_, i) => (
                     <mesh
                         key={`noise-patch-${i}`}
@@ -1376,16 +1377,16 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
                 return (
                     <group key={`road-set-${i}`}>
                         {/* Asphalt Base */}
-                        <mesh position={[0, -0.18, roadZ]}>
+                        <mesh position={[0, -0.15, roadZ]}>
                             <boxGeometry args={[colonyWidth + 50, 0.06, V_ROAD_W]} />
-                            <meshStandardMaterial color="#1e293b" roughness={0.6} />
+                            <meshStandardMaterial color="#334155" roughness={0.6} />
                         </mesh>
                         {/* Curbs / Shoulders with beveled feel */}
-                        <mesh position={[0, -0.1, roadZ + V_ROAD_W / 2 + 0.3]}>
+                        <mesh position={[0, -0.08, roadZ + V_ROAD_W / 2 + 0.3]}>
                             <boxGeometry args={[colonyWidth + 50, 0.12, 0.6]} />
                             <meshStandardMaterial color="#94a3b8" roughness={0.5} />
                         </mesh>
-                        <mesh position={[0, -0.1, roadZ - V_ROAD_W / 2 - 0.3]}>
+                        <mesh position={[0, -0.08, roadZ - V_ROAD_W / 2 - 0.3]}>
                             <boxGeometry args={[colonyWidth + 50, 0.12, 0.6]} />
                             <meshStandardMaterial color="#94a3b8" roughness={0.5} />
                         </mesh>

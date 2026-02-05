@@ -124,14 +124,14 @@ const AdminDashboard = () => {
   return (
     <div className="w-full max-w-none space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300">Welcome back! Here's what's happening.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4 pr-5">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">Dashboard</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">Welcome back! Here's what's happening.</p>
         </div>
         <button
           onClick={fetchDashboardStats}
-          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          className="px-3 py-2 !bg-blue-600 !text-white text-sm rounded-lg hover:!bg-blue-700 transition-colors shadow-sm"
         >
           Refresh
         </button>
