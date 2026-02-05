@@ -1458,6 +1458,15 @@
     align-items: center;
 }
 
+.room-inventory-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.room-inventory-row:hover {
+    background-color: #f7f7f7;
+}
+
 .clear-dates-btn {
     background: transparent;
     border: none;

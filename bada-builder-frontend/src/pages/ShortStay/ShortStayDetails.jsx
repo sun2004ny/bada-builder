@@ -233,6 +233,12 @@ const ShortStayDetails = () => {
     const [showShareModal, setShowShareModal] = useState(false);
     const [showDescriptionModal, setShowDescriptionModal] = useState(false);
     const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
+    
+    // New state for handling room type selection flow
+    const [pendingRoomType, setPendingRoomType] = useState(null);
+
+
+
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showPhotoTour, setShowPhotoTour] = useState(false);
     
@@ -244,6 +250,42 @@ const ShortStayDetails = () => {
     const [children, setChildren] = useState(0);
     const [infants, setInfants] = useState(0);
     const [pets, setPets] = useState(0);
+
+    // Effect to handle auto-navigation after dates are selected for a specific room type
+    useEffect(() => {
+        if (pendingRoomType && checkIn && checkOut && property) {
+            // Dates have been selected, proceed to reserve
+            const totalGuests = adults + children;
+            // Clear pending state to prevent infinite loop or unwanted re-triggers
+            setPendingRoomType(null);
+            
+            const displayPricing = property.guest_pricing || property.pricing;
+
+            navigate(`/short-stay/reserve/${id}`, {
+                state: { 
+                    checkIn, 
+                    checkOut, 
+                    guests: totalGuests, 
+                    adults, 
+                    children, 
+                    infants, 
+                    pets,
+                    // Construct pricing object for the specific room type
+                    pricing: {
+                        currency: 'INR', // Assuming INR based on context
+                         // Copy other necessary structure if needed, but perNight is the critical override
+                        ...displayPricing, 
+                        perNight: pendingRoomType.price // Ensure this overrides
+                    },
+                    hostPricing: property.pricing, 
+                    propertyTitle: property.title, 
+                    propertyImage: property.images?.[0],
+                    policies: property.policies,
+                    roomType: pendingRoomType.type // Optional: pass room type name for display
+                }
+            });
+        }
+    }, [checkIn, checkOut, pendingRoomType, adults, children, infants, pets, property, id, navigate]);
 
     const getAmenityIcon = (amenity) => {
         const text = amenity.toLowerCase();
@@ -549,12 +591,49 @@ const ShortStayDetails = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {specific_details.roomTypes.map((room, idx) => (
-                                                    <tr key={idx}>
-                                                        <td>{room.type}</td>
-                                                        <td>₹{Math.ceil(Number(room.price) * 1.05).toLocaleString()}</td>
-                                                    </tr>
-                                                ))}
+                                                {specific_details.roomTypes.map((room, idx) => {
+                                                    const calculatedPrice = Math.ceil(Number(room.price) * 1.05);
+                                                    return (
+                                                        <tr 
+                                                            key={idx} 
+                                                            className="room-inventory-row"
+                                                            onClick={() => {
+                                                                const roomData = { ...room, price: calculatedPrice };
+                                                                
+                                                                if (!checkIn || !checkOut) {
+                                                                    setPendingRoomType(roomData);
+                                                                    setShowCalendarModal(true);
+                                                                } else {
+                                                                    // Navigate immediately if dates are set
+                                                                    const totalGuests = adults + children;
+                                                                    navigate(`/short-stay/reserve/${id}`, {
+                                                                        state: { 
+                                                                            checkIn, 
+                                                                            checkOut, 
+                                                                            guests: totalGuests, 
+                                                                            adults, 
+                                                                            children, 
+                                                                            infants, 
+                                                                            pets,
+                                                                            pricing: {
+                                                                                ...displayPricing,
+                                                                                perNight: calculatedPrice
+                                                                            },
+                                                                            hostPricing: pricing, 
+                                                                            propertyTitle: title, 
+                                                                            propertyImage: images?.[0],
+                                                                            policies: policies,
+                                                                            roomType: room.type
+                                                                        }
+                                                                    });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <td>{room.type}</td>
+                                                            <td>₹{calculatedPrice.toLocaleString()}</td>
+                                                        </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
