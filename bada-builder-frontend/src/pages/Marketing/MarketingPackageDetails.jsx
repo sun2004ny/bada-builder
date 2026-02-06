@@ -501,7 +501,7 @@ const MarketingPackageDetails = () => {
                 </div>
             </section>
 
-            <div className="max-w-[1200px] mx-auto px-6 box-border grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 items-start pt-[60px]">
+            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 box-border grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 items-start pt-[60px]">
                 <div className="details-side-column order-1 lg:sticky lg:top-[120px]">
                     {/* Integrated Form Section */}
                     <section id="action-form" className="bg-[#1e293b] border border-[#38bdf840] rounded-3xl p-8 md:p-10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] w-full mx-auto">
@@ -756,49 +756,97 @@ const MarketingPackageDetails = () => {
                     </section>
                 </div>
 
-                <div className="details-main-column order-2">
+                <div className="details-main-column order-2 w-full">
                     {/* What's Included Section */}
-                    <section className="mb-12">
-                        <h2 className="text-xl font-black mb-6 text-white uppercase tracking-widest flex items-center gap-3">
-                            <span className="w-1.5 h-6 bg-[#0EA5E9] rounded-full"></span>
-                            What's Included
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
-                            <div className="flex gap-4 bg-[#38bdf80d] border border-[#38bdf833] p-5 rounded-2xl items-center">
-                                <div className="w-10 h-10 bg-[#38bdf826] text-[#38BDF8] rounded-xl flex items-center justify-center shrink-0 text-lg">
-                                    <FaVideo />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-white">Video Content</h4>
-                                    <p className="text-[13px] text-[#94A3B8]">{packageData.videos}</p>
-                                </div>
-                            </div>
+                    <motion.section
+                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                        className="mb-12 w-full"
+                    >
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            whileInView={{ x: 0, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex items-center gap-4 mb-8"
+                        >
+                            <motion.span
+                                initial={{ height: 0 }}
+                                whileInView={{ height: '32px' }}
+                                transition={{ delay: 0.4, duration: 0.5 }}
+                                className="w-2 bg-gradient-to-b from-[#38BDF8] to-[#0EA5E9] rounded-full shadow-[0_0_15px_rgba(56,189,248,0.5)]"
+                            ></motion.span>
+                            <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em] leading-none">
+                                What's Included
+                            </h2>
+                        </motion.div>
 
-                            {/* Dynamic Total Images Item */}
-                            <div className="flex gap-4 bg-[#38bdf80d] border border-[#38bdf833] p-5 rounded-2xl items-center">
-                                <div className="w-10 h-10 bg-[#38bdf826] text-[#38BDF8] rounded-xl flex items-center justify-center shrink-0 text-lg">
-                                    <FaCamera />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-white">Total Images</h4>
-                                    <p className="text-[13px] text-[#94A3B8]">
-                                        {packageData.id === 1 ? '10 Images' :
-                                            packageData.id === 2 ? '20 Images' :
-                                                '50+ Images'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-                                {packageData.features.map((feature, idx) => (
-                                    <div key={idx} className="flex gap-3 bg-[#1e293b66] border border-[#94a3b81a] p-4 rounded-xl items-center">
-                                        <FaCheckCircle className="text-[#38BDF8] shrink-0 text-[14px]" />
-                                        <p className="text-[13px] text-[#CBD5E1] leading-tight font-medium">{feature}</p>
+                        <div className="flex flex-col gap-8">
+                            {/* Top Highlight Cards - Premium Vertical Design */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
+                                <motion.div
+                                    whileHover={{ y: -10, scale: 1.02 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                    className="relative overflow-hidden group rounded-[2rem] border border-[#38bdf820] bg-[#38bdf808] backdrop-blur-2xl hover:bg-[#38bdf815] transition-all duration-500 shadow-2xl"
+                                >
+                                    <div className="relative flex flex-row sm:flex-col gap-6 p-6 lg:p-10 items-center sm:text-center justify-start sm:justify-center min-h-[140px] sm:min-h-[260px]">
+                                        <div className="w-16 h-16 lg:w-24 lg:h-24 bg-gradient-to-br from-[#38bdf820] to-transparent text-[#38BDF8] rounded-3xl flex items-center justify-center shrink-0 text-3xl lg:text-5xl border border-[#38bdf830] shadow-[0_0_20px_rgba(56,189,248,0.2)] group-hover:shadow-[0_0_40px_rgba(56,189,248,0.4)] group-hover:bg-[#38bdf830] transition-all duration-500">
+                                            <FaVideo className="group-hover:scale-110 transition-transform duration-500" />
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <h4 className="text-[10px] lg:text-[12px] font-black text-[#38BDF8] uppercase tracking-[0.3em] opacity-90">Content Structure</h4>
+                                            <p className="text-xl lg:text-3xl text-white font-black tracking-tight leading-tight">
+                                                {packageData.videos}
+                                            </p>
+                                        </div>
                                     </div>
-                                ))}
+                                </motion.div>
+
+                                <motion.div
+                                    whileHover={{ y: -10, scale: 1.02 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                    className="relative overflow-hidden group rounded-[2rem] border border-[#38bdf820] bg-[#38bdf808] backdrop-blur-2xl hover:bg-[#38bdf815] transition-all duration-500 shadow-2xl"
+                                >
+                                    <div className="relative flex flex-row sm:flex-col gap-6 p-6 lg:p-10 items-center sm:text-center justify-start sm:justify-center min-h-[140px] sm:min-h-[260px]">
+                                        <div className="w-16 h-16 lg:w-24 lg:h-24 bg-gradient-to-br from-[#38bdf820] to-transparent text-[#38BDF8] rounded-3xl flex items-center justify-center shrink-0 text-3xl lg:text-5xl border border-[#38bdf830] shadow-[0_0_20px_rgba(56,189,248,0.2)] group-hover:shadow-[0_0_40px_rgba(56,189,248,0.4)] group-hover:bg-[#38bdf830] transition-all duration-500">
+                                            <FaCamera className="group-hover:scale-110 transition-transform duration-500" />
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <h4 className="text-[10px] lg:text-[12px] font-black text-[#38BDF8] uppercase tracking-[0.3em] opacity-90">Visual Assets</h4>
+                                            <p className="text-xl lg:text-3xl text-white font-black tracking-tight leading-tight">
+                                                {packageData.id === 1 ? '10 Pro Images' :
+                                                    packageData.id === 2 ? '20 Pro Images' :
+                                                        '50+ High-Res Images'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </motion.div>
                             </div>
+
+                            {/* Features Grid - Zero Waste Mobile Layout */}
+                            <motion.div
+                                className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5"
+                            >
+                                {packageData.features.map((feature, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        whileInView={{ opacity: 1, x: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: idx * 0.05 + 0.5 }}
+                                        whileHover={{ x: 8, backgroundColor: "rgba(56, 189, 248, 0.08)" }}
+                                        className="flex gap-4 bg-[#1e293b60] border border-[#94a3b810] p-5 rounded-2xl items-center backdrop-blur-md hover:border-[#38bdf830] hover:shadow-[0_10px_30px_-15px_rgba(0,0,0,0.5)] transition-all duration-300 group"
+                                    >
+                                        <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#10B98115] flex items-center justify-center border border-[#10B98130] group-hover:scale-110 transition-transform">
+                                            <FaCheckCircle className="text-[#10B981] text-[14px]" />
+                                        </div>
+                                        <p className="text-[14px] text-[#CBD5E1] font-semibold tracking-wide group-hover:text-white transition-colors">{feature}</p>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
                         </div>
-                    </section>
+                    </motion.section>
                 </div>
             </div>
 
