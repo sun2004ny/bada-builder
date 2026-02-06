@@ -149,6 +149,67 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
+// --- 2.1 Get Traveler Reservations (GET /reservations/traveler) ---
+router.get('/reservations/traveler', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*, 
+       p.title as property_title, p.images, p.location as property_address,
+       h.name as host_name, h.email as host_email, h.phone as host_phone, h.profile_photo as host_photo
+       FROM short_stay_reservations r
+       JOIN short_stay_properties p ON r.property_id = p.id
+       LEFT JOIN users h ON r.host_id = h.id
+       WHERE r.user_id = $1
+       ORDER BY r.check_in ASC`,
+       [req.user.id]
+    );
+
+    res.json({ reservations: result.rows });
+  } catch (error) {
+    console.error('Error fetching traveler reservations:', error);
+    res.status(500).json({ error: 'Failed to fetch reservations' });
+  }
+});
+
+// --- 2.2 Get Host Reservations (GET /reservations/host) ---
+router.get('/reservations/host', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*, 
+       p.title as property_title, p.images,
+       u.name as guest_name, u.email as guest_email, u.phone as guest_phone, u.profile_photo as guest_photo
+       FROM short_stay_reservations r
+       JOIN short_stay_properties p ON r.property_id = p.id
+       JOIN users u ON r.user_id = u.id
+       WHERE r.host_id = $1
+       ORDER BY r.check_in ASC`,
+       [req.user.id]
+    );
+
+    res.json({ reservations: result.rows });
+  } catch (error) {
+    console.error('Fetch Host Reservations Error:', error);
+    res.status(500).json({ error: 'Failed to fetch reservations' });
+  }
+});
+
+// --- 2.3 Get Property Availability (GET /availability/:id) ---
+router.get('/availability/:id', optionalAuth, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT check_in, check_out 
+             FROM short_stay_reservations 
+             WHERE property_id = $1 AND status = 'confirmed' 
+             AND check_out >= CURRENT_DATE`, // Only future/current bookings
+            [req.params.id]
+        );
+        res.json({ bookedDates: result.rows });
+    } catch (error) {
+        console.error('Fetch Availability Error:', error);
+        res.status(500).json({ error: 'Failed to fetch availability' });
+    }
+});
+
 // --- 3. Get Single Property Details ---
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
@@ -427,43 +488,6 @@ router.post('/reserve', authenticate, async (req, res) => {
   }
 });
 
-// --- 11. Get Host Reservations (GET /reservations/host) ---
-router.get('/reservations/host', authenticate, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT r.*, 
-       p.title as property_title, p.images,
-       u.name as guest_name, u.email as guest_email, u.phone as guest_phone, u.profile_photo as guest_photo
-       FROM short_stay_reservations r
-       JOIN short_stay_properties p ON r.property_id = p.id
-       JOIN users u ON r.user_id = u.id
-       WHERE r.host_id = $1
-       ORDER BY r.check_in ASC`,
-       [req.user.id]
-    );
 
-    res.json({ reservations: result.rows });
-  } catch (error) {
-    console.error('Fetch Host Reservations Error:', error);
-    res.status(500).json({ error: 'Failed to fetch reservations' });
-  }
-});
-
-// --- 12. Get Property Availability (GET /availability/:id) ---
-router.get('/availability/:id', optionalAuth, async (req, res) => {
-    try {
-        const result = await pool.query(
-            `SELECT check_in, check_out 
-             FROM short_stay_reservations 
-             WHERE property_id = $1 AND status = 'confirmed' 
-             AND check_out >= CURRENT_DATE`, // Only future/current bookings
-            [req.params.id]
-        );
-        res.json({ bookedDates: result.rows });
-    } catch (error) {
-        console.error('Fetch Availability Error:', error);
-        res.status(500).json({ error: 'Failed to fetch availability' });
-    }
-});
 
 export default router;

@@ -108,6 +108,10 @@ export const shortStayAPI = {
     return apiRequest('/short-stay/reservations/host');
   },
 
+  getTravelerReservations: async () => {
+    return apiRequest('/short-stay/reservations/traveler');
+  },
+
   getAvailability: async (propertyId) => {
     return apiRequest(`/short-stay/availability/${propertyId}`, {
         includeAuth: false

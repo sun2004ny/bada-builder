@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy } from 'react'
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
@@ -44,6 +44,7 @@ import LiveGroupingDetails from './pages/Exhibition/LiveGroupingDetails';
 import ThreeDView from './pages/Exhibition/ThreeDView';
 import ShortStayLanding from './pages/ShortStay/ShortStayLanding';
 import ListShortStay from './pages/ShortStay/ListShortStay';
+const ShortStayTrips = lazy(() => import('./pages/ShortStay/ShortStayTrips'));
 import ShortStayDetails from './pages/ShortStay/ShortStayDetails';
 import ShortStayReserve from './pages/ShortStay/ShortStayReserve';
 import HostingDashboard from './pages/ShortStay/HostingDashboard';
@@ -184,6 +185,7 @@ function AppContent() {
             <Route path="/exhibition/live-grouping/:id" element={<LiveGroupingDetails />} />
             <Route path="/exhibition/3d-view" element={<ThreeDView />} />
             <Route path="/short-stay" element={<ShortStayLanding />} />
+            <Route path="/short-stay/trips" element={<ShortStayTrips />} />
             <Route path="/short-stay/list-property" element={<ListShortStay />} />
             <Route path="/short-stay/:id" element={<ShortStayDetails />} />
             <Route path="/short-stay/reserve/:id" element={<ShortStayReserve />} />

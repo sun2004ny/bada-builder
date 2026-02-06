@@ -6,7 +6,7 @@ import shortStayVideo from '../../assets/videos/shortstay_hero.mp4';
 import './ShortStayLanding.css';
 import { shortStayAPI } from '../../services/shortStayApi';
 import { useAuth } from '../../context/AuthContext';
-import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch, FaArrowRight, FaTimes } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch, FaArrowRight, FaTimes, FaSuitcaseRolling } from 'react-icons/fa';
 
 
 
@@ -195,15 +195,28 @@ const ShortStayLanding = () => {
                     Discover comfortable stays for your next trip
                     </Motion.p>
                     
-                    <Motion.button 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.8 }}
-                        onClick={() => navigate('/hosting')}
-                        className="switch-to-hosting-btn-hero-centered"
-                    >
-                        Switch to Hosting
-                    </Motion.button>
+                    <div className="short-stay-hero-actions">
+                         <Motion.button 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.8 }}
+                            onClick={() => navigate('/short-stay/trips')}
+                            className="trips-btn-hero"
+                        >
+                            <FaSuitcaseRolling style={{ marginRight: '8px' }} />
+                            My Trips
+                        </Motion.button>
+
+                        <Motion.button 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.9 }}
+                            onClick={() => navigate('/hosting')}
+                            className="switch-to-hosting-btn-hero-centered"
+                        >
+                            Switch to Hosting
+                        </Motion.button>
+                    </div>
                 </div>
                 </div>
             )}

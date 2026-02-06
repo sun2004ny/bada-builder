@@ -158,18 +158,92 @@
   }
 }
 
+/* Hero Actions */
+.short-stay-hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.trips-btn-hero {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.trips-btn-hero:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
 .switch-to-hosting-btn-hero-centered {
-  background: #FFFFFF;
-  color: #222222;
-  padding: 10px 20px;
-  border-radius: 24px;
-  font-weight: 600;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  margin-top: 16px;
-  transition: transform 0.2s;
+    background-color: #FF5A5F;
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 90, 95, 0.3);
+    transition: all 0.3s ease;
+    margin-top: 0; /* Override previous margin */
+    white-space: nowrap;
+}
+
+.switch-to-hosting-btn-hero-centered:hover {
+    background-color: #FF4449;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 90, 95, 0.4);
+}
+
+/* Mobile Responsiveness for Buttons */
+@media (max-width: 768px) {
+    .short-stay-hero-actions {
+        gap: 12px;
+        margin-top: 16px;
+        align-items: center;
+    }
+
+    .trips-btn-hero {
+        padding: 8px 16px;
+        font-size: 14px;
+        border-radius: 20px;
+    }
+
+    .switch-to-hosting-btn-hero-centered {
+        padding: 8px 20px;
+        font-size: 14px;
+        border-radius: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .short-stay-hero-actions {
+        gap: 8px;
+    }
+
+    .trips-btn-hero {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .switch-to-hosting-btn-hero-centered {
+        padding: 6px 14px;
+        font-size: 13px;
+    }
 }
 
 /* --------------------------------------------------------------------------
