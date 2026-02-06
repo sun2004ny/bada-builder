@@ -418,7 +418,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                             status: unit.status || 'available',
                             facing: unit.facing || null,
                             is_corner: unit.is_corner || false,
-                            unit_image_url: unit.unit_image_url || null
+                            unit_image_url: unit.unit_image_url || null,
+                            unit_gallery: unit.unit_gallery || []
                         });
                         totalUnitsGenerated++;
                     }
@@ -427,7 +428,6 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
 
             // 5. Batch Insert All Units
             if (allUnitsToInsert.length > 0) {
-                console.log(`📦 Batch inserting ${allUnitsToInsert.length} units...`);
                 const values = [];
                 const placeholders = [];
                 let counter = 1;
@@ -439,7 +439,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                         unit.area, unit.carpet_area, unit.super_built_up_area, unit.price,
                         unit.price_per_sqft, unit.discount_price_per_sqft, unit.plot_width, unit.plot_depth,
                         unit.front_side, unit.back_side, unit.left_side, unit.right_side,
-                        unit.status, unit.facing, unit.is_corner, unit.unit_image_url
+                        unit.status, unit.facing, unit.is_corner, unit.unit_image_url, unit.unit_gallery
                     ];
 
                     cols.forEach(val => {
@@ -455,7 +455,7 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                         tower_id, floor_number, unit_number, unit_type, 
                         area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, 
                         plot_width, plot_depth, front_side, back_side, left_side, right_side,
-                        status, facing, is_corner, unit_image_url
+                        status, facing, is_corner, unit_image_url, unit_gallery
                     ) VALUES ${placeholders.join(', ')}
                 `;
                 await client.query(insertQuery, values);
@@ -610,7 +610,7 @@ router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (re
                         towerId, unit.floor_number, unit.unit_number, unit.unit_type || 'Unit',
                         unit.area || 0, unit.carpet_area || null, unit.super_built_up_area || null,
                         unit.price || 0, unit.price_per_sqft || 0, unit.discount_price_per_sqft || null,
-                        unit.status || 'available'
+                        unit.status || 'available', unit.unit_image_url || null, unit.unit_gallery || []
                     ];
 
                     cols.forEach(val => {
@@ -624,7 +624,8 @@ router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (re
                 const insertQuery = `
                     INSERT INTO live_group_units (
                         tower_id, floor_number, unit_number, unit_type, 
-                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, status
+                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, status,
+                        unit_image_url, unit_gallery
                     ) VALUES ${placeholders.join(', ')}
                 `;
                 await client.query(insertQuery, values);
@@ -660,10 +661,11 @@ router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (re
 router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
     try {
         const unitId = req.params.id;
+        console.log(`📝 [DEBUG] Updating Unit ${unitId}. Body:`, JSON.stringify(req.body, null, 2));
         const {
             unit_number, unit_type, floor_number, area, carpet_area, super_built_up_area,
             price_per_sqft, discount_price_per_sqft, status, facing, is_corner, unit_image_url,
-            plot_width, plot_depth, front_side, back_side, left_side, right_side
+            plot_width, plot_depth, front_side, back_side, left_side, right_side, unit_gallery
         } = req.body;
 
         const existingResult = await pool.query('SELECT * FROM live_group_units WHERE id = $1', [unitId]);
@@ -719,8 +721,9 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 front_side = $16,
                 back_side = $17,
                 left_side = $18,
-                right_side = $19
-            WHERE id = $20 RETURNING *`,
+                right_side = $19,
+                unit_gallery = $20
+            WHERE id = $21 RETURNING *`,
             [
                 finalUnitNumber, finalUnitType, finalFloorNumber, finalArea,
                 finalPricePerSqft, finalDiscountPricePerSqft, finalStatus,
@@ -734,6 +737,7 @@ router.patch('/admin/units/:id', authenticate, isAdmin, async (req, res) => {
                 finalBackSide,
                 finalLeftSide,
                 finalRightSide,
+                unit_gallery !== undefined ? unit_gallery : existingUnit.unit_gallery,
                 unitId
             ]
         );
@@ -782,6 +786,24 @@ router.post('/admin/upload-image', authenticate, isAdmin, upload.single('images'
     } catch (error) {
         console.error('Image upload error:', error);
         res.status(500).json({ error: 'Failed to upload image' });
+    }
+});
+
+// Multi-Image Upload (Parallel for Unit Gallery)
+router.post('/admin/upload-gallery', authenticate, isAdmin, upload.array('images', 20), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
+
+        console.log(`☁️ Parallel uploading ${req.files.length} images to Cloudinary...`);
+        const imageBuffers = req.files.map(file => file.buffer);
+        const imageUrls = await uploadMultipleImages(imageBuffers, 'live_group_unit_gallery');
+
+        res.json({ imageUrls });
+    } catch (error) {
+        console.error('Gallery upload error:', error);
+        res.status(500).json({ error: 'Failed to upload gallery images' });
     }
 });
 

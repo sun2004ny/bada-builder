@@ -8,6 +8,7 @@ import useViewPreference from '../../hooks/useViewPreference';
 import { calculateTokenAmount, formatCurrency, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
 import './Exhibition.css';
 import './LiveGrouping.css';
+import heroVideo from '../../assets/live groping video.mp4';
 
 const Highlight = ({ text, highlight }) => {
   if (!highlight || !text) return <>{text}</>;
@@ -486,6 +487,18 @@ const LiveGrouping = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
+          {/* Background Video */}
+          <video
+            className="header-video"
+            autoPlay
+            loop
+            muted
+            playsInline
+          >
+            <source src={heroVideo} type="video/mp4" />
+          </video>
+          <div className="video-overlay"></div>
+
           <div className="live-badge">🔴 LIVE</div>
           <h1>Live Group Buying</h1>
           <p>Join with other buyers and save up to 15% on premium properties</p>

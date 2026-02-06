@@ -301,10 +301,26 @@ const AdminLiveGrouping = () => {
                 console.log(`📸 Uploading image for unit: ${unit.unit_number}...`);
                 try {
                   const uploadRes = await liveGroupDynamicAPI.uploadUnitImage(unit.unit_image_file);
-                  uploadedImageUrl = uploadRes.imageUrl;
+                  uploadedImageUrl = uploadRes.imageUrl || uploadRes.url || uploadRes.secure_url;
                 } catch (uploadErr) {
                   console.error("Unit image upload failed:", uploadErr);
                   // Continue without image or fail? Requirement says optional, so we can continue
+                }
+              }
+
+
+              // UPLOAD UNIT GALLERY IF EXISTS
+              let uploadedGallery = unit.unit_gallery || [];
+              if (unit.unit_gallery_files && unit.unit_gallery_files.length > 0) {
+                console.log(`📸 Uploading gallery for unit: ${unit.unit_number}...`);
+                try {
+                  const galleryRes = await liveGroupDynamicAPI.uploadUnitGallery(unit.unit_gallery_files);
+                  const newUrls = galleryRes.imageUrls || galleryRes.urls || galleryRes.images || [];
+                  if (newUrls.length > 0) {
+                    uploadedGallery = [...uploadedGallery, ...newUrls];
+                  }
+                } catch (galleryErr) {
+                  console.error("Unit gallery upload failed:", galleryErr);
                 }
               }
 
@@ -320,12 +336,15 @@ const AdminLiveGrouping = () => {
                 discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null,
                 plot_width: (unit.plot_width) ? parseFloat(unit.plot_width) : null,
                 plot_depth: (unit.plot_depth) ? parseFloat(unit.plot_depth) : null,
-                unit_image_url: uploadedImageUrl
+                unit_image_url: uploadedImageUrl,
+                unit_gallery: uploadedGallery
               };
 
               // Remove local file objects and previews before sending
               delete sanitizedUnit.unit_image_file;
               delete sanitizedUnit.localImagePreview;
+              delete sanitizedUnit.unit_gallery_files;
+              delete sanitizedUnit.galleryImagePreviews;
 
               compiledUnits.push(sanitizedUnit);
             }
@@ -1798,9 +1817,33 @@ const AdminLiveGrouping = () => {
                     </span>
                   </div>
                 </div>
+                {selectedUnit.unit_gallery && selectedUnit.unit_gallery.length > 0 && (
+                  <div className="mt-4 border-t border-slate-100 pt-3">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 px-1 text-left">Unit Photos ({selectedUnit.unit_gallery.length})</span>
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {selectedUnit.unit_gallery.map((img, idx) => (
+                        <div key={idx} className="min-w-[80px] h-20 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
+                          <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
+                <button
+                  className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-bold border border-blue-200 hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                  onClick={() => {
+                    setEditingUnit(selectedUnit);
+                    setShowUnitEditModal(true);
+                    setShowUnitActionModal(false);
+                  }}
+                  disabled={actionLoading}
+                >
+                  <Edit size={18} /> Edit Unit & Images
+                </button>
+
                 {selectedUnit.status === 'available' && (
                   <>
                     <button
@@ -2024,6 +2067,126 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
                           )}
                         </div>
 
+                        {/* UNIT IMAGE UPLOAD - Only for Custom Units */}
+                        {unit.isCustom && (
+                          <div className="unit-images-config mt-2 pt-2 border-t border-slate-50 space-y-3">
+                            <div>
+                              <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Brochure Image (Primary)</label>
+                              <div className="flex items-center gap-2">
+                                <label className="cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
+                                  <ImageIcon size={12} />
+                                  {unit.unit_image_url || unit.localImagePreview ? 'Change Image' : 'Upload Image'}
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          onUpdate(uIdx, 'localImagePreview', reader.result);
+                                          onUpdate(uIdx, 'unit_image_file', file);
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                                {(unit.unit_image_url || unit.localImagePreview) && (
+                                  <button
+                                    onClick={() => {
+                                      onUpdate(uIdx, 'unit_image_url', null);
+                                      onUpdate(uIdx, 'localImagePreview', null);
+                                      onUpdate(uIdx, 'unit_image_file', null);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                    title="Remove Image"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-50">
+                              <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Unit Photos (Gallery - Max 20)</label>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <label className="cursor-pointer bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
+                                  <Plus size={12} />
+                                  Add Photos
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const files = Array.from(e.target.files || []);
+                                      if (files.length > 0) {
+                                        const filePromises = files.map(file => new Promise((resolve) => {
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => resolve({ file, preview: reader.result });
+                                          reader.readAsDataURL(file);
+                                        }));
+
+                                        Promise.all(filePromises).then(results => {
+                                          const newFiles = results.map(r => r.file);
+                                          const newPreviews = results.map(r => r.preview);
+                                          onUpdate(uIdx, {
+                                            galleryImagePreviews: [...(unit.galleryImagePreviews || []), ...newPreviews],
+                                            unit_gallery_files: [...(unit.unit_gallery_files || []), ...newFiles]
+                                          });
+                                        });
+                                      }
+                                    }}
+                                  />
+                                </label>
+                                <span className="text-[9px] text-slate-400 font-bold">
+                                  {(unit.unit_gallery_files?.length || 0) + (unit.unit_gallery?.length || 0)} photos
+                                </span>
+                              </div>
+                              {((unit.galleryImagePreviews && unit.galleryImagePreviews.length > 0) || (unit.unit_gallery && unit.unit_gallery.length > 0)) && (
+                                <div className="flex gap-1 overflow-x-auto mt-2 pb-1 scrollbar-hide">
+                                  {/* Existing Images */}
+                                  {(unit.unit_gallery || []).map((img, idx) => (
+                                    <div key={`exist-${idx}`} className="relative min-w-[40px] h-10 rounded border border-slate-100 bg-slate-50 shrink-0">
+                                      <img src={img} alt="Unit" className="w-full h-full object-cover rounded" />
+                                      <button
+                                        onClick={() => {
+                                          const newGallery = unit.unit_gallery.filter((_, i) => i !== idx);
+                                          onUpdate(uIdx, 'unit_gallery', newGallery);
+                                        }}
+                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                                      >
+                                        <X size={8} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  {/* New Previews */}
+                                  {(unit.galleryImagePreviews || []).map((prev, idx) => (
+                                    <div key={`new-${idx}`} className="relative min-w-[40px] h-10 rounded border border-blue-200 bg-blue-50 shrink-0">
+                                      <img src={prev} alt="Unit" className="w-full h-full object-cover rounded" />
+                                      <button
+                                        onClick={() => {
+                                          const newFiles = unit.unit_gallery_files.filter((_, i) => i !== idx);
+                                          const newPreviews = unit.galleryImagePreviews.filter((_, i) => i !== idx);
+                                          onUpdate(uIdx, {
+                                            unit_gallery_files: newFiles,
+                                            galleryImagePreviews: newPreviews
+                                          });
+                                        }}
+                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                                      >
+                                        <X size={8} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="pricing-row-display flex justify-between items-center mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
                           <div className="flex flex-col">
                             <span className="text-[8px] text-slate-400 font-bold uppercase">Total Price</span>
@@ -2196,7 +2359,7 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
 
                   {/* PLOT DIMENSIONS - Only for Plot units */}
                   {/* PLOT DIMENSIONS - Shown for all units in land-based projects or Plot types */}
-                  {(unit.unit_type === 'Plot' || projectData.type === 'residential_land') && (
+                  {(unit.unit_type === 'Plot' || projectType === 'residential_land') && (
                     <>
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         <div className="input-field-group">
@@ -2279,41 +2442,119 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
 
                   {/* UNIT IMAGE UPLOAD - Only for Custom Units */}
                   {unit.isCustom && (
-                    <div className="unit-image-upload mt-2 pt-2 border-t border-slate-50">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Unit Image</label>
-                      <div className="flex items-center gap-2">
-                        <label className="cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
-                          <ImageIcon size={12} />
-                          {unit.unit_image_url || unit.localImagePreview ? 'Change Image' : 'Upload Image'}
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  onUpdate(uIdx, 'localImagePreview', reader.result);
-                                  onUpdate(uIdx, 'unit_image_file', file);
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
-                        {(unit.unit_image_url || unit.localImagePreview) && (
-                          <button
-                            onClick={() => {
-                              onUpdate(uIdx, 'unit_image_url', null);
-                              onUpdate(uIdx, 'localImagePreview', null);
-                              onUpdate(uIdx, 'unit_image_file', null);
-                            }}
-                            className="text-red-500 hover:text-red-700 p-1"
-                            title="Remove Image"
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                    <div className="unit-images-config mt-2 pt-2 border-t border-slate-50 space-y-3">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Brochure Image (Primary)</label>
+                        <div className="flex items-center gap-2">
+                          <label className="cursor-pointer bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
+                            <ImageIcon size={12} />
+                            {unit.unit_image_url || unit.localImagePreview ? 'Change Image' : 'Upload Image'}
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    onUpdate(uIdx, 'localImagePreview', reader.result);
+                                    onUpdate(uIdx, 'unit_image_file', file);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                          {(unit.unit_image_url || unit.localImagePreview) && (
+                            <button
+                              onClick={() => {
+                                onUpdate(uIdx, 'unit_image_url', null);
+                                onUpdate(uIdx, 'localImagePreview', null);
+                                onUpdate(uIdx, 'unit_image_file', null);
+                              }}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Remove Image"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-50">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Unit Photos (Gallery - Max 20)</label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <label className="cursor-pointer bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 transition-colors">
+                            <Plus size={12} />
+                            Add Photos
+                            <input
+                              type="file"
+                              className="hidden"
+                              multiple
+                              accept="image/*"
+                              onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                if (files.length > 0) {
+                                  const filePromises = files.map(file => new Promise((resolve) => {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => resolve({ file, preview: reader.result });
+                                    reader.readAsDataURL(file);
+                                  }));
+
+                                  Promise.all(filePromises).then(results => {
+                                    const newFiles = results.map(r => r.file);
+                                    const newPreviews = results.map(r => r.preview);
+                                    onUpdate(uIdx, {
+                                      galleryImagePreviews: [...(unit.galleryImagePreviews || []), ...newPreviews],
+                                      unit_gallery_files: [...(unit.unit_gallery_files || []), ...newFiles]
+                                    });
+                                  });
+                                }
+                              }}
+                            />
+                          </label>
+                          <span className="text-[9px] text-slate-400 font-bold">
+                            {(unit.unit_gallery_files?.length || 0) + (unit.unit_gallery?.length || 0)} photos
+                          </span>
+                        </div>
+                        {((unit.galleryImagePreviews && unit.galleryImagePreviews.length > 0) || (unit.unit_gallery && unit.unit_gallery.length > 0)) && (
+                          <div className="flex gap-1 overflow-x-auto mt-2 pb-1 scrollbar-hide">
+                            {/* Existing Images */}
+                            {(unit.unit_gallery || []).map((img, idx) => (
+                              <div key={`exist-${idx}`} className="relative min-w-[40px] h-10 rounded border border-slate-100 bg-slate-50 shrink-0">
+                                <img src={img} alt="Unit" className="w-full h-full object-cover rounded" />
+                                <button
+                                  onClick={() => {
+                                    const newGallery = unit.unit_gallery.filter((_, i) => i !== idx);
+                                    onUpdate(uIdx, 'unit_gallery', newGallery);
+                                  }}
+                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                                >
+                                  <X size={8} />
+                                </button>
+                              </div>
+                            ))}
+                            {/* New Previews */}
+                            {(unit.galleryImagePreviews || []).map((prev, idx) => (
+                              <div key={`new-${idx}`} className="relative min-w-[40px] h-10 rounded border border-blue-200 bg-blue-50 shrink-0">
+                                <img src={prev} alt="Unit" className="w-full h-full object-cover rounded" />
+                                <button
+                                  onClick={() => {
+                                    const newFiles = unit.unit_gallery_files.filter((_, i) => i !== idx);
+                                    const newPreviews = unit.galleryImagePreviews.filter((_, i) => i !== idx);
+                                    onUpdate(uIdx, {
+                                      unit_gallery_files: newFiles,
+                                      galleryImagePreviews: newPreviews
+                                    });
+                                  }}
+                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                                >
+                                  <X size={8} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>

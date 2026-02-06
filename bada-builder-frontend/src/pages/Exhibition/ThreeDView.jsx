@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Sky, Text, PerspectiveCamera, Html, Billboard } from '@react-three/drei';
@@ -1792,6 +1792,7 @@ const ThreeDView = () => {
     const [showHoldOptions, setShowHoldOptions] = useState(false);
     const [holdLoading, setHoldLoading] = useState(false);
     const [showPremium, setShowPremium] = useState(true);
+    const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
 
     // Camera Controls State
     const controlsRef = useRef();
@@ -2297,9 +2298,86 @@ const ThreeDView = () => {
                                     );
                                 })()}
 
-                                {/* Action Area */}
+                                {/* Image Gallery Section */}
                                 {!showHoldOptions ? (
                                     <div className="space-y-2.5">
+                                        {/* Image Gallery Section - Moved here as per request */}
+                                        {(() => {
+                                            let gallery = selectedUnit.unit_gallery;
+                                            if (typeof gallery === 'string') {
+                                                try {
+                                                    gallery = JSON.parse(gallery);
+                                                } catch (e) {
+                                                    // Fallback for Postgres array string format "{url1,url2}"
+                                                    if (gallery.trim().startsWith('{') && gallery.trim().endsWith('}')) {
+                                                        gallery = gallery.trim().slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                                                    } else {
+                                                        gallery = [];
+                                                    }
+                                                }
+                                            }
+                                            if (!Array.isArray(gallery)) gallery = [];
+
+                                            return (
+                                                <div className="mb-1 px-1">
+                                                    <button
+                                                        onClick={() => setIsGalleryExpanded(!isGalleryExpanded)}
+                                                        className="flex items-center gap-2 group w-full py-1.5 focus:outline-none"
+                                                    >
+                                                        <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">
+                                                            {isGalleryExpanded ? `Hide ${gallery.length} Photos` : `See All Photos (${gallery.length})`}
+                                                        </span>
+                                                        <motion.div
+                                                            animate={{ rotate: isGalleryExpanded ? 180 : 0 }}
+                                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                            className="text-slate-400 group-hover:text-slate-600"
+                                                        >
+                                                            <ChevronDown size={14} strokeWidth={3} />
+                                                        </motion.div>
+                                                    </button>
+
+                                                    <AnimatePresence>
+                                                        {isGalleryExpanded && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="relative group/slider pt-2 pb-1">
+                                                                    <div className="relative">
+                                                                        <div
+                                                                            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-1"
+                                                                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                                                        >
+                                                                            {gallery.slice(0, 20).map((img, idx) => (
+                                                                                <motion.div
+                                                                                    key={idx}
+                                                                                    initial={{ opacity: 0, x: 20 }}
+                                                                                    animate={{ opacity: 1, x: 0 }}
+                                                                                    transition={{ delay: idx * 0.05 }}
+                                                                                    className="min-w-[85%] sm:min-w-[70%] h-48 rounded-[12px] overflow-hidden bg-slate-100 snap-center shrink-0 border border-slate-200"
+                                                                                >
+                                                                                    <img
+                                                                                        src={img}
+                                                                                        alt={`Gallery ${idx + 1}`}
+                                                                                        className="w-full h-full object-cover"
+                                                                                        loading="lazy"
+                                                                                        onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                                                                    />
+                                                                                </motion.div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            );
+                                        })()}
+
                                         {/* Real-time Status Disclaimer */}
                                         {(() => {
                                             const { bookingAmount } = getEffectiveUnitDetails(selectedUnit, project);

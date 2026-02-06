@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Calculator, Home, Tag, Layers, Maximize } from 'lucide-react';
+import { X, Save, Calculator, Home, Tag, Layers, Maximize, Image as ImageIcon, Trash2, Plus } from 'lucide-react';
 import { liveGroupDynamicAPI } from '../../services/api';
 
 const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) => {
@@ -12,13 +12,30 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) =>
         carpet_area: '',
         price_per_sqft: '',
         discount_price_per_sqft: '',
-        status: ''
+        status: '',
+        unit_image_url: '',
+        unit_gallery: []
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (unit) {
+        if (unit && isOpen) {
+            let initialGallery = unit.unit_gallery;
+
+            // Robust parsing for gallery data
+            if (typeof initialGallery === 'string') {
+                try {
+                    initialGallery = JSON.parse(initialGallery);
+                } catch (e) {
+                    if (initialGallery.trim().startsWith('{') && initialGallery.trim().endsWith('}')) {
+                        initialGallery = initialGallery.trim().slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                    } else {
+                        initialGallery = [];
+                    }
+                }
+            }
+
             setFormData({
                 unit_number: unit.unit_number || '',
                 unit_type: unit.unit_type || '',
@@ -27,10 +44,12 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) =>
                 carpet_area: unit.carpet_area || '',
                 price_per_sqft: unit.price_per_sqft || '',
                 discount_price_per_sqft: unit.discount_price_per_sqft || '',
-                status: unit.status || ''
+                status: unit.status || '',
+                unit_image_url: unit.unit_image_url || '',
+                unit_gallery: Array.isArray(initialGallery) ? initialGallery : []
             });
         }
-    }, [unit]);
+    }, [unit?.id, isOpen]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -63,6 +82,71 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) =>
         });
     };
 
+    const [uploadingGallery, setUploadingGallery] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingImage(true);
+        setError(null);
+
+        try {
+            const formData = new FormData();
+            formData.append('images', file);
+            const response = await liveGroupDynamicAPI.uploadUnitImage(file);
+            setFormData(prev => ({ ...prev, unit_image_url: response.imageUrl }));
+        } catch (err) {
+            console.error('Image upload error:', err);
+            setError('Failed to upload image');
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    const handleGalleryUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setUploadingGallery(true);
+        setError(null);
+
+        try {
+            const response = await liveGroupDynamicAPI.uploadUnitGallery(files);
+            // Robustly handle different response formats from backend
+            const newUrls = response.imageUrls || response.urls || response.images || [];
+
+            if (newUrls.length === 0 && response.imageUrl) {
+                newUrls.push(response.imageUrl);
+            }
+
+            console.log('✅ [UPLOAD] New URLs from server:', newUrls);
+            setFormData(prev => {
+                const updatedGallery = prev.unit_gallery ? [...prev.unit_gallery, ...newUrls] : [...newUrls];
+                console.log('🔄 [STATE] Updated Gallery State:', updatedGallery);
+                return {
+                    ...prev,
+                    unit_gallery: updatedGallery
+                };
+            });
+        } catch (err) {
+            console.error('Gallery upload error:', err);
+            setError('Failed to upload images');
+        } finally {
+            setUploadingGallery(false);
+            // Reset input (optional but good UI practice)
+            e.target.value = '';
+        }
+    };
+
+    const removeGalleryImage = (indexToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            unit_gallery: prev.unit_gallery.filter((_, idx) => idx !== indexToRemove)
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -74,12 +158,14 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) =>
             }
 
             const submissionData = { ...formData };
+            console.log('📤 [SUBMIT] Final Submission Data:', submissionData);
 
             // Fix for Bungalows: Floor number might be empty string since input is hidden
             if (projectType === 'Bungalow') {
                 submissionData.floor_number = submissionData.floor_number || 0;
             }
 
+            console.log('🚀 [API] Calling updateUnit with:', unit.id, submissionData.unit_gallery);
             const response = await liveGroupDynamicAPI.updateUnit(unit.id, submissionData);
             onUpdate(response.unit);
             onClose();
@@ -266,6 +352,119 @@ const AdminUnitEditModal = ({ isOpen, onClose, unit, onUpdate, projectType }) =>
                                         />
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Primary Brochure Image Section */}
+                            <div className="space-y-3 pt-2 border-t border-slate-100">
+                                <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                                    <ImageIcon size={14} className="text-slate-400" />
+                                    Brochure Image (Primary)
+                                </label>
+
+                                <div className="flex items-start gap-4">
+                                    <div className="w-24 h-24 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden relative group shrink-0">
+                                        {formData.unit_image_url ? (
+                                            <>
+                                                <img
+                                                    src={formData.unit_image_url}
+                                                    alt="Unit Brochure"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, unit_image_url: '' }))}
+                                                    className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg shadow-rose-200"
+                                                >
+                                                    <X size={10} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                                                <ImageIcon size={20} />
+                                                <span className="text-[10px] font-bold mt-1">No Image</span>
+                                            </div>
+                                        )}
+                                        {uploadingImage && (
+                                            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                                                <div className="w-6 h-6 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 space-y-2">
+                                        <label className={`inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl cursor-pointer hover:bg-blue-100 transition-all text-[11px] font-bold ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            <Plus size={14} />
+                                            {formData.unit_image_url ? 'Change Image' : 'Upload Brochure'}
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                disabled={uploadingImage}
+                                            />
+                                        </label>
+                                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                                            This is the main image (2D floor plan or leaflet) shown at the top of the unit details.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Unit Gallery Upload Section */}
+                            <div className="space-y-3 pt-2 border-t border-slate-100">
+                                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        <ImageIcon size={14} className="text-slate-400" />
+                                        Unit Gallery (Max 20 Images)
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium">
+                                        {formData.unit_gallery.length} Images
+                                    </span>
+                                </label>
+
+                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                                    {/* Upload Button */}
+                                    {formData.unit_gallery.length < 20 && (
+                                        <label className={`aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 hover:border-blue-300 transition-all ${uploadingGallery ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {uploadingGallery ? (
+                                                <div className="w-5 h-5 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                                            ) : (
+                                                <>
+                                                    <Plus size={20} className="text-slate-400" />
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">Upload</span>
+                                                </>
+                                            )}
+                                            <input
+                                                type="file"
+                                                multiple
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleGalleryUpload}
+                                                disabled={uploadingGallery}
+                                            />
+                                        </label>
+                                    )}
+
+                                    {/* Gallery Thumbnails */}
+                                    {formData.unit_gallery.map((url, idx) => (
+                                        <div key={idx} className="aspect-square rounded-2xl border border-slate-100 bg-slate-50 relative group overflow-hidden">
+                                            <img
+                                                src={url}
+                                                alt={`Gallery ${idx}`}
+                                                className="w-full h-full object-cover"
+                                                loading="lazy"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeGalleryImage(idx)}
+                                                className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg shadow-rose-200"
+                                            >
+                                                <X size={10} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-medium italic">Parallel upload optimized for up to 20 images.</p>
                             </div>
 
                             {/* Price Preview */}
