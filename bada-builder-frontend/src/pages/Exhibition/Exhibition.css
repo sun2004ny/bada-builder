@@ -20,9 +20,17 @@
 }
 
 @keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .exhibition-container {
@@ -44,6 +52,33 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   transform: translateY(0);
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.exhibition-header>*:not(.header-video):not(.video-overlay) {
+  position: relative;
+  z-index: 2;
 }
 
 .exhibition-header:hover {
@@ -54,19 +89,20 @@
 .exhibition-header h1 {
   font-size: 42px;
   font-weight: 800;
-  background: linear-gradient(135deg, #1a1a1a 0%, #4a5568 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 12px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .exhibition-header p {
   font-size: 18px;
-  color: #2d3748;
+  color: #f8fafc;
   margin-bottom: 20px;
   font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .badge-container {
@@ -268,8 +304,15 @@
 }
 
 @keyframes badgeFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-3px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 .property-badge.developer {
@@ -315,8 +358,15 @@
 }
 
 @keyframes verifiedPulse {
-  0%, 100% { box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4); }
-  50% { box-shadow: 0 6px 20px rgba(22, 163, 74, 0.6); }
+
+  0%,
+  100% {
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.6);
+  }
 }
 
 /* Property Info */
@@ -867,9 +917,11 @@
     transform: rotate(0deg);
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
   }
+
   50% {
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
   }
+
   100% {
     transform: rotate(360deg);
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);

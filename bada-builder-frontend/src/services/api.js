@@ -517,6 +517,12 @@ export const liveGroupDynamicAPI = {
     // Let's add a dedicated upload endpoint in backend if it's missing, but wait, 
     // I can just add a simple upload route in live-group-dynamic.js.
     return uploadFile('/live-grouping-dynamic/admin/upload-image', formData);
+  },
+
+  uploadUnitGallery: async (files) => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('images', file));
+    return uploadFile('/live-grouping-dynamic/admin/upload-gallery', formData);
   }
 };
 
