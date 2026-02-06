@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { sendEmail } from '../utils/sendEmail.js';
+import pool from '../config/database.js';
 
 const router = express.Router();
 
@@ -14,25 +15,68 @@ router.post(
     [
         body('name').trim().notEmpty().withMessage('Name is required'),
         body('phone').trim().notEmpty().withMessage('Phone number is required'),
-        body('address').trim().notEmpty().withMessage('Property location is required'),
-        body('propertyPrice').trim().notEmpty().withMessage('Property price is required'),
         body('packageTitle').trim().notEmpty().withMessage('Package title is required')
     ],
     async (req, res) => {
+        const client = await pool.connect();
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
                 return res.status(400).json({ errors: errors.array() });
             }
 
-            const { name, phone, address, propertyPrice, packageTitle, packagePrice, packageTarget } = req.body;
-            
+            const { name, phone, address, propertyPrice, packageTitle, packagePrice, packageTarget, email, shootDate, timeSlot, buildingLandmark, city, state, pincode, paymentPreference, paymentId, status } = req.body;
+
+            // Determine form_type
+            // If paymentPreference is present, it's a BOOKING (either Pre-shoot or Post-shoot)
+            // If strictly inquiry for custom packages, it might not have paymentPreference
+            const formType = paymentPreference ? 'BOOKING' : 'INQUIRY';
+
+            // Start transaction
+            await client.query('BEGIN');
+
+            // Insert into Database
+            const insertQuery = `
+                INSERT INTO marketing_inquiries (
+                    form_type, name, phone, email, shoot_date, time_slot, 
+                    building_landmark, city, state, pincode, address, 
+                    property_price, payment_preference, package_title, 
+                    package_price, package_target, status, payment_id
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+                ) RETURNING id;
+            `;
+
+            const values = [
+                formType,
+                name,
+                phone,
+                email || null,
+                shootDate || null,
+                timeSlot || null,
+                buildingLandmark || null,
+                city,
+                state,
+                pincode,
+                address || null, // Address is optional as per new requirement, though validated as required in some frontend parts, we allow null in DB
+                propertyPrice || null,
+                paymentPreference || null,
+                packageTitle,
+                packagePrice || null,
+                packageTarget || null,
+                status || 'PENDING',
+                paymentId || null
+            ];
+
+            const dbResult = await client.query(insertQuery, values);
+            const inquiryId = dbResult.rows[0].id;
+
             // Format property price
-            const formattedPrice = new Intl.NumberFormat('en-IN', { 
-                style: 'currency', 
+            const formattedPrice = propertyPrice ? new Intl.NumberFormat('en-IN', {
+                style: 'currency',
                 currency: 'INR',
-                maximumFractionDigits: 0 
-            }).format(propertyPrice);
+                maximumFractionDigits: 0
+            }).format(propertyPrice) : 'N/A';
 
             // Premium Email Template
             const htmlContent = `
@@ -51,7 +95,7 @@ router.post(
                                     <tr>
                                         <td style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 40px; text-align: center;">
                                             <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: 1px;">BADA BUILDER</h1>
-                                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #38bdf8; text-transform: uppercase; letter-spacing: 2px;">New Package Inquiry</p>
+                                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #38bdf8; text-transform: uppercase; letter-spacing: 2px;">New ${formType.toLowerCase()} Received</p>
                                         </td>
                                     </tr>
                                     
@@ -62,6 +106,10 @@ router.post(
                                             
                                             <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
                                                 <tr>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; width: 40%;">ID</td>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 500;">${inquiryId}</td>
+                                                </tr>
+                                                <tr>
                                                     <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; width: 40%;">Full Name</td>
                                                     <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 500;">${name}</td>
                                                 </tr>
@@ -69,14 +117,25 @@ router.post(
                                                     <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600;">Phone Number</td>
                                                     <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 500;">${phone}</td>
                                                 </tr>
+                                                ${email ? `
+                                                <tr>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600;">Email</td>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 500;">${email}</td>
+                                                </tr>` : ''}
+                                                ${propertyPrice ? `
                                                 <tr>
                                                     <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600;">Property Price</td>
                                                     <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #0ea5e9; font-weight: 700; font-size: 18px;">${formattedPrice}</td>
-                                                </tr>
+                                                </tr>` : ''}
                                                 <tr>
-                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; vertical-align: top;">Property Location</td>
-                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 500; line-height: 1.6;">${address}</td>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; vertical-align: top;">Location</td>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 500; line-height: 1.6;">${city}, ${state} (${pincode})</td>
                                                 </tr>
+                                                ${address ? `
+                                                <tr>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; vertical-align: top;">Full Address</td>
+                                                    <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 500; line-height: 1.6;">${address}</td>
+                                                </tr>` : ''}
                                             </table>
 
                                             <!-- Package Selection -->
@@ -84,11 +143,12 @@ router.post(
                                                 <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Selected Package</h3>
                                                 <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">${packageTitle}</div>
                                                 <div style="font-size: 16px; color: #0ea5e9; font-weight: 600;">${packagePrice} <span style="font-size: 14px; color: #64748b; font-weight: 400;">• ${packageTarget}</span></div>
+                                                ${paymentPreference ? `<div style="margin-top: 10px; font-weight: bold; color: ${status === 'PAID' ? '#10b981' : '#f59e0b'}">Status: ${status} (${paymentPreference})</div>` : ''}
                                             </div>
 
                                             <!-- Call to Action -->
                                             <p style="margin: 25px 0 0 0; padding: 20px; background-color: #fef3c7; border-radius: 8px; color: #92400e; font-size: 14px; line-height: 1.6;">
-                                                <strong>Action Required:</strong> Please contact this customer as soon as possible to discuss their requirements and finalize the package details.
+                                                <strong>Action Required:</strong> Please contact this customer as soon as possible.
                                             </p>
                                         </td>
                                     </tr>
@@ -96,8 +156,7 @@ router.post(
                                     <!-- Footer -->
                                     <tr>
                                         <td style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0;">
-                                            <p style="margin: 0; color: #94a3b8; font-size: 13px;">© 2026 Bada Builder • Automated Marketing Inquiry System</p>
-                                            <p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 11px;">This email was sent by the Bada Builder marketing inquiry form</p>
+                                            <p style="margin: 0; color: #94a3b8; font-size: 13px;">© 2026 Bada Builder • System Notification</p>
                                         </td>
                                     </tr>
                                 </table>
@@ -109,22 +168,32 @@ router.post(
             `;
 
             // Send email
-            const result = await sendEmail({
+            const emailResult = await sendEmail({
                 to: '1001_nakul@badabuilder.com',
-                subject: `🏠 New Package Inquiry: ${packageTitle} - ${name}`,
+                subject: `🏠 New ${formType} from ${name} - ${packageTitle}`,
                 htmlContent: htmlContent,
-                textContent: `New inquiry from ${name} (${phone}) for ${packageTitle}. Property Price: ${formattedPrice}. Location: ${address}`
+                textContent: `New ${formType} from ${name} (${phone}) for ${packageTitle}. Price: ${formattedPrice}. Location: ${city}`
             });
 
-            if (result.success) {
-                res.status(200).json({ message: 'Inquiry sent successfully' });
-            } else {
-                throw new Error(result.error || 'Failed to send email');
+            if (!emailResult.success) {
+                console.error('Email sending failed:', emailResult.error);
+                // We do NOT rollback transaction if email fails, because the lead is safer in DB than lost.
+                // But we could log it or alert admin.
             }
 
+            await client.query('COMMIT');
+
+            res.status(200).json({
+                message: 'Submitted successfully',
+                id: inquiryId
+            });
+
         } catch (error) {
+            await client.query('ROLLBACK');
             console.error('Marketing inquiry error:', error);
-            res.status(500).json({ error: 'Failed to process inquiry. Please try again.' });
+            res.status(500).json({ error: 'Failed to process request. Please try again.' });
+        } finally {
+            client.release();
         }
     }
 );

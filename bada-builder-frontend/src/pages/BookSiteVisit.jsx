@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { bookingsAPI } from '../services/api';
+import LoadingOverlay from '../components/LoadingOverlay/LoadingOverlay';
 
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -495,7 +496,7 @@ const BookSiteVisit = () => {
           // Show success and redirect
           setBookingSuccess(true);
           setTimeout(() => {
-            navigate('/');
+            navigate('/exhibition');
           }, 3000);
 
         } catch (error) {
@@ -622,7 +623,7 @@ const BookSiteVisit = () => {
 
         // Automatic redirect after 3 seconds
         setTimeout(() => {
-          navigate('/');
+          navigate('/exhibition');
         }, 3000);
       } catch (error) {
         console.error('Error booking site visit:', error);
@@ -639,6 +640,7 @@ const BookSiteVisit = () => {
   if (authLoading) {
     return (
       <div className="book-visit-container">
+        <LoadingOverlay isSubmitting={true} text="Checking authentication..." />
         <div className="form-section ui-bg" style={{ textAlign: 'center', padding: '3rem' }}>
           <div className="loading-spinner" style={{
             width: '40px',
@@ -836,14 +838,10 @@ const BookSiteVisit = () => {
   return (
     <div className="min-h-screen bg-[#080918] p-4 md:p-6 lg:p-8 font-sans text-gray-100 flex justify-center md:justify-end">
       {/* Loading Overlay */}
-      {(loading || paymentLoading) && (
-        <div className="fixed inset-0 z-[50] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#1a1a2e] p-8 rounded-2xl border border-purple-500/50 shadow-2xl flex flex-col items-center animate-scaleIn">
-            <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full custom-spin mb-4"></div>
-            <p className="text-lg font-medium text-white">{paymentLoading ? 'Processing Payment...' : 'Creating Booking...'}</p>
-          </div>
-        </div>
-      )}
+      <LoadingOverlay
+        isSubmitting={loading || paymentLoading}
+        text={paymentLoading ? "Processing Payment..." : "Processing your booking..."}
+      />
 
       <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-start lg:mr-20">
 

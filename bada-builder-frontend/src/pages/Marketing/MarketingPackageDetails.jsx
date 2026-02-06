@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import axios from 'axios';
 import { packages } from './packages';
+import LoadingOverlay from '../../components/LoadingOverlay/LoadingOverlay';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -295,7 +296,7 @@ const MarketingPackageDetails = () => {
                 });
                 setSuccess(true);
                 setTimeout(() => {
-                    navigate('/services/marketing');
+                    navigate('/services');
                 }, 3000);
             } catch (err) {
                 setError(err.response?.data?.error || 'Failed to confirm booking. Please try again.');
@@ -356,7 +357,7 @@ const MarketingPackageDetails = () => {
             });
             setSuccess(true);
             setTimeout(() => {
-                navigate('/services/marketing');
+                navigate('/services');
             }, 3000);
         } catch (err) {
             setError(err.response?.data?.error || 'Payment successful but failed to save order. Please contact support.');
@@ -386,7 +387,7 @@ const MarketingPackageDetails = () => {
             });
             setSuccess(true);
             setTimeout(() => {
-                navigate('/services/marketing');
+                navigate('/services');
             }, 3000);
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to send inquiry. Please try again.');
@@ -439,6 +440,7 @@ const MarketingPackageDetails = () => {
 
     return (
         <div id="marketing-package-details-root" className="bg-[#0F172A] text-[#F8FAFC] min-h-screen pb-20 font-sans">
+            <LoadingOverlay isSubmitting={loading} />
             {/* Breadcrumb / Back Navigation */}
             <div className="bg-[#0f172ae6] backdrop-blur-xl py-5 sticky top-0 z-[100] border-b border-[#94a3b833]">
                 <div className="max-w-[1200px] mx-auto px-6 box-border">
@@ -747,7 +749,7 @@ const MarketingPackageDetails = () => {
                                 {loading ? 'Processing...' : (
                                     isPaymentPackage
                                         ? (formData.paymentPreference === 'POST_SHOOT' ? 'Confirm Booking' : `Complete Payment`)
-                                        : 'Send Inquiry'
+                                        : 'Notify Me'
                                 )}
                             </button>
                         </form>
