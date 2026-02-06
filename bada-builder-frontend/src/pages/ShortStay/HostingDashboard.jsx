@@ -4,6 +4,7 @@ import { motion as Motion, AnimatePresence } from 'framer-motion'; // Used for a
 import { useAuth } from '../../context/AuthContext';
 import { shortStayAPI } from '../../services/shortStayApi';
 import HostingMessages from './HostingMessages';
+import HostingRevenue from './HostingRevenue';
 import './HostingDashboard.css';
 
 const HostingDashboard = () => {
@@ -94,6 +95,12 @@ const HostingDashboard = () => {
                 onClick={() => navigate('/my-properties')} // Reusing existing my-properties for listings
             >
                 Listings
+            </button>
+            <button 
+                className={`nav-item ${activeTab === 'revenue' ? 'active' : ''}`}
+                onClick={() => setActiveTab('revenue')}
+            >
+                Revenue
             </button>
             <button 
                 className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
@@ -195,6 +202,11 @@ const HostingDashboard = () => {
                     <p>Calendar view coming soon.</p>
                 </div>
             </div>
+        )}
+
+
+        {activeTab === 'revenue' && (
+             <HostingRevenue />
         )}
 
         {activeTab === 'messages' && (

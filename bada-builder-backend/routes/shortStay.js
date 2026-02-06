@@ -149,6 +149,120 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
+// --- 1.1 Analytics: Revenue Summary ---
+router.get('/analytics/revenue-summary', authenticate, async (req, res) => {
+    try {
+        const hostId = req.user.id;
+        
+        // Helper queries for different periods
+        const queryRevenue = async (interval) => {
+            const timeFilter = interval 
+                ? `AND check_in >= NOW() - INTERVAL '${interval}'` 
+                : ''; // All time if no interval
+                
+            const result = await pool.query(
+                `SELECT COALESCE(SUM(total_price), 0) as total 
+                 FROM short_stay_reservations 
+                 WHERE host_id = $1 AND status = 'confirmed' ${timeFilter}`,
+                [hostId]
+            );
+            return Number(result.rows[0].total);
+        };
+
+        const [
+            totalRevenue,
+            revenue30Days,
+            revenue90Days,
+            revenue180Days,
+            revenue365Days,
+            revenueYTD
+        ] = await Promise.all([
+            queryRevenue(null),
+            queryRevenue('30 days'),
+            queryRevenue('90 days'),
+            queryRevenue('180 days'),
+            queryRevenue('1 year'),
+            pool.query(
+                `SELECT COALESCE(SUM(total_price), 0) as total 
+                 FROM short_stay_reservations 
+                 WHERE host_id = $1 AND status = 'confirmed' 
+                 AND check_in >= DATE_TRUNC('year', CURRENT_DATE)`,
+                [hostId]
+            ).then(r => Number(r.rows[0].total))
+        ]);
+
+        const totalBookings = await pool.query(
+            `SELECT COUNT(*) as count 
+             FROM short_stay_reservations 
+             WHERE host_id = $1 AND status = 'confirmed'`,
+            [hostId]
+        );
+
+        res.json({
+            totalRevenue,
+            revenue30Days,
+            revenue90Days,
+            revenue180Days,
+            revenue365Days,
+            revenueYTD,
+            totalBookings: Number(totalBookings.rows[0].count)
+        });
+
+    } catch (error) {
+        console.error('Analytics Summary Error:', error);
+        res.status(500).json({ error: 'Failed to fetch revenue summary' });
+    }
+});
+
+// --- 1.2 Analytics: Monthly Chart Data ---
+router.get('/analytics/monthly-chart', authenticate, async (req, res) => {
+    try {
+        // Get last 12 months revenue grouped by month
+        const result = await pool.query(
+            `SELECT TO_CHAR(check_in, 'Mon') as month,
+                    EXTRACT(MONTH FROM check_in) as month_num,
+                    EXTRACT(YEAR FROM check_in) as year_num,
+                    COALESCE(SUM(total_price), 0) as revenue
+             FROM short_stay_reservations
+             WHERE host_id = $1 
+               AND status = 'confirmed'
+               AND check_in >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '11 months'
+             GROUP BY year_num, month_num, month
+             ORDER BY year_num, month_num`,
+            [req.user.id]
+        );
+
+        res.json({ chartData: result.rows });
+    } catch (error) {
+        console.error('Analytics Chart Error:', error);
+        res.status(500).json({ error: 'Failed to fetch chart data' });
+    }
+});
+
+// --- 1.3 Analytics: Property Performance ---
+router.get('/analytics/property-performance', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT p.id, p.title, p.images,
+                    COUNT(r.id) as total_bookings,
+                    COALESCE(SUM(r.total_price), 0) as total_revenue
+             FROM short_stay_properties p
+             LEFT JOIN short_stay_reservations r 
+                ON p.id = r.property_id 
+                AND r.status = 'confirmed'
+             WHERE p.user_id = $1
+             GROUP BY p.id
+             ORDER BY total_revenue DESC`,
+            [req.user.id]
+        );
+
+        res.json({ properties: result.rows });
+    } catch (error) {
+        console.error('Analytics Property Error:', error);
+        res.status(500).json({ error: 'Failed to fetch property performance' });
+    }
+});
+
 // --- 2.1 Get Traveler Reservations (GET /reservations/traveler) ---
 router.get('/reservations/traveler', authenticate, async (req, res) => {
   try {

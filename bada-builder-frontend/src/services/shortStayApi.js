@@ -108,6 +108,20 @@ export const shortStayAPI = {
     return apiRequest('/short-stay/reservations/host');
   },
 
+  // --- Analytics ---
+  getRevenueSummary: async () => {
+    return apiRequest('/short-stay/analytics/revenue-summary');
+  },
+
+  getRevenueChart: async () => {
+    return apiRequest('/short-stay/analytics/monthly-chart');
+  },
+
+  getPropertyPerformance: async () => {
+    return apiRequest('/short-stay/analytics/property-performance');
+  },
+
+  // --- Reservations ---
   getTravelerReservations: async () => {
     return apiRequest('/short-stay/reservations/traveler');
   },
