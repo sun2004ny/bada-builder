@@ -132,7 +132,7 @@ const ProfilePage = () => {
       title: 'Short Stay Bookings',
       icon: <FiHome className="activity-icon" />,
       count: loadingActivity ? '...' : activityCounts.shortStayBookings,
-      path: '/short-stay/my-bookings',
+      path: '/hosting',
       color: 'teal'
     },
     {
