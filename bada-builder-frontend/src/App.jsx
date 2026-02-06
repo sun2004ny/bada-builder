@@ -32,6 +32,7 @@ import Services from './pages/Services';
 import Marketing from './pages/Marketing/Marketing';
 import MarketingTerms from './pages/Marketing/MarketingTerms';
 import MarketingRules from './pages/Marketing/MarketingRules';
+import MarketingPackageDetails from './pages/Marketing/MarketingPackageDetails';
 import SubscriptionPlans from './pages/SubscriptionPlans';
 import DeveloperPlan from './pages/DeveloperPlan';
 import IndividualPlan from './pages/IndividualPlan';
@@ -175,6 +176,7 @@ function AppContent() {
             {/* <Route path="/projects" element={<Projects />} /> */}
             <Route path="/services" element={<Services />} />
             <Route path="/services/marketing" element={<Marketing />} />
+            <Route path="/services/marketing/package/:id" element={<MarketingPackageDetails />} />
             <Route path="/services/marketing/terms-conditions" element={<MarketingTerms />} />
             <Route path="/services/marketing/rules-regulations" element={<MarketingRules />} />
             <Route path="/investments" element={<Investments />} />
