@@ -819,6 +819,108 @@
     }
 }
 
+/* Airbnb-style Host Section */
+.host-info-summary {
+    display: flex;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid #ebebeb;
+    margin-bottom: 24px;
+}
+
+.host-info-summary > div:first-child {
+    position: relative;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+}
+
+.host-avatar-medium {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(0,0,0,0.08);
+}
+
+.host-avatar-placeholder {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #717171;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+}
+
+.host-info-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.host-info-text h3 {
+    font-size: 22px; /* Large, clear text */
+    font-weight: 600;
+    color: #222222;
+    margin: 0 0 4px 0;
+    line-height: 1.25;
+}
+
+.host-info-text .host-bio {
+    font-size: 15px;
+    color: #222222;
+    margin: 4px 0;
+    font-style: normal; /* Airbnb is usually normal text for bio snippet, maybe kept concise */
+    line-height: 1.5;
+}
+
+.host-info-text .joined-text {
+    font-size: 14px;
+    color: #717171;
+    margin: 0;
+}
+
+.superhost-badge-small {
+    position: absolute;
+    bottom: 0;
+    right: -6px; /* Hang slightly off */
+    width: 24px;
+    height: 24px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+    color: #FF385C; /* Airbnb red/pink for icon */
+    font-size: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .host-info-summary {
+        gap: 12px;
+        padding: 16px 0;
+    }
+
+    .host-info-summary > div:first-child,
+    .host-avatar-medium, 
+    .host-avatar-placeholder {
+        width: 48px;
+        height: 48px;
+    }
+
+    .host-info-text h3 {
+        font-size: 18px;
+    }
+}
+
 /* Share Modal Styles */
 .share-modal-overlay {
     position: fixed;

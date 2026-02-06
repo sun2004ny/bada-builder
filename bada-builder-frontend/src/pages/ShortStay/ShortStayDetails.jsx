@@ -556,7 +556,10 @@ const ShortStayDetails = () => {
                                     </div>
                                     <div className="host-info-text">
                                         <h3>Hosted by {host_name || 'Host'}</h3>
-                                        <p>{getJoinedText(host_joined_at)}{property.is_superhost ? ' · Superhost' : ''}</p>
+                                        {property.host_bio && (
+                                            <p className="host-bio">"{property.host_bio}"</p>
+                                        )}
+                                        <p className="joined-text">{getJoinedText(host_joined_at)}{property.is_superhost ? ' · Superhost' : ''}</p>
                                     </div>
                                 </div>
                                 <div className="section-divider" />

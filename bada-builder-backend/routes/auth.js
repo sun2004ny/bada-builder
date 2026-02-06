@@ -190,7 +190,7 @@ router.post(
 router.get('/me', authenticate, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT id, email, name, phone, user_type, profile_photo, 
+            `SELECT id, email, name, phone, bio, user_type, profile_photo, 
               is_subscribed, subscription_expiry, subscription_plan, 
               subscription_price, subscribed_at, created_at 
        FROM users WHERE id = $1`, [req.user.id]
@@ -240,6 +240,12 @@ router.put('/profile', authenticate, async (req, res) => {
             updates.push(`profile_photo = $${paramCount++}`);
             values.push(profile_photo);
         }
+        
+        // Add bio update if provided
+        if (req.body.bio !== undefined) {
+             updates.push(`bio = $${paramCount++}`);
+             values.push(req.body.bio);
+        }
 
         if (updates.length === 0) {
             console.log('❌ No fields to update');
@@ -253,7 +259,7 @@ router.put('/profile', authenticate, async (req, res) => {
 
         const result = await pool.query(
             `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount} 
-       RETURNING id, email, name, phone, user_type, profile_photo, 
+       RETURNING id, email, name, phone, user_type, profile_photo, bio,
                  is_subscribed, subscription_expiry, subscription_plan, created_at`,
             values
         );

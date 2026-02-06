@@ -793,13 +793,123 @@
 }
 
 /* Activity Loading Indicator */
-.activity-loading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+
+/* Bio Field Styles */
+.detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.edit-bio-btn {
+    background: none;
+    border: none;
+    color: #FF385C;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.edit-bio-btn:hover {
+    background: #FFF0F2;
+    text-decoration: none;
+}
+
+.bio-text {
+    font-style: italic;
+    color: #555;
+    margin-top: 8px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    font-weight: 500;
+}
+
+/* Ensure ShortStayDetails Host section looks good */
+.host-bio {
+    margin-top: 4px;
+    margin-bottom: 8px;
+    font-size: 15px;
+    color: #4b5563;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+.joined-text {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* Inline Bio Editor */
+.bio-edit-container {
+    margin-top: 12px;
+}
+
+.bio-textarea {
+    width: 100%;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    color: #1a1a1a;
+    resize: vertical;
+    outline: none;
+    transition: all 0.2s;
+    background: #fff;
+}
+
+.bio-textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.bio-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.bio-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.bio-btn.cancel {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.bio-btn.cancel:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.bio-btn.save {
+    background: #10b981;
+    color: white;
+}
+
+.bio-btn.save:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
 }
 
 .spinner-small {
@@ -822,4 +932,86 @@
 }
 
 
-/* Any additional profile specific styles can follow here */
+/* Improved Responsiveness */
+@media (max-width: 768px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .detail-item {
+    padding: 16px;
+    align-items: flex-start; /* Keep icon aligned to top */
+  }
+
+  /* Bio Section Optimizations for Mobile */
+  .detail-item.full-width {
+    gap: 12px;
+  }
+  
+  .detail-item.full-width .detail-icon-wrapper {
+    /* Keep default alignment */
+  }
+  
+  .detail-header {
+    flex-direction: row; /* Keep header relative row */
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .bio-textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .bio-actions {
+    flex-wrap: wrap;
+  }
+  
+  .bio-btn {
+    flex: 1; /* Make buttons touch-friendly */
+    text-align: center;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-page {
+    padding: 20px 12px;
+  }
+  
+  .profile-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .profile-photo-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+
+  .profile-title {
+    font-size: 28px;
+  }
+
+  .detail-item {
+    gap: 12px;
+  }
+
+  .detail-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .detail-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .detail-label {
+    font-size: 12px;
+  }
+
+  .detail-value {
+    font-size: 14px;
+  }
+}

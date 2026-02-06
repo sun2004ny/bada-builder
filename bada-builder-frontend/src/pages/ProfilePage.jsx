@@ -35,6 +35,10 @@ const ProfilePage = () => {
   const [loadingActivity, setLoadingActivity] = useState(true);
   const [showChatList, setShowChatList] = useState(false);
   const [selectedChat, setSelectedChat] = useState(null);
+  
+  // Bio editing state
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bioInput, setBioInput] = useState('');
 
   useEffect(() => {
     if (userProfile?.profile_photo) {
@@ -88,6 +92,7 @@ const ProfilePage = () => {
     phone: userProfile?.phone || '',
     userId: currentUser?.id?.toString().substring(0, 8).toUpperCase() || '',
     userType: userProfile?.user_type || '',
+    bio: userProfile?.bio || '',
     profilePhoto: profilePhoto
   };
 
@@ -253,6 +258,44 @@ const ProfilePage = () => {
                 <div className="detail-item">
                   <div className="detail-icon-wrapper userid"><FiHash className="detail-icon" /></div>
                   <div className="detail-content"><p className="detail-label">User ID</p><p className="detail-value user-id">{userData.userId}</p></div>
+                </div>
+                <div className="detail-item full-width">
+                  <div className="detail-icon-wrapper bio"><FiBriefcase className="detail-icon" /></div>
+                  <div className="detail-content">
+                    <div className="detail-header">
+                        <p className="detail-label">Bio</p>
+                        {!isEditingBio && (
+                            <button className="edit-bio-btn" onClick={() => {
+                                setBioInput(userData.bio || '');
+                                setIsEditingBio(true);
+                            }}>
+                                <FiEdit3 size={14} /> Edit
+                            </button>
+                        )}
+                    </div>
+                    {isEditingBio ? (
+                        <div className="bio-edit-container">
+                            <textarea
+                                className="bio-textarea"
+                                value={bioInput}
+                                onChange={(e) => setBioInput(e.target.value)}
+                                placeholder="Tell others about yourself..."
+                                rows={4}
+                            />
+                            <div className="bio-actions">
+                                <button className="bio-btn cancel" onClick={() => setIsEditingBio(false)}>Cancel</button>
+                                <button className="bio-btn save" onClick={() => {
+                                    authAPI.updateProfile({ bio: bioInput }).then(() => {
+                                        refreshProfile();
+                                        setIsEditingBio(false);
+                                    });
+                                }}>Save</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="detail-value bio-text">{userData.bio || 'Tell others about yourself...'}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
