@@ -6,18 +6,15 @@ const LoadingOverlay = ({ isSubmitting, text = "Processing your booking..." }) =
     useEffect(() => {
         if (isSubmitting) {
             document.body.style.overflow = 'hidden';
-            // Prevent scrolling on mobile
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
+            // Disable interactions
+            document.body.style.pointerEvents = 'none';
         } else {
             document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            document.body.style.pointerEvents = '';
         }
         return () => {
             document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            document.body.style.pointerEvents = '';
         };
     }, [isSubmitting]);
 
@@ -32,7 +29,11 @@ const LoadingOverlay = ({ isSubmitting, text = "Processing your booking..." }) =
                     transition={{ duration: 0.3 }}
                 >
                     <div className="loading-overlay-content">
-                        <div className="professional-spinner"></div>
+                        {/* 
+                            Using both animate-spin (Tailwind) and custom-spin (index.css) 
+                            to ensure the animation runs regardless of which one is properly loaded.
+                        */}
+                        <div className="w-16 h-16 border-4 border-blue-400/20 border-t-blue-400 rounded-full animate-spin custom-spin"></div>
                         <p className="loading-overlay-text">{text}</p>
                     </div>
                 </motion.div>
