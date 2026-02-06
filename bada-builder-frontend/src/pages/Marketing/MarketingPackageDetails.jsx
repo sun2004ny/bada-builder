@@ -358,7 +358,7 @@ const MarketingPackageDetails = () => {
             setSuccess(true);
             setTimeout(() => {
                 navigate('/services');
-            }, 3000);
+            }, 1500);
         } catch (err) {
             setError(err.response?.data?.error || 'Payment successful but failed to save order. Please contact support.');
         } finally {
@@ -388,7 +388,7 @@ const MarketingPackageDetails = () => {
             setSuccess(true);
             setTimeout(() => {
                 navigate('/services');
-            }, 3000);
+            }, 1500);
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to send inquiry. Please try again.');
         } finally {

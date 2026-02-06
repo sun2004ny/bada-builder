@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { sendEmail } from '../utils/sendEmail.js';
+import { sendMarketingEmails } from '../services/marketingEmailService.js';
 import pool from '../config/database.js';
 
 const router = express.Router();
@@ -167,19 +168,23 @@ router.post(
                 </html>
             `;
 
-            // Send email
-            const emailResult = await sendEmail({
-                to: '1001_nakul@badabuilder.com',
-                subject: `🏠 New ${formType} from ${name} - ${packageTitle}`,
-                htmlContent: htmlContent,
-                textContent: `New ${formType} from ${name} (${phone}) for ${packageTitle}. Price: ${formattedPrice}. Location: ${city}`
-            });
-
-            if (!emailResult.success) {
-                console.error('Email sending failed:', emailResult.error);
-                // We do NOT rollback transaction if email fails, because the lead is safer in DB than lost.
-                // But we could log it or alert admin.
-            }
+            // ⚠️ [Refactored] Use SMTP service for Admin and User emails
+            // This runs asynchronously and won't block the booking flow
+            sendMarketingEmails({
+                inquiryId,
+                formType,
+                name,
+                phone,
+                email,
+                packageName: packageTitle,
+                packagePrice,
+                packageTarget,
+                shootDate,
+                timeSlot,
+                address,
+                paymentType: paymentPreference || (formType === 'INQUIRY' ? 'Notify Me' : 'Postpaid'),
+                submittedAt: new Date().toLocaleString('en-IN')
+            }).catch(err => console.error('❌ [Marketing Email] Background sending failed:', err));
 
             await client.query('COMMIT');
 

@@ -493,11 +493,12 @@ const BookSiteVisit = () => {
           paymentData.booking_id = response.booking?.id || response.id;
           paymentData.property_location = property?.location || 'N/A';
 
-          // Show success and redirect
+          // Hide loader and show success
+          setPaymentLoading(false);
           setBookingSuccess(true);
           setTimeout(() => {
             navigate('/exhibition');
-          }, 3000);
+          }, 1500);
 
         } catch (error) {
           console.error('Error saving booking after payment:', error);
@@ -621,10 +622,10 @@ const BookSiteVisit = () => {
         setBookingSuccess(true);
         console.log('✅ Booking successful! Redirecting to home...');
 
-        // Automatic redirect after 3 seconds
+        // Automatic redirect after 1.5 seconds
         setTimeout(() => {
           navigate('/exhibition');
-        }, 3000);
+        }, 1500);
       } catch (error) {
         console.error('Error booking site visit:', error);
         alert(error.message === 'Request timed out'
