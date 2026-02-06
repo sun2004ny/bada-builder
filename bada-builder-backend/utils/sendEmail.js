@@ -8,13 +8,15 @@
  * - APP_NAME: Application name
  */
 
+import https from 'https';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+const BREVO_API_HOST = 'api.brevo.com';
+const BREVO_API_PATH = '/v3/smtp/email';
 
 /**
- * Send email via Brevo API
+ * Send email via Brevo API (using native https module)
  * @param {Object} options - Email options
  * @param {string} options.to - Recipient email address
  * @param {string} options.subject - Email subject
@@ -24,86 +26,82 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
  * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
 export const sendEmail = async ({ to, subject, htmlContent, textContent = '', recipientName = '' }) => {
-  try {
-    const apiKey = process.env.BREVO_API_KEY;
-    const appName = process.env.APP_NAME || 'Bada Builder';
-    const fromEmail = process.env.BREVO_EMAIL;
+  return new Promise((resolve, reject) => {
+    try {
+      const apiKey = process.env.BREVO_API_KEY;
+      const appName = process.env.APP_NAME || 'Bada Builder';
+      const fromEmail = process.env.BREVO_EMAIL;
 
-    // Validation
-    if (!apiKey) {
-      throw new Error('BREVO_API_KEY not configured in environment variables');
-    }
+      // Validation
+      if (!apiKey) throw new Error('BREVO_API_KEY not configured');
+      if (!fromEmail) throw new Error('BREVO_EMAIL not configured');
+      if (!to || !subject || !htmlContent) throw new Error('Missing required parameters');
 
-    if (!fromEmail) {
-      throw new Error('BREVO_EMAIL not configured in environment variables');
-    }
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(to)) throw new Error('Invalid email address format');
 
-    if (!to || !subject || !htmlContent) {
-      throw new Error('Missing required parameters: to, subject, htmlContent');
-    }
+      console.log(`📧 Sending email to ${to} via Brevo API (Native HTTPS)...`);
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      throw new Error('Invalid email address format');
-    }
-
-    console.log(`📧 Sending email to ${to} via Brevo API...`);
-
-    // Send email via Brevo API
-    const response = await fetch(BREVO_API_URL, {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': apiKey,
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        sender: {
-          name: appName,
-          email: fromEmail
-        },
-        to: [
-          {
-            email: to,
-            name: recipientName || to
-          }
-        ],
+      const postData = JSON.stringify({
+        sender: { name: appName, email: fromEmail },
+        to: [{ email: to, name: recipientName || to }],
         subject: subject,
         htmlContent: htmlContent,
         textContent: textContent || subject
-      })
-    });
+      });
 
-    const data = await response.json();
+      const options = {
+        hostname: BREVO_API_HOST,
+        path: BREVO_API_PATH,
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+          'content-length': Buffer.byteLength(postData),
+          'User-Agent': 'BadaBuilder/1.0 Node.js',
+          'Connection': 'close'
+        },
+        timeout: 30000, 
+        agent: false,
+        family: 4 // Force IPv4 to avoid potential IPv6 connection issues
+      };
 
-    if (!response.ok) {
-      throw new Error(data.message || `Brevo API error: ${response.status}`);
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => { data += chunk; });
+
+        res.on('end', () => {
+          try {
+            const parsedData = JSON.parse(data);
+             if (res.statusCode >= 200 && res.statusCode < 300) {
+              console.log('✅ Email sent successfully:', { to, subject, messageId: parsedData.messageId });
+              resolve({ success: true, messageId: parsedData.messageId });
+            } else {
+              console.error('❌ Brevo API Error:', parsedData);
+              resolve({ success: false, error: parsedData.message || `Status Code: ${res.statusCode}` });
+            }
+          } catch (e) {
+             resolve({ success: false, error: 'Invalid JSON response from Brevo' });
+          }
+        });
+      });
+
+      req.on('error', (e) => {
+        console.error('❌ Network request failed:', e);
+        resolve({ success: false, error: e.message });
+      });
+
+      req.write(postData);
+      req.end();
+
+    } catch (error) {
+      console.error('❌ Failed to prepare email:', error.message);
+      resolve({ success: false, error: error.message });
     }
-
-    console.log('✅ Email sent successfully:', {
-      to,
-      subject,
-      messageId: data.messageId
-    });
-
-    return {
-      success: true,
-      messageId: data.messageId
-    };
-
-  } catch (error) {
-    console.error('❌ Failed to send email:', {
-      to,
-      subject,
-      error: error.message
-    });
-
-    return {
-      success: false,
-      error: error.message
-    };
-  }
+  });
 };
 
 /**

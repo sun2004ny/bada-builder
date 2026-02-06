@@ -3,6 +3,7 @@ import pool from '../config/database.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { uploadMultipleImages } from '../services/cloudinary.js';
+import { sendShortStayTravelerEmail, sendShortStayHostEmail } from '../services/shortStayEmailService.js';
 
 const router = express.Router();
 
@@ -373,6 +374,49 @@ router.post('/reserve', authenticate, async (req, res) => {
       message: 'Reservation confirmed', 
       reservation: result.rows[0] 
     });
+
+    // 3. Send Email Notifications (Async, non-blocking)
+    (async () => {
+        try {
+            // Fetch Host Details
+            const hostResult = await pool.query('SELECT name, email, phone FROM users WHERE id = $1', [hostId]);
+            const host = hostResult.rows[0];
+
+            // Fetch Property Details (for address/image if not fully in body)
+            const propResult = await pool.query('SELECT title, images, location FROM short_stay_properties WHERE id = $1', [propertyId]);
+            const property = propResult.rows[0];
+            
+            const bookingData = {
+                booking_id: result.rows[0].id,
+                property_title: property.title,
+                property_image: property.images && property.images.length > 0 ? property.images[0] : '',
+                property_address: property.location,
+                check_in: checkIn,
+                check_out: checkOut,
+                total_price: totalPrice,
+                guests: typeof guests === 'string' ? JSON.parse(guests) : guests,
+                
+                // Traveler info
+                guest_name: req.user.name,
+                guest_email: req.user.email,
+                guest_phone: req.user.phone,
+
+                // Host info
+                host_name: host ? host.name : 'Host',
+                host_email: host ? host.email : '',
+                host_contact: host ? host.phone : ''
+            };
+
+            // Send emails sequentially as requested
+            // Failures are caught inside the service functions so they don't block each other
+            await sendShortStayTravelerEmail(bookingData);
+            await sendShortStayHostEmail(bookingData);
+            
+        } catch (emailErr) {
+            console.error('Failed to send short stay emails:', emailErr);
+            // Don't fail the request, just log
+        }
+    })();
 
   } catch (error) {
     await client.query('ROLLBACK');
