@@ -1,0 +1,130 @@
+/* Isolated styles for Unit Preview Modal */
+.unit-preview-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    position: relative;
+    max-height: 85vh;
+}
+
+.unit-preview-modal .up-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.unit-preview-modal .up-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.unit-preview-modal .up-close-btn {
+    padding: 0.5rem;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 0.75rem;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.unit-preview-modal .up-close-btn:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.unit-preview-modal .up-image-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #f8fafc;
+    border: 2px solid #f1f5f9;
+    border-radius: 1rem;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.unit-preview-modal .up-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* ensures full image is visible */
+    background: white;
+}
+
+.unit-preview-modal .up-content {
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+.unit-preview-modal .up-message {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #475569;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0 1rem;
+}
+
+.unit-preview-modal .up-footer {
+    width: 100%;
+    padding-top: 0.5rem;
+}
+
+.unit-preview-modal .up-next-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #0f172a;
+    color: white;
+    font-weight: 900;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: none;
+    border-radius: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+}
+
+.unit-preview-modal .up-next-btn:hover {
+    background: #1e293b;
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.unit-preview-modal .up-next-btn:active {
+    transform: translateY(0);
+}
+
+/* Specific fix for height and scroll if content is too large */
+.unit-preview-modal {
+    overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+    .unit-preview-modal {
+        max-width: 90vw;
+        padding: 1.25rem;
+    }
+
+    .unit-preview-modal .up-title {
+        font-size: 1.125rem;
+    }
+}
