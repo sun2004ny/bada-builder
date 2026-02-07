@@ -93,7 +93,7 @@ export const generateShortStayHostEmail = (data) => {
                 <div class="guest-section">
                     <div class="label" style="margin-bottom: 16px;">GUEST DETAILS</div>
                     <div class="guest-row">
-                        <span class="guest-key">Name</span>
+                        <span class="guest-key">Booked by</span>
                         <span class="guest-val">${guest_name}</span>
                     </div>
                     <div class="guest-row">
@@ -109,6 +109,30 @@ export const generateShortStayHostEmail = (data) => {
                         <span class="guest-key">Email</span>
                         <span class="guest-val">${guest_email}</span>
                     </div>` : ''}
+                    
+                    ${data.guest_details && data.guest_details.length > 0 ? `
+                    <div style="margin-top: 24px; border-top: 1px dashed #eee; padding-top: 16px;">
+                        <div class="label" style="margin-bottom: 12px;">ADDITIONAL TRAVELLER DETAILS</div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f1f1f1; text-align: left;">
+                                    <th style="padding: 8px; border-radius: 4px 0 0 4px;">Name</th>
+                                    <th style="padding: 8px;">Contact</th>
+                                    <th style="padding: 8px; border-radius: 0 4px 4px 0;">Location</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.guest_details.map(g => `
+                                <tr style="border-bottom: 1px solid #f0f0f0;">
+                                    <td style="padding: 8px; font-weight: 500;">${g.name}</td>
+                                    <td style="padding: 8px; color: #555;">${g.phone}<br>${g.email}</td>
+                                    <td style="padding: 8px; color: #555;">${g.state}, ${g.country}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
                 </div>
 
                 <div style="background: #ecfdf5; padding: 20px; border-radius: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">

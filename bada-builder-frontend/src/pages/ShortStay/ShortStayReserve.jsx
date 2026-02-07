@@ -298,6 +298,136 @@ const loadRazorpay = () => {
     });
 };
 
+// --- Guest Details Form (Post-Payment) ---
+const GuestDetailsForm = ({ guestCount, onSubmit }) => {
+    const [forms, setForms] = useState(Array.from({ length: guestCount }, () => ({
+        name: '', phone: '', email: '', state: '', country: ''
+    })));
+    
+    // Validation State
+    const [errors, setErrors] = useState(Array.from({ length: guestCount }, () => ({})));
+
+    const handleChange = (index, field, value) => {
+        const newForms = [...forms];
+        newForms[index][field] = value;
+        setForms(newForms);
+        
+        // Clear error when user types
+        if (errors[index][field]) {
+             const newErrors = [...errors];
+             newErrors[index] = { ...newErrors[index], [field]: '' };
+             setErrors(newErrors);
+        }
+    };
+
+    const validate = () => {
+        let isValid = true;
+        const newErrors = forms.map((form) => {
+            const formErrors = {};
+            if (!form.name.trim()) {
+                formErrors.name = 'Name is required';
+                isValid = false;
+            }
+            if (!form.phone.trim()) {
+                formErrors.phone = 'Phone number is required';
+                isValid = false;
+            }
+            if (!form.state.trim()) {
+                formErrors.state = 'State is required';
+                isValid = false;
+            }
+            if (!form.country.trim()) {
+                formErrors.country = 'Country is required';
+                isValid = false;
+            }
+            return formErrors;
+        });
+        
+        setErrors(newErrors);
+        return isValid;
+    };
+
+    const handleSubmit = () => {
+        if (validate()) {
+            onSubmit(forms);
+        } else {
+             // Scroll to first error optional
+        }
+    };
+
+    return (
+        <div className="guest-details-container">
+            <h3>Guest Details</h3>
+            <p className="details-subtext">Please provide details for all {guestCount} guest{guestCount > 1 ? 's' : ''}.</p>
+            
+            <div className="guest-forms-grid">
+                {forms.map((form, index) => (
+                    <div key={index} className="guest-form-card">
+                        <h4>Guest {index + 1}</h4>
+                        <div className="form-group">
+                            <label>Full Name *</label>
+                            <input 
+                                type="text" 
+                                value={form.name} 
+                                onChange={(e) => handleChange(index, 'name', e.target.value)} 
+                                placeholder="e.g. John Doe"
+                                className={errors[index].name ? 'input-error' : ''}
+                            />
+                            {errors[index].name && <span className="error-msg">{errors[index].name}</span>}
+                        </div>
+                        <div className="form-group">
+                            <label>Phone Number *</label>
+                            <input 
+                                type="tel" 
+                                value={form.phone} 
+                                onChange={(e) => handleChange(index, 'phone', e.target.value)} 
+                                placeholder="+91 98765 43210"
+                                className={errors[index].phone ? 'input-error' : ''}
+                            />
+                             {errors[index].phone && <span className="error-msg">{errors[index].phone}</span>}
+                        </div>
+                        <div className="form-group">
+                            <label>Email (Optional)</label>
+                            <input 
+                                type="email" 
+                                value={form.email} 
+                                onChange={(e) => handleChange(index, 'email', e.target.value)} 
+                                placeholder="john@example.com"
+                            />
+                        </div>
+                        <div className="form-row-half">
+                            <div className="form-group">
+                                <label>State *</label>
+                                <input 
+                                    type="text" 
+                                    value={form.state} 
+                                    onChange={(e) => handleChange(index, 'state', e.target.value)} 
+                                    className={errors[index].state ? 'input-error' : ''}
+                                />
+                                {errors[index].state && <span className="error-msg">{errors[index].state}</span>}
+                            </div>
+                            <div className="form-group">
+                                <label>Country *</label>
+                                <input 
+                                    type="text" 
+                                    value={form.country} 
+                                    onChange={(e) => handleChange(index, 'country', e.target.value)} 
+                                    className={errors[index].country ? 'input-error' : ''}
+                                />
+                                {errors[index].country && <span className="error-msg">{errors[index].country}</span>}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <button className="confirm-pay-btn" onClick={handleSubmit}>
+                Complete Booking
+            </button>
+        </div>
+    );
+};
+
 const ShortStayReserve = () => {
     const { id } = useParams();
     const location = useLocation();
@@ -331,6 +461,10 @@ const ShortStayReserve = () => {
 
     // Mobile Step Sate (1 = Review, 2 = Payment)
     const [mobileStep, setMobileStep] = useState(1);
+
+    // New State for Guest Details Flow
+    const [showGuestDetailsStep, setShowGuestDetailsStep] = useState(false);
+    const [tempPaymentId, setTempPaymentId] = useState(null);
 
     useEffect(() => {
         if (!location.state) {
@@ -370,7 +504,9 @@ const ShortStayReserve = () => {
     const [showPriceModal, setShowPriceModal] = useState(false);
     const [showConfirmedModal, setShowConfirmedModal] = useState(false);
 
-    const processReservation = async (paymentId) => {
+    // 2. Finalize Reservation (After Guest Details)
+    const finalizeReservation = async (guestDetails) => {
+        setLoading(true);
         try {
             await shortStayAPI.reserve({
                 propertyId: id,
@@ -378,17 +514,28 @@ const ShortStayReserve = () => {
                 checkOut: rCheckOut,
                 guests: { adults: rAdults, children: rChildren, infants: rInfants, pets: rPets },
                 totalPrice: totalAmount,
-                paymentId,
+                paymentId: tempPaymentId,
                 hostId,
-                roomType // Also passing room type
+                roomType,
+                guestDetails // Array of guest info
             });
             setLoading(false);
-            setShowConfirmedModal(true);
+            setShowGuestDetailsStep(false); // Hide form
+            setShowConfirmedModal(true); // Show success
         } catch (error) {
             console.error('Reservation Failed:', error);
             alert(error.response?.data?.error || 'Failed to complete booking. Please try again.');
             setLoading(false);
         }
+    };
+
+    // 1. Handle Payment -> Determine Next Step
+    const handlePaymentSuccess = (paymentId) => {
+        setTempPaymentId(paymentId);
+        setLoading(false);
+        // Move to Guest Details Step
+        setShowGuestDetailsStep(true);
+        window.scrollTo(0,0);
     };
 
     const handlePayment = async () => {
@@ -410,7 +557,7 @@ const ShortStayReserve = () => {
                 description: `Payment for ${propertyTitle}`,
                 image: '/logo.png',
                 handler: function (response) {
-                    processReservation(response.razorpay_payment_id);
+                    handlePaymentSuccess(response.razorpay_payment_id);
                 },
                 prefill: {
                     name: currentUser?.name || 'Guest User',
@@ -421,14 +568,28 @@ const ShortStayReserve = () => {
             };
             const paymentObject = new window.Razorpay(options);
             paymentObject.open();
-            // Loading false handled in handler or if dismissed (manual limit)
         } else {
             // Mock GPAY
             setTimeout(() => {
-                processReservation(`GPAY_${Date.now()}`);
+                handlePaymentSuccess(`GPAY_${Date.now()}`);
             }, 2000);
         }
     };
+
+    if (showGuestDetailsStep) {
+        return (
+             <div className="reserve-page">
+                <header className="reserve-header">
+                    <div className="reserve-container-nav">
+                         <h1 className="header-title">Guest Information</h1>
+                    </div>
+                </header>
+                <div className="reserve-container-centered">
+                    <GuestDetailsForm guestCount={rGuests} onSubmit={finalizeReservation} />
+                </div>
+             </div>
+        );
+    }
 
     return (
         <div className="reserve-page">

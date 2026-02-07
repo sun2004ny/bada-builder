@@ -511,7 +511,7 @@ router.get('/user/favorites', authenticate, async (req, res) => {
 router.post('/reserve', authenticate, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { propertyId, checkIn, checkOut, guests, totalPrice, paymentId, hostId } = req.body;
+    const { propertyId, checkIn, checkOut, guests, totalPrice, paymentId, hostId, guestDetails } = req.body;
 
     // 1. Double Booking Check (Concurrency Safe)
     await client.query('BEGIN');
@@ -537,10 +537,15 @@ router.post('/reserve', authenticate, async (req, res) => {
     // 2. Create Reservation
     const result = await client.query(
       `INSERT INTO short_stay_reservations 
-       (property_id, user_id, host_id, check_in, check_out, guests, total_price, payment_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (property_id, user_id, host_id, check_in, check_out, guests, total_price, payment_id, guest_details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [propertyId, req.user.id, hostId, checkIn, checkOut, typeof guests === 'string' ? JSON.parse(guests) : guests, totalPrice, paymentId]
+      [
+        propertyId, req.user.id, hostId, checkIn, checkOut, 
+        typeof guests === 'string' ? JSON.parse(guests) : guests, 
+        totalPrice, paymentId,
+        JSON.stringify(typeof guestDetails === 'string' ? JSON.parse(guestDetails) : (guestDetails || []))
+      ]
     );
 
     await client.query('COMMIT');
@@ -570,6 +575,7 @@ router.post('/reserve', authenticate, async (req, res) => {
                 check_out: checkOut,
                 total_price: totalPrice,
                 guests: typeof guests === 'string' ? JSON.parse(guests) : guests,
+                guest_details: typeof guestDetails === 'string' ? JSON.parse(guestDetails) : (guestDetails || []),
                 
                 // Traveler info
                 guest_name: req.user.name,

@@ -929,3 +929,133 @@
         width: auto;
     }
 }
+/* ... existing styles ... */
+
+/* Guest Details Form (Post-Payment) */
+.reserve-container-centered {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    width: 100%;
+}
+
+.guest-details-container h3 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #222;
+}
+
+.details-subtext {
+    font-size: 16px;
+    color: #717171;
+    margin-bottom: 32px;
+}
+
+.guest-forms-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.guest-form-card {
+    background: white;
+    border: 1px solid #dddddd;
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.guest-form-card h4 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #222;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #484848;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #b0b0b0;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #222;
+    box-shadow: 0 0 0 1px #222;
+}
+
+.form-row-half {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .form-row-half {
+        grid-template-columns: 1fr;
+    }
+    
+    .reserve-container-centered {
+        padding: 24px 16px;
+    }
+}
+
+.guest-details-container .confirm-pay-btn {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 100%; /* Full width */
+    display: block;
+    margin-left: 0;
+    font-size: 18px;
+    padding: 16px;
+}
+
+/* Validation Errors */
+.input-error {
+    border-color: #c13515 !important;
+    background-color: #fff8f6;
+}
+
+.input-error:focus {
+    box-shadow: 0 0 0 1px #c13515 !important;
+}
+
+.error-msg {
+    color: #c13515;
+    font-size: 13px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.error-msg::before {
+    content: "!";
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 16px;
+    height: 16px;
+    background: #c13515;
+    color: white;
+    border-radius: 50%;
+    font-size: 11px;
+    margin-right: 6px;
+    font-weight: bold;
+}

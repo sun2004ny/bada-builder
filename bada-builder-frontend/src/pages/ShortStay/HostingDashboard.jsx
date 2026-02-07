@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion as Motion, AnimatePresence } from 'framer-motion'; // Used for animations
+import { motion as Motion, AnimatePresence } from 'framer-motion'; 
 import { useAuth } from '../../context/AuthContext';
 import { shortStayAPI } from '../../services/shortStayApi';
 import HostingMessages from './HostingMessages';
 import HostingRevenue from './HostingRevenue';
+import { FaTimes } from 'react-icons/fa';
 import './HostingDashboard.css';
 
 const HostingDashboard = () => {
@@ -14,6 +15,7 @@ const HostingDashboard = () => {
   const [todayFilter, setTodayFilter] = useState('today');
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedReservation, setSelectedReservation] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -184,12 +186,115 @@ const HostingDashboard = () => {
                                         <div className="res-guests">
                                             Guests: {res.guests?.adults + (res.guests?.children || 0)}
                                         </div>
+                                        <div className="res-card-footer">
+                                            <button 
+                                                className="view-details-btn"
+                                                onClick={() => setSelectedReservation(res)}
+                                            >
+                                                View Details
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
+
+                {/* Reservation Details Modal */}
+                {selectedReservation && (
+                    <div className="host-modal-overlay" onClick={() => setSelectedReservation(null)}>
+                        <div className="host-modal-content" onClick={e => e.stopPropagation()}>
+                            <div className="host-modal-header">
+                                <h2>Reservation Details</h2>
+                                <button className="host-close-btn" onClick={() => setSelectedReservation(null)}>
+                                    <FaTimes />
+                                </button>
+                            </div>
+                            <div className="host-modal-body">
+                                <div className="modal-section">
+                                    <h3>Property & Dates</h3>
+                                    <div className="modal-info-grid">
+                                        <div className="info-item">
+                                            <label>Property</label>
+                                            <span>{selectedReservation.property_title}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Status</label>
+                                            <span className={`status-text ${selectedReservation.status}`}>{selectedReservation.status}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Check-in</label>
+                                            <span>{new Date(selectedReservation.check_in).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Checkout</label>
+                                            <span>{new Date(selectedReservation.check_out).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="modal-section">
+                                    <h3>Primary Guest</h3>
+                                    <div className="modal-info-grid">
+                                        <div className="info-item">
+                                            <label>Name</label>
+                                            <span>{selectedReservation.guest_name}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Phone</label>
+                                            <span>{selectedReservation.guest_phone || 'N/A'}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <label>Email</label>
+                                            <span>{selectedReservation.guest_email || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {selectedReservation.guest_details && selectedReservation.guest_details.length > 0 && (
+                                    <div className="modal-section">
+                                        <h3>All Guest Details ({selectedReservation.guest_details.length})</h3>
+                                        <div className="guest-table-container">
+                                            <table className="guest-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Contact</th>
+                                                        <th>Location</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {selectedReservation.guest_details.map((guest, idx) => (
+                                                        <tr key={idx}>
+                                                            <td data-label="Name">{guest.name}</td>
+                                                            <td data-label="Contact">{guest.phone}<br/>{guest.email}</td>
+                                                            <td data-label="Location">{guest.state}, {guest.country}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="modal-section">
+                                    <h3>Payment Summary</h3>
+                                    <div className="payment-summary">
+                                        <div className="payment-row total">
+                                            <span>Total Paid</span>
+                                            <span>₹{Number(selectedReservation.total_price).toLocaleString()}</span>
+                                        </div>
+                                        <div className="payment-row">
+                                            <span>Payment ID</span>
+                                            <span style={{fontSize: '12px', color: '#717171'}}>{selectedReservation.payment_id}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 
 
             </div>
