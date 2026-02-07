@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { liveGroupDynamicAPI } from '../../services/api';
 import './LiveGrouping.css';
 import './CameraControls.css';
+import './UnitPreview.css';
 
 // --- Decorative & Performance Components ---
 const InstancedFoliage = ({ type = 'tree', count = 100, positions, scales, rotations }) => {
@@ -1827,6 +1828,7 @@ const ThreeDView = () => {
     const [showPremium, setShowPremium] = useState(true);
     const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [showIntroStep, setShowIntroStep] = useState(false);
 
     // Camera Controls State
     const controlsRef = useRef();
@@ -1931,6 +1933,7 @@ const ThreeDView = () => {
         setSelectedUnit(unit);
         setCurrentImageIndex(0);
         setShowHoldOptions(false);
+        setShowIntroStep(true);
     };
 
     const handleHoldUnit = async (duration) => {
@@ -2241,298 +2244,360 @@ const ThreeDView = () => {
 
                 {/* Selection Modal */}
                 {selectedUnit && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 relative flex flex-col overflow-hidden"
-                            style={{ maxHeight: 'min(92vh, 850px)' }}
-                        >
-                            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-                                {(() => {
-                                    const imgUrl = selectedUnit.unit_image_url || selectedUnit.image_url || (selectedUnit.images && selectedUnit.images[0]);
-                                    if (!imgUrl) return null;
-
-                                    console.log('🖼️ Selection Modal Image URL:', imgUrl);
-                                    return (
-                                        <div className="w-full h-44 mb-0.5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 shrink-0">
-                                            <img
-                                                src={imgUrl}
-                                                alt={`Unit ${selectedUnit.unit_number}`}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    console.error('❌ Selection Modal Image Load Error:', imgUrl);
-                                                    e.target.style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-                                    );
-                                })()}
-                                {/* Close & Header */}
-                                <div className="flex justify-between items-start mb-0.5">
-                                    <div className="space-y-0">
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
-                                                {selectedUnit.floor_number === -1 ? 'Slot' : 'Unit'} {selectedUnit.unit_number}
-                                            </h2>
-                                            {selectedUnit.status === 'locked' && (
-                                                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 border border-amber-200">
-                                                    <Timer size={9} /> Held
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider leading-tight">
-                                            {project.type === 'Plot'
-                                                ? `${selectedUnit.unit_type || 'Plot'}${selectedUnit.is_corner ? ' • Corner' : ''}${selectedUnit.facing ? ` • ${selectedUnit.facing} Facing` : ''}`
-                                                : selectedUnit.floor_number === -1
-                                                    ? 'Basement Level'
-                                                    : selectedUnit.floor_number === 0
-                                                        ? 'Ground Floor'
-                                                        : `Floor ${selectedUnit.floor_number}`}
-                                            {project.type !== 'Plot' && ` • ${selectedUnit.unit_type}`}
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setSelectedUnit(null)}
-                                        className="p-2 hover:bg-slate-100 rounded-2xl transition-all active:scale-95 text-slate-400 hover:text-slate-600 shadow-sm border border-slate-100"
-                                    >
-                                        <X size={20} strokeWidth={3} />
-                                    </button>
-                                </div>
-
-                                {/* Main Info Card */}
-                                {(() => {
-                                    const { finalPrice, bookingAmount, area } = getEffectiveUnitDetails(selectedUnit, project);
-
-                                    return (
-                                        <div className="bg-slate-50/80 rounded-2xl p-2 border border-slate-100 mb-1 space-y-1.5">
-                                            <div className="flex justify-between items-center border-b border-slate-200/50 pb-1.5">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
-                                                <span className="text-xl font-black text-slate-900">
-                                                    {finalPrice >= 100000
-                                                        ? `₹${(finalPrice / 100000).toFixed(2)} L`
-                                                        : `₹${finalPrice.toLocaleString('en-IN')}`}
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
-                                                        {selectedUnit.floor_number === -1 ? 'Area' : 'Carpet Area'}
-                                                    </p>
-                                                    <p className="text-base font-black text-slate-700">{area} sq ft</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Booking (0.5%)</p>
-                                                    <p className="text-base font-black text-emerald-600">
-                                                        {bookingAmount >= 1000
-                                                            ? `₹${(bookingAmount / 1000).toFixed(2)} K`
-                                                            : `₹${bookingAmount.toLocaleString('en-IN')}`}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Image Gallery Section */}
-                                {!showHoldOptions ? (
-                                    <div className="space-y-2.5">
-                                        {/* Image Gallery Section - Moved here as per request */}
-                                        {(() => {
-                                            let gallery = selectedUnit.unit_gallery;
-                                            if (typeof gallery === 'string') {
-                                                try {
-                                                    gallery = JSON.parse(gallery);
-                                                } catch (e) {
-                                                    // Fallback for Postgres array string format "{url1,url2}"
-                                                    if (gallery.trim().startsWith('{') && gallery.trim().endsWith('}')) {
-                                                        gallery = gallery.trim().slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
-                                                    } else {
-                                                        gallery = [];
-                                                    }
-                                                }
-                                            }
-                                            if (!Array.isArray(gallery)) gallery = [];
-
-                                            return (
-                                                <div className="mb-1 px-1">
-                                                    <button
-                                                        onClick={() => setIsGalleryExpanded(!isGalleryExpanded)}
-                                                        className="flex items-center gap-2 group w-full py-1.5 focus:outline-none"
-                                                    >
-                                                        <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">
-                                                            {isGalleryExpanded ? `Hide ${gallery.length} Photos` : `See All Photos (${gallery.length})`}
-                                                        </span>
-                                                        <motion.div
-                                                            animate={{ rotate: isGalleryExpanded ? 180 : 0 }}
-                                                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                                            className="text-slate-400 group-hover:text-slate-600"
-                                                        >
-                                                            <ChevronDown size={14} strokeWidth={3} />
-                                                        </motion.div>
-                                                    </button>
-
-                                                    <AnimatePresence>
-                                                        {isGalleryExpanded && (
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: 'auto', opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                                className="overflow-hidden"
-                                                            >
-                                                                <div className="relative group/slider pt-2 pb-1">
-                                                                    <div className="w-full h-48 relative rounded-2xl overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
-                                                                        {gallery.length > 0 ? (
-                                                                            <>
-                                                                                <img
-                                                                                    src={gallery[currentImageIndex]}
-                                                                                    alt={`Gallery ${currentImageIndex + 1}`}
-                                                                                    className="w-full h-full object-cover block object-center transition-all duration-300"
-                                                                                    loading="lazy"
-                                                                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                                                                />
-
-                                                                                {gallery.length > 1 && (
-                                                                                    <>
-                                                                                        {/* Navigation Buttons */}
-                                                                                        <button
-                                                                                            onClick={(e) => {
-                                                                                                e.stopPropagation();
-                                                                                                setCurrentImageIndex(prev => (prev - 1 + gallery.length) % gallery.length);
-                                                                                            }}
-                                                                                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/30 backdrop-blur-md text-slate-900 border border-white/40 hover:bg-white/50 transition-all z-10"
-                                                                                        >
-                                                                                            <ChevronLeft size={16} strokeWidth={3} />
-                                                                                        </button>
-                                                                                        <button
-                                                                                            onClick={(e) => {
-                                                                                                e.stopPropagation();
-                                                                                                setCurrentImageIndex(prev => (prev + 1) % gallery.length);
-                                                                                            }}
-                                                                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/30 backdrop-blur-md text-slate-900 border border-white/40 hover:bg-white/50 transition-all z-10"
-                                                                                        >
-                                                                                            <ChevronRight size={16} strokeWidth={3} />
-                                                                                        </button>
-
-                                                                                        {/* Pagination Dots */}
-                                                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1.5 rounded-full bg-black/40 backdrop-blur-sm shadow-lg border border-white/10 z-20">
-                                                                                            {gallery.map((_, idx) => (
-                                                                                                <div
-                                                                                                    key={idx}
-                                                                                                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-white w-4' : 'bg-white/40 w-1.5'}`}
-                                                                                                />
-                                                                                            ))}
-                                                                                        </div>
-                                                                                    </>
-                                                                                )}
-
-                                                                                {/* Count Badge */}
-                                                                                <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-black/40 backdrop-blur-md text-[10px] font-black text-white uppercase tracking-widest z-20">
-                                                                                    {currentImageIndex + 1} / {gallery.length}
-                                                                                </div>
-                                                                            </>
-                                                                        ) : (
-                                                                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">
-                                                                                No gallery photos
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* Real-time Status Disclaimer */}
-                                        {(() => {
-                                            const { bookingAmount } = getEffectiveUnitDetails(selectedUnit, project);
-                                            return (
-                                                <div className="bg-emerald-50 border border-emerald-100/50 p-2.5 rounded-xl flex items-center gap-2.5">
-                                                    <div className="bg-emerald-500 rounded-full p-1 text-white shrink-0">
-                                                        <Info size={10} strokeWidth={3} />
-                                                    </div>
-                                                    <p className="text-[11px] font-bold text-emerald-800 leading-tight">
-                                                        Pay ₹<span className="text-sm font-black text-emerald-950">
-                                                            {bookingAmount >= 1000
-                                                                ? `${(bookingAmount / 1000).toFixed(2)} K`
-                                                                : bookingAmount.toFixed(0)}
-                                                        </span> (0.5%) right now to secure this unit instantly.
-                                                    </p>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* Action Buttons Row */}
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                className="flex-1 py-3 bg-slate-100 text-slate-600 font-extrabold rounded-xl hover:bg-slate-200 transition-all active:scale-95 text-[10px] uppercase tracking-widest border border-slate-200 shadow-sm"
-                                                onClick={() => setSelectedUnit(null)}
-                                            >
-                                                Cancel
-                                            </button>
-
-                                            <button
-                                                className="flex-1 py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-amber-200/40 disabled:opacity-50 text-[10px] uppercase tracking-widest"
-                                                style={{ backgroundColor: '#f59e0b' }} // Solid Amber/Yellow
-                                                onClick={() => setShowHoldOptions(true)}
-                                                disabled={selectedUnit.status === 'locked'}
-                                            >
-                                                <Timer size={14} strokeWidth={3} />
-                                                {selectedUnit.status === 'locked' ? 'Held' : 'Hold'}
-                                            </button>
-
-                                            <button
-                                                className="flex-[1.2] py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xl shadow-rose-200/40 text-[10px] uppercase tracking-widest disabled:opacity-50"
-                                                style={{ backgroundColor: '#ef4444' }} // Solid Red
-                                                onClick={handleBookNow}
-                                                disabled={paymentLoading || !razorpayLoaded}
-                                            >
-                                                <CreditCard size={14} strokeWidth={3} />
-                                                {paymentLoading ? 'Processing...' : !razorpayLoaded ? 'Loading...' : 'Book'}
-                                            </button>
-                                        </div>
-
-                                        <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-[0.2em] mt-1">Secure Encryption Active</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3 animate-in slide-in-from-bottom-5 duration-300">
-                                        <div className="flex items-center gap-3 justify-center mb-2">
-                                            <div className="h-px bg-slate-100 flex-1"></div>
-                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Select Duration</h3>
-                                            <div className="h-px bg-slate-100 flex-1"></div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button
-                                                className="py-6 bg-amber-50 border-2 border-amber-200 rounded-2xl hover:bg-amber-100 transition-all text-center group active:scale-95"
-                                                onClick={() => handleHoldUnit(30)}
-                                                disabled={holdLoading}
-                                            >
-                                                <span className="block text-3xl font-black text-amber-600 group-hover:scale-110 transition-transform tracking-tight">30</span>
-                                                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Minutes</span>
-                                            </button>
-                                            <button
-                                                className="py-6 bg-orange-50 border-2 border-orange-200 rounded-2xl hover:bg-orange-100 transition-all text-center group active:scale-95"
-                                                onClick={() => handleHoldUnit(60)}
-                                                disabled={holdLoading}
-                                            >
-                                                <span className="block text-3xl font-black text-orange-600 group-hover:scale-110 transition-transform tracking-tight">1</span>
-                                                <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">Hour</span>
-                                            </button>
-                                        </div>
+                    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 md:pt-20 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
+                        <AnimatePresence mode="wait">
+                            {showIntroStep ? (
+                                <motion.div
+                                    key="unit-preview-isolated"
+                                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                    className="unit-preview-modal"
+                                >
+                                    <div className="up-header">
+                                        <h3 className="up-title">Unit Preview</h3>
                                         <button
-                                            className="w-full py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest flex items-center justify-center gap-2"
-                                            onClick={() => setShowHoldOptions(false)}
+                                            onClick={() => setSelectedUnit(null)}
+                                            className="up-close-btn"
                                         >
-                                            <ChevronLeft size={14} /> Back to Details
+                                            <X size={20} strokeWidth={3} />
                                         </button>
                                     </div>
-                                )}
-                            </div>
-                        </motion.div>
+
+                                    {(() => {
+                                        const imgUrl = selectedUnit.unit_image_url || selectedUnit.image_url || (selectedUnit.images && selectedUnit.images[0]);
+                                        if (!imgUrl) return null;
+
+                                        return (
+                                            <div className="up-image-container">
+                                                <img
+                                                    src={imgUrl}
+                                                    alt="Brochure Preview"
+                                                    className="up-image"
+                                                />
+                                            </div>
+                                        );
+                                    })()}
+
+                                    <div className="up-content">
+                                        <p className="up-message">
+                                            “Your selected unit is highlighted in the brochure like this”
+                                        </p>
+                                    </div>
+
+                                    <div className="up-footer">
+                                        <button
+                                            onClick={() => setShowIntroStep(false)}
+                                            className="up-next-btn"
+                                        >
+                                            Next
+                                            <ChevronRight size={16} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="unit-card-original"
+                                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                    className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 relative flex flex-col overflow-hidden"
+                                    style={{ maxHeight: 'min(92vh, 850px)' }}
+                                >
+                                    <div className="flex-1 overflow-y-auto p-4 md:p-5 custom-scrollbar">
+                                        <motion.div
+                                            key="unit-card"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            className="flex flex-col h-full"
+                                        >
+                                            {(() => {
+                                                const imgUrl = selectedUnit.unit_image_url || selectedUnit.image_url || (selectedUnit.images && selectedUnit.images[0]);
+                                                if (!imgUrl) return null;
+
+                                                console.log('🖼️ Selection Modal Image URL:', imgUrl);
+                                                return (
+                                                    <div className="w-full h-32 md:h-44 md:mb-0.5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 shrink-0">
+                                                        <img
+                                                            src={imgUrl}
+                                                            alt={`Unit ${selectedUnit.unit_number}`}
+                                                            className="w-full h-full object-cover object-center"
+                                                            onError={(e) => {
+                                                                console.error('❌ Selection Modal Image Load Error:', imgUrl);
+                                                                e.target.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                );
+                                            })()}
+                                            {/* Close & Header */}
+                                            <div className="flex justify-between items-start mb-0.5">
+                                                <div className="space-y-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                                                            {selectedUnit.floor_number === -1 ? 'Slot' : 'Unit'} {selectedUnit.unit_number}
+                                                        </h2>
+                                                        {selectedUnit.status === 'locked' && (
+                                                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 border border-amber-200">
+                                                                <Timer size={9} /> Held
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider leading-tight">
+                                                        {project.type === 'Plot'
+                                                            ? `${selectedUnit.unit_type || 'Plot'}${selectedUnit.is_corner ? ' • Corner' : ''}${selectedUnit.facing ? ` • ${selectedUnit.facing} Facing` : ''}`
+                                                            : selectedUnit.floor_number === -1
+                                                                ? 'Basement Level'
+                                                                : selectedUnit.floor_number === 0
+                                                                    ? 'Ground Floor'
+                                                                    : `Floor ${selectedUnit.floor_number}`}
+                                                        {project.type !== 'Plot' && ` • ${selectedUnit.unit_type}`}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setSelectedUnit(null)}
+                                                    className="p-2 hover:bg-slate-100 rounded-2xl transition-all active:scale-95 text-slate-400 hover:text-slate-600 shadow-sm border border-slate-100"
+                                                >
+                                                    <X size={20} strokeWidth={3} />
+                                                </button>
+                                            </div>
+
+                                            {/* Main Info Card */}
+                                            {(() => {
+                                                const { finalPrice, bookingAmount, area } = getEffectiveUnitDetails(selectedUnit, project);
+
+                                                return (
+                                                    <div className="bg-slate-50/80 rounded-2xl p-2 border border-slate-100 md:mb-1 space-y-1.5">
+                                                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-1.5">
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
+                                                            <span className="text-xl font-black text-slate-900">
+                                                                {finalPrice >= 100000
+                                                                    ? `₹${(finalPrice / 100000).toFixed(2)} L`
+                                                                    : `₹${finalPrice.toLocaleString('en-IN')}`}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
+                                                                    {selectedUnit.floor_number === -1 ? 'Area' : 'Carpet Area'}
+                                                                </p>
+                                                                <p className="text-base font-black text-slate-700">{area} sq ft</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Booking (0.5%)</p>
+                                                                <p className="text-base font-black text-emerald-600">
+                                                                    {bookingAmount >= 1000
+                                                                        ? `₹${(bookingAmount / 1000).toFixed(2)} K`
+                                                                        : `₹${bookingAmount.toLocaleString('en-IN')}`}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* Image Gallery Section */}
+                                            {!showHoldOptions ? (
+                                                <div className="space-y-1.5 md:space-y-2.5">
+                                                    {/* Image Gallery Section - Moved here as per request */}
+                                                    {(() => {
+                                                        let gallery = selectedUnit.unit_gallery;
+                                                        if (typeof gallery === 'string') {
+                                                            try {
+                                                                gallery = JSON.parse(gallery);
+                                                            } catch (e) {
+                                                                // Fallback for Postgres array string format "{url1,url2}"
+                                                                if (gallery.trim().startsWith('{') && gallery.trim().endsWith('}')) {
+                                                                    gallery = gallery.trim().slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                                                                } else {
+                                                                    gallery = [];
+                                                                }
+                                                            }
+                                                        }
+                                                        if (!Array.isArray(gallery)) gallery = [];
+
+                                                        return (
+                                                            <div className="md:mb-1 px-1">
+                                                                <button
+                                                                    onClick={() => setIsGalleryExpanded(!isGalleryExpanded)}
+                                                                    className="flex items-center gap-2 group w-full py-1.5 focus:outline-none"
+                                                                >
+                                                                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">
+                                                                        {isGalleryExpanded ? `Hide ${gallery.length} Photos` : `See All Photos (${gallery.length})`}
+                                                                    </span>
+                                                                    <motion.div
+                                                                        animate={{ rotate: isGalleryExpanded ? 180 : 0 }}
+                                                                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                                        className="text-slate-400 group-hover:text-slate-600"
+                                                                    >
+                                                                        <ChevronDown size={14} strokeWidth={3} />
+                                                                    </motion.div>
+                                                                </button>
+
+                                                                <AnimatePresence>
+                                                                    {isGalleryExpanded && (
+                                                                        <motion.div
+                                                                            initial={{ height: 0, opacity: 0 }}
+                                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                                            exit={{ height: 0, opacity: 0 }}
+                                                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                            className="overflow-hidden"
+                                                                        >
+                                                                            <div className="relative group/slider pt-2 md:pb-1">
+                                                                                <div className="w-full h-40 md:h-48 relative rounded-2xl overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
+                                                                                    {gallery.length > 0 ? (
+                                                                                        <>
+                                                                                            <img
+                                                                                                src={gallery[currentImageIndex]}
+                                                                                                alt={`Gallery ${currentImageIndex + 1}`}
+                                                                                                className="w-full h-full object-cover block object-center transition-all duration-300"
+                                                                                                loading="lazy"
+                                                                                                onError={(e) => { e.target.style.display = 'none'; }}
+                                                                                            />
+
+                                                                                            {gallery.length > 1 && (
+                                                                                                <>
+                                                                                                    {/* Navigation Buttons */}
+                                                                                                    <button
+                                                                                                        onClick={(e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            setCurrentImageIndex(prev => (prev - 1 + gallery.length) % gallery.length);
+                                                                                                        }}
+                                                                                                        className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/30 backdrop-blur-md text-slate-900 border border-white/40 hover:bg-white/50 transition-all z-10"
+                                                                                                    >
+                                                                                                        <ChevronLeft size={16} strokeWidth={3} />
+                                                                                                    </button>
+                                                                                                    <button
+                                                                                                        onClick={(e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            setCurrentImageIndex(prev => (prev + 1) % gallery.length);
+                                                                                                        }}
+                                                                                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/30 backdrop-blur-md text-slate-900 border border-white/40 hover:bg-white/50 transition-all z-10"
+                                                                                                    >
+                                                                                                        <ChevronRight size={16} strokeWidth={3} />
+                                                                                                    </button>
+
+                                                                                                    {/* Pagination Dots */}
+                                                                                                    <div className="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1.5 rounded-full bg-black/40 backdrop-blur-sm shadow-lg border border-white/10 z-20">
+                                                                                                        {gallery.map((_, idx) => (
+                                                                                                            <div
+                                                                                                                key={idx}
+                                                                                                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-white w-4' : 'bg-white/40 w-1.5'}`}
+                                                                                                            />
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </>
+                                                                                            )}
+
+                                                                                            {/* Count Badge */}
+                                                                                            <div className="absolute bottom-2 md:bottom-auto md:top-3 right-3 px-2 py-1 rounded-lg bg-black/40 backdrop-blur-md text-[10px] font-black text-white uppercase tracking-widest z-20">
+                                                                                                {currentImageIndex + 1} / {gallery.length}
+                                                                                            </div>
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                                                                            No gallery photos
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </motion.div>
+                                                                    )}
+                                                                </AnimatePresence>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Real-time Status Disclaimer */}
+                                                    {(() => {
+                                                        const { bookingAmount } = getEffectiveUnitDetails(selectedUnit, project);
+                                                        return (
+                                                            <div className="bg-emerald-50 border border-emerald-100/50 p-2.5 rounded-xl flex items-center gap-2.5">
+                                                                <div className="bg-emerald-500 rounded-full p-1 text-white shrink-0">
+                                                                    <Info size={10} strokeWidth={3} />
+                                                                </div>
+                                                                <p className="text-[11px] font-bold text-emerald-800 leading-tight">
+                                                                    Pay ₹<span className="text-sm font-black text-emerald-950">
+                                                                        {bookingAmount >= 1000
+                                                                            ? `${(bookingAmount / 1000).toFixed(2)} K`
+                                                                            : bookingAmount.toFixed(0)}
+                                                                    </span> (0.5%) right now to secure this unit instantly.
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Action Buttons Row */}
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            className="flex-1 py-3 bg-slate-100 text-slate-600 font-extrabold rounded-xl hover:bg-slate-200 transition-all active:scale-95 text-[10px] uppercase tracking-widest border border-slate-200 shadow-sm"
+                                                            onClick={() => setSelectedUnit(null)}
+                                                        >
+                                                            Cancel
+                                                        </button>
+
+                                                        <button
+                                                            className="flex-1 py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-amber-200/40 disabled:opacity-50 text-[10px] uppercase tracking-widest"
+                                                            style={{ backgroundColor: '#f59e0b' }} // Solid Amber/Yellow
+                                                            onClick={() => setShowHoldOptions(true)}
+                                                            disabled={selectedUnit.status === 'locked'}
+                                                        >
+                                                            <Timer size={14} strokeWidth={3} />
+                                                            {selectedUnit.status === 'locked' ? 'Held' : 'Hold'}
+                                                        </button>
+
+                                                        <button
+                                                            className="flex-[1.2] py-3 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xl shadow-rose-200/40 text-[10px] uppercase tracking-widest disabled:opacity-50"
+                                                            style={{ backgroundColor: '#ef4444' }} // Solid Red
+                                                            onClick={handleBookNow}
+                                                            disabled={paymentLoading || !razorpayLoaded}
+                                                        >
+                                                            <CreditCard size={14} strokeWidth={3} />
+                                                            {paymentLoading ? 'Processing...' : !razorpayLoaded ? 'Loading...' : 'Book'}
+                                                        </button>
+                                                    </div>
+
+                                                    <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-[0.2em] mt-1">Secure Encryption Active</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3 animate-in slide-in-from-bottom-5 duration-300">
+                                                    <div className="flex items-center gap-3 justify-center mb-2">
+                                                        <div className="h-px bg-slate-100 flex-1"></div>
+                                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Select Duration</h3>
+                                                        <div className="h-px bg-slate-100 flex-1"></div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <button
+                                                            className="py-6 bg-amber-50 border-2 border-amber-200 rounded-2xl hover:bg-amber-100 transition-all text-center group active:scale-95"
+                                                            onClick={() => handleHoldUnit(30)}
+                                                            disabled={holdLoading}
+                                                        >
+                                                            <span className="block text-3xl font-black text-amber-600 group-hover:scale-110 transition-transform tracking-tight">30</span>
+                                                            <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Minutes</span>
+                                                        </button>
+                                                        <button
+                                                            className="py-6 bg-orange-50 border-2 border-orange-200 rounded-2xl hover:bg-orange-100 transition-all text-center group active:scale-95"
+                                                            onClick={() => handleHoldUnit(60)}
+                                                            disabled={holdLoading}
+                                                        >
+                                                            <span className="block text-3xl font-black text-orange-600 group-hover:scale-110 transition-transform tracking-tight">1</span>
+                                                            <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">Hour</span>
+                                                        </button>
+                                                    </div>
+                                                    <button
+                                                        className="w-full py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                                                        onClick={() => setShowHoldOptions(false)}
+                                                    >
+                                                        <ChevronLeft size={14} /> Back to Details
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 )}
 
