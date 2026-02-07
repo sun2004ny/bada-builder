@@ -996,7 +996,7 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
                     const startX = -((columns - 1) * SPACING_X) / 2 + currentCol * SPACING_X;
                     const endX = -((columns - 1) * SPACING_X) / 2 + (currentCol + slotsNeeded - 1) * SPACING_X;
                     const xPos = (startX + endX) / 2;
-                    const zPos = -((rows - 1) * SPACING_Z) / 2 + currentRow * SPACING_Z;
+                    const zPos = -((rows - 1) * SPACING_Z) / 2 + (rows - 1 - currentRow) * SPACING_Z;
 
                     // Update currentCol for next building
                     currentCol += slotsNeeded;
@@ -1261,7 +1261,7 @@ const PlotColony = ({ position, propertyData, project, onUnitClick, showPremium,
         const row = Math.floor(index / cols);
         const col = index % cols;
         const x = -colonyWidth / 2 + col * SPACING_X + V_PLOT_W / 2;
-        const z = -colonyDepth / 2 + row * SPACING_Z + V_PLOT_D / 2;
+        const z = -colonyDepth / 2 + (effectiveRows - 1 - row) * SPACING_Z + V_PLOT_D / 2;
         return { x, z, row, col };
     }, [cols, colonyWidth, colonyDepth, SPACING_X, SPACING_Z, V_PLOT_W, V_PLOT_D]);
 
