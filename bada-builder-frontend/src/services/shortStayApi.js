@@ -108,6 +108,13 @@ export const shortStayAPI = {
     return apiRequest('/short-stay/reservations/host');
   },
 
+  verifyBooking: async (reservationId, bookingCode) => {
+    return apiRequest('/short-stay/host/verify-booking', {
+        method: 'POST',
+        body: JSON.stringify({ reservationId, bookingCode })
+    });
+  },
+
   // --- Analytics ---
   getRevenueSummary: async () => {
     return apiRequest('/short-stay/analytics/revenue-summary');

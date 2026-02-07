@@ -130,6 +130,13 @@ const ShortStayTrips = () => {
                             <span className="truncate-text">{trip.property_address ? `${trip.property_address.street}, ${trip.property_address.city}` : 'View details for address'}</span>
                         </div>
                     </div>
+
+                    {trip.booking_code && (
+                        <div className="trip-booking-id">
+                            <span className="booking-id-label">Booking ID:</span>
+                            <span className="booking-id-value">{trip.booking_code}</span>
+                        </div>
+                    )}
                     
                     <div className="trip-divider"></div>
 

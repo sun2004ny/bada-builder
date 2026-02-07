@@ -93,6 +93,10 @@ export const generateShortStayHostEmail = (data) => {
                 <div class="guest-section">
                     <div class="label" style="margin-bottom: 16px;">GUEST DETAILS</div>
                     <div class="guest-row">
+                        <span class="guest-key">Booking ID</span>
+                        <span class="guest-val" style="color: #FF385C; font-weight: 600;">${data.booking_code}</span>
+                    </div>
+                    <div class="guest-row">
                         <span class="guest-key">Booked by</span>
                         <span class="guest-val">${guest_name}</span>
                     </div>

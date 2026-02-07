@@ -17,7 +17,10 @@ const createReservationTable = async () => {
         total_price NUMERIC(10, 2) NOT NULL,
         payment_id VARCHAR(255),
         status VARCHAR(50) DEFAULT 'confirmed',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        guest_details JSONB DEFAULT '[]',
+        booking_code VARCHAR(255) UNIQUE,
+        is_host_verified BOOLEAN DEFAULT FALSE
       );
     `);
 

@@ -85,6 +85,10 @@ export const generateShortStayTravelerEmail = (data) => {
                 
                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
                     <tr>
+                        <td style="padding-bottom: 12px; color: #666;">Booking ID</td>
+                        <td style="text-align: right; padding-bottom: 12px; font-weight: 600; color: #FF385C;">${data.booking_code}</td>
+                    </tr>
+                    <tr>
                         <td style="padding-bottom: 12px; color: #666;">Guests</td>
                         <td style="text-align: right; padding-bottom: 12px; font-weight: 500;">
                             ${guests.adults} Adults${guests.children ? `, ${guests.children} Children` : ''}

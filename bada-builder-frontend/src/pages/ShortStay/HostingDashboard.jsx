@@ -291,6 +291,65 @@ const HostingDashboard = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Verification Section */}
+                                <div className="modal-section verification-section">
+                                    <h3>Booking Verification</h3>
+                                    {selectedReservation.is_host_verified ? (
+                                        <div className="verified-badge">
+                                            <span>✓ Verified</span>
+                                            <p>Revenue for this booking is now visible.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="verification-input-group">
+                                            <p style={{fontSize: '13px', color: '#717171', marginBottom: '8px'}}>Enter the Booking ID provided by the guest to verify this reservation.</p>
+                                            <div style={{display: 'flex', gap: '10px'}}>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Enter Booking ID (e.g. RES-XXXXXX)" 
+                                                    id="verify-input"
+                                                    style={{
+                                                        flex: 1, 
+                                                        padding: '10px', 
+                                                        border: '1px solid #ddd', 
+                                                        borderRadius: '8px',
+                                                        fontSize: '14px'
+                                                    }}
+                                                />
+                                                <button 
+                                                    className="verify-btn"
+                                                    onClick={async () => {
+                                                        const input = document.getElementById('verify-input');
+                                                        if (!input.value) return;
+                                                        
+                                                        try {
+                                                            await shortStayAPI.verifyBooking(selectedReservation.id, input.value.trim());
+                                                            // Update local state
+                                                            const updated = { ...selectedReservation, is_host_verified: true };
+                                                            setSelectedReservation(updated);
+                                                            // Update list
+                                                            setReservations(prev => prev.map(r => r.id === updated.id ? updated : r));
+                                                            alert('Booking Verified Successfully!');
+                                                        } catch {
+                                                            alert('Invalid Booking ID. Please check and try again.');
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        backgroundColor: '#000',
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        padding: '0 20px',
+                                                        borderRadius: '8px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '600'
+                                                    }}
+                                                >
+                                                    Verify
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

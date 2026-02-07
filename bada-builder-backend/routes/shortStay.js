@@ -163,7 +163,10 @@ router.get('/analytics/revenue-summary', authenticate, async (req, res) => {
             const result = await pool.query(
                 `SELECT COALESCE(SUM(total_price), 0) as total 
                  FROM short_stay_reservations 
-                 WHERE host_id = $1 AND status = 'confirmed' ${timeFilter}`,
+                 WHERE host_id = $1 
+                 AND status = 'confirmed' 
+                 AND is_host_verified = TRUE
+                 ${timeFilter}`,
                 [hostId]
             );
             return Number(result.rows[0].total);
@@ -185,7 +188,9 @@ router.get('/analytics/revenue-summary', authenticate, async (req, res) => {
             pool.query(
                 `SELECT COALESCE(SUM(total_price), 0) as total 
                  FROM short_stay_reservations 
-                 WHERE host_id = $1 AND status = 'confirmed' 
+                 WHERE host_id = $1 
+                 AND status = 'confirmed' 
+                 AND is_host_verified = TRUE
                  AND check_in >= DATE_TRUNC('year', CURRENT_DATE)`,
                 [hostId]
             ).then(r => Number(r.rows[0].total))
@@ -194,7 +199,9 @@ router.get('/analytics/revenue-summary', authenticate, async (req, res) => {
         const totalBookings = await pool.query(
             `SELECT COUNT(*) as count 
              FROM short_stay_reservations 
-             WHERE host_id = $1 AND status = 'confirmed'`,
+             WHERE host_id = $1 
+             AND status = 'confirmed'
+             AND is_host_verified = TRUE`,
             [hostId]
         );
 
@@ -226,6 +233,7 @@ router.get('/analytics/monthly-chart', authenticate, async (req, res) => {
              FROM short_stay_reservations
              WHERE host_id = $1 
                AND status = 'confirmed'
+               AND is_host_verified = TRUE
                AND check_in >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '11 months'
              GROUP BY year_num, month_num, month
              ORDER BY year_num, month_num`,
@@ -250,6 +258,7 @@ router.get('/analytics/property-performance', authenticate, async (req, res) => 
              LEFT JOIN short_stay_reservations r 
                 ON p.id = r.property_id 
                 AND r.status = 'confirmed'
+                AND r.is_host_verified = TRUE
              WHERE p.user_id = $1
              GROUP BY p.id
              ORDER BY total_revenue DESC`,
@@ -534,17 +543,21 @@ router.post('/reserve', authenticate, async (req, res) => {
       return res.status(409).json({ error: 'Property is not available for these dates' });
     }
 
-    // 2. Create Reservation
+    // 2. Generate Unique Booking Code
+    const bookingCode = `RES-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+    // 3. Create Reservation
     const result = await client.query(
       `INSERT INTO short_stay_reservations 
-       (property_id, user_id, host_id, check_in, check_out, guests, total_price, payment_id, guest_details)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (property_id, user_id, host_id, check_in, check_out, guests, total_price, payment_id, guest_details, booking_code, is_host_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE)
        RETURNING *`,
       [
         propertyId, req.user.id, hostId, checkIn, checkOut, 
         typeof guests === 'string' ? JSON.parse(guests) : guests, 
         totalPrice, paymentId,
-        JSON.stringify(typeof guestDetails === 'string' ? JSON.parse(guestDetails) : (guestDetails || []))
+        JSON.stringify(typeof guestDetails === 'string' ? JSON.parse(guestDetails) : (guestDetails || [])),
+        bookingCode
       ]
     );
 
@@ -555,7 +568,7 @@ router.post('/reserve', authenticate, async (req, res) => {
       reservation: result.rows[0] 
     });
 
-    // 3. Send Email Notifications (Async, non-blocking)
+    // 4. Send Email Notifications (Async, non-blocking)
     (async () => {
         try {
             // Fetch Host Details
@@ -568,6 +581,7 @@ router.post('/reserve', authenticate, async (req, res) => {
             
             const bookingData = {
                 booking_id: result.rows[0].id,
+                booking_code: bookingCode, // Pass booking code
                 property_title: property.title,
                 property_image: property.images && property.images.length > 0 ? property.images[0] : '',
                 property_address: property.location,
@@ -600,12 +614,36 @@ router.post('/reserve', authenticate, async (req, res) => {
     })();
 
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK');
     console.error('Create Reservation Error:', error);
     res.status(500).json({ error: 'Failed to confirm reservation' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
+});
+
+// --- 11. Verify Booking Code (Host) ---
+router.post('/host/verify-booking', authenticate, async (req, res) => {
+    try {
+        const { reservationId, bookingCode } = req.body;
+        
+        const result = await pool.query(
+            `UPDATE short_stay_reservations 
+             SET is_host_verified = TRUE 
+             WHERE id = $1 AND booking_code = $2 AND host_id = $3
+             RETURNING *`,
+            [reservationId, bookingCode, req.user.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({ error: 'Invalid booking code or unauthorized' });
+        }
+
+        res.json({ message: 'Booking verified successfully', reservation: result.rows[0] });
+    } catch (error) {
+        console.error('Booking Verification Error:', error);
+        res.status(500).json({ error: 'Verification failed' });
+    }
 });
 
 
