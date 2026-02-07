@@ -877,9 +877,25 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
     const SPACING_X = plotW + GAP;
     const SPACING_Z = plotD + ROAD_WIDTH;
 
-    // Strict Grid: Use user-provided columns/rows (Checking project root and towers)
+    // Strict Grid: Use user-provided columns/rows
     const columns = parseInt(project?.layout_columns) || parseInt(project?.towers?.[0]?.layout_columns) || 4;
-    const rows = parseInt(project?.layout_rows) || parseInt(project?.towers?.[0]?.layout_rows) || Math.ceil(buildings.length / columns);
+
+    // Dynamically calculate effective rows based on slot occupation (1 for single, 2 for TwinVilla)
+    const effectiveRowsNeeded = useMemo(() => {
+        let currentCol = 0;
+        let rowCount = 1;
+        buildings.forEach(b => {
+            const slotsNeeded = b.type === 'TwinVilla' ? 2 : 1;
+            if (currentCol + slotsNeeded > columns) {
+                rowCount++;
+                currentCol = 0;
+            }
+            currentCol += slotsNeeded;
+        });
+        return rowCount;
+    }, [buildings, columns]);
+
+    const rows = parseInt(project?.layout_rows) || parseInt(project?.towers?.[0]?.layout_rows) || effectiveRowsNeeded;
 
     const colWidth = columns * SPACING_X;
     const colDepth = rows * SPACING_Z;
@@ -962,53 +978,70 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
             ))}
 
             {/* Render Buildings (Strictly centered positioning) */}
-            {buildings.map((b, idx) => {
-                const col = idx % columns;
-                const row = Math.floor(idx / columns);
+            {(() => {
+                let currentCol = 0;
+                let currentRow = 0;
 
-                const xPos = -((columns - 1) * SPACING_X) / 2 + col * SPACING_X;
-                const zPos = -((rows - 1) * SPACING_Z) / 2 + row * SPACING_Z;
+                return buildings.map((b, idx) => {
+                    const isTV = b.type === 'TwinVilla';
+                    const slotsNeeded = isTV ? 2 : 1;
 
-                if (b.type === 'TwinVilla') {
-                    return (
-                        <SharedTwinVilla
-                            key={`building-${idx}`}
-                            position={[xPos, 0, zPos]}
-                            index={idx}
-                            units={b.units}
-                            onUnitClick={(u) => {
-                                console.log('🏘️ SharedTwinVilla Clicked:', u);
-                                onUnitClick(u);
-                            }}
-                        />
-                    );
-                } else if (b.type === 'Plot') {
-                    return (
-                        <UnitPlot
-                            key={`plot-${idx}`}
-                            position={[xPos, 0, zPos]}
-                            unit={b.units[0]}
-                            onUnitClick={(u) => {
-                                console.log('🗺️ Plot Clicked:', u);
-                                onUnitClick(u);
-                            }}
-                        />
-                    );
-                } else {
-                    return (
-                        <Bungalow
-                            key={`building-${idx}`}
-                            position={[xPos, 0, zPos]}
-                            index={idx}
-                            unit={b.units[0]}
-                            onUnitClick={(u) => {
-                                console.log('🏠 Bungalow Clicked:', u);
-                                onUnitClick(u);
-                            }}
-                        />
-                    );
-                }
-            })}
+                    // Row wrapping check: If not enough columns left in current row, move to next
+                    if (currentCol + slotsNeeded > columns) {
+                        currentRow++;
+                        currentCol = 0;
+                    }
+
+                    // xPos is centered across the required slots
+                    const startX = -((columns - 1) * SPACING_X) / 2 + currentCol * SPACING_X;
+                    const endX = -((columns - 1) * SPACING_X) / 2 + (currentCol + slotsNeeded - 1) * SPACING_X;
+                    const xPos = (startX + endX) / 2;
+                    const zPos = -((rows - 1) * SPACING_Z) / 2 + currentRow * SPACING_Z;
+
+                    // Update currentCol for next building
+                    currentCol += slotsNeeded;
+
+                    if (b.type === 'TwinVilla') {
+                        return (
+                            <SharedTwinVilla
+                                key={`building-${idx}`}
+                                position={[xPos, 0, zPos]}
+                                index={idx}
+                                units={b.units}
+                                onUnitClick={(u) => {
+                                    console.log('🏘️ SharedTwinVilla Clicked:', u);
+                                    onUnitClick(u);
+                                }}
+                            />
+                        );
+                    } else if (b.type === 'Plot') {
+                        return (
+                            <UnitPlot
+                                key={`plot-${idx}`}
+                                position={[xPos, 0, zPos]}
+                                unit={b.units[0]}
+                                onUnitClick={(u) => {
+                                    console.log('🗺️ Plot Clicked:', u);
+                                    onUnitClick(u);
+                                }}
+                            />
+                        );
+                    } else {
+                        return (
+                            <Bungalow
+                                key={`building-${idx}`}
+                                position={[xPos, 0, zPos]}
+                                index={idx}
+                                unit={b.units[0]}
+                                onUnitClick={(u) => {
+                                    console.log('🏠 Bungalow Clicked:', u);
+                                    onUnitClick(u);
+                                }}
+                            />
+                        );
+                    }
+                });
+            })()}
 
             {/* Colony Name Label */}
             <Text
