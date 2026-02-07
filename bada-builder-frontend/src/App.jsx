@@ -47,6 +47,7 @@ import ListShortStay from './pages/ShortStay/ListShortStay';
 const ShortStayTrips = lazy(() => import('./pages/ShortStay/ShortStayTrips'));
 import ShortStayDetails from './pages/ShortStay/ShortStayDetails';
 import ShortStayReserve from './pages/ShortStay/ShortStayReserve';
+import ShortStayTerms from './pages/ShortStay/ShortStayTerms';
 import HostingDashboard from './pages/ShortStay/HostingDashboard';
 
 import HomeLoans from './pages/HomeLoans/HomeLoans';
@@ -189,6 +190,7 @@ function AppContent() {
             <Route path="/short-stay/list-property" element={<ListShortStay />} />
             <Route path="/short-stay/:id" element={<ShortStayDetails />} />
             <Route path="/short-stay/reserve/:id" element={<ShortStayReserve />} />
+            <Route path="/short-stay/terms-conditions" element={<ShortStayTerms />} />
             <Route path="/hosting" element={<HostingDashboard />} />
 
             <Route path="/home-loans" element={<HomeLoans />} />

@@ -465,6 +465,7 @@ const ShortStayReserve = () => {
     // New State for Guest Details Flow
     const [showGuestDetailsStep, setShowGuestDetailsStep] = useState(false);
     const [tempPaymentId, setTempPaymentId] = useState(null);
+    const [isTncAccepted, setIsTncAccepted] = useState(false);
 
     useEffect(() => {
         if (!location.state) {
@@ -539,6 +540,11 @@ const ShortStayReserve = () => {
     };
 
     const handlePayment = async () => {
+        if (!isTncAccepted) {
+            alert("Please accept the Terms and Conditions to proceed.");
+            return;
+        }
+
         setLoading(true);
 
         if (selectedPayment === 'razorpay') {
@@ -665,14 +671,41 @@ const ShortStayReserve = () => {
 
                     <div className="section-divider" />
 
+                    {/* Terms and Conditions Checkbox */}
+                    <div className="tnc-checkbox-wrapper" style={{ margin: '20px 0', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <input 
+                            type="checkbox" 
+                            id="tnc-checkbox" 
+                            checked={isTncAccepted}
+                            onChange={(e) => setIsTncAccepted(e.target.checked)}
+                            style={{ marginTop: '4px', width: '18px', height: '18px', cursor: 'pointer', accentColor: '#222' }}
+                        />
+                        <label htmlFor="tnc-checkbox" style={{ fontSize: '14px', lineHeight: '1.5', color: '#484848', cursor: 'pointer' }}>
+                            I agree to the <a href="/short-stay/terms-conditions" target="_blank" rel="noopener noreferrer" style={{ fontWeight: '600', textDecoration: 'underline', color: '#222' }}>Terms and Conditions</a>, giving Bada Builder permission to charge my payment method for the total amount.
+                        </label>
+                    </div>
+
                     {/* Desktop Button */}
-                    <button className="confirm-pay-btn mobile-hidden" onClick={handlePayment} disabled={loading}>
+                    <button 
+                        className={`confirm-pay-btn mobile-hidden ${!isTncAccepted ? 'disabled-btn' : ''}`} 
+                        onClick={handlePayment} 
+                        disabled={loading || !isTncAccepted}
+                        style={!isTncAccepted ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                    >
                         {loading ? 'Processing...' : 'Confirm and pay'}
                     </button>
                     
                     {/* Mobile Pay Button (Step 2) */}
                     <div className="mobile-fixed-footer desktop-hidden">
-                        <button className="confirm-pay-btn-mobile" onClick={handlePayment} disabled={loading}>
+                        <small style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: '#717171' }}>
+                            {!isTncAccepted && "Accept T&C to proceed"}
+                        </small>
+                        <button 
+                            className={`confirm-pay-btn-mobile ${!isTncAccepted ? 'disabled-btn' : ''}`} 
+                            onClick={handlePayment} 
+                            disabled={loading || !isTncAccepted}
+                            style={!isTncAccepted ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                        >
                              {loading ? 'Processing...' : `Pay ₹${totalAmount.toLocaleString()}`}
                         </button>
                     </div>
