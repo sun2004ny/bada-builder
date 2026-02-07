@@ -2040,25 +2040,27 @@ const ThreeDView = () => {
                             <span className="hidden sm:inline">Back</span>
                         </button>
 
-                        <div className="!text-white flex-1 md:flex-none">
-                            <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
-                            <p className="text-xs md:text-sm !text-slate-200 font-medium flex items-center gap-2">
-                                {project.location}
-                                {project.type === 'Plot' ? (
-                                    <>
-                                        <span className="w-1 h-1 rounded-full bg-white/50"></span>
-                                        Plot / Land
-                                    </>
-                                ) : (project.type !== 'Bungalow' && project.type !== 'Colony' && !project.type.toLowerCase().includes('commercial')) && (
-                                    <>
-                                        <span className="w-1 h-1 rounded-full bg-white/50"></span>
-                                        {project.towers.length} Towers
-                                    </>
-                                )}
-                                <span className="w-1 h-1 rounded-full bg-white/50"></span>
-                                {project.total_slots} Units
-                            </p>
-                        </div>
+                        {viewMode === '3d' && (
+                            <div className="!text-white flex-1 md:flex-none">
+                                <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
+                                <p className="text-xs md:text-sm !text-slate-200 font-medium flex items-center gap-2">
+                                    {project.location}
+                                    {project.type === 'Plot' ? (
+                                        <>
+                                            <span className="w-1 h-1 rounded-full bg-white/50"></span>
+                                            Plot / Land
+                                        </>
+                                    ) : (project.type !== 'Bungalow' && project.type !== 'Colony' && !project.type.toLowerCase().includes('commercial')) && (
+                                        <>
+                                            <span className="w-1 h-1 rounded-full bg-white/50"></span>
+                                            {project.towers.length} Towers
+                                        </>
+                                    )}
+                                    <span className="w-1 h-1 rounded-full bg-white/50"></span>
+                                    {project.total_slots} Units
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* View Toggle */}

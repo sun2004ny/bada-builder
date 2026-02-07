@@ -13,6 +13,71 @@
   border-radius: 0 0 20px 20px;
 }
 
+/* Header Search Styles */
+.header-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.header-search-btn:hover {
+  background: rgba(88, 51, 94, 0.08);
+  color: #58335e;
+  transform: scale(1.05);
+}
+
+.header-search-btn.active {
+  background: rgba(88, 51, 94, 0.12);
+  color: #58335e;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+/* Mobile Search Overlay */
+.mobile-search-overlay {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
 /* Logo Styles */
 .mobile-menu-toggle-wrapper {
   display: flex;
@@ -32,6 +97,16 @@
 .mobile-menu-toggle-wrapper:hover {
   background: rgba(88, 51, 94, 0.1);
   transform: scale(1.05);
+}
+
+.mobile-header-tools {
+  display: flex !important;
+}
+
+@media (min-width: 1024px) {
+  .mobile-header-tools {
+    display: none !important;
+  }
 }
 
 .logo-container .logo-image {

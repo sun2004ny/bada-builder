@@ -17,7 +17,9 @@ import {
   FiPhone,
   FiUsers,
   FiLogOut,
-  FiUser
+  FiUser,
+  FiSearch,
+  FiX
 } from 'react-icons/fi';
 
 // Long Live dropdown items for long-term rentals
@@ -77,6 +79,8 @@ const Header = () => {
   const [loading, setLoading] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchContainerRef = useRef(null);
 
   const timeoutRef = useRef(null);
   const profileTimeoutRef = useRef(null);
@@ -112,6 +116,31 @@ const Header = () => {
       window.removeEventListener('open-mobile-menu', handleOpenMenu);
     };
   }, []);
+
+  // Handle outside click to close search and ESC key
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        setIsSearchOpen(false);
+      }
+    };
+
+    if (isSearchOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isSearchOpen]);
 
   // Manage body class for modal
   useEffect(() => {
@@ -257,6 +286,14 @@ const Header = () => {
     return userProfile?.phone || 'Not provided';
   };
 
+  const toggleSearch = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsSearchOpen(!isSearchOpen);
+  };
+
   return (
     <>
       <header className="custom-header sticky top-0 z-50 backdrop-blur-sm bg-white bg-opacity-95 shadow-sm px-6 md:px-12 py-2.5">
@@ -270,7 +307,6 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="items-center space-x-4 hidden lg:flex font-semibold text-gray-900">
-            {/* ... navigation links ... */}
             <PreloaderLink
               to="/exhibition"
               icon={<FiGrid />}
@@ -363,6 +399,23 @@ const Header = () => {
             >
               Who are we
             </PreloaderLink>
+
+            {/* Desktop Search Toggle */}
+            <div className="relative flex items-center" ref={searchContainerRef}>
+              <button
+                onClick={toggleSearch}
+                className={`p-2.5 rounded-full transition-all duration-200 ${isSearchOpen ? 'bg-purple-50 text-[#58335e]' : 'text-gray-900 hover:bg-gray-100'}`}
+                aria-label="Toggle search"
+              >
+                {isSearchOpen ? <FiX className="w-5 h-5" /> : <FiSearch className="w-5 h-5" />}
+              </button>
+
+              {isSearchOpen && (
+                <div className="absolute right-0 top-[calc(100%+12px)] w-[450px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 animate-fadeIn origin-top-right">
+                  <SearchBar variant="compact" />
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Desktop Buttons */}
@@ -459,8 +512,33 @@ const Header = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button - Strictly hidden on desktop */}
-          <div className="mobile-menu-toggle-wrapper items-center ml-2 lg:hidden">
+          {/* Mobile Search & Menu Toggle */}
+          <div className="mobile-header-tools flex items-center lg:hidden">
+            <button
+              onClick={toggleSearch}
+              className="p-2 mr-1 rounded-md text-gray-700 hover:text-gray-900 transition-all duration-200"
+              aria-label="Toggle mobile search"
+            >
+              <FiSearch className="w-6 h-6" />
+            </button>
+
+            {isSearchOpen && (
+              <div className="mobile-search-overlay fixed left-0 top-[60px] md:top-[68px] w-full bg-white shadow-lg p-3 z-[60] animate-slideDown">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <SearchBar variant="compact" />
+                  </div>
+                  <button
+                    onClick={() => setIsSearchOpen(false)}
+                    className="p-2 rounded-full bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all border border-gray-100"
+                    aria-label="Close search"
+                  >
+                    <FiX className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button
               onClick={toggleMobileMenu}
               className="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#58335e] transition-all duration-200"
@@ -707,7 +785,6 @@ const Header = () => {
           </div>
         </div>
       )}
-
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

@@ -32,11 +32,17 @@
 .search-input-compact {
   flex: 1;
   border: none;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   padding: 10px 12px;
   font-size: 14px;
   color: #1a1a1a;
   background: transparent;
+}
+
+.search-input-compact:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .search-input-compact::placeholder {

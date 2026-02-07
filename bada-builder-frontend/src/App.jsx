@@ -6,7 +6,6 @@ import './App.css'
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
 import LeadModal from './components/LeadModal/LeadModal';
-import GlobalSearchBar from './components/GlobalSearchBar/GlobalSearchBar';
 import Chatbot from './components/Chatbot/Chatbot';
 import ScrollToTop from './components/ScrollToTop';
 import { useAuth } from './context/AuthContext';
@@ -148,7 +147,6 @@ function AppContent() {
       <ScrollToTop />
       <Preloader />
       {!isMessagesPage && !isAdminPanel && <Header />}
-      {!isMessagesPage && !isAdminPanel && location.pathname !== '/hosting' && location.pathname !== '/short-stay/list-property' && !location.pathname.startsWith('/short-stay/') && location.pathname !== '/services/marketing' && location.pathname !== '/services/marketing/terms-conditions' && location.pathname !== '/services/marketing/rules-regulations' && <GlobalSearchBar />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
       {!isMessagesPage && !isAdminPanel && <Chatbot />}
       {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}

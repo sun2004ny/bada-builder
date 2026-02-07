@@ -47,10 +47,11 @@ const SearchBar = ({ variant = 'default' }) => {
           </svg>
           <input
             type="text"
-            placeholder="Search properties..."
+            placeholder="Search everything..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input-compact"
+            autoFocus
           />
           <button type="submit" className="search-btn-compact">
             Search
