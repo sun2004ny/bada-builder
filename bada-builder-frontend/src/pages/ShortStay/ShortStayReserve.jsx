@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { FaChevronLeft, FaStar, FaGooglePay, FaCreditCard, FaChevronRight, FaKeyboard, FaCheckCircle } from 'react-icons/fa';
+import { FaChevronLeft, FaStar, FaUser, FaGooglePay, FaCreditCard, FaChevronRight, FaKeyboard, FaCheckCircle } from 'react-icons/fa';
 import { SiRazorpay } from "react-icons/si";
 import { FiPlus, FiMinus, FiX } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
@@ -282,7 +282,7 @@ const GuestModal = ({ isOpen, onClose, adults, setAdults, children, setChildren,
                     </div>
                 </div>
                 <div className="guest-modal-footer">
-                     <button className="confirm-pay-btn" onClick={onClose}>Save</button>
+                     <button className="guest-save-btn" onClick={onClose}>Save</button>
                 </div>
             </div>
         </div>
@@ -318,7 +318,8 @@ const ShortStayReserve = () => {
     const { 
         pricing, hostPricing, policies,
         propertyTitle, propertyImage, propertyRating,
-        hostId, roomType 
+        hostId, roomType,
+        hostName, hostBio, hostPhoto, isSuperhost 
     } = location.state || {};
     
     // Derived total guests
@@ -353,14 +354,17 @@ const ShortStayReserve = () => {
     const basePriceObj = hostPricing || pricing;
     const pricePerNight = Number(basePriceObj?.perNight);
     
-    // 5% Commission (Calculated based on Host Price)
-    // 5% Commission REMOVED per user request
+    // Base Amount (Nights * Price per Night)
     const baseAmount = (nights > 0 && pricePerNight) ? (pricePerNight * nights) : 0;
-    // 18% Tax on Base only
-    const gstAmount = Math.round(baseAmount * 0.18);
+
+    // 5% Commission (Platform Fee)
+    const platformFee = Math.round(baseAmount * 0.05);
+
+    // 18% Tax on (Base + Platform Fee)
+    const gstAmount = Math.round((baseAmount + platformFee) * 0.18);
     
     // Total
-    const totalAmount = baseAmount + gstAmount;
+    const totalAmount = baseAmount + platformFee + gstAmount;
 
     // Modal State
     const [showPriceModal, setShowPriceModal] = useState(false);
@@ -457,6 +461,29 @@ const ShortStayReserve = () => {
                             <h1>Confirm and pay</h1>
                         </div>
                     </div>
+
+                    {/* Host Info Section */}
+                    <div className="reserve-section">
+                        <div className="host-info-card">
+                            <div className="host-image-container">
+                                {hostPhoto ? (
+                                    <img src={hostPhoto} alt={hostName} className="host-avatar-reserve" />
+                                ) : (
+                                    <div className="host-avatar-placeholder-reserve">
+                                        <FaUser />
+                                    </div>
+                                )}
+                                {isSuperhost && <div className="superhost-badge-reserve"><FaStar /></div>}
+                            </div>
+                            <div className="host-text-content">
+                                <h3>Hosted by {hostName || 'Host'}</h3>
+                                {hostBio && <p className="host-bio-reserve">"{hostBio}"</p>}
+                                <p className="joined-text-reserve">Joined recently</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="section-divider" />
 
                     <div className="reserve-section">
                         <h2>Pay with</h2>
@@ -611,6 +638,11 @@ const ShortStayReserve = () => {
                                     {checkOutDate ? ` - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}
                                 </span>
                                 <span>₹{baseAmount.toLocaleString()}</span>
+                            </div>
+
+                            <div className="price-detail-row">
+                                <span className="underline">Bada Builder service fee</span>
+                                <span>₹{platformFee.toLocaleString()}</span>
                             </div>
 
                             <div className="price-detail-row">

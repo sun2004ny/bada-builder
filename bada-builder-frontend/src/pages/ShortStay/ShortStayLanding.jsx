@@ -407,14 +407,21 @@ const ShortStayLanding = () => {
             <div className="short-stay-groups-container">
               {Object.entries(listings.reduce((acc, listing) => {
                   const city = listing.location?.city || 'Other Locations';
-                  if (!acc[city]) acc[city] = [];
-                  acc[city].push(listing);
+                  const key = city.toLowerCase();
+                  if (!acc[key]) acc[key] = [];
+                  acc[key].push(listing);
                   return acc;
-              }, {})).map(([city, cityListings]) => (
-                <div key={city} className="location-group-section">
+              }, {})).map(([startKey, cityListings]) => {
+                 // Convert key back to Title Case for display
+                 const displayName = startKey === 'other locations' 
+                    ? 'Other Locations' 
+                    : startKey.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+                 return (
+                <div key={startKey} className="location-group-section">
                   <div className="location-group-header">
-                     <h3>{city === 'Other Locations' ? 'Explore more stays' : `Stay in ${city}`}</h3>
-                     <button className="see-all-btn" onClick={() => navigate(`/short-stay/search?location=${city}`)}>
+                     <h3>{displayName === 'Other Locations' ? 'Explore more stays' : `Stay in ${displayName}`}</h3>
+                     <button className="see-all-btn" onClick={() => navigate(`/short-stay/search?location=${displayName}`)}>
                         <FaArrowRight size={12} />
                      </button>
                   </div>
@@ -431,7 +438,7 @@ const ShortStayLanding = () => {
                     ))}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </section>

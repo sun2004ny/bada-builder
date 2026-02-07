@@ -5,7 +5,7 @@ import {
     FaEnvelope, FaWhatsapp, FaComment, FaFacebookMessenger, FaFacebook, 
     FaTwitter, FaCode, FaEllipsisH, FaWifi, FaCar, FaUtensils, 
     FaSnowflake, FaTv, FaTshirt, FaPaw, FaSwimmingPool, FaShieldAlt, FaSmokingBan,
-    FaChevronLeft, FaChevronRight, FaKeyboard, FaChevronUp, FaChevronDown
+    FaChevronLeft, FaChevronRight, FaKeyboard, FaChevronUp, FaChevronDown, FaTh
 } from 'react-icons/fa';
 import { FiPlus, FiMinus, FiX } from 'react-icons/fi';
 import { shortStayAPI } from '../../services/shortStayApi';
@@ -16,29 +16,50 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './ShortStayDetails.css';
 
-const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates, bookedDates = [] }) => {
+const CalendarModal = ({ 
+    isOpen, onClose, checkIn, checkOut, onSelectDates, bookedDates = [],
+    adults, setAdults, children, setChildren, infants, setInfants, pets, setPets
+}) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedStart, setSelectedStart] = useState(checkIn ? new Date(checkIn) : null);
     const [selectedEnd, setSelectedEnd] = useState(checkOut ? new Date(checkOut) : null);
     const [selecting, setSelecting] = useState('checkIn');
+
+    // Guest limits
+    const MAX_GUESTS = 16;
+    
+    const updateGuests = (type, action) => {
+        if (type === 'adults') {
+            if (action === 'increment' && adults + children < MAX_GUESTS) setAdults(prev => prev + 1);
+            if (action === 'decrement' && adults > 1) setAdults(prev => prev - 1);
+        }
+        if (type === 'children') {
+            if (action === 'increment' && adults + children < MAX_GUESTS) setChildren(prev => prev + 1);
+            if (action === 'decrement' && children > 0) setChildren(prev => prev - 1);
+        }
+        if (type === 'infants') {
+            if (action === 'increment' && infants < 5) setInfants(prev => prev + 1);
+            if (action === 'decrement' && infants > 0) setInfants(prev => prev - 1);
+        }
+        if (type === 'pets') {
+            if (action === 'increment' && pets < 5) setPets(prev => prev + 1);
+            if (action === 'decrement' && pets > 0) setPets(prev => prev - 1);
+        }
+    };
 
     useEffect(() => {
         if (checkIn) setSelectedStart(new Date(checkIn));
         if (checkOut) setSelectedEnd(new Date(checkOut));
     }, [checkIn, checkOut]);
 
-
-
     const isDateBooked = (date) => {
         return bookedDates.some(booking => {
             const start = new Date(booking.check_in);
             const end = new Date(booking.check_out);
-            // Normalize to YYYY-MM-DD to avoid time issues
             const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
             const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-            return d >= s && d < e; // Check-out day is usually available for check-in depending on policy, but simple overlap block for now. Actually typical is check-out day is available for new check-in.
-            // Let's stick to standard: [Start, End). Check-in allowed on Check-out date.
+            return d >= s && d < e; 
         });
     };
 
@@ -52,7 +73,6 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates, book
                 setSelectedStart(date);
                 setSelectedEnd(null);
             } else {
-                // Check if any date in between is booked
                 let hasBookedInBetween = false;
                 let d = new Date(selectedStart);
                 d.setDate(d.getDate() + 1);
@@ -71,25 +91,24 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates, book
 
                 setSelectedEnd(date);
                 setSelecting('checkIn');
-                
-                // Helper to format date as YYYY-MM-DD in local time
-                const formatLocalYYYYMMDD = (d) => {
-                    const year = d.getFullYear();
-                    const month = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-
-                // Auto-close when both dates are selected
-                setTimeout(() => {
-                    onSelectDates(
-                        formatLocalYYYYMMDD(selectedStart), 
-                        formatLocalYYYYMMDD(date)
-                    );
-                    onClose();
-                }, 200);
             }
         }
+    };
+
+    const handleSave = () => {
+        if (selectedStart && selectedEnd) {
+             const formatLocalYYYYMMDD = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            onSelectDates(
+                formatLocalYYYYMMDD(selectedStart), 
+                formatLocalYYYYMMDD(selectedEnd)
+            );
+        }
+        onClose();
     };
 
     const isSelected = (date) => {
@@ -144,22 +163,17 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates, book
 
     const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
 
-    // Helper to format date locally for manual close as well
-    const formatLocalYYYYMMDD = (d) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
     return (
         <div className="calendar-modal-overlay" onClick={onClose}>
             <div className="calendar-modal" onClick={e => e.stopPropagation()}>
                 <div className="calendar-modal-header">
-                    <div className="calendar-title-area">
-                        <h2>Select dates</h2>
-                        <p>Add your travel dates for exact pricing</p>
+                    <button className="close-btn-left" onClick={onClose}><FaTimes /></button>
+                    <div className="calendar-title-area"> 
+                        {/* Simplified title for mobile */}
                     </div>
+                </div>
+
+                <div className="calendar-modal-body-scroll">
                     <div className="calendar-inputs-row">
                         <div className={`calendar-input-box ${selecting === 'checkIn' ? 'active' : ''}`} onClick={() => setSelecting('checkIn')}>
                             <span className="field-label-small">CHECK-IN</span>
@@ -175,36 +189,79 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates, book
                             </div>
                         </div>
                     </div>
+
+                    <div className="calendar-grid-container">
+                        <div className="calendar-nav-row">
+                            <button className="calendar-nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
+                                <FaChevronLeft />
+                            </button>
+                            <button className="calendar-nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
+                                <FaChevronRight />
+                            </button>
+                        </div>
+                        <div className="calendar-months-row">
+                            {renderMonth(currentMonth)}
+                            <div className="desktop-only-month">
+                                {renderMonth(nextMonth)}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Guest Section inside Modal */}
+                    <div className="modal-guest-section">
+                        <h3>Guests</h3>
+                        <div className="guest-picker-row">
+                            <div className="guest-type">
+                                <span className="type-name">Adults</span>
+                                <span className="type-desc">Age 13+</span>
+                            </div>
+                            <div className="guest-controls">
+                                <button className="picker-btn" onClick={() => updateGuests('adults', 'decrement')} disabled={adults <= 1}><FiMinus /></button>
+                                <span className="picker-count">{adults}</span>
+                                <button className="picker-btn" onClick={() => updateGuests('adults', 'increment')} disabled={adults + children >= MAX_GUESTS}><FiPlus /></button>
+                            </div>
+                        </div>
+                         <div className="guest-picker-row">
+                            <div className="guest-type">
+                                <span className="type-name">Children</span>
+                                <span className="type-desc">Ages 2–12</span>
+                            </div>
+                            <div className="guest-controls">
+                                <button className="picker-btn" onClick={() => updateGuests('children', 'decrement')} disabled={children <= 0}><FiMinus /></button>
+                                <span className="picker-count">{children}</span>
+                                <button className="picker-btn" onClick={() => updateGuests('children', 'increment')} disabled={adults + children >= MAX_GUESTS}><FiPlus /></button>
+                            </div>
+                        </div>
+                         <div className="guest-picker-row">
+                            <div className="guest-type">
+                                <span className="type-name">Infants</span>
+                                <span className="type-desc">Under 2</span>
+                            </div>
+                            <div className="guest-controls">
+                                <button className="picker-btn" onClick={() => updateGuests('infants', 'decrement')} disabled={infants <= 0}><FiMinus /></button>
+                                <span className="picker-count">{infants}</span>
+                                <button className="picker-btn" onClick={() => updateGuests('infants', 'increment')} disabled={infants >= 5}><FiPlus /></button>
+                            </div>
+                        </div>
+                         <div className="guest-picker-row">
+                            <div className="guest-type">
+                                <span className="type-name">Pets</span>
+                                <span className="type-desc">Service animals</span>
+                            </div>
+                            <div className="guest-controls">
+                                <button className="picker-btn" onClick={() => updateGuests('pets', 'decrement')} disabled={pets <= 0}><FiMinus /></button>
+                                <span className="picker-count">{pets}</span>
+                                <button className="picker-btn" onClick={() => updateGuests('pets', 'increment')} disabled={pets >= 5}><FiPlus /></button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="calendar-grid-container">
-                    <div className="calendar-nav-row">
-                        <button className="calendar-nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
-                            <FaChevronLeft />
-                        </button>
-                        <button className="calendar-nav-btn" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
-                            <FaChevronRight />
-                        </button>
+                <div className="calendar-footer-sticky">
+                    <div className="footer-left-links">
+                       <button className="clear-dates-btn" onClick={() => { setSelectedStart(null); setSelectedEnd(null); setSelecting('checkIn'); }}>Clear dates</button>
                     </div>
-                    <div className="calendar-months-row">
-                        {renderMonth(currentMonth)}
-                        {renderMonth(nextMonth)}
-                    </div>
-                </div>
-
-                <div className="calendar-footer">
-                    <FaKeyboard className="keyboard-icon" />
-                    <div className="footer-actions">
-                        <button className="clear-dates-btn" onClick={() => { setSelectedStart(null); setSelectedEnd(null); setSelecting('checkIn'); }}>Clear dates</button>
-                        <button className="close-btn-black" onClick={() => {
-                            if (selectedStart && selectedEnd) {
-                                onSelectDates(
-                                    formatLocalYYYYMMDD(selectedStart), 
-                                    formatLocalYYYYMMDD(selectedEnd)
-                                );
-                            }
-                            onClose();
-                        }}>Close</button>                    </div>
+                    <button className="close-btn-black" onClick={handleSave}>Save</button>
                 </div>
             </div>
         </div>
@@ -498,7 +555,9 @@ const ShortStayDetails = () => {
                             <img src={img} alt={`View ${i + 1}`} />
                         </div>
                     ))}
-                    <button className="show-all-photos" onClick={() => setShowPhotoTour(true)}>Show all photos</button>
+                    <button className="show-all-photos" onClick={() => setShowPhotoTour(true)}>
+                        <FaTh size={14} /> Show all photos
+                    </button>
                 </div>
 
                 <PhotoTourModal 
@@ -952,7 +1011,13 @@ const ShortStayDetails = () => {
                                                 propertyTitle: title, 
                                                 propertyImage: images?.[0],
                                                 policies: policies, // Pass policies for display 
-                                                hostId: property.user_id || property.owner_id
+                                                hostId: property.user_id || property.owner_id,
+                                                // Host Details
+                                                hostName: host_name,
+                                                hostBio: property.host_bio,
+                                                hostPhoto: host_photo,
+                                                hostJoinedAt: host_joined_at,
+                                                isSuperhost: property.is_superhost
                                             }
                                         });
                                     }}
@@ -1142,8 +1207,12 @@ const ShortStayDetails = () => {
                 </div>
                 <button 
                     className="sticky-reserve-btn"
+                    style={isOwner ? { opacity: 0.5, cursor: 'not-allowed', background: '#ccc' } : {}}
                     onClick={() => {
-                         if (isOwner) return;
+                         if (isOwner) {
+                             alert("You cannot reserve your own property");
+                             return;
+                         }
                          if (!checkIn || !checkOut) {
                              setShowCalendarModal(true);
                              return;
@@ -1182,6 +1251,10 @@ const ShortStayDetails = () => {
                     setCheckOut(end);
                 }}
                 bookedDates={bookedDates}
+                adults={adults} setAdults={setAdults}
+                children={children} setChildren={setChildren}
+                infants={infants} setInfants={setInfants}
+                pets={pets} setPets={setPets}
             />
         </div>
     );
