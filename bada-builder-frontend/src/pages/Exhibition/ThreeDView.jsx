@@ -1793,6 +1793,7 @@ const ThreeDView = () => {
     const [holdLoading, setHoldLoading] = useState(false);
     const [showPremium, setShowPremium] = useState(true);
     const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     // Camera Controls State
     const controlsRef = useRef();
@@ -1895,6 +1896,7 @@ const ThreeDView = () => {
 
         console.log('🎯 Selected Unit Details:', unit);
         setSelectedUnit(unit);
+        setCurrentImageIndex(0);
         setShowHoldOptions(false);
     };
 
@@ -2348,29 +2350,61 @@ const ThreeDView = () => {
                                                                 className="overflow-hidden"
                                                             >
                                                                 <div className="relative group/slider pt-2 pb-1">
-                                                                    <div className="relative">
-                                                                        <div
-                                                                            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-1"
-                                                                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                                                                        >
-                                                                            {gallery.slice(0, 20).map((img, idx) => (
-                                                                                <motion.div
-                                                                                    key={idx}
-                                                                                    initial={{ opacity: 0, x: 20 }}
-                                                                                    animate={{ opacity: 1, x: 0 }}
-                                                                                    transition={{ delay: idx * 0.05 }}
-                                                                                    className="min-w-[85%] sm:min-w-[70%] h-48 rounded-[12px] overflow-hidden bg-slate-100 snap-center shrink-0 border border-slate-200"
-                                                                                >
-                                                                                    <img
-                                                                                        src={img}
-                                                                                        alt={`Gallery ${idx + 1}`}
-                                                                                        className="w-full h-full object-cover"
-                                                                                        loading="lazy"
-                                                                                        onError={(e) => { e.target.parentElement.style.display = 'none'; }}
-                                                                                    />
-                                                                                </motion.div>
-                                                                            ))}
-                                                                        </div>
+                                                                    <div className="w-full h-48 relative rounded-2xl overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
+                                                                        {gallery.length > 0 ? (
+                                                                            <>
+                                                                                <img
+                                                                                    src={gallery[currentImageIndex]}
+                                                                                    alt={`Gallery ${currentImageIndex + 1}`}
+                                                                                    className="w-full h-full object-cover block object-center transition-all duration-300"
+                                                                                    loading="lazy"
+                                                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                                                />
+
+                                                                                {gallery.length > 1 && (
+                                                                                    <>
+                                                                                        {/* Navigation Buttons */}
+                                                                                        <button
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                setCurrentImageIndex(prev => (prev - 1 + gallery.length) % gallery.length);
+                                                                                            }}
+                                                                                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/30 backdrop-blur-md text-slate-900 border border-white/40 hover:bg-white/50 transition-all z-10"
+                                                                                        >
+                                                                                            <ChevronLeft size={16} strokeWidth={3} />
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                setCurrentImageIndex(prev => (prev + 1) % gallery.length);
+                                                                                            }}
+                                                                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/30 backdrop-blur-md text-slate-900 border border-white/40 hover:bg-white/50 transition-all z-10"
+                                                                                        >
+                                                                                            <ChevronRight size={16} strokeWidth={3} />
+                                                                                        </button>
+
+                                                                                        {/* Pagination Dots */}
+                                                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1.5 rounded-full bg-black/40 backdrop-blur-sm shadow-lg border border-white/10 z-20">
+                                                                                            {gallery.map((_, idx) => (
+                                                                                                <div
+                                                                                                    key={idx}
+                                                                                                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-white w-4' : 'bg-white/40 w-1.5'}`}
+                                                                                                />
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </>
+                                                                                )}
+
+                                                                                {/* Count Badge */}
+                                                                                <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-black/40 backdrop-blur-md text-[10px] font-black text-white uppercase tracking-widest z-20">
+                                                                                    {currentImageIndex + 1} / {gallery.length}
+                                                                                </div>
+                                                                            </>
+                                                                        ) : (
+                                                                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                                                                No gallery photos
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </motion.div>
