@@ -347,6 +347,28 @@
     /* Reset default button padding */
 }
 
+/* Variant for left-aligned button (Gallery) */
+.fs-expand-btn-left {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    /* Changed from right to left */
+    width: 36px;
+    height: 36px;
+    background-color: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease-in-out;
+    padding: 0;
+}
+
 /* Hover effect for desktop */
 @media (hover: hover) {
     .fs-expand-btn-new:hover {
@@ -385,5 +407,116 @@
     .fs-expand-icon-new {
         width: 20px;
         height: 20px;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                      SEE ALL PHOTOS GALLERY UPGRADE                        */
+/* -------------------------------------------------------------------------- */
+
+/* Gallery Grid Layout */
+.property-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* 2 columns on mobile */
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.property-gallery-item {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.property-gallery-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+.property-gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease;
+}
+
+.property-gallery-item:hover .property-gallery-img {
+    transform: scale(1.05);
+}
+
+/* Full Screen Slider Navigation */
+.gallery-fs-nav-btn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9000;
+    /* Above overlay (2000) but below close button (10000) */
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.gallery-fs-nav-btn:hover {
+    background-color: rgba(15, 23, 42, 0.9);
+    transform: translateY(-50%) scale(1.1);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.gallery-fs-nav-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.gallery-fs-nav-left {
+    left: 20px;
+}
+
+.gallery-fs-nav-right {
+    right: 20px;
+}
+
+/* Mobile Adjustments */
+@media (min-width: 768px) {
+    .property-gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+        /* 3 columns on tablet/desktop */
+        gap: 12px;
+    }
+}
+
+@media (max-width: 640px) {
+    .gallery-fs-nav-btn {
+        width: 40px;
+        height: 40px;
+        background-color: rgba(15, 23, 42, 0.8);
+        /* Darker on mobile */
+    }
+
+    .gallery-fs-nav-left {
+        left: 12px;
+    }
+
+    .gallery-fs-nav-right {
+        right: 12px;
     }
 }

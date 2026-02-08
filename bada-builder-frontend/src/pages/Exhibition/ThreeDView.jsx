@@ -1829,17 +1829,19 @@ const ThreeDView = () => {
     const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showIntroStep, setShowIntroStep] = useState(false);
-    const [showFullScreenImage, setShowFullScreenImage] = useState(false);
+    const [fullScreenImage, setFullScreenImage] = useState(null);
+    const [fullScreenGalleryIndex, setFullScreenGalleryIndex] = useState(-1); // -1 means not from gallery
 
     // Full Screen Image Handlers
     useEffect(() => {
-        if (showFullScreenImage) {
+        if (fullScreenImage) {
             // Prevent scrolling
             document.body.style.overflow = 'hidden';
 
             const handleKeyDown = (e) => {
                 if (e.key === 'Escape') {
-                    setShowFullScreenImage(false);
+                    setFullScreenImage(null);
+                    setFullScreenGalleryIndex(-1);
                 }
             };
             window.addEventListener('keydown', handleKeyDown);
@@ -1848,7 +1850,7 @@ const ThreeDView = () => {
                 window.removeEventListener('keydown', handleKeyDown);
             };
         }
-    }, [showFullScreenImage]);
+    }, [fullScreenImage]);
 
     // Camera Controls State
     const controlsRef = useRef();
@@ -2290,7 +2292,7 @@ const ThreeDView = () => {
                                         return (
                                             <div
                                                 className="fs-image-wrapper-new"
-                                                onClick={() => setShowFullScreenImage(true)}
+                                                onClick={() => setFullScreenImage(imgUrl)}
                                                 style={{ cursor: 'pointer' }}
                                                 title="View Full Screen"
                                             >
@@ -2345,7 +2347,19 @@ const ThreeDView = () => {
 
                                                 console.log('🖼️ Selection Modal Image URL:', imgUrl);
                                                 return (
-                                                    <div className="w-full h-32 md:h-44 md:mb-0.5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 shrink-0">
+                                                    <div
+                                                        className="w-full h-32 md:h-44 md:mb-0.5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 shrink-0 cursor-pointer relative"
+                                                        onClick={() => setFullScreenImage(imgUrl)}
+                                                    >
+                                                        <button
+                                                            className="fs-expand-btn-new"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setFullScreenImage(imgUrl);
+                                                            }}
+                                                        >
+                                                            <Maximize className="fs-expand-icon-new" />
+                                                        </button>
                                                         <img
                                                             src={imgUrl}
                                                             alt={`Unit ${selectedUnit.unit_number}`}
@@ -2475,17 +2489,31 @@ const ThreeDView = () => {
                                                                                 <div className="w-full h-40 md:h-48 relative rounded-2xl overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
                                                                                     {gallery.length > 0 ? (
                                                                                         <>
+                                                                                            <button
+                                                                                                className="fs-expand-btn-left"
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    setFullScreenImage(gallery[currentImageIndex]);
+                                                                                                    setFullScreenGalleryIndex(currentImageIndex);
+                                                                                                }}
+                                                                                            >
+                                                                                                <Maximize className="fs-expand-icon-new" />
+                                                                                            </button>
                                                                                             <img
                                                                                                 src={gallery[currentImageIndex]}
                                                                                                 alt={`Gallery ${currentImageIndex + 1}`}
-                                                                                                className="w-full h-full object-cover block object-center transition-all duration-300"
+                                                                                                className="w-full h-full object-cover block object-center transition-all duration-300 cursor-pointer"
+                                                                                                onClick={() => {
+                                                                                                    setFullScreenImage(gallery[currentImageIndex]);
+                                                                                                    setFullScreenGalleryIndex(currentImageIndex);
+                                                                                                }}
                                                                                                 loading="lazy"
                                                                                                 onError={(e) => { e.target.style.display = 'none'; }}
                                                                                             />
 
                                                                                             {gallery.length > 1 && (
                                                                                                 <>
-                                                                                                    {/* Navigation Buttons */}
+                                                                                                    {/* Navigation Buttons for Card Slider */}
                                                                                                     <button
                                                                                                         onClick={(e) => {
                                                                                                             e.stopPropagation();
@@ -2735,31 +2763,85 @@ const ThreeDView = () => {
             </div>
 
             {/* Full Screen Image Viewer Overlay */}
+            {/* Full Screen Image Viewer Overlay */}
             <AnimatePresence>
-                {showFullScreenImage && selectedUnit && (
+                {fullScreenImage && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className="fs-overlay"
-                        onClick={() => setShowFullScreenImage(false)}
+                        onClick={() => {
+                            setFullScreenImage(null);
+                            setFullScreenGalleryIndex(-1);
+                        }}
                     >
                         <button
                             className="fs-viewer-close-btn"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setShowFullScreenImage(false);
+                                setFullScreenImage(null);
+                                setFullScreenGalleryIndex(-1);
                             }}
                         >
                             <X className="fs-viewer-close-icon" />
                         </button>
+
+                        {/* Slider Controls (Only if opened from gallery) */}
+                        {fullScreenGalleryIndex !== -1 && selectedUnit && selectedUnit.unit_gallery && (
+                            (() => {
+                                let gallery = selectedUnit.unit_gallery;
+                                // Need to parse again if it's string (safely reuse parsing logic or just rely on prev parsed check)
+                                // Ideally we should normalize data structure earlier, but for safety:
+                                if (typeof gallery === 'string') {
+                                    try {
+                                        gallery = JSON.parse(gallery);
+                                    } catch (e) {
+                                        if (gallery.trim().startsWith('{')) {
+                                            gallery = gallery.trim().slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                                        } else {
+                                            gallery = [];
+                                        }
+                                    }
+                                }
+                                if (!Array.isArray(gallery) || gallery.length <= 1) return null;
+
+                                return (
+                                    <>
+                                        <button
+                                            className="gallery-fs-nav-btn gallery-fs-nav-left"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIndex = (fullScreenGalleryIndex - 1 + gallery.length) % gallery.length;
+                                                setFullScreenGalleryIndex(newIndex);
+                                                setFullScreenImage(gallery[newIndex]);
+                                            }}
+                                        >
+                                            <ChevronLeft size={24} strokeWidth={3} />
+                                        </button>
+                                        <button
+                                            className="gallery-fs-nav-btn gallery-fs-nav-right"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIndex = (fullScreenGalleryIndex + 1) % gallery.length;
+                                                setFullScreenGalleryIndex(newIndex);
+                                                setFullScreenImage(gallery[newIndex]);
+                                            }}
+                                        >
+                                            <ChevronRight size={24} strokeWidth={3} />
+                                        </button>
+                                    </>
+                                );
+                            })()
+                        )}
+
                         <div
                             className="fs-image-wrapper"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <img
-                                src={selectedUnit.unit_image_url || selectedUnit.image_url || (selectedUnit.images && selectedUnit.images[0])}
+                                src={fullScreenImage}
                                 alt="Full Screen Preview"
                                 className="fs-image"
                             />
