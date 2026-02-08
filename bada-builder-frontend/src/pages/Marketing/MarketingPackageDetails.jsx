@@ -454,12 +454,12 @@ const MarketingPackageDetails = () => {
             </div>
 
             {/* Hero Section */}
-            <section className="py-[60px] relative overflow-hidden border-b border-[#94a3b81a] bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.1),transparent),radial-gradient(circle_at_bottom_left,rgba(30,41,59,0.6),transparent)]">
-                <div className="max-w-[1100px] mx-auto px-6 box-border">
+            <section className="pt-[40px] pb-[20px] relative overflow-hidden">
+                <div className="max-w-[1200px] mx-auto px-4 sm:px-6 box-border">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-12 items-start md:gap-10 md:text-center lg:text-left"
+                        className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-12 items-start md:gap-10 md:text-center lg:text-left bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.1),transparent),radial-gradient(circle_at_bottom_left,rgba(30,41,59,0.6),transparent)] border border-[#94a3b833] rounded-[2rem] p-8 md:p-12 relative overflow-hidden shadow-2xl"
                     >
                         <div className="hero-text">
                             <span className="inline-block py-2 px-5 bg-[#38BDF826] text-[#7DD3FC] rounded-full text-[13px] font-extrabold uppercase tracking-[1.5px] mb-6 border border-[#38BDF833]">
@@ -501,7 +501,7 @@ const MarketingPackageDetails = () => {
                 </div>
             </section>
 
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 box-border grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 items-start pt-[60px]">
+            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 box-border grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10 items-start pt-[20px]">
                 <div className="details-side-column order-1 lg:sticky lg:top-[120px]">
                     {/* Integrated Form Section */}
                     <section id="action-form" className="bg-[#1e293b] border border-[#38bdf840] rounded-3xl p-8 md:p-10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] w-full mx-auto">
