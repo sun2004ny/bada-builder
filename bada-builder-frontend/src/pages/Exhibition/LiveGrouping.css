@@ -87,8 +87,8 @@
   backdrop-filter: blur(25px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 24px;
-  padding: 60px 40px;
-  margin-bottom: 50px;
+  padding: 30px 20px;
+  margin-bottom: 30px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
@@ -113,7 +113,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 50px;
+  margin-bottom: 25px;
   position: relative;
   z-index: 1;
 }
@@ -764,7 +764,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 16px;
+  margin-bottom: 15px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -781,7 +781,7 @@
 .section-subtitle {
   font-size: 16px;
   color: #6b7280;
-  margin-bottom: 30px;
+  margin-bottom: 15px;
   font-weight: 600;
 }
 
@@ -1638,7 +1638,7 @@
 .modern-search-container {
   max-width: 900px;
   width: 100%;
-  margin: 0 auto 60px;
+  margin: 0 auto 20px;
   /* Added spacing from bottom */
   padding: 0 20px;
   position: relative;
@@ -1980,7 +1980,7 @@
   /* New Mobile Search Styles - Unified */
   .mobile-search-wrapper {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 40px;
     position: relative;
     padding: 0 5px;
     /* Reduced padding to stretch width */
