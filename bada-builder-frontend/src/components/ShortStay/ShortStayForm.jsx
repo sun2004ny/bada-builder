@@ -1219,6 +1219,58 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
         }
     };
 
+    const validateStep = (step) => {
+        switch (step) {
+            case 0: // Category
+                return !!formData.category;
+            case 1: // Privacy Type
+                return !!formData.privacyType;
+            case 2: // Location
+                return !!(formData.location.address && formData.location.city && formData.location.state && formData.location.pincode);
+            case 3: { // Specifics
+                const p = formData.specific_details || {};
+                switch (formData.category) {
+                    case 'hotel':
+                        return (p.roomTypes || []).length > 0;
+                    case 'apartment':
+                        return !!(p.bhk && p.floor && p.totalFloors && p.carpetArea);
+                    case 'house':
+                        return !!(p.houseType && p.totalFloors && p.builtUpArea);
+                    case 'dormitory':
+                        return !!(p.totalBeds && p.washrooms && p.bedType && p.gender);
+                    case 'cottage':
+                        return !!(p.cottageType && p.natureView);
+                    case 'tree_house':
+                        return !!(p.height && p.accessType && p.immersion);
+                    case 'tent':
+                        return !!(p.tentType);
+                    case 'farmhouse':
+                        return !!(p.landArea && p.maxGuests);
+                    case 'hostel':
+                        return !!(p.hostelType && p.sharing);
+                    default:
+                        return true;
+                }
+            }
+            case 4: // Amenities
+                return true; // Optional
+            case 5: { // Photos
+                const totalImages = (formData.existingImages?.length || 0) + formData.images.length;
+                return totalImages >= 5;
+            }
+            case 6: // Title & Desc
+                return !!(formData.title && formData.description);
+            case 7: // Pricing
+                return !!formData.pricing.perNight;
+            case 8: // Rules
+                return !!(formData.rules.checkIn && formData.rules.checkOut);
+            case 9: // Policies
+                return !!formData.policies.cancellation;
+            default:
+                return true;
+        }
+    };
+
     const isInline = true; // Force inline for now based on usage, or pass as prop
 
     if (isInline) {
@@ -1259,14 +1311,14 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                         <button 
                             onClick={() => setCurrentStep(prev => prev + 1)}
                             className="next-btn-premium"
-                            disabled={currentStep === 0 && !formData.category} 
+                            disabled={!validateStep(currentStep)} 
                         >
                             Next
                         </button>
                     ) : (
                         <button 
                             onClick={handleSubmit} 
-                            disabled={loading}
+                            disabled={loading || !validateStep(currentStep)}
                             className="submit-btn-premium"
                         >
                             {loading ? (
@@ -1280,6 +1332,8 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
             </div>
         );
     }
+
+
 
     return (
         <div className="short-stay-modal-overlay">
@@ -1326,13 +1380,14 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                         <button 
                             onClick={() => setCurrentStep(prev => prev + 1)}
                             className="next-btn-premium"
+                            disabled={!validateStep(currentStep)}
                         >
                             Next <FaArrowRight />
                         </button>
                     ) : (
                         <button 
                             onClick={handleSubmit} 
-                            disabled={loading}
+                            disabled={loading || !validateStep(currentStep)}
                             className="submit-btn-premium"
                         >
                             {loading ? (
