@@ -143,4 +143,18 @@ export const shortStayAPI = {
         includeAuth: false
     });
   },
+
+  // --- Host Calendar ---
+  getCalendar: async (propertyId, start, end) => {
+      return apiRequest(`/short-stay/calendar/${propertyId}`, {
+          params: { start, end }
+      });
+  },
+
+  updateCalendar: async (data) => {
+      return apiRequest('/short-stay/calendar/update', {
+          method: 'POST',
+          body: JSON.stringify(data)
+      });
+  },
 };

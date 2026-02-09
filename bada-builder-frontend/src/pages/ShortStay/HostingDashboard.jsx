@@ -7,6 +7,7 @@ import HostingMessages from './HostingMessages';
 import HostingRevenue from './HostingRevenue';
 import { FaTimes } from 'react-icons/fa';
 import './HostingDashboard.css';
+import HostingCalendar from './HostingCalendar';
 import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 const HostingDashboard = () => {
@@ -19,11 +20,23 @@ const HostingDashboard = () => {
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [calendarLoading, setCalendarLoading] = useState(false);
 
+  const [properties, setProperties] = useState([]);
+
   useEffect(() => {
     if (isAuthenticated) {
         fetchReservations();
+        fetchProperties();
     }
   }, [isAuthenticated]);
+
+  const fetchProperties = async () => {
+      try {
+          const response = await shortStayAPI.getMyListings();
+          setProperties(response.properties || []);
+      } catch (error) {
+          console.error("Failed to fetch host properties", error);
+      }
+  };
 
   const fetchReservations = async () => {
     try {
@@ -376,12 +389,7 @@ const HostingDashboard = () => {
         {activeTab === 'calendar' && (
              <div className="calendar-view">
                 {calendarLoading ? <ShortStayLoader /> : (
-                    <>
-                        <h2>Calendar</h2>
-                        <div className="empty-state">
-                            <p>Calendar view coming soon.</p>
-                        </div>
-                    </>
+                    <HostingCalendar properties={properties} />
                 )}
             </div>
         )}
