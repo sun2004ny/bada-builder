@@ -565,6 +565,12 @@ router.post('/reserve', authenticate, async (req, res) => {
     const bookingCode = `RES-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
     // 3. Create Reservation
+    // Inject roomType into guests object if present (for Hotels)
+    const guestsData = typeof guests === 'string' ? JSON.parse(guests) : guests;
+    if (req.body.roomType) {
+        guestsData.roomType = req.body.roomType;
+    }
+
     const result = await client.query(
       `INSERT INTO short_stay_reservations 
        (property_id, user_id, host_id, check_in, check_out, guests, total_price, payment_id, guest_details, booking_code, is_host_verified)
@@ -572,7 +578,7 @@ router.post('/reserve', authenticate, async (req, res) => {
        RETURNING *`,
       [
         propertyId, req.user.id, hostId, checkIn, checkOut, 
-        typeof guests === 'string' ? JSON.parse(guests) : guests, 
+        guestsData, 
         totalPrice, paymentId,
         JSON.stringify(typeof guestDetails === 'string' ? JSON.parse(guestDetails) : (guestDetails || [])),
         bookingCode
@@ -665,5 +671,46 @@ router.post('/host/verify-booking', authenticate, async (req, res) => {
 });
 
 
+
+// --- 11. Get Availability (Booked Counts) ---
+router.get('/availability/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { checkIn, checkOut } = req.query;
+
+        if (!checkIn || !checkOut) {
+            return res.json({ bookedCounts: {} });
+        }
+
+        // Query confirmed reservations that overlap with the requested dates
+        const query = `
+            SELECT guests 
+            FROM short_stay_reservations 
+            WHERE property_id = $1 
+            AND status = 'confirmed'
+            AND (
+                (check_in < $3 AND check_out > $2)
+            )
+        `;
+        
+        const result = await pool.query(query, [id, checkIn, checkOut]);
+
+        // Aggregate booked rooms by type
+        const bookedCounts = {};
+        
+        result.rows.forEach(row => {
+            const guests = row.guests || {};
+            if (guests.roomType) {
+                bookedCounts[guests.roomType] = (bookedCounts[guests.roomType] || 0) + 1;
+            }
+        });
+
+        res.json({ bookedCounts });
+
+    } catch (error) {
+        console.error('Availability Check Error:', error);
+        res.status(500).json({ error: 'Failed to fetch availability' });
+    }
+});
 
 export default router;

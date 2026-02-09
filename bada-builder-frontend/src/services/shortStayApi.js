@@ -133,8 +133,13 @@ export const shortStayAPI = {
     return apiRequest('/short-stay/reservations/traveler');
   },
 
-  getAvailability: async (propertyId) => {
+  getAvailability: async (propertyId, checkIn, checkOut) => {
+    const params = {};
+    if (checkIn) params.checkIn = checkIn;
+    if (checkOut) params.checkOut = checkOut;
+    
     return apiRequest(`/short-stay/availability/${propertyId}`, {
+        params,
         includeAuth: false
     });
   },

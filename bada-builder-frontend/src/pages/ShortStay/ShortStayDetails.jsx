@@ -341,8 +341,7 @@ const ShortStayDetails = () => {
     const [showDescriptionModal, setShowDescriptionModal] = useState(false);
     const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
     
-    // New state for handling room type selection flow
-    const [pendingRoomType, setPendingRoomType] = useState(null);
+
 
 
 
@@ -358,6 +357,27 @@ const ShortStayDetails = () => {
     const [children, setChildren] = useState(0);
     const [infants, setInfants] = useState(0);
     const [pets, setPets] = useState(0);
+
+    // New state for handling room type selection flow
+    const [pendingRoomType, setPendingRoomType] = useState(null);
+    const [roomAvailability, setRoomAvailability] = useState({});
+
+    // Fetch availability when dates change
+    useEffect(() => {
+        const fetchAvailability = async () => {
+            if (id && checkIn && checkOut) {
+                try {
+                    const data = await shortStayAPI.getAvailability(id, checkIn, checkOut);
+                    setRoomAvailability(data.bookedCounts || {});
+                } catch (err) {
+                    console.error("Failed to fetch room availability", err);
+                }
+            } else {
+                setRoomAvailability({}); // Reset if dates cleared
+            }
+        };
+        fetchAvailability();
+    }, [id, checkIn, checkOut]);
 
     // Effect to handle auto-navigation after dates are selected for a specific room type
     useEffect(() => {
@@ -717,18 +737,29 @@ const ShortStayDetails = () => {
                                             <tbody>
                                                 {specific_details.roomTypes.map((room, idx) => {
                                                     const calculatedPrice = Math.ceil(Number(room.price) * 1.05);
+                                                    
+                                                    // Availability Logic
+                                                    const totalRooms = room.count || room.quantity || 10; 
+                                                    const availableCount = (checkIn && checkOut) 
+                                                        ? Math.max(0, totalRooms - (roomAvailability[room.type] || 0))
+                                                        : totalRooms;
+                                                        
+                                                    const isSoldOut = checkIn && checkOut && availableCount <= 0;
+
                                                     return (
                                                         <tr 
                                                             key={idx} 
-                                                            className="room-inventory-row"
+                                                            className={`room-inventory-row ${isSoldOut ? 'disabled-row' : ''}`}
+                                                            style={isSoldOut ? { opacity: 0.5, cursor: 'not-allowed', background: '#f9f9f9' } : {}}
                                                             onClick={() => {
+                                                                if (isSoldOut) return;
+                                                                
                                                                 const roomData = { ...room, price: calculatedPrice };
                                                                 
                                                                 if (!checkIn || !checkOut) {
                                                                     setPendingRoomType(roomData);
                                                                     setShowCalendarModal(true);
                                                                 } else {
-                                                                    // Navigate immediately if dates are set
                                                                     const totalGuests = adults + children;
                                                                     navigate(`/short-stay/reserve/${id}`, {
                                                                         state: { 
@@ -754,7 +785,14 @@ const ShortStayDetails = () => {
                                                                 }
                                                             }}
                                                         >
-                                                            <td>{room.type}</td>
+                                                            <td>
+                                                                <div style={{fontWeight:500}}>{room.type}</div>
+                                                                <div style={{fontSize:'12px', color: (checkIn && checkOut && availableCount < 3) ? '#e11d48' : '#16a34a'}}>
+                                                                    {checkIn && checkOut 
+                                                                        ? (availableCount > 0 ? `${availableCount} rooms left` : 'Sold Out')
+                                                                        : `${totalRooms} rooms total`}
+                                                                </div>
+                                                            </td>
                                                             <td>{room.guestCapacity || '-'}</td>
                                                             <td>₹{calculatedPrice.toLocaleString()}</td>
                                                         </tr>
