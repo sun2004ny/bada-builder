@@ -29,6 +29,8 @@ import shortStayRoutes from './routes/shortStay.js';
 import marketingRoutes from './routes/marketing.js';
 import joinedLiveGroupsRoutes from './routes/joined-live-groups.js';
 import proxyRoutes from './routes/proxy.js';
+import deleteAccountRoutes from './routes/deleteAccount.js';
+import favoritesRoutes from './routes/favorites.js';
 
 
 // Import database
@@ -51,8 +53,6 @@ if (!process.env.DATABASE_URL) {
 
 const app = express();
 const PORT = process.env.PORT || 5001; // Default to 5001 if not set
-
-import favoritesRoutes from './routes/favorites.js';
 
 // Trust proxy for external services (Render, Vercel, etc)
 app.set('trust proxy', 1);
@@ -136,6 +136,7 @@ app.use('/api/short-stay', mutationLimiter, shortStayRoutes);
 app.use('/api/marketing', mutationLimiter, marketingRoutes);
 app.use('/api/joined-live-groups', readLimiter, joinedLiveGroupsRoutes);
 app.use('/api/proxy', readLimiter, proxyRoutes);
+app.use('/api/users/delete-account', mutationLimiter, deleteAccountRoutes);
 
 
 // 404 handler
