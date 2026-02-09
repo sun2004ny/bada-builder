@@ -619,9 +619,9 @@ const DeleteAccountSection = () => {
               >
                 ⚠️
               </motion.span>
-              <div>
-                <h2 className="text-3xl font-black text-white tracking-tight">Danger Zone</h2>
-                <p className="text-red-100 text-sm font-medium mt-1">Permanent and irreversible actions</p>
+              <div className="flex flex-col">
+                <h2 className="text-4xl font-extrabold text-black tracking-tighter drop-shadow-md">Danger Zone</h2>
+                <p className="text-black/80 text-lg font-bold mt-1 uppercase tracking-widest">Permanent and irreversible actions</p>
               </div>
             </div>
           </div>
@@ -676,25 +676,25 @@ const DeleteAccountSection = () => {
             onClick={(e) => e.target === e.currentTarget && handleCloseModal()}
           >
             <motion.div
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-red-600 to-pink-600 px-6 py-5 flex items-center justify-between sticky top-0 z-10">
-                <h3 className="text-xl font-bold text-white">Verify Identity</h3>
+              <div className="bg-gradient-to-r from-red-600 to-pink-600 px-8 py-6 flex items-center justify-between shrink-0 z-10">
+                <h3 className="text-2xl font-black text-white tracking-tight">Verify Identity</h3>
                 <button
                   onClick={handleCloseModal}
-                  className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+                  className="bg-white text-red-600 hover:bg-gray-100 p-2.5 rounded-full transition-all shadow-lg hover:scale-110 active:scale-95 flex items-center justify-center"
                 >
-                  <FiX size={24} />
+                  <FiX size={22} />
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto">
                 {/* Password Verification Step */}
                 {verificationStep === 'password' && (
                   <motion.div

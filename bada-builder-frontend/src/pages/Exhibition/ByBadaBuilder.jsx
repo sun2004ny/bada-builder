@@ -26,7 +26,7 @@ const ByBadaBuilder = () => {
         });
 
         const propertiesData = response.properties || response || [];
-        
+
         // Sort by created_at desc (newest first)
         propertiesData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -80,9 +80,9 @@ const ByBadaBuilder = () => {
           <Link to="/exhibition/badabuilder" className="tab active">
             By Bada Builder
           </Link>
-          <Link to="/go-global" className="tab">
+          {/* <Link to="/go-global" className="tab">
             🌍 Go Global
-          </Link>
+          </Link> */}
         </motion.div>
 
         {/* View Toggle */}

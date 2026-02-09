@@ -373,14 +373,14 @@ const Header = () => {
               Investment
             </PreloaderLink>
 
-            <PreloaderLink
+            {/* <PreloaderLink
               to="/100-months"
               icon={<FiDollarSign />}
               text="100 Months"
               className="nav-link relative py-2 px-3 text-gray-900 hover:text-[#58335e] transition-all duration-200 after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
             >
               💰 100 Months
-            </PreloaderLink>
+            </PreloaderLink> */}
 
             <PreloaderLink
               to="/contact"
@@ -741,7 +741,7 @@ const Header = () => {
                   <span>Investment</span>
                 </PreloaderLink>
 
-                <PreloaderLink
+                {/* <PreloaderLink
                   to="/100-months"
                   icon={<FiDollarSign />}
                   text="100 Months"
@@ -750,7 +750,7 @@ const Header = () => {
                 >
                   <span className="mobile-icon-box"><FiDollarSign /></span>
                   <span>100 Months</span>
-                </PreloaderLink>
+                </PreloaderLink> */}
 
                 <div className="mobile-menu-divider-thin"></div>
 

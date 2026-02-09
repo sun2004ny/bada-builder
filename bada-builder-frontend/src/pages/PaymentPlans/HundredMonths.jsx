@@ -21,7 +21,7 @@ const HundredMonths = () => {
       const propertiesRef = collection(db, 'properties');
       const q = query(propertiesRef, where('paymentPlanEnabled', '==', true));
       const snapshot = await getDocs(q);
-      
+
       const propertiesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -34,6 +34,10 @@ const HundredMonths = () => {
       setLoading(false);
     }
   };
+
+  // Feature temporarily disabled (UI hidden by design)
+  // Do not remove – may be re-enabled in future
+  return null;
 
   return (
     <div className="hundred-months-page">
@@ -172,7 +176,7 @@ const HundredMonths = () => {
                       <span className="value">₹{((property.price - property.bookingAmount) / 100 / 1000).toFixed(2)}K</span>
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="view-plan-btn"
                     onClick={() => navigate(`/100-months/property/${property.id}`)}
                   >
@@ -190,7 +194,7 @@ const HundredMonths = () => {
         <div className="my-plans-section">
           <div className="my-plans-header">
             <h2>My Payment Plans</h2>
-            <button 
+            <button
               className="view-all-btn"
               onClick={() => navigate('/profile/payment-plans')}
             >
@@ -236,7 +240,7 @@ const HundredMonths = () => {
       <div className="cta-section-100">
         <h2>Ready to Own Your Dream Property?</h2>
         <p>Start your journey with our flexible 100-month payment plan</p>
-        <button 
+        <button
           className="cta-btn-100"
           onClick={() => {
             if (currentUser) {

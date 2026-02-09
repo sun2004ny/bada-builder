@@ -118,8 +118,8 @@ const GoGlobal = () => {
   const filteredProperties = globalProperties.filter(property => {
     const matchesCountry = selectedCountry === 'all' || property.country === selectedCountry;
     const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         property.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         property.country.toLowerCase().includes(searchQuery.toLowerCase());
+      property.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.country.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCountry && matchesSearch;
   });
 
@@ -131,6 +131,10 @@ const GoGlobal = () => {
     }
     return `₹${amount.toLocaleString('en-IN')}`;
   };
+
+  // Feature temporarily disabled (UI hidden by design)
+  // Do not remove – may be re-enabled in future
+  return null;
 
   return (
     <div className="go-global-page">
@@ -250,7 +254,7 @@ const GoGlobal = () => {
                       <span className="price-value">{formatINR(property.priceInINR)}</span>
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="view-property-btn"
                     onClick={() => navigate(`/go-global/property/${property.id}`)}
                   >
@@ -294,7 +298,7 @@ const GoGlobal = () => {
       <div className="cta-section-global">
         <h2>Ready to Invest Globally?</h2>
         <p>Connect with our international property experts today</p>
-        <button 
+        <button
           className="cta-btn-global"
           onClick={() => navigate('/contact')}
         >
