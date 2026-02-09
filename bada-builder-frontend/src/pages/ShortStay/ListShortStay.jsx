@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ShortStayForm from '../../components/ShortStay/ShortStayForm';
 import './ListShortStay.css';
+import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 const ListShortStay = () => {
     const navigate = useNavigate();
@@ -15,11 +16,7 @@ const ListShortStay = () => {
     }, [isAuthenticated, loading, navigate]);
 
     if (loading) {
-        return (
-            <div className="list-short-stay-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <div className="loading-spinner"></div>
-            </div>
-        );
+        return <ShortStayLoader />;
     }
 
     return (

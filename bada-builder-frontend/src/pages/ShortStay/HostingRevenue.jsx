@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import { shortStayAPI } from '../../services/shortStayApi';
 import './HostingRevenue.css';
+import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 const HostingRevenue = () => {
     const [summary, setSummary] = useState(null);
@@ -33,11 +34,7 @@ const HostingRevenue = () => {
     };
 
     if (loading) {
-        return (
-            <div className="hosting-revenue-container">
-                <div style={{ textAlign: 'center', padding: '60px' }}>Loading analytics...</div>
-            </div>
-        );
+        return <ShortStayLoader />;
     }
 
     // Custom Tooltip for Chart

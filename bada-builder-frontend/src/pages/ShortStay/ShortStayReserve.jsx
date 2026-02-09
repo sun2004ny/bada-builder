@@ -6,6 +6,7 @@ import { FiPlus, FiMinus, FiX } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { shortStayAPI } from '../../services/shortStayApi';
 import './ShortStayReserve.css';
+import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 // --- Reused CalendarModal (from details page) ---
 const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) => {
@@ -581,6 +582,10 @@ const ShortStayReserve = () => {
             }, 2000);
         }
     };
+
+    if (loading) {
+        return <ShortStayLoader />;
+    }
 
     if (showGuestDetailsStep) {
         return (

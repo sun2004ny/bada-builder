@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getUserChats } from '../../services/chatService';
 import { FiMessageSquare, FiUser } from 'react-icons/fi';
 import './ChatList.css';
+import ShortStayLoader from '../ShortStay/ShortStayLoader';
 
 const ChatList = ({ onChatSelect, activeChatId, refreshTrigger, realTimeChatUpdate }) => {
     const { currentUser } = useAuth();
@@ -144,12 +145,7 @@ const ChatList = ({ onChatSelect, activeChatId, refreshTrigger, realTimeChatUpda
     };
 
     if (loading) {
-        return (
-            <div className="chat-list-loading">
-                <div className="chat-list-loader"></div>
-                <p>Loading your chats...</p>
-            </div>
-        );
+        return <ShortStayLoader />;
     }
 
     if (chats.length === 0) {

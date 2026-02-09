@@ -7,6 +7,7 @@ import HostingMessages from './HostingMessages';
 import HostingRevenue from './HostingRevenue';
 import { FaTimes } from 'react-icons/fa';
 import './HostingDashboard.css';
+import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 const HostingDashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const HostingDashboard = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReservation, setSelectedReservation] = useState(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -69,6 +71,18 @@ const HostingDashboard = () => {
     }
   };
 
+  const handleCalendarClick = () => {
+      setActiveTab('calendar');
+      setCalendarLoading(true);
+      setTimeout(() => {
+          setCalendarLoading(false);
+      }, 800);
+  };
+
+  if (loading) {
+      return <ShortStayLoader />;
+  }
+
   return (
     <div className="hosting-dashboard">
       {/* ... header ... */}
@@ -88,7 +102,7 @@ const HostingDashboard = () => {
             </button>
             <button 
                 className={`nav-item ${activeTab === 'calendar' ? 'active' : ''}`}
-                onClick={() => setActiveTab('calendar')}
+                onClick={handleCalendarClick}
             >
                 Calendar
             </button>
@@ -361,10 +375,14 @@ const HostingDashboard = () => {
         
         {activeTab === 'calendar' && (
              <div className="calendar-view">
-                <h2>Calendar</h2>
-                <div className="empty-state">
-                    <p>Calendar view coming soon.</p>
-                </div>
+                {calendarLoading ? <ShortStayLoader /> : (
+                    <>
+                        <h2>Calendar</h2>
+                        <div className="empty-state">
+                            <p>Calendar view coming soon.</p>
+                        </div>
+                    </>
+                )}
             </div>
         )}
 

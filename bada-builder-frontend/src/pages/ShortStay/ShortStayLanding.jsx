@@ -7,7 +7,7 @@ import './ShortStayLanding.css';
 import { shortStayAPI } from '../../services/shortStayApi';
 import { useAuth } from '../../context/AuthContext';
 import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch, FaArrowRight, FaTimes, FaSuitcaseRolling } from 'react-icons/fa';
-
+import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 
 import { CalendarPopup, GuestPopup } from './SearchPopups';

@@ -8,6 +8,7 @@ import {
 import { getSocket } from '../../services/socketService';
 import { FiSend, FiX } from 'react-icons/fi';
 import './ChatBox.css';
+import ShortStayLoader from '../ShortStay/ShortStayLoader';
 
 const QUICK_MESSAGES = [
     "Is this property still available?",
@@ -194,10 +195,7 @@ const ChatBox = ({
             {/* Messages Area */}
             <div className="chat-messages" ref={chatContainerRef}>
                 {loading ? (
-                    <div className="chat-loading">
-                        <div className="chat-loader"></div>
-                        <p>Loading messages...</p>
-                    </div>
+                    <ShortStayLoader />
                 ) : messages.length === 0 ? (
                     <div className="chat-empty">
                         <p>No messages yet. Start the conversation!</p>

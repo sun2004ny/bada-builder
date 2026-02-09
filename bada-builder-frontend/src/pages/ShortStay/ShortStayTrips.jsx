@@ -4,6 +4,7 @@ import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { shortStayAPI } from '../../services/shortStayApi';
 import { FaCalendarAlt, FaMapMarkerAlt, FaUser, FaRupeeSign, FaSuitcaseRolling, FaChevronRight } from 'react-icons/fa';
 import './ShortStayTrips.css';
+import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 const ShortStayTrips = () => {
   const navigate = useNavigate();
@@ -43,6 +44,10 @@ const ShortStayTrips = () => {
     return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   };
 
+  if (loading) {
+      return <ShortStayLoader />;
+  }
+
   return (
     <div className="trips-page-container">
       <div className="trips-header-section">
@@ -66,12 +71,7 @@ const ShortStayTrips = () => {
       </div>
 
       <div className="trips-content-wrapper">
-        {loading ? (
-          <div className="trips-loading">
-            <div className="trip-spinner"></div>
-            <p>Loading your adventures...</p>
-          </div>
-        ) : displayTrips.length === 0 ? (
+        {displayTrips.length === 0 ? (
           <Motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

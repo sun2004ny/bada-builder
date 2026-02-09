@@ -15,6 +15,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './ShortStayDetails.css';
+import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 const CalendarModal = ({ 
     isOpen, onClose, checkIn, checkOut, onSelectDates, bookedDates = [],
@@ -518,7 +519,7 @@ const ShortStayDetails = () => {
         return `Joined ${years} ${years === 1 ? 'year' : 'years'} ago`;
     };
 
-    if (loading) return <div className="short-stay-page loading">Loading...</div>;
+    if (loading) return <ShortStayLoader />;
     if (!property) return <div className="short-stay-page error">Property not found</div>;
 
     const {
