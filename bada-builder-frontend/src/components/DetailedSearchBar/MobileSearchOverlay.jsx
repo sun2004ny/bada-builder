@@ -77,12 +77,12 @@ const MobileSearchOverlay = ({
             </div>
 
             <div className="mobile-search-top-bar">
-                <button className="mobile-search-close-btn" onClick={onClose} aria-label="Close search">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M20 4L4 20M4 4l16 16" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </button>
                 <div className="mobile-search-input-box">
+                    <button className="mobile-search-close-btn" onClick={onClose} aria-label="Close search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M20 4L4 20M4 4l16 16" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
                     <input
                         type="text"
                         className="mobile-search-field"

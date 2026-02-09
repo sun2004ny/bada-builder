@@ -68,18 +68,18 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
                         className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
                     >
                         {/* Tower Header */}
-                        <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 flex items-center justify-between !text-white">
+                        <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-4 md:px-6 py-4 flex items-center justify-between !text-white">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                                    <Building2 className="w-6 h-6 text-emerald-400" />
+                                    <Building2 className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold tracking-tight !text-white">
+                                    <h2 className="text-lg md:text-xl font-bold tracking-tight !text-white">
                                         {(project.type === 'Bungalow' || project.type === 'Colony' || project.type === 'Plot')
                                             ? project.title
                                             : tower.tower_name}
                                     </h2>
-                                    <p className="text-sm !text-slate-300 flex items-center gap-2">
+                                    <p className="text-xs md:text-sm !text-slate-300 flex items-center gap-2">
                                         <Layers size={14} />
                                         {(project.type === 'Bungalow' || project.type === 'Plot')
                                             ? `${tower.units?.length || 0} ${project.type === 'Plot' ? 'Plots' : 'Bungalows'}`
@@ -91,10 +91,10 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
                         </div>
 
                         {/* Content Container */}
-                        <div className="p-4 md:p-6 space-y-4">
+                        <div className="p-3 md:p-6 space-y-6">
                             {(project.type === 'Bungalow' || project.type === 'Plot') ? (
                                 /* BUNGALOW/PLOT VIEW: Flat Grid */
-                                <div className="flex flex-wrap gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
                                     {tower.units
                                         .sort((a, b) => {
                                             // Numeric sort for B-1, B-2 etc.
@@ -116,9 +116,9 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
                                         return acc;
                                     }, {})
                                 ).sort((a, b) => b[0] - a[0]).map(([floor, units]) => (
-                                    <div key={floor} className="flex flex-col md:flex-row gap-6 items-start py-5 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors rounded-xl px-3 group/floor">
+                                    <div key={floor} className="flex flex-col md:flex-row gap-4 md:gap-6 items-start py-5 border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors rounded-xl px-2 md:px-3 group/floor">
                                         {/* Floor Label */}
-                                        <div className="flex flex-row md:flex-col items-center justify-center gap-3 md:gap-0 min-w-[70px] text-center">
+                                        <div className="flex flex-row md:flex-col items-center justify-center gap-3 md:gap-0 min-w-full md:min-w-[70px] text-center bg-slate-100/50 md:bg-transparent py-2 md:py-0 rounded-lg">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Floor</span>
                                             <span className="text-3xl font-black text-slate-800 tracking-tighter leading-none">
                                                 {floor === '0' ? 'GF' : floor === '-1' ? 'B' : floor}
@@ -126,7 +126,7 @@ const TwoDView = ({ project, onUnitClick, onEditClick, isAdminView = false }) =>
                                         </div>
 
                                         {/* Units Grid */}
-                                        <div className="flex-1 flex flex-wrap gap-4">
+                                        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 w-full">
                                             {units.sort((a, b) => a.unit_number.localeCompare(b.unit_number)).map((unit) => {
                                                 const config = getUnitConfig(unit.unit_type);
                                                 return renderUnitCard(unit, config, onUnitClick, isAdminView, activeMenu, setActiveMenu, onEditClick);
@@ -151,7 +151,7 @@ const renderUnitCard = (unit, config, onUnitClick, isAdminView, activeMenu, setA
 
     if (unit.status === 'booked') {
         statusOverlay = (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl z-10">
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-2xl z-10">
                 <div className="rotate-[-15deg] border-2 border-rose-500 text-rose-500 font-black text-[10px] px-1 rounded uppercase">Sold</div>
             </div>
         );
@@ -173,11 +173,11 @@ const renderUnitCard = (unit, config, onUnitClick, isAdminView, activeMenu, setA
     return (
         <motion.button
             key={unit.id}
-            className={`relative group/unit w-24 h-28 md:w-28 md:h-32 flex flex-col items-center justify-between p-3 rounded-2xl transition-all duration-300 ease-out bg-white border-2 ${config.border} ${interactivityClasses}`}
+            className={`relative group/unit w-full md:w-28 min-h-[190px] md:h-32 flex flex-col items-center justify-start p-2 md:p-3 rounded-2xl transition-all duration-300 ease-out bg-white border-2 ${config.border} ${interactivityClasses} overflow-hidden`}
             onClick={() => onUnitClick(unit)}
             whileHover={unit.status === 'available' ? { y: -4 } : {}}
             whileTap={unit.status === 'available' ? { scale: 0.98 } : {}}
-            disabled={unit.status !== 'available' && !isAdminView} // Allow admin to click booked units
+            disabled={unit.status !== 'available' && !isAdminView}
         >
             {statusOverlay}
 
@@ -218,19 +218,20 @@ const renderUnitCard = (unit, config, onUnitClick, isAdminView, activeMenu, setA
                 </div>
             )}
 
-            {/* Top Section */}
-            <div className="w-full flex flex-col items-center gap-1.5">
+            {/* Content Wrapper for Flex Distribution */}
+            <div className="w-full flex-grow flex flex-col gap-0 md:gap-1.5 lg:gap-1">
+                {/* Image Section */}
                 {(() => {
                     const imgUrl = unit.unit_image_url || unit.image_url || (unit.images && unit.images[0]);
                     if (imgUrl) {
                         return (
-                            <div className="w-full h-12 mb-1 rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
+                            <div className="w-[calc(100%+1rem)] -mx-2 -mt-2 md:w-[calc(100%+1.5rem)] md:-mx-3 md:-mt-3 lg:w-[calc(100%+1rem)] lg:-mx-2 lg:-mt-2 aspect-[4/3] md:h-12 lg:h-10 overflow-hidden bg-slate-50 shrink-0 border-b border-slate-100">
                                 <img
                                     src={imgUrl}
                                     alt={`Unit ${unit.unit_number}`}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover block"
                                     onError={(e) => {
-                                        console.error('❌ TwoDView Image Load Error:', imgUrl);
+                                        console.error('❌ Unit Card Image Load Error:', imgUrl);
                                         e.target.style.display = 'none';
                                     }}
                                 />
@@ -238,26 +239,28 @@ const renderUnitCard = (unit, config, onUnitClick, isAdminView, activeMenu, setA
                         );
                     }
                     return (
-                        <div className={`p-1 rounded-lg ${config.bg} ${config.color}`}>
-                            <TypeIcon size={14} />
+                        <div className={`w-[calc(100%+1rem)] -mx-2 -mt-2 md:w-[calc(100%+1.5rem)] md:-mx-3 md:-mt-3 lg:w-[calc(100%+1rem)] lg:-mx-2 lg:-mt-2 p-2 md:p-1 ${config.bg} ${config.color} flex items-center justify-center aspect-[4/3] md:h-12 lg:h-10 shrink-0 border-b border-slate-100`}>
+                            <TypeIcon size={20} className="md:w-3.5 md:h-3.5" />
                         </div>
                     );
                 })()}
-                <span className={`w-full text-[7px] md:text-[8px] font-black uppercase px-1 py-0.5 rounded-md ${config.bg} ${config.color} border ${config.border} text-center leading-none truncate`}>
-                    {config.label}
-                </span>
-            </div>
 
-            {/* Middle Section */}
-            <div className="flex flex-col items-center gap-0.5">
-                <span className="text-sm font-black text-slate-800 tracking-tight leading-none">{unit.unit_number}</span>
-            </div>
+                {/* Info Text */}
+                <div className="flex flex-col items-center gap-0.5 md:gap-0.5 w-full">
+                    <span className={`w-full text-[9px] md:text-[8px] font-black uppercase px-1 py-0.5 md:py-0.5 rounded-md ${config.bg} ${config.color} border ${config.border} text-center leading-none truncate`}>
+                        {config.label}
+                    </span>
+                    <span className="text-base md:text-sm font-black text-slate-800 tracking-tight leading-none mt-0 lg:mt-0.5">
+                        {unit.unit_number}
+                    </span>
+                </div>
 
-            {/* Bottom Section */}
-            <div className="w-full pt-2 border-t border-slate-100 flex flex-col items-center gap-0.5">
-                <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                    {unit.area} ft²
-                </span>
+                {/* Area Badge - Bottom Aligned */}
+                <div className="w-full mt-auto lg:mt-1 pt-2 md:pt-2 lg:pt-1 border-t border-slate-100 flex flex-col items-center bg-white pb-1 lg:pb-0.5">
+                    <span className="text-[11px] md:text-[9px] font-bold text-slate-600 bg-slate-100 px-2 md:px-1.5 py-1 md:py-0.5 rounded-full whitespace-nowrap">
+                        {unit.area} ft²
+                    </span>
+                </div>
             </div>
 
             {/* Premium Tooltip */}

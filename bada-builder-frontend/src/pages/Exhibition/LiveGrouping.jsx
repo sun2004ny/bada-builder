@@ -8,7 +8,7 @@ import useViewPreference from '../../hooks/useViewPreference';
 import { calculateTokenAmount, formatCurrency, calculatePriceRange, formatPriceRange } from '../../utils/liveGroupingCalculations';
 import './Exhibition.css';
 import './LiveGrouping.css';
-import heroVideo from '../../assets/live groping video.mp4';
+import heroVideo from '../../assets/live-grouping.mp4';
 
 const Highlight = ({ text, highlight }) => {
   if (!highlight || !text) return <>{text}</>;
@@ -715,19 +715,12 @@ const LiveGrouping = () => {
           <Link to="/exhibition/badabuilder" className="tab">
             By Bada Builder
           </Link>
-          <Link to="/go-global" className="tab">
+          {/* <Link to="/go-global" className="tab">
             🌍 Go Global
-          </Link>
+          </Link> */}
         </motion.div>
 
-        {/* View Toggle */}
-        {
-          !loading && (activeGroups.length > 0 || closedGroups.length > 0) && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-              <ViewToggle view={view} onViewChange={setView} />
-            </div>
-          )
-        }
+
 
         {/* How It Works Section */}
         <motion.div
@@ -760,6 +753,16 @@ const LiveGrouping = () => {
             </div>
           </div>
         </motion.div>
+
+
+        {/* View Toggle */}
+        {
+          !loading && (activeGroups.length > 0 || closedGroups.length > 0) && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+              <ViewToggle view={view} onViewChange={setView} />
+            </div>
+          )
+        }
 
         {/* Active Live Groups Grid */}
         <motion.div

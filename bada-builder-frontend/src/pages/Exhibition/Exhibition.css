@@ -3,7 +3,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
-  padding: 100px 20px 60px;
+  padding: 60px 20px 40px;
   position: relative;
 }
 
@@ -43,7 +43,7 @@
 /* Header */
 .exhibition-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -137,7 +137,7 @@
   display: flex;
   justify-content: center;
   gap: 20px;
-  margin-bottom: 50px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(15px);
@@ -203,7 +203,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 35px;
-  margin-bottom: 60px;
+  margin-bottom: 30px;
   transition: all 0.3s ease;
   perspective: 1000px;
 }

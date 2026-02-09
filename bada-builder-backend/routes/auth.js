@@ -113,8 +113,11 @@ router.post(
 
             const { email, password } = req.body;
 
-            // Find user
-            const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+            // Find user (exclude deleted accounts)
+            const result = await pool.query(
+                'SELECT * FROM users WHERE email = $1 AND (is_deleted = FALSE OR is_deleted IS NULL)',
+                [email]
+            );
             if (result.rows.length === 0) {
                 return res.status(401).json({ error: 'Invalid email or password' });
             }
@@ -240,11 +243,11 @@ router.put('/profile', authenticate, async (req, res) => {
             updates.push(`profile_photo = $${paramCount++}`);
             values.push(profile_photo);
         }
-        
+
         // Add bio update if provided
         if (req.body.bio !== undefined) {
-             updates.push(`bio = $${paramCount++}`);
-             values.push(req.body.bio);
+            updates.push(`bio = $${paramCount++}`);
+            values.push(req.body.bio);
         }
 
         if (updates.length === 0) {

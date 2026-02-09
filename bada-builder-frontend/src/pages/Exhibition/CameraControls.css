@@ -133,12 +133,12 @@
     }
 
     .btn-pos-top {
-        top: 80px;
-        /* Moved down to clear header */
+        top: 120px;
+        /* Moved down further to clear new header height */
     }
 
     .btn-pos-bottom {
-        bottom: 20px;
+        bottom: 40px;
     }
 
     .btn-pos-left {

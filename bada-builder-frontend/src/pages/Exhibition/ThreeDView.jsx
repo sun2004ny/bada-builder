@@ -4,7 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Sky, Text, PerspectiveCamera, Html, Billboard } from '@react-three/drei';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
-import { ChevronLeft, Layers, Box, Info, Timer, X, CreditCard, ChevronUp, ChevronDown, ChevronRight, Plus, Minus, Move } from 'lucide-react';
+import { ChevronLeft, Layers, Box, Info, Timer, X, CreditCard, ChevronUp, ChevronDown, ChevronRight, Plus, Minus, Move, Maximize } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { liveGroupDynamicAPI } from '../../services/api';
 import './LiveGrouping.css';
@@ -1829,6 +1829,28 @@ const ThreeDView = () => {
     const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showIntroStep, setShowIntroStep] = useState(false);
+    const [fullScreenImage, setFullScreenImage] = useState(null);
+    const [fullScreenGalleryIndex, setFullScreenGalleryIndex] = useState(-1); // -1 means not from gallery
+
+    // Full Screen Image Handlers
+    useEffect(() => {
+        if (fullScreenImage) {
+            // Prevent scrolling
+            document.body.style.overflow = 'hidden';
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    setFullScreenImage(null);
+                    setFullScreenGalleryIndex(-1);
+                }
+            };
+            window.addEventListener('keydown', handleKeyDown);
+            return () => {
+                document.body.style.overflow = 'unset'; // Restore scrolling
+                window.removeEventListener('keydown', handleKeyDown);
+            };
+        }
+    }, [fullScreenImage]);
 
     // Camera Controls State
     const controlsRef = useRef();
@@ -2063,77 +2085,76 @@ const ThreeDView = () => {
         <div className="relative w-full h-screen bg-[#0f172a] overflow-hidden p-4 md:p-12 lg:p-16">
             <div className="relative w-full h-full rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.6)] bg-slate-900">
                 {/* Header Overlay */}
-                <div className="absolute top-0 left-0 w-full z-50 p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-to-b from-slate-900/90 via-slate-900/40 to-transparent pointer-events-none space-y-4 md:space-y-0 text-shadow-sm">
-                    <div className="pointer-events-auto flex items-center gap-4 w-full md:w-auto">
-                        <button
-                            className="threed-back-btn bg-white/10 backdrop-blur-md !text-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 flex items-center gap-2 group shadow-lg shadow-black/5"
-                            onClick={() => navigate(-1)}
-                            style={{
-                                color: 'white',
-                                backgroundColor: 'rgba(15, 23, 42, 0.8)', // Slate-900 with opacity
-                                zIndex: 60
-                            }}
-                        >
-                            <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                            <span className="hidden sm:inline">Back</span>
-                        </button>
+                <div className="absolute top-0 left-0 w-full z-50 p-4 md:p-6 bg-gradient-to-b from-slate-900/90 via-slate-900/40 to-transparent pointer-events-none text-shadow-sm flex flex-col gap-4">
+                    {/* Top Row: Back Button & View Toggle */}
+                    <div className="flex items-center justify-between w-full pointer-events-auto">
+                        <div className="flex items-center gap-3">
+                            <button
+                                className="threed-back-btn bg-white/10 backdrop-blur-md !text-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 flex items-center gap-2 group shadow-lg shadow-black/5"
+                                onClick={() => navigate(-1)}
+                                style={{
+                                    color: 'white',
+                                    backgroundColor: 'rgba(15, 23, 42, 0.8)', // Slate-900 with opacity
+                                    zIndex: 60
+                                }}
+                            >
+                                <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                                <span className="hidden sm:inline">Back</span>
+                            </button>
 
-                        {viewMode === '3d' && (
-                            <div className="!text-white flex-1 md:flex-none">
-                                <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
-                                <p className="text-xs md:text-sm !text-slate-200 font-medium flex items-center gap-2">
-                                    {project.location}
-                                    {project.type === 'Plot' ? (
-                                        <>
-                                            <span className="w-1 h-1 rounded-full bg-white/50"></span>
-                                            Plot / Land
-                                        </>
-                                    ) : (project.type !== 'Bungalow' && project.type !== 'Colony' && !project.type.toLowerCase().includes('commercial')) && (
-                                        <>
-                                            <span className="w-1 h-1 rounded-full bg-white/50"></span>
-                                            {project.towers.length} Towers
-                                        </>
-                                    )}
-                                    <span className="w-1 h-1 rounded-full bg-white/50"></span>
-                                    {project.total_slots} Units
-                                </p>
+                            {/* Project Info (Desktop only, next to back button) */}
+                            {viewMode === '3d' && (
+                                <div className="hidden md:block !text-white">
+                                    <h1 className="text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
+                                    <p className="text-sm !text-slate-200 font-medium flex items-center gap-2">
+                                        {project.location} • {project.total_slots} Units
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* View Toggle (Aligned right of back button on mobile) */}
+                        <div className="flex items-center gap-3">
+                            <div className="bg-slate-900/40 backdrop-blur-xl p-1 md:p-1.5 rounded-full border border-white/10 flex relative shadow-2xl">
+                                {['3d', '2d'].map((mode) => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => setViewMode(mode)}
+                                        className={`threed-toggle-btn relative z-10 px-4 py-1.5 md:px-6 md:py-2.5 rounded-full text-[10px] md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-1.5 md:gap-2 ${viewMode === mode ? '!text-black' : '!text-white'
+                                            }`}
+                                        style={{
+                                            color: viewMode === mode ? 'black' : 'white',
+                                            backgroundColor: 'transparent',
+                                            mixBlendMode: 'normal',
+                                            border: 'none',
+                                            outline: 'none'
+                                        }}
+                                    >
+                                        {viewMode === mode && (
+                                            <motion.div
+                                                layoutId="toggle-bg"
+                                                className="absolute inset-0 bg-white rounded-full shadow-lg"
+                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                style={{ zIndex: -1, backgroundColor: 'white' }}
+                                            />
+                                        )}
+                                        {mode === '3d' ? <Box size={14} strokeWidth={2.5} /> : <Layers size={14} strokeWidth={2.5} />}
+                                        <span className="whitespace-nowrap">{mode === '3d' ? '3D View' : 'Blueprint'}</span>
+                                    </button>
+                                ))}
                             </div>
-                        )}
-                    </div>
-
-                    {/* View Toggle */}
-                    <div className="pointer-events-auto self-center md:self-auto flex items-center gap-3">
-                        {/* Premium Toggle (only for Plot type) */}
-                        {/* Premium Toggle removed as per user request */}
-                        <div className="bg-slate-900/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 flex relative shadow-2xl">
-                            {['3d', '2d'].map((mode) => (
-                                <button
-                                    key={mode}
-                                    onClick={() => setViewMode(mode)}
-                                    className={`threed-toggle-btn relative z-10 px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${viewMode === mode ? '!text-black' : '!text-white'
-                                        }`}
-                                    style={{
-                                        color: viewMode === mode ? 'black' : 'white',
-                                        backgroundColor: 'transparent', // Force transparent to override global button styles
-                                        mixBlendMode: 'normal',
-                                        border: 'none',
-                                        outline: 'none'
-                                    }}
-                                >
-                                    {viewMode === mode && (
-                                        <motion.div
-                                            layoutId="toggle-bg"
-                                            className="absolute inset-0 bg-white rounded-full shadow-lg"
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                            style={{ zIndex: -1, backgroundColor: 'white' }}
-                                        />
-                                    )}
-                                    {mode === '3d' ? <Box size={14} strokeWidth={2.5} /> : <Layers size={14} strokeWidth={2.5} />}
-                                    {mode === '3d' ? '3D View' : 'Blueprint'}
-                                </button>
-                            ))}
                         </div>
                     </div>
+
+                    {/* Mobile Only Title (Beneath controls to avoid row crowding) */}
+                    {viewMode === '3d' && (
+                        <div className="md:hidden !text-white pointer-events-none px-1">
+                            <h1 className="text-lg font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
+                            <p className="text-[10px] !text-slate-200 font-medium flex items-center gap-2">
+                                {project.location} • {project.total_slots} Units
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Split Camera Controls */}
@@ -2269,7 +2290,15 @@ const ThreeDView = () => {
                                         if (!imgUrl) return null;
 
                                         return (
-                                            <div className="up-image-container">
+                                            <div
+                                                className="fs-image-wrapper-new"
+                                                onClick={() => setFullScreenImage(imgUrl)}
+                                                style={{ cursor: 'pointer' }}
+                                                title="View Full Screen"
+                                            >
+                                                <button className="fs-expand-btn-new">
+                                                    <Maximize className="fs-expand-icon-new" />
+                                                </button>
                                                 <img
                                                     src={imgUrl}
                                                     alt="Brochure Preview"
@@ -2318,7 +2347,19 @@ const ThreeDView = () => {
 
                                                 console.log('🖼️ Selection Modal Image URL:', imgUrl);
                                                 return (
-                                                    <div className="w-full h-32 md:h-44 md:mb-0.5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 shrink-0">
+                                                    <div
+                                                        className="w-full h-32 md:h-44 md:mb-0.5 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 shrink-0 cursor-pointer relative"
+                                                        onClick={() => setFullScreenImage(imgUrl)}
+                                                    >
+                                                        <button
+                                                            className="fs-expand-btn-new"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setFullScreenImage(imgUrl);
+                                                            }}
+                                                        >
+                                                            <Maximize className="fs-expand-icon-new" />
+                                                        </button>
                                                         <img
                                                             src={imgUrl}
                                                             alt={`Unit ${selectedUnit.unit_number}`}
@@ -2448,17 +2489,31 @@ const ThreeDView = () => {
                                                                                 <div className="w-full h-40 md:h-48 relative rounded-2xl overflow-hidden bg-slate-200 border border-slate-100 shadow-sm">
                                                                                     {gallery.length > 0 ? (
                                                                                         <>
+                                                                                            <button
+                                                                                                className="fs-expand-btn-left"
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    setFullScreenImage(gallery[currentImageIndex]);
+                                                                                                    setFullScreenGalleryIndex(currentImageIndex);
+                                                                                                }}
+                                                                                            >
+                                                                                                <Maximize className="fs-expand-icon-new" />
+                                                                                            </button>
                                                                                             <img
                                                                                                 src={gallery[currentImageIndex]}
                                                                                                 alt={`Gallery ${currentImageIndex + 1}`}
-                                                                                                className="w-full h-full object-cover block object-center transition-all duration-300"
+                                                                                                className="w-full h-full object-cover block object-center transition-all duration-300 cursor-pointer"
+                                                                                                onClick={() => {
+                                                                                                    setFullScreenImage(gallery[currentImageIndex]);
+                                                                                                    setFullScreenGalleryIndex(currentImageIndex);
+                                                                                                }}
                                                                                                 loading="lazy"
                                                                                                 onError={(e) => { e.target.style.display = 'none'; }}
                                                                                             />
 
                                                                                             {gallery.length > 1 && (
                                                                                                 <>
-                                                                                                    {/* Navigation Buttons */}
+                                                                                                    {/* Navigation Buttons for Card Slider */}
                                                                                                     <button
                                                                                                         onClick={(e) => {
                                                                                                             e.stopPropagation();
@@ -2705,10 +2760,96 @@ const ThreeDView = () => {
                         </div>
                     )
                 }
-            </div >
+            </div>
 
+            {/* Full Screen Image Viewer Overlay */}
+            {/* Full Screen Image Viewer Overlay */}
+            <AnimatePresence>
+                {fullScreenImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fs-overlay"
+                        onClick={() => {
+                            setFullScreenImage(null);
+                            setFullScreenGalleryIndex(-1);
+                        }}
+                    >
+                        <button
+                            className="fs-viewer-close-btn"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setFullScreenImage(null);
+                                setFullScreenGalleryIndex(-1);
+                            }}
+                        >
+                            <X className="fs-viewer-close-icon" />
+                        </button>
 
-        </div >
+                        {/* Slider Controls (Only if opened from gallery) */}
+                        {fullScreenGalleryIndex !== -1 && selectedUnit && selectedUnit.unit_gallery && (
+                            (() => {
+                                let gallery = selectedUnit.unit_gallery;
+                                // Need to parse again if it's string (safely reuse parsing logic or just rely on prev parsed check)
+                                // Ideally we should normalize data structure earlier, but for safety:
+                                if (typeof gallery === 'string') {
+                                    try {
+                                        gallery = JSON.parse(gallery);
+                                    } catch (e) {
+                                        if (gallery.trim().startsWith('{')) {
+                                            gallery = gallery.trim().slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                                        } else {
+                                            gallery = [];
+                                        }
+                                    }
+                                }
+                                if (!Array.isArray(gallery) || gallery.length <= 1) return null;
+
+                                return (
+                                    <>
+                                        <button
+                                            className="gallery-fs-nav-btn gallery-fs-nav-left"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIndex = (fullScreenGalleryIndex - 1 + gallery.length) % gallery.length;
+                                                setFullScreenGalleryIndex(newIndex);
+                                                setFullScreenImage(gallery[newIndex]);
+                                            }}
+                                        >
+                                            <ChevronLeft size={24} strokeWidth={3} />
+                                        </button>
+                                        <button
+                                            className="gallery-fs-nav-btn gallery-fs-nav-right"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIndex = (fullScreenGalleryIndex + 1) % gallery.length;
+                                                setFullScreenGalleryIndex(newIndex);
+                                                setFullScreenImage(gallery[newIndex]);
+                                            }}
+                                        >
+                                            <ChevronRight size={24} strokeWidth={3} />
+                                        </button>
+                                    </>
+                                );
+                            })()
+                        )}
+
+                        <div
+                            className="fs-image-wrapper"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <img
+                                src={fullScreenImage}
+                                alt="Full Screen Preview"
+                                className="fs-image"
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 };
 
