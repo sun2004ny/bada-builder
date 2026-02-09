@@ -61,8 +61,37 @@ const ShortStayCard = ({ listing, index = 0, favorites, onToggleFavorite }) => {
 
                 <div className="short-stay-property-footer">
                     <div className="short-stay-property-price">
-                        <span className="short-stay-price-amount">₹{(listing.guest_pricing?.perNight || listing.pricing?.perNight || 0).toLocaleString()}</span>
-                        <span className="short-stay-price-unit">/ night</span>
+                        {(() => {
+                            let priceDisplay = `₹${(listing.guest_pricing?.perNight || listing.pricing?.perNight || 0).toLocaleString()}`;
+                            
+                            if (listing.category === 'hotel' && listing.specific_details?.roomTypes?.length > 0) {
+                                const today = new Date();
+                                const day = today.getDay();
+                                const isWeekend = day === 0 || day === 6; // Sunday (0) or Saturday (6)
+
+                                const prices = listing.specific_details.roomTypes.map(room => {
+                                    const basePrice = Number(room.price) || 0;
+                                    const weekendPrice = Number(room.weeklyPrice) || 0;
+                                    // Use weeklyPrice for weekends if available and valid set
+                                    return (isWeekend && weekendPrice > 0) ? weekendPrice : basePrice;
+                                }).filter(p => p > 0);
+
+                                if (prices.length > 0) {
+                                    const min = Math.min(...prices);
+                                    const max = Math.max(...prices);
+                                    priceDisplay = min === max 
+                                        ? `₹${min.toLocaleString()}` 
+                                        : `₹${min.toLocaleString()} - ₹${max.toLocaleString()}`;
+                                }
+                            }
+                            
+                            return (
+                                <>
+                                    <span className="short-stay-price-amount">{priceDisplay}</span>
+                                    <span className="short-stay-price-unit">/ night</span>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

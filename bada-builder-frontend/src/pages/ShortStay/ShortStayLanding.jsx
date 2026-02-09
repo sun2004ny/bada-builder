@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import BackgroundVideo from '../../components/BackgroundVideo/BackgroundVideo';
@@ -7,6 +7,7 @@ import './ShortStayLanding.css';
 import { shortStayAPI } from '../../services/shortStayApi';
 import { useAuth } from '../../context/AuthContext';
 import { FaHeart, FaRegHeart, FaBuilding, FaHome, FaBed, FaHotel, FaTree, FaCampground, FaLeaf, FaUserGraduate, FaSearch, FaArrowRight, FaTimes, FaSuitcaseRolling } from 'react-icons/fa';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 
@@ -15,9 +16,22 @@ import ShortStayCard from '../../components/PropertyCard/ShortStayCard';
 
 const ShortStayLanding = () => {
   const navigate = useNavigate();
-  const { currentUser: user } = useAuth(); // Alias currentUser to user for existing code compatibility
+  const { currentUser: user } = useAuth();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const scrollRefs = useRef({});
+
+  const scroll = (direction, key) => {
+    const container = scrollRefs.current[key];
+    if (container) {
+      const scrollAmount = 320;
+      container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
   const [favorites, setFavorites] = useState(new Set());
 
   const [activePopup, setActivePopup] = useState(null); // 'calendar' | 'guests' | 'where'
@@ -420,13 +434,26 @@ const ShortStayLanding = () => {
                  return (
                 <div key={startKey} className="location-group-section">
                   <div className="location-group-header">
-                     <h3>{displayName === 'Other Locations' ? 'Explore more stays' : `Stay in ${displayName}`}</h3>
-                     <button className="see-all-btn" onClick={() => navigate(`/short-stay/search?location=${displayName}`)}>
-                        <FaArrowRight size={12} />
-                     </button>
+                     <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                         <h3>{displayName === 'Other Locations' ? 'Explore more stays' : `Stay in ${displayName}`}</h3>
+                         <button className="see-all-btn" onClick={() => navigate(`/short-stay/search?location=${displayName}`)}>
+                            <FaArrowRight size={12} />
+                         </button>
+                     </div>
+                     <div className="scroll-nav-container">
+                         <button className="scroll-nav-btn" onClick={() => scroll('left', startKey)}>
+                             <FiChevronLeft size={18} />
+                         </button>
+                         <button className="scroll-nav-btn" onClick={() => scroll('right', startKey)}>
+                             <FiChevronRight size={18} />
+                         </button>
+                     </div>
                   </div>
                   
-                  <div className="horizontal-scroll-container">
+                  <div 
+                      className="horizontal-scroll-container"
+                      ref={el => scrollRefs.current[startKey] = el}
+                  >
                     {cityListings.map((listing, index) => (
                       <ShortStayCard 
                         key={listing.id} 

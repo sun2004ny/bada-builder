@@ -339,7 +339,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                 ...prev,
                 specific_details: {
                     ...prev.specific_details,
-                    roomTypes: [...currentTypes, { type: 'Standard AC', count: 1, price: '' }]
+                    roomTypes: [...currentTypes, { type: 'Standard AC', count: 1, price: '', guestCapacity: '', weeklyPrice: '' }]
                 }
             };
         });
@@ -587,7 +587,18 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                         <div className="form-group" style={{marginBottom: 0}}>
                                             <input 
                                                 type="number" 
-                                                placeholder="Count"
+                                                placeholder="Max Guests"
+                                                value={room.guestCapacity || ''} 
+                                                onChange={(e) => updateRoomType(index, 'guestCapacity', e.target.value)}
+                                                className="premium-input"
+                                                style={{padding: '10px'}}
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{marginBottom: 0}}>
+                                            <input 
+                                                type="number" 
+                                                placeholder="No. of Rooms"
+                                                title="Total number of rooms of this type available"
                                                 value={room.count} 
                                                 onChange={(e) => updateRoomType(index, 'count', e.target.value)}
                                                 className="premium-input"
@@ -599,12 +610,25 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                             <input 
                                                 type="number" 
                                                 placeholder="Price/Night"
+                                                title="Base price per night"
                                                 value={room.price} 
                                                 onChange={(e) => updateRoomType(index, 'price', e.target.value)}
                                                 className="premium-input"
                                                 style={{padding: '10px', paddingLeft: '24px'}}
                                             />
                                         </div>
+                                    </div>
+                                    <div className="form-group" style={{marginTop: '12px', position: 'relative'}}>
+                                        <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'#64748b'}}>₹</span>
+                                        <input 
+                                            type="number" 
+                                            placeholder="Weekly Price (Optional)"
+                                            title="Price for 7+ days or weekends (as per your policy)"
+                                            value={room.weeklyPrice || ''} 
+                                            onChange={(e) => updateRoomType(index, 'weeklyPrice', e.target.value)}
+                                            className="premium-input"
+                                            style={{padding: '10px', paddingLeft: '24px'}}
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -1050,41 +1074,78 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                     </motion.div>
                 );
 
-            case 7: // Pricing
+            case 7: { // Pricing
+                const isHotel = formData.category === 'hotel';
                 return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
-                        <h3>Set your pricing</h3>
-                        <p className="step-subtitle">How much do you want to charge?</p>
+                        <h3>{isHotel ? 'Review Room Pricing' : 'Set your pricing'}</h3>
+                        <p className="step-subtitle">{isHotel ? 'Review your configured rooms and add extra charges.' : 'How much do you want to charge?'}</p>
                         
-                        <div className="price-input-large">
-                            <span className="currency-symbol">₹</span>
-                            <input 
-                                type="number" 
-                                name="perNight" 
-                                value={formData.pricing.perNight} 
-                                onChange={handlePricingChange} 
-                                placeholder="0" 
-                            />
-                            <span className="per-night-label">/ night</span>
-                        </div>
-                        {formData.pricing.perNight > 0 && (
-                            <div style={{ fontSize: '12px', color: '#717171', marginTop: '4px', textAlign: 'center' }}>
-                                Guest pays: ₹{Math.ceil(formData.pricing.perNight * 1.05).toLocaleString()} (includes 5% fees)
+                        {isHotel && formData.specific_details.roomTypes && (
+                            <div className="room-pricing-summary" style={{marginBottom: '24px', border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden'}}>
+                                <div style={{padding: '12px 16px', background: '#f7f7f7', borderBottom: '1px solid #ddd', fontWeight: '600', color: '#222'}}>
+                                    Room Configuration
+                                </div>
+                                <div style={{maxHeight: '200px', overflowY: 'auto'}}>
+                                    <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                                        <thead>
+                                            <tr style={{borderBottom: '1px solid #eee'}}>
+                                                <th style={{padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#717171'}}>Type</th>
+                                                <th style={{padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#717171'}}>Count</th>
+                                                <th style={{padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#717171'}}>Guests</th>
+                                                <th style={{padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#717171'}}>Price</th>
+                                                <th style={{padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#717171'}}>Weekly</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {formData.specific_details.roomTypes.map((room, idx) => (
+                                                <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
+                                                    <td style={{padding: '12px 16px', fontSize: '14px'}}>{room.type}</td>
+                                                    <td style={{padding: '12px 16px', fontSize: '14px'}}>{room.count}</td>
+                                                    <td style={{padding: '12px 16px', fontSize: '14px'}}>{room.guestCapacity || '-'}</td>
+                                                    <td style={{padding: '12px 16px', fontSize: '14px'}}>₹{room.price}</td>
+                                                    <td style={{padding: '12px 16px', fontSize: '14px'}}>{room.weeklyPrice ? `₹${room.weeklyPrice}` : '-'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
 
-                         <div className="form-row">
-                             <div className="form-group">
-                                <label>Weekly Price (Optional)</label>
-                                <input type="number" name="weekly" value={formData.pricing.weekly} onChange={handlePricingChange} className="premium-input" placeholder="₹" />
-                                {formData.pricing.weekly > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.weekly * 1.05).toLocaleString()}</small>}
-                            </div>
-                             <div className="form-group">
-                                <label>Monthly Price (Optional)</label>
-                                <input type="number" name="monthly" value={formData.pricing.monthly} onChange={handlePricingChange} className="premium-input" placeholder="₹" />
-                                {formData.pricing.monthly > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.monthly * 1.05).toLocaleString()}</small>}
-                            </div>
-                        </div>
+                        {!isHotel && (
+                            <>
+                                <div className="price-input-large">
+                                    <span className="currency-symbol">₹</span>
+                                    <input 
+                                        type="number" 
+                                        name="perNight" 
+                                        value={formData.pricing.perNight} 
+                                        onChange={handlePricingChange} 
+                                        placeholder="0" 
+                                    />
+                                    <span className="per-night-label">/ night</span>
+                                </div>
+                                {formData.pricing.perNight > 0 && (
+                                    <div style={{ fontSize: '12px', color: '#717171', marginTop: '4px', textAlign: 'center' }}>
+                                        Guest pays: ₹{Math.ceil(formData.pricing.perNight * 1.05).toLocaleString()} (includes 5% fees)
+                                    </div>
+                                )}
+
+                                 <div className="form-row">
+                                     <div className="form-group">
+                                        <label>Weekly Price (Optional)</label>
+                                        <input type="number" name="weekly" value={formData.pricing.weekly} onChange={handlePricingChange} className="premium-input" placeholder="₹" />
+                                        {formData.pricing.weekly > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.weekly * 1.05).toLocaleString()}</small>}
+                                    </div>
+                                     <div className="form-group">
+                                        <label>Monthly Price (Optional)</label>
+                                        <input type="number" name="monthly" value={formData.pricing.monthly} onChange={handlePricingChange} className="premium-input" placeholder="₹" />
+                                        {formData.pricing.monthly > 0 && <small style={{ color: '#717171' }}>Guest pays: ₹{Math.ceil(formData.pricing.monthly * 1.05).toLocaleString()}</small>}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                         
                         <div className="divider-text"><span>Additional Charges</span></div>
 
@@ -1113,6 +1174,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                         </div>
                     </motion.div>
                 );
+            }
 
             case 8: // Rules
                 return (
@@ -1261,6 +1323,11 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
             case 6: // Title & Desc
                 return !!(formData.title && formData.description);
             case 7: // Pricing
+                if (formData.category === 'hotel') {
+                    // For hotels, we don't need perNight, but we should ensure at least one room has a price
+                    return (formData.specific_details.roomTypes || []).length > 0 && 
+                           (formData.specific_details.roomTypes || []).some(r => r.price > 0);
+                }
                 return !!formData.pricing.perNight;
             case 8: // Rules
                 return !!(formData.rules.checkIn && formData.rules.checkOut);

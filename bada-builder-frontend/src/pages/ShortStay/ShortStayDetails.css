@@ -2280,3 +2280,88 @@
     align-items: center;
 }
 
+
+/* Room Inventory Table */
+.hotel-rooms-table {
+    margin-top: 24px;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+}
+
+.inventory-header {
+    background: #f9f9f9;
+    padding: 16px 24px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.inventory-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #222;
+}
+
+.fee-note {
+    font-size: 12px;
+    color: #717171;
+    font-weight: 400;
+}
+
+.hotel-rooms-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.hotel-rooms-table th,
+.hotel-rooms-table td {
+    padding: 16px 24px;
+    text-align: left;
+    border-bottom: 1px solid #ebebeb;
+}
+
+.hotel-rooms-table th {
+    font-weight: 600;
+    color: #717171;
+    font-size: 12px;
+    text-transform: uppercase;
+    background: white;
+}
+
+.hotel-rooms-table td {
+    font-size: 16px;
+    color: #222;
+}
+
+.hotel-rooms-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.room-inventory-row:hover {
+    background-color: #f3f3f3;
+    cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .inventory-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 16px;
+    }
+    
+    .hotel-rooms-table th, 
+    .hotel-rooms-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    
+    .hotel-rooms-table th {
+        font-size: 11px;
+    }
+}

@@ -124,8 +124,26 @@ router.get('/', optionalAuth, async (req, res) => {
     
     // Guest Capacity Filter
     if (guests) {
-      query += ` AND (specific_details->>'maxGuests')::int >= $${paramCount++}`;
+      query += ` AND (
+        -- 1. Explicit maxGuests (e.g. Farmhouse)
+        ((specific_details->>'maxGuests') IS NOT NULL AND (specific_details->>'maxGuests')::int >= $${paramCount})
+        OR
+        -- 2. Hotels (Check if any room type has sufficient capacity)
+        (category = 'hotel' AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(specific_details::jsonb->'roomTypes') room 
+            WHERE (room->>'guestCapacity')::int >= $${paramCount}
+        ))
+        OR
+        -- 3. Dormitory (Check total beds)
+        (category = 'dormitory' AND (specific_details->>'totalBeds')::int >= $${paramCount})
+        OR
+        -- 4. Default Fallback for others (Apartments, Villas etc without explicit field)
+        -- Allow if guest count is reasonable (<= 4) or ensure they don't get filtered out aggressively
+        (category NOT IN ('hotel', 'farmhouse', 'dormitory') AND $${paramCount} <= 4)
+      )`;
       params.push(guests);
+      // We used paramCount multiple times but it refers to the same value pushed once
+      paramCount++; 
     }
 
     query += ` ORDER BY created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;

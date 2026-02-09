@@ -19,7 +19,8 @@ import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 
 const CalendarModal = ({ 
     isOpen, onClose, checkIn, checkOut, onSelectDates, bookedDates = [],
-    adults, setAdults, children, setChildren, infants, setInfants, pets, setPets
+    adults, setAdults, children, setChildren, infants, setInfants, pets, setPets,
+    minStay = 1, maxStay
 }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedStart, setSelectedStart] = useState(checkIn ? new Date(checkIn) : null);
@@ -29,6 +30,7 @@ const CalendarModal = ({
     // Guest limits
     const MAX_GUESTS = 16;
     
+    // ... guest update logic ... 
     const updateGuests = (type, action) => {
         if (type === 'adults') {
             if (action === 'increment' && adults + children < MAX_GUESTS) setAdults(prev => prev + 1);
@@ -87,6 +89,19 @@ const CalendarModal = ({
 
                 if (hasBookedInBetween) {
                     alert("Selected range includes booked dates. Please select available dates.");
+                    return;
+                }
+
+                // Check Min/Max Stay logic
+                const diffTime = Math.abs(date - selectedStart);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                if (minStay && diffDays < minStay) {
+                    alert(`Minimum stay is ${minStay} nights.`);
+                    return;
+                }
+                if (maxStay && diffDays > maxStay) {
+                    alert(`Maximum stay is ${maxStay} nights.`);
                     return;
                 }
 
@@ -681,13 +696,21 @@ const ShortStayDetails = () => {
                                 {category === 'hotel' && specific_details.roomTypes && (
                                     <div className="hotel-rooms-table">
                                         <div className="inventory-header">
-                                            <h3>Room Inventory</h3>
+                                            <div style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
+                                                <h3>Room Inventory</h3>
+                                                {rules && (rules.checkIn || rules.checkOut) && (
+                                                    <span style={{fontSize:'13px', color:'#64748b', background:'#f1f5f9', padding:'4px 8px', borderRadius:'4px'}}>
+                                                        Check-in: {rules.checkIn} • Checkout: {rules.checkOut}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="fee-note">*Prices include 5% platform fee</span>
                                         </div>
                                         <table>
                                             <thead>
                                                 <tr>
                                                     <th>Type</th>
+                                                    <th>Max Guests</th>
                                                     <th>Price / Night</th>
                                                 </tr>
                                             </thead>
@@ -732,6 +755,7 @@ const ShortStayDetails = () => {
                                                             }}
                                                         >
                                                             <td>{room.type}</td>
+                                                            <td>{room.guestCapacity || '-'}</td>
                                                             <td>₹{calculatedPrice.toLocaleString()}</td>
                                                         </tr>
                                                     );
@@ -1256,6 +1280,8 @@ const ShortStayDetails = () => {
                 children={children} setChildren={setChildren}
                 infants={infants} setInfants={setInfants}
                 pets={pets} setPets={setPets}
+                minStay={rules?.minStay}
+                maxStay={rules?.maxStay}
             />
         </div>
     );
