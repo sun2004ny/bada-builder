@@ -49,7 +49,8 @@ const ShortStayCard = ({ listing, index = 0, favorites, onToggleFavorite }) => {
                 <div className="short-stay-property-header">
                     <h3 className="truncate-title">{listing.title}</h3>
                     <div className="short-stay-property-rating">
-                        ⭐ <span>{listing.rating || 'New'}</span>
+                        ⭐ <span>{Number(listing.average_rating) > 0 ? Number(listing.average_rating).toFixed(1) : (listing.rating || 'New')}</span>
+                        {Number(listing.review_count) > 0 && <span className="review-count-small">({listing.review_count})</span>}
                     </div>
                 </div>
 

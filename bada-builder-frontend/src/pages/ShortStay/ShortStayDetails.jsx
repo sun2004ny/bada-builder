@@ -362,6 +362,8 @@ const ShortStayDetails = () => {
     const [pendingRoomType, setPendingRoomType] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState(null); // Explicit selection for widget
     const [roomAvailability, setRoomAvailability] = useState({});
+    const [reviews, setReviews] = useState([]);
+
 
     // Fetch availability when dates change
     useEffect(() => {
@@ -442,15 +444,18 @@ const ShortStayDetails = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [data, favorites, availability] = await Promise.all([
+                const [data, favorites, availability, reviewsData] = await Promise.all([
                     shortStayAPI.getById(id),
                     user ? shortStayAPI.getUserFavorites() : Promise.resolve({ favorites: [] }),
-                    shortStayAPI.getAvailability(id)
+                    shortStayAPI.getAvailability(id),
+                    shortStayAPI.getPropertyReviews(id)
                 ]);
                 
                 const propertyData = data.property || data;
                 setProperty(propertyData);
                 setBookedDates(availability.bookedDates || []);
+                setReviews(reviewsData.reviews || []);
+
                 
                 // Default select cheapest room for hotels
                 if (propertyData.category === 'hotel' && propertyData.specific_details?.roomTypes?.length > 0) {
@@ -637,7 +642,11 @@ const ShortStayDetails = () => {
                                     {specific_details?.roomTypes && `${specific_details.roomTypes.length} room types`}
                                 </p>
                                 <p className="rating-row-main">
-                                    <FaStar size={14} /> {rating || '0.0'} · <span className="underline">{property.review_count || 0} reviews</span>
+                                    <FaStar size={14} /> 
+                                    {reviews.length > 0 
+                                        ? (reviews.reduce((acc, r) => acc + Number(r.overall_rating), 0) / reviews.length).toFixed(1) 
+                                        : (rating || '0.0')} 
+                                    · <span className="underline">{reviews.length > 0 ? reviews.length : (property.review_count || 0)} reviews</span>
                                 </p>
                             </div>
                         </div>
@@ -912,6 +921,73 @@ const ShortStayDetails = () => {
                                 </div>
                             </div>
                         )}
+
+                        <div className="section-divider" />
+                        
+                        {/* Reviews Section */}
+                        <div className="reviews-section" id="reviews">
+                            <div className="reviews-header-main">
+                                <FaStar size={22} color="#222" />
+                                <h2>
+                                    {reviews.length > 0 
+                                        ? `${(reviews.reduce((acc, r) => acc + Number(r.overall_rating), 0) / reviews.length).toFixed(1)} · ${reviews.length} reviews`
+                                        : "No reviews yet"}
+                                </h2>
+                            </div>
+
+                            {reviews.length > 0 && (
+                                <>
+                                    <div className="rating-breakdown-grid">
+                                        {[
+                                            { label: 'Cleanliness', key: 'cleanliness' },
+                                            { label: 'Accuracy', key: 'accuracy' },
+                                            { label: 'Check-in', key: 'check_in' },
+                                            { label: 'Communication', key: 'communication' },
+                                            { label: 'Location', key: 'location' },
+                                            { label: 'Value', key: 'value' }
+                                        ].map(cat => {
+                                            const avg = reviews.reduce((acc, r) => acc + Number(r[cat.key]), 0) / reviews.length;
+                                            return (
+                                                <div key={cat.key} className="breakdown-item">
+                                                    <span className="breakdown-label">{cat.label}</span>
+                                                    <div className="breakdown-bar-container">
+                                                        <div className="breakdown-bar-bg">
+                                                            <div className="breakdown-bar-fill" style={{ width: `${(avg / 5) * 100}%` }} />
+                                                        </div>
+                                                        <span className="breakdown-score">{avg.toFixed(1)}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="reviews-grid-main">
+                                        {reviews.slice(0, 6).map((review, i) => (
+                                            <div key={i} className="review-card-main">
+                                                <div className="reviewer-info">
+                                                    <div className="reviewer-avatar">
+                                                        {review.user_photo ? (
+                                                            <img src={review.user_photo} alt={review.user_name} />
+                                                        ) : (
+                                                            <FaUser />
+                                                        )}
+                                                    </div>
+                                                    <div className="reviewer-text">
+                                                        <div className="reviewer-name">{review.user_name}</div>
+                                                        <div className="review-date">
+                                                            {new Date(review.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="review-content">
+                                                    <p>{review.public_comment}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
 
                         <div className="section-divider" />
 

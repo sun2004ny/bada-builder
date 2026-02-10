@@ -87,7 +87,9 @@ router.get('/', optionalAuth, async (req, res) => {
 
     let query = `
       SELECT p.*,
-      EXISTS(SELECT 1 FROM short_stay_favorites f WHERE f.property_id = p.id AND f.user_id = $1) as is_favorite
+      EXISTS(SELECT 1 FROM short_stay_favorites f WHERE f.property_id = p.id AND f.user_id = $1) as is_favorite,
+      (SELECT COALESCE(AVG(overall_rating), 0) FROM short_stay_reviews WHERE property_id = p.id) as average_rating,
+      (SELECT COUNT(*) FROM short_stay_reviews WHERE property_id = p.id) as review_count
       FROM short_stay_properties p
       WHERE status = 'active'
     `;
@@ -296,7 +298,8 @@ router.get('/reservations/traveler', authenticate, async (req, res) => {
     const result = await pool.query(
       `SELECT r.*, 
        p.title as property_title, p.images, p.location as property_address,
-       h.name as host_name, h.email as host_email, h.phone as host_phone, h.profile_photo as host_photo
+       h.name as host_name, h.email as host_email, h.phone as host_phone, h.profile_photo as host_photo,
+       EXISTS(SELECT 1 FROM short_stay_reviews srv WHERE srv.booking_id = r.id) as has_review
        FROM short_stay_reservations r
        JOIN short_stay_properties p ON r.property_id = p.id
        LEFT JOIN users h ON r.host_id = h.id
@@ -356,9 +359,11 @@ router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT p.*, 
-       u.name as host_name, u.email as host_email, u.phone as host_phone, u.profile_photo as host_photo, u.bio as host_bio, u.created_at as host_joined_at,
-       EXISTS(SELECT 1 FROM short_stay_favorites f WHERE f.property_id = p.id AND f.user_id = $2) as is_favorite
-       FROM short_stay_properties p
+              (SELECT COALESCE(AVG(overall_rating), 0) FROM short_stay_reviews WHERE property_id = p.id) as average_rating,
+              (SELECT COUNT(*) FROM short_stay_reviews WHERE property_id = p.id) as review_count,
+              u.name as host_name, u.email as host_email, u.phone as host_phone, u.profile_photo as host_photo, u.bio as host_bio, u.created_at as host_joined_at,
+              EXISTS(SELECT 1 FROM short_stay_favorites f WHERE f.property_id = p.id AND f.user_id = $2) as is_favorite
+       FROM short_stay_properties p 
        LEFT JOIN users u ON p.user_id = u.id
        WHERE p.id = $1`,
       [req.params.id, req.user ? req.user.id : null]

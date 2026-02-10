@@ -333,3 +333,56 @@
     font-weight: 700;
     letter-spacing: 0.5px;
 }
+/* Review Section */
+.trip-review-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #EDEDED;
+}
+
+.reviewed-badge {
+    background-color: #E7F3EF;
+    color: #1A7D5E;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.review-action-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.leave-review-btn {
+    background-color: #FF385C;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.leave-review-btn:hover {
+    background-color: #E31C5F;
+}
+
+.review-countdown {
+    font-size: 12px;
+    color: #717171;
+    text-align: center;
+}
+
+.review-closed {
+    font-size: 14px;
+    color: #717171;
+    text-align: center;
+    background-color: #F7F7F7;
+    padding: 8px;
+    border-radius: 8px;
+}

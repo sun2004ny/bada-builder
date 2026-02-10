@@ -5,12 +5,17 @@ import { shortStayAPI } from '../../services/shortStayApi';
 import { FaCalendarAlt, FaMapMarkerAlt, FaUser, FaRupeeSign, FaSuitcaseRolling, FaChevronRight } from 'react-icons/fa';
 import './ShortStayTrips.css';
 import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
+import ReviewModal from '../../components/ShortStay/ReviewModal';
+
 
 const ShortStayTrips = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+
 
   useEffect(() => {
     fetchReservations();
@@ -34,8 +39,8 @@ const ShortStayTrips = () => {
 
   const todayStr = normalizeDate(new Date());
 
-  const upcomingTrips = reservations.filter(r => normalizeDate(r.check_out) >= todayStr);
-  const pastTrips = reservations.filter(r => normalizeDate(r.check_out) < todayStr);
+  const upcomingTrips = reservations.filter(r => normalizeDate(r.check_out) > todayStr);
+  const pastTrips = reservations.filter(r => normalizeDate(r.check_out) <= todayStr);
   const displayTrips = activeTab === 'upcoming' ? upcomingTrips : pastTrips;
 
   const formatDateRange = (start, end) => {
@@ -154,6 +159,48 @@ const ShortStayTrips = () => {
                             <FaChevronRight />
                         </button>
                     </div>
+
+                    {(() => {
+                        const checkOutDateStr = normalizeDate(trip.check_out);
+                        const isStayCompleted = checkOutDateStr <= todayStr;
+                        
+                        if (!isStayCompleted) return null;
+
+                        return (
+                            <div className="trip-review-section">
+                                {trip.has_review ? (
+                                    <div className="reviewed-badge">✓ Reviewed</div>
+                                ) : (() => {
+                                    const checkOutDate = new Date(trip.check_out);
+                                    const today = new Date();
+                                    // 7 day window starts from checkout
+                                    const diffTime = (checkOutDate.getTime() + 7 * 24 * 60 * 60 * 1000) - today.getTime();
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                    if (diffDays > 0) {
+                                        return (
+                                            <div className="review-action-container">
+                                                <button 
+                                                    className="leave-review-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrip(trip);
+                                                        setIsReviewModalOpen(true);
+                                                    }}
+                                                >
+                                                    Leave a Review
+                                                </button>
+                                                <span className="review-countdown">
+                                                    {diffDays} {diffDays === 1 ? 'day' : 'days'} left to review
+                                                </span>
+                                            </div>
+                                        );
+                                    }
+                                    return <div className="review-closed">Review window closed</div>;
+                                })()}
+                            </div>
+                        );
+                    })()}
                   </div>
                 </Motion.div>
               ))}
@@ -161,7 +208,27 @@ const ShortStayTrips = () => {
           </div>
         )}
       </div>
+      
+      {selectedTrip && (
+          <ReviewModal
+            isOpen={isReviewModalOpen}
+            onClose={() => setIsReviewModalOpen(false)}
+            booking={selectedTrip}
+            onSubmit={async (data) => {
+                try {
+                    await shortStayAPI.submitReview(data);
+                    alert('Review submitted successfully!');
+                    setIsReviewModalOpen(false);
+                    fetchReservations(); // Refresh list to update has_review status
+                } catch (error) {
+                    console.error('Failed to submit review:', error);
+                    alert(error.response?.data?.error || 'Failed to submit review');
+                }
+            }}
+          />
+      )}
     </div>
+
   );
 };
 

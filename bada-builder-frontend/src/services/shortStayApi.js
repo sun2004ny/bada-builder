@@ -157,4 +157,21 @@ export const shortStayAPI = {
           body: JSON.stringify(data)
       });
   },
+  // --- Reviews ---
+  submitReview: async (reviewData) => {
+    return apiRequest('/short-stay-reviews', {
+        method: 'POST',
+        body: JSON.stringify(reviewData)
+    });
+  },
+
+  getPropertyReviews: async (propertyId) => {
+    return apiRequest(`/short-stay-reviews/property/${propertyId}`, {
+        includeAuth: false
+    });
+  },
+
+  checkReviewStatus: async (bookingId) => {
+    return apiRequest(`/short-stay-reviews/check/${bookingId}`);
+  },
 };

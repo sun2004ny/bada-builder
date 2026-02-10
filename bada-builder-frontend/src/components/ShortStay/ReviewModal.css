@@ -1,0 +1,197 @@
+.review-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.review-modal-content {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.review-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.review-modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #555;
+}
+
+.review-step h3 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+}
+
+.subtitle {
+    color: #717171;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.rating-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 24px;
+}
+
+.rating-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rating-row span {
+    font-weight: 500;
+    color: #222;
+}
+
+.star-rating {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+}
+
+textarea {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 20px;
+}
+
+.recommend-section {
+    margin-bottom: 24px;
+}
+
+.recommend-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.choice-btn {
+    flex: 1;
+    padding: 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.choice-btn.selected {
+    background: #000;
+    color: white;
+    border-color: #000;
+}
+
+.next-btn, .submit-btn, .back-btn {
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s, transform 0.1s;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.next-btn {
+    width: 100%;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.action-buttons button {
+    flex: 1; /* Makes them equal width */
+}
+
+.back-btn {
+    background: white;
+    color: #222;
+    border: 1px solid #222;
+}
+
+.back-btn:hover {
+    background: #F7F7F7;
+}
+
+.submit-btn {
+    background: #FF385C;
+    color: white;
+    border: 1px solid #FF385C;
+}
+
+.submit-btn:hover:not(:disabled) {
+    background: #E31C5F;
+    border-color: #E31C5F;
+}
+
+.submit-btn:disabled {
+    background: #ddd;
+    border-color: #ddd;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.next-btn, .submit-btn {
+    background: #FF385C;
+    color: white;
+    border: 1px solid #FF385C;
+}
+
+.next-btn:hover:not(:disabled) {
+    background: #E31C5F;
+    border-color: #E31C5F;
+}
+
+.next-btn:disabled {
+    background: #ddd;
+    border-color: #ddd;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.next-btn:active:not(:disabled), .submit-btn:active:not(:disabled), .back-btn:active {
+    transform: scale(0.98);
+}
