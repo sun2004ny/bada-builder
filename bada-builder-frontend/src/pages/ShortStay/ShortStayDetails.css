@@ -1376,9 +1376,11 @@
     animation: slideUp 0.3s ease-out;
 }
 
-@media (min-width: 1024) {
+@media (min-width: 1024px) {
     .calendar-modal {
+        width: 90%;
         max-width: none;
+        padding: 32px 60px;
     }
 }
 
