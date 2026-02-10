@@ -148,6 +148,57 @@ router.get('/', optionalAuth, async (req, res) => {
       paramCount++; 
     }
 
+    // --- Availability Filtering ---
+    const filterStart = checkIn || new Date().toISOString().split('T')[0];
+    const filterEnd = checkOut || new Date(new Date().getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // 1. Exclude Manual Calendar Blocks (Applies to all categories)
+    query += ` AND NOT EXISTS (
+      SELECT 1 FROM short_stay_calendar c 
+      WHERE c.property_id = p.id 
+      AND c.status = 'blocked'
+      AND c.date >= $${paramCount} AND c.date < $${paramCount + 1}
+    )`;
+
+    // 2. Booking Availability Check
+    query += ` AND (
+      CASE 
+        WHEN p.category != 'hotel' THEN 
+          -- Simple binary check for Houses/Apartments
+          NOT EXISTS (
+            SELECT 1 FROM short_stay_reservations r
+            WHERE r.property_id = p.id
+            AND r.status = 'confirmed'
+            AND (
+              (r.check_in <= $${paramCount} AND r.check_out > $${paramCount}) OR
+              (r.check_in < $${paramCount + 1} AND r.check_out >= $${paramCount + 1}) OR
+              ($${paramCount} <= r.check_in AND $${paramCount + 1} >= r.check_out)
+            )
+          )
+        ELSE 
+          -- Multi-room check for Hotels
+          -- Property is only hidden if it's FULLY BOOKED for ANY day in the range
+          NOT EXISTS (
+            SELECT 1 FROM (
+              SELECT generate_series($${paramCount}::date, $${paramCount + 1}::date - interval '1 day', '1 day')::date as d
+            ) dates
+            WHERE (
+              -- Total rooms available in inventory
+              (SELECT COALESCE(SUM((room->>'count')::int), 1) 
+               FROM jsonb_array_elements(COALESCE(p.specific_details->'roomTypes', '[]'::jsonb)) room)
+              <=
+              -- Total rooms booked for this specific day
+              (SELECT COUNT(*) FROM short_stay_reservations r 
+               WHERE r.property_id = p.id AND r.status = 'confirmed' 
+               AND r.check_in <= dates.d AND r.check_out > dates.d)
+            )
+          )
+      END
+    )`;
+
+    params.push(filterStart, filterEnd);
+    paramCount += 2;
+
     query += ` ORDER BY created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;
     params.push(parseInt(limit), parseInt(offset));
 
@@ -749,7 +800,7 @@ router.get('/calendar/:propertyId', authenticate, async (req, res) => {
     try {
         const { start, end } = req.query; // YYYY-MM-DD
         const result = await pool.query(
-            `SELECT date, price, status 
+            `SELECT date::text as date, price, status 
              FROM short_stay_calendar 
              WHERE property_id = $1 
              AND date >= $2 AND date <= $3`,

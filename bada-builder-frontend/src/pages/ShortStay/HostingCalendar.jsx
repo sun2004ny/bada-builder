@@ -81,15 +81,46 @@ const HostingCalendar = ({ properties }) => {
         return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     };
 
+    const getPropertyDisplayPrice = (property, dateStr) => {
+        if (!property) return { min: 0, max: 0, isRange: false };
+        
+        if (property.category !== 'hotel') {
+            const price = property.pricing?.perNight || 0;
+            return { min: price, max: price, isRange: false };
+        }
+
+        const roomTypes = property.specific_details?.roomTypes || [];
+        if (roomTypes.length === 0) return { min: 0, max: 0, isRange: false };
+
+        const day = new Date(dateStr).getDay();
+        const isWeekend = day === 0 || day === 6;
+
+        let prices = roomTypes.map(room => {
+            const base = Number(room.price) || 0;
+            const weekend = Number(room.weeklyPrice) || 0;
+            return (isWeekend && weekend > 0) ? weekend : base;
+        }).filter(p => p > 0);
+
+        if (prices.length === 0) return { min: 0, max: 0, isRange: false };
+
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+
+        return { min, max, isRange: min !== max };
+    };
+
     const handleDateClick = (day) => {
         const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         
         // Find existing data
-        const existing = calendarData.find(d => d.date.startsWith(dateStr)); // Date from DB might be ISO string
+        const existing = calendarData.find(d => {
+            const dDate = typeof d.date === 'string' ? d.date.split('T')[0] : '';
+            return dDate === dateStr;
+        });
         
         // Get base price from property
         const property = properties.find(p => String(p.id) === String(selectedProperty));
-        const basePrice = property ? (property.pricing?.perNight || 0) : 0;
+        const { min: basePrice } = getPropertyDisplayPrice(property, dateStr);
 
         setSelectedDate(dateStr);
         setEditPrice(existing?.price ? existing.price : basePrice);
@@ -123,21 +154,31 @@ const HostingCalendar = ({ properties }) => {
         }
 
         const property = properties.find(p => String(p.id) === String(selectedProperty));
-        const basePrice = property ? (property.pricing?.perNight || 0) : 0;
 
         // Date cells
         for (let day = 1; day <= totalDays; day++) {
             const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const data = calendarData.find(d => d.date.startsWith(dateStr));
+            const data = calendarData.find(d => {
+                const dDate = typeof d.date === 'string' ? d.date.split('T')[0] : '';
+                return dDate === dateStr;
+            });
             
             const isBlocked = data?.status === 'blocked';
-            const price = data?.price || basePrice;
+            
+            // Calculate display price / range
+            const { min, max, isRange } = getPropertyDisplayPrice(property, dateStr);
+            const price = data?.price || min;
 
             // Check if past
             const today = new Date();
             today.setHours(0,0,0,0);
             const thisDate = new Date(dateStr);
             const isPast = thisDate < today;
+
+            const formatPrice = (val) => Math.round(val).toLocaleString();
+            const displayPrice = (data?.price || !isRange) 
+                ? `₹${formatPrice(price)}`
+                : `₹${formatPrice(min)}-${formatPrice(max)}`;
 
             days.push(
                 <div 
@@ -146,7 +187,7 @@ const HostingCalendar = ({ properties }) => {
                     onClick={() => !isPast && handleDateClick(day)}
                 >
                     <span className="cell-date">{day}</span>
-                    <span className="cell-price">₹{Number(price).toLocaleString()}</span>
+                    <span className="cell-price">{displayPrice}</span>
                 </div>
             );
         }
