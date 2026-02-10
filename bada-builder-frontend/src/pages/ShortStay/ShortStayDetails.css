@@ -1376,6 +1376,12 @@
     animation: slideUp 0.3s ease-out;
 }
 
+@media (min-width: 1024) {
+    .calendar-modal {
+        max-width: none;
+    }
+}
+
 .calendar-modal-header {
     display: flex;
     justify-content: space-between;
