@@ -168,11 +168,11 @@ const CalendarModal = ({ isOpen, onClose, checkIn, checkOut, onSelectDates }) =>
 };
 
 // --- Guest Edit Modal ---
-const GuestModal = ({ isOpen, onClose, adults, setAdults, children, setChildren, infants, setInfants, pets, setPets }) => {
+const GuestModal = ({ isOpen, onClose, adults, setAdults, children, setChildren, infants, setInfants, pets, setPets, maxGuests }) => {
     if (!isOpen) return null;
     
     // Limits
-    const MAX_GUESTS = 16; 
+    const MAX_GUESTS = maxGuests || 16; 
     
     const updateGuests = (type, action) => {
         if (type === 'adults') {
@@ -449,9 +449,12 @@ const ShortStayReserve = () => {
     const { 
         pricing, hostPricing, policies,
         propertyTitle, propertyImage, propertyRating,
-        hostId, roomType,
+        hostId, roomType, 
         hostName, hostBio, hostPhoto, isSuperhost 
     } = location.state || {};
+    
+    // Ensure maxGuests is a valid number
+    const maxGuests = Number(location.state?.maxGuests) || 16;
     
     // Derived total guests
     const rGuests = rAdults + rChildren;
@@ -485,9 +488,8 @@ const ShortStayReserve = () => {
         : 0;
 
     // Pricing Calculations
-    // User wants Row 1 to be Host Price.
-    // If we have hostPricing, use it. Otherwise fall back to pricing (which might be guest_pricing but handling fallback)
-    const basePriceObj = hostPricing || pricing;
+    // Use pricing (which contains specific room rate) first, fallback to hostPricing
+    const basePriceObj = pricing || hostPricing;
     const pricePerNight = Number(basePriceObj?.perNight);
     
     // Base Amount (Nights * Price per Night)
@@ -725,6 +727,11 @@ const ShortStayReserve = () => {
                                 <div className="price-card-title">
                                     {propertyTitle}
                                 </div>
+                                {roomType && (
+                                    <div style={{fontSize: '14px', color: '#717171', marginTop: '4px'}}>
+                                        {roomType}
+                                    </div>
+                                )}
                                 <div className="mini-rating">
                                     <FaStar size={12} />
                                     {propertyRating || 'New'}
@@ -882,6 +889,7 @@ const ShortStayReserve = () => {
                 children={rChildren} setChildren={setRChildren}
                 infants={rInfants} setInfants={setRInfants}
                 pets={rPets} setPets={setRPets}
+                maxGuests={maxGuests}
             />
 
             {/* Booking Confirmed Modal */}

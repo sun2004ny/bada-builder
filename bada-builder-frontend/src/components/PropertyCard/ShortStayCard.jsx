@@ -62,7 +62,13 @@ const ShortStayCard = ({ listing, index = 0, favorites, onToggleFavorite }) => {
                 <div className="short-stay-property-footer">
                     <div className="short-stay-property-price">
                         {(() => {
-                            let priceDisplay = `₹${(listing.guest_pricing?.perNight || listing.pricing?.perNight || 0).toLocaleString()}`;
+                            // Base price from DB (Listing or Guest Pricing)
+                            let basePerNight = listing.guest_pricing?.perNight || listing.pricing?.perNight || 0;
+                            
+                            // Apply 5% Bada Builder Fee
+                            let finalPerNight = basePerNight * 1.05;
+
+                            let priceDisplay = `₹${Math.round(finalPerNight).toLocaleString()}`;
                             
                             if (listing.category === 'hotel' && listing.specific_details?.roomTypes?.length > 0) {
                                 const today = new Date();
@@ -70,15 +76,18 @@ const ShortStayCard = ({ listing, index = 0, favorites, onToggleFavorite }) => {
                                 const isWeekend = day === 0 || day === 6; // Sunday (0) or Saturday (6)
 
                                 const prices = listing.specific_details.roomTypes.map(room => {
-                                    const basePrice = Number(room.price) || 0;
-                                    const weekendPrice = Number(room.weeklyPrice) || 0;
-                                    // Use weeklyPrice for weekends if available and valid set
-                                    return (isWeekend && weekendPrice > 0) ? weekendPrice : basePrice;
+                                    const roomBase = Number(room.price) || 0;
+                                    const roomWeekend = Number(room.weeklyPrice) || 0;
+                                    // Use weeklyPrice for weekends if available
+                                    const applicableBase = (isWeekend && roomWeekend > 0) ? roomWeekend : roomBase;
+                                    
+                                    // Apply 5% Fee to range
+                                    return applicableBase * 1.05;
                                 }).filter(p => p > 0);
 
                                 if (prices.length > 0) {
-                                    const min = Math.min(...prices);
-                                    const max = Math.max(...prices);
+                                    const min = Math.round(Math.min(...prices));
+                                    const max = Math.round(Math.max(...prices));
                                     priceDisplay = min === max 
                                         ? `₹${min.toLocaleString()}` 
                                         : `₹${min.toLocaleString()} - ₹${max.toLocaleString()}`;

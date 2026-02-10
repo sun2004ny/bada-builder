@@ -210,9 +210,9 @@ const HostingCalendar = ({ properties }) => {
 
             {/* Edit Modal */}
             {modalOpen && (
-                <div className="calendar-modal-overlay" onClick={() => setModalOpen(false)}>
-                    <div className="calendar-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="hosting-calendar-modal-overlay" onClick={() => setModalOpen(false)}>
+                    <div className="hosting-calendar-modal" onClick={e => e.stopPropagation()}>
+                        <div className="hosting-modal-header">
                             <h3>Edit Rate & availability</h3>
                             <button onClick={() => setModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer'}}><FaTimes /></button>
                         </div>

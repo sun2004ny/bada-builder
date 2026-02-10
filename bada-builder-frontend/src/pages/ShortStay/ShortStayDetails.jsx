@@ -360,6 +360,7 @@ const ShortStayDetails = () => {
 
     // New state for handling room type selection flow
     const [pendingRoomType, setPendingRoomType] = useState(null);
+    const [selectedRoom, setSelectedRoom] = useState(null); // Explicit selection for widget
     const [roomAvailability, setRoomAvailability] = useState({});
 
     // Fetch availability when dates change
@@ -403,14 +404,15 @@ const ShortStayDetails = () => {
                         currency: 'INR', // Assuming INR based on context
                          // Copy other necessary structure if needed, but perNight is the critical override
                         ...displayPricing, 
-                        perNight: pendingRoomType.price // Ensure this overrides
+                        perNight: pendingRoomType.originalPrice || Math.round(pendingRoomType.price / 1.05) // Ensure this overrides with base price
                     },
                     hostPricing: property.pricing, 
                     propertyTitle: property.title, 
                     propertyImage: property.images?.[0],
                     policies: property.policies,
                     roomType: pendingRoomType.type, // Optional: pass room type name for display
-                    hostId: property.user_id || property.owner_id
+                    hostId: property.user_id || property.owner_id,
+                    maxGuests: parseInt(pendingRoomType.guestCapacity) || property.maxGuests || 10
                 }
             });
         }
@@ -449,6 +451,21 @@ const ShortStayDetails = () => {
                 const propertyData = data.property || data;
                 setProperty(propertyData);
                 setBookedDates(availability.bookedDates || []);
+                
+                // Default select cheapest room for hotels
+                if (propertyData.category === 'hotel' && propertyData.specific_details?.roomTypes?.length > 0) {
+                    const rooms = propertyData.specific_details.roomTypes;
+                    // Find room with minimum price
+                    const cheapestRoom = rooms.reduce((prev, curr) => {
+                        return (Number(prev.price) < Number(curr.price)) ? prev : curr;
+                    });
+                    
+                    // Construct room data with calculated price (same as in table)
+                    const calculatedPrice = Math.ceil(Number(cheapestRoom.price) * 1.05);
+                    const roomData = { ...cheapestRoom, price: calculatedPrice, originalPrice: Number(cheapestRoom.price) };
+                    
+                    setSelectedRoom(roomData);
+                }
                 
                 if (user && favorites?.favorites) {
                     const isFav = favorites.favorites.some(fav => String(fav.id) === String(id));
@@ -732,6 +749,7 @@ const ShortStayDetails = () => {
                                                     <th>Type</th>
                                                     <th>Max Guests</th>
                                                     <th>Price / Night</th>
+                                                    <th>Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -749,44 +767,52 @@ const ShortStayDetails = () => {
                                                     return (
                                                         <tr 
                                                             key={idx} 
-                                                            className={`room-inventory-row ${isSoldOut ? 'disabled-row' : ''}`}
-                                                            style={isSoldOut ? { opacity: 0.5, cursor: 'not-allowed', background: '#f9f9f9' } : {}}
+                                                            className={`room-inventory-row ${isSoldOut ? 'disabled-row' : ''} ${selectedRoom?.type === room.type ? 'selected-room-row' : ''}`}
+                                                            style={{
+                                                                opacity: isSoldOut ? 0.5 : 1,
+                                                                cursor: isSoldOut ? 'not-allowed' : 'pointer',
+                                                                background: selectedRoom?.type === room.type ? '#f0f9ff' : (isSoldOut ? '#f9f9f9' : 'white'),
+                                                                border: selectedRoom?.type === room.type ? '2px solid #2563eb' : 'none'
+                                                            }}
                                                             onClick={() => {
                                                                 if (isSoldOut) return;
+                                                                                                                            // Store both calculated (display) and original (host) price
+                                                                const roomData = { ...room, price: calculatedPrice, originalPrice: Number(room.price) };
                                                                 
-                                                                const roomData = { ...room, price: calculatedPrice };
+                                                                // Clamp guests ensuring they don't exceed room capacity
+                                                                const maxGuests = parseInt(room.guestCapacity) || 2;
+                                                                let currentAdults = adults;
+                                                                let currentChildren = children;
+                                                                const currentTotal = currentAdults + currentChildren;
                                                                 
-                                                                if (!checkIn || !checkOut) {
-                                                                    setPendingRoomType(roomData);
-                                                                    setShowCalendarModal(true);
-                                                                } else {
-                                                                    const totalGuests = adults + children;
-                                                                    navigate(`/short-stay/reserve/${id}`, {
-                                                                        state: { 
-                                                                            checkIn, 
-                                                                            checkOut, 
-                                                                            guests: totalGuests, 
-                                                                            adults, 
-                                                                            children, 
-                                                                            infants, 
-                                                                            pets,
-                                                                            pricing: {
-                                                                                ...displayPricing,
-                                                                                perNight: calculatedPrice
-                                                                            },
-                                                                            hostPricing: pricing, 
-                                                                            propertyTitle: title, 
-                                                                            propertyImage: images?.[0],
-                                                                            policies: policies,
-                                                                            roomType: room.type,
-                                                                            hostId: property.user_id || property.owner_id
-                                                                        }
-                                                                    });
+                                                                if (currentTotal > maxGuests) {
+                                                                    // Reduce children first
+                                                                    if (currentChildren > 0) {
+                                                                        const excess = currentTotal - maxGuests;
+                                                                        const reduceChildrenBy = Math.min(currentChildren, excess);
+                                                                        currentChildren -= reduceChildrenBy;
+                                                                    }
+                                                                    // Reduce adults if needed
+                                                                    if (currentAdults + currentChildren > maxGuests) {
+                                                                        currentAdults = Math.max(1, maxGuests - currentChildren);
+                                                                    }
+                                                                    
+                                                                    setAdults(currentAdults);
+                                                                    setChildren(currentChildren);
                                                                 }
+
+                                                                // Always just set as selected room (User wants to select first, then pick dates manually)
+                                                                setSelectedRoom(roomData);
+                                                                
+                                                                // If we wanted to preserve the "auto-open calendar" behavior, we would check !checkIn || !checkOut here.
+                                                                // But the user explicitly requested: "it should set to selected and based on that check availity"
                                                             }}
                                                         >
                                                             <td>
-                                                                <div style={{fontWeight:500}}>{room.type}</div>
+                                                                <div style={{fontWeight:500}}>
+                                                                    {room.type}
+                                                                    {selectedRoom?.type === room.type && <span style={{marginLeft:'8px', fontSize:'12px', color:'#2563eb', fontWeight:'600'}}>(Selected)</span>}
+                                                                </div>
                                                                 <div style={{fontSize:'12px', color: (checkIn && checkOut && availableCount < 3) ? '#e11d48' : '#16a34a'}}>
                                                                     {checkIn && checkOut 
                                                                         ? (availableCount > 0 ? `${availableCount} rooms left` : 'Sold Out')
@@ -795,6 +821,23 @@ const ShortStayDetails = () => {
                                                             </td>
                                                             <td>{room.guestCapacity || '-'}</td>
                                                             <td>₹{calculatedPrice.toLocaleString()}</td>
+                                                            <td>
+                                                                <button 
+                                                                    style={{
+                                                                        padding: '6px 12px',
+                                                                        background: selectedRoom?.type === room.type ? '#2563eb' : 'white',
+                                                                        color: selectedRoom?.type === room.type ? 'white' : '#2563eb',
+                                                                        border: '1px solid #2563eb',
+                                                                        borderRadius: '6px',
+                                                                        cursor: isSoldOut ? 'not-allowed' : 'pointer',
+                                                                        fontWeight: '500',
+                                                                        fontSize: '13px'
+                                                                    }}
+                                                                    disabled={isSoldOut}
+                                                                >
+                                                                    {selectedRoom?.type === room.type ? 'Selected' : 'Select'}
+                                                                </button>
+                                                            </td>
                                                         </tr>
                                                     );
                                                 })}
@@ -948,15 +991,28 @@ const ShortStayDetails = () => {
                                         <h2 className="add-dates-header">Add dates for prices</h2>
                                     ) : (
                                         <div>
-                                            <span className="price-large">₹{displayPricing?.perNight?.toLocaleString()}</span>
-                                            <span className="night-label"> / night</span>
+                                            {category === 'hotel' && !selectedRoom ? (
+                                                <div style={{color: '#e11d48', fontWeight: '600', fontSize: '18px'}}>Select a room</div>
+                                            ) : (
+                                                <>
+                                                    <span className="price-large">
+                                                        ₹{(selectedRoom ? selectedRoom.price : displayPricing?.perNight)?.toLocaleString()}
+                                                    </span>
+                                                    <span className="night-label"> / night</span>
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </div>
                                 {(() => {
                                     const totalGuests = adults + children;
                                     const guestLabel = `${totalGuests} guest${totalGuests !== 1 ? 's' : ''}${infants > 0 ? `, ${infants} infant${infants > 1 ? 's' : ''}` : ''}${pets > 0 ? `, ${pets} pet${pets > 1 ? 's' : ''}` : ''}`;
-                                    const maxPerProperty = specific_details?.maxGuests || 10;
+                                    
+                                    // Use selected room's capacity if available, otherwise fallback
+                                    const maxPerProperty = selectedRoom?.guestCapacity 
+                                        ? parseInt(selectedRoom.guestCapacity) 
+                                        : (specific_details?.maxGuests || 10);
+                                        
                                     const petsAllowed = policies?.pets;
 
                                     return (
@@ -1039,7 +1095,13 @@ const ShortStayDetails = () => {
                                                     </div>
                                                     <div className="guest-footer">
                                                         <p className="max-guests-note">
-                                                            This place has a maximum of {maxPerProperty} guests, not including infants. {petsAllowed ? '' : "Pets aren't allowed."}
+                                                            {category === 'hotel' 
+                                                                ? (selectedRoom 
+                                                                    ? `Max ${maxPerProperty} guests for ${selectedRoom.type}.` 
+                                                                    : "Select a room to see guest limits.")
+                                                                : `This place has a maximum of ${maxPerProperty} guests, not including infants.`
+                                                            } 
+                                                            {petsAllowed ? '' : "Pets aren't allowed."}
                                                         </p>
                                                         <button className="guest-close-btn" onClick={() => setShowGuestDropdown(false)}>Close</button>
                                                     </div>
@@ -1059,7 +1121,30 @@ const ShortStayDetails = () => {
                                             setShowCalendarModal(true);
                                             return;
                                         }
+                                        
+                                        // Enforce room selection for hotels
+                                        if (category === 'hotel' && !selectedRoom) {
+                                            alert("Please select a room type from the inventory list above.");
+                                            // Scroll to inventory
+                                            const inventoryEl = document.querySelector('.hotel-rooms-table');
+                                            if (inventoryEl) inventoryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            return;
+                                        }
+
                                         const totalGuests = adults + children;
+                                        
+                                        // Use selected room pricing if available
+                                        // PASS THE ORIGINAL PRICE so reservation page calculates fee correctly
+                                        // Fallback to price / 1.05 if originalPrice is missing
+                                        let finalPerNight = displayPricing?.perNight;
+                                        if (category === 'hotel' && selectedRoom) {
+                                            finalPerNight = selectedRoom.originalPrice || Math.round(selectedRoom.price / 1.05);
+                                        }
+
+                                        const finalPricing = (category === 'hotel' && selectedRoom) 
+                                            ? { ...displayPricing, perNight: finalPerNight }
+                                            : displayPricing;
+
                                         navigate(`/short-stay/reserve/${id}`, {
                                             state: { 
                                                 checkIn, 
@@ -1069,7 +1154,7 @@ const ShortStayDetails = () => {
                                                 children, 
                                                 infants, 
                                                 pets,
-                                                pricing: displayPricing,
+                                                pricing: finalPricing,
                                                 hostPricing: pricing, // Pass original host pricing 
                                                 propertyTitle: title, 
                                                 propertyImage: images?.[0],
@@ -1080,12 +1165,20 @@ const ShortStayDetails = () => {
                                                 hostBio: property.host_bio,
                                                 hostPhoto: host_photo,
                                                 hostJoinedAt: host_joined_at,
-                                                isSuperhost: property.is_superhost
+                                                isSuperhost: property.is_superhost,
+                                                roomType: selectedRoom?.type,
+                                                maxGuests: (category === 'hotel' && selectedRoom) 
+                                                    ? (parseInt(selectedRoom.guestCapacity) || 2) 
+                                                    : (specific_details?.maxGuests || 10)
                                             }
                                         });
                                     }}
                                 >
-                                    {isOwner ? 'You manage this listing' : ((!checkIn || !checkOut) ? 'Check availability' : 'Reserve')}
+                                    {isOwner ? 'You manage this listing' : (
+                                        (!checkIn || !checkOut) ? 'Check availability' : (
+                                            (category === 'hotel' && !selectedRoom) ? 'Select a Room' : 'Reserve'
+                                        )
+                                    )}
                                 </button>
                                 {((!checkIn || !checkOut) && !loading) ? null : (
                                     <div className="booking-info-footer">
@@ -1093,17 +1186,25 @@ const ShortStayDetails = () => {
                                         {(checkIn && checkOut && displayPricing) && (
                                             <div className="pricing-breakdown">
                                                 <div className="price-row">
-                                                    <span>₹{displayPricing?.perNight?.toLocaleString()} x {Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))} nights</span>
-                                                    <span>₹{(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))).toLocaleString()}</span>
+                                                    <span>₹{(selectedRoom ? selectedRoom.price : displayPricing?.perNight)?.toLocaleString()} x {Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))} nights</span>
+                                                    <span>₹{((selectedRoom ? selectedRoom.price : displayPricing?.perNight) * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))).toLocaleString()}</span>
                                                 </div>
                                                 <div className="price-row">
                                                     <span>GST</span>
-                                                    <span>₹{Math.round(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 0.18).toLocaleString()}</span>
+                                                    <span>₹{Math.round((selectedRoom ? selectedRoom.price : displayPricing?.perNight) * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 0.18).toLocaleString()}</span>
                                                 </div>
                                                 <div className="section-divider" />
                                                 <div className="price-total">
                                                     <span>Total</span>
-                                                    <span>₹{(Math.round(displayPricing?.perNight * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 1.18)).toLocaleString()}</span>
+                                                    <span>
+                                                        ₹{(
+                                                            Math.round(
+                                                                (selectedRoom ? selectedRoom.price : displayPricing?.perNight) * 
+                                                                Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 
+                                                                1.18
+                                                            )
+                                                        ).toLocaleString()}
+                                                    </span>
                                                 </div>
                                             </div>
                                         )}
@@ -1313,7 +1414,7 @@ const ShortStayDetails = () => {
                     setCheckIn(start);
                     setCheckOut(end);
                 }}
-                bookedDates={bookedDates}
+                bookedDates={category === 'hotel' ? [] : bookedDates}
                 adults={adults} setAdults={setAdults}
                 children={children} setChildren={setChildren}
                 infants={infants} setInfants={setInfants}
