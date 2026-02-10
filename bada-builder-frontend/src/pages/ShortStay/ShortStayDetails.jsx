@@ -1209,17 +1209,17 @@ const ShortStayDetails = () => {
 
                                         const totalGuests = adults + children;
                                         
-                                        // Use selected room pricing if available
-                                        // PASS THE ORIGINAL PRICE so reservation page calculates fee correctly
-                                        // Fallback to price / 1.05 if originalPrice is missing
-                                        let finalPerNight = displayPricing?.perNight;
-                                        if (category === 'hotel' && selectedRoom) {
-                                            finalPerNight = selectedRoom.originalPrice || Math.round(selectedRoom.price / 1.05);
-                                        }
+                                        // Pass RAW host pricing to reserve page so it can apply the 5% platform fee correctly
+                                        const rawPricing = pricing || property.pricing;
+                                        let finalPricing = { ...rawPricing };
 
-                                        const finalPricing = (category === 'hotel' && selectedRoom) 
-                                            ? { ...displayPricing, perNight: finalPerNight }
-                                            : displayPricing;
+                                        if (category === 'hotel' && selectedRoom) {
+                                            finalPricing = {
+                                                ...finalPricing,
+                                                perNight: selectedRoom.originalPrice || Math.round(selectedRoom.price / 1.05),
+                                                weekly: Number(selectedRoom.weeklyPrice) || 0
+                                            };
+                                        }
 
                                         navigate(`/short-stay/reserve/${id}`, {
                                             state: { 
@@ -1259,29 +1259,58 @@ const ShortStayDetails = () => {
                                 {((!checkIn || !checkOut) && !loading) ? null : (
                                     <div className="booking-info-footer">
                                         <p className="no-charge-msg">You won't be charged yet</p>
-                                        {(checkIn && checkOut && displayPricing) && (
+                                        {(checkIn && checkOut && (displayPricing || selectedRoom)) && (
                                             <div className="pricing-breakdown">
-                                                <div className="price-row">
-                                                    <span>₹{(selectedRoom ? selectedRoom.price : displayPricing?.perNight)?.toLocaleString()} x {Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))} nights</span>
-                                                    <span>₹{((selectedRoom ? selectedRoom.price : displayPricing?.perNight) * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))).toLocaleString()}</span>
-                                                </div>
-                                                <div className="price-row">
-                                                    <span>GST</span>
-                                                    <span>₹{Math.round((selectedRoom ? selectedRoom.price : displayPricing?.perNight) * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 0.18).toLocaleString()}</span>
-                                                </div>
-                                                <div className="section-divider" />
-                                                <div className="price-total">
-                                                    <span>Total</span>
-                                                    <span>
-                                                        ₹{(
-                                                            Math.round(
-                                                                (selectedRoom ? selectedRoom.price : displayPricing?.perNight) * 
-                                                                Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 
-                                                                1.18
-                                                            )
-                                                        ).toLocaleString()}
-                                                    </span>
-                                                </div>
+                                                {(() => {
+                                                    const startDate = new Date(checkIn);
+                                                    const endDate = new Date(checkOut);
+                                                    const totalNights = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                                                    
+                                                    let baseTotal = 0;
+                                                    let tempDate = new Date(startDate);
+                                                    
+                                                    while (tempDate < endDate) {
+                                                        const day = tempDate.getDay();
+                                                        const isWeekend = day === 0 || day === 6; // Sunday or Saturday
+                                                        
+                                                        let dailyPrice;
+                                                        if (category === 'hotel' && selectedRoom) {
+                                                            const wkPrice = Number(selectedRoom.weeklyPrice);
+                                                            const basePrice = Number(selectedRoom.originalPrice || selectedRoom.price);
+                                                            const perNightMarkup = 1.05;
+                                                            
+                                                            dailyPrice = (isWeekend && wkPrice > 0) 
+                                                                ? Math.ceil(wkPrice * perNightMarkup) 
+                                                                : Math.ceil(basePrice * perNightMarkup);
+                                                        } else {
+                                                            const pricingObj = displayPricing || pricing;
+                                                            dailyPrice = (isWeekend && pricingObj.weekly > 0) 
+                                                                ? Number(pricingObj.weekly) 
+                                                                : Number(pricingObj.perNight);
+                                                        }
+                                                        
+                                                        baseTotal += dailyPrice;
+                                                        tempDate.setDate(tempDate.getDate() + 1);
+                                                    }
+
+                                                    return (
+                                                        <>
+                                                            <div className="price-row">
+                                                                <span>Accommodation for {totalNights} night{totalNights > 1 ? 's' : ''}</span>
+                                                                <span>₹{baseTotal.toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="price-row">
+                                                                <span>GST (18%)</span>
+                                                                <span>₹{Math.round(baseTotal * 0.18).toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="section-divider" />
+                                                            <div className="price-total">
+                                                                <span>Total</span>
+                                                                <span>₹{Math.round(baseTotal * 1.18).toLocaleString()}</span>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         )}
                                         {(() => {

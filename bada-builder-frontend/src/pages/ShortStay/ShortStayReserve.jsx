@@ -468,7 +468,6 @@ const ShortStayReserve = () => {
 
     // New State for Guest Details Flow
     const [showGuestDetailsStep, setShowGuestDetailsStep] = useState(false);
-    const [tempPaymentId, setTempPaymentId] = useState(null);
     const [isTncAccepted, setIsTncAccepted] = useState(false);
 
     useEffect(() => {
@@ -488,12 +487,39 @@ const ShortStayReserve = () => {
         : 0;
 
     // Pricing Calculations
-    // Use pricing (which contains specific room rate) first, fallback to hostPricing
-    const basePriceObj = pricing || hostPricing;
-    const pricePerNight = Number(basePriceObj?.perNight);
-    
-    // Base Amount (Nights * Price per Night)
-    const baseAmount = (nights > 0 && pricePerNight) ? (pricePerNight * nights) : 0;
+    const baseAmount = (() => {
+        if (!checkInDate || !checkOutDate || !nights) return 0;
+        
+        let total = 0;
+        let tempDate = new Date(checkInDate);
+        const basePriceObj = pricing || hostPricing;
+
+        // Determine property category (might need to fetch or assume it's passed or derived)
+        // If roomType exists, it's likely a hotel or we can check policies/structure
+        const isHotelLike = !!roomType; 
+
+        while (tempDate < checkOutDate) {
+            const day = tempDate.getDay();
+            const isWeekend = day === 0 || day === 6;
+            
+            let dailyPrice;
+            if (isHotelLike) {
+                // For hotels, weeklyPrice is often available in the specific_details or passed in pricing
+                // Note: pricing.weekly might be the weekend rate if passed correctly
+                const wkRate = Number(basePriceObj?.weeklyPrice || basePriceObj?.weekly);
+                const stdRate = Number(basePriceObj?.perNight);
+                dailyPrice = (isWeekend && wkRate > 0) ? wkRate : stdRate;
+            } else {
+                const wkRate = Number(basePriceObj?.weekly);
+                const stdRate = Number(basePriceObj?.perNight);
+                dailyPrice = (isWeekend && wkRate > 0) ? wkRate : stdRate;
+            }
+            
+            total += dailyPrice;
+            tempDate.setDate(tempDate.getDate() + 1);
+        }
+        return total;
+    })();
 
     // 5% Commission (Platform Fee)
     const platformFee = Math.round(baseAmount * 0.05);
@@ -508,8 +534,8 @@ const ShortStayReserve = () => {
     const [showPriceModal, setShowPriceModal] = useState(false);
     const [showConfirmedModal, setShowConfirmedModal] = useState(false);
 
-    // 2. Finalize Reservation (After Guest Details)
-    const finalizeReservation = async (guestDetails) => {
+    // 3. Finalize Reservation (After Payment)
+    const finalizeReservation = async (paymentId, guestDetails) => {
         setLoading(true);
         try {
             await shortStayAPI.reserve({
@@ -518,13 +544,12 @@ const ShortStayReserve = () => {
                 checkOut: rCheckOut,
                 guests: { adults: rAdults, children: rChildren, infants: rInfants, pets: rPets },
                 totalPrice: totalAmount,
-                paymentId: tempPaymentId,
+                paymentId: paymentId,
                 hostId,
                 roomType,
                 guestDetails // Array of guest info
             });
             setLoading(false);
-            setShowGuestDetailsStep(false); // Hide form
             setShowConfirmedModal(true); // Show success
         } catch (error) {
             console.error('Reservation Failed:', error);
@@ -533,21 +558,8 @@ const ShortStayReserve = () => {
         }
     };
 
-    // 1. Handle Payment -> Determine Next Step
-    const handlePaymentSuccess = (paymentId) => {
-        setTempPaymentId(paymentId);
-        setLoading(false);
-        // Move to Guest Details Step
-        setShowGuestDetailsStep(true);
-        window.scrollTo(0,0);
-    };
-
-    const handlePayment = async () => {
-        if (!isTncAccepted) {
-            alert("Please accept the Terms and Conditions to proceed.");
-            return;
-        }
-
+    // 2. Open Payment Modal (After Guest Details Validation)
+    const handlePayment = async (guestDetails) => {
         setLoading(true);
 
         if (selectedPayment === 'razorpay') {
@@ -566,7 +578,7 @@ const ShortStayReserve = () => {
                 description: `Payment for ${propertyTitle}`,
                 image: '/logo.png',
                 handler: function (response) {
-                    handlePaymentSuccess(response.razorpay_payment_id);
+                    finalizeReservation(response.razorpay_payment_id, guestDetails);
                 },
                 prefill: {
                     name: currentUser?.name || 'Guest User',
@@ -574,15 +586,32 @@ const ShortStayReserve = () => {
                     contact: currentUser?.phone || '',
                 },
                 theme: { color: '#FF385C' },
+                modal: {
+                    ondismiss: function() {
+                        setLoading(false);
+                    }
+                }
             };
             const paymentObject = new window.Razorpay(options);
             paymentObject.open();
         } else {
             // Mock GPAY
             setTimeout(() => {
-                handlePaymentSuccess(`GPAY_${Date.now()}`);
+                finalizeReservation(`GPAY_${Date.now()}`, guestDetails);
             }, 2000);
         }
+    };
+
+    // 1. Initial "Confirm and Pay" button logic
+    const handleInitialReserve = () => {
+        if (!isTncAccepted) {
+            alert("Please accept the Terms and Conditions to proceed.");
+            return;
+        }
+
+        // Switch to Guest Details Form first
+        setShowGuestDetailsStep(true);
+        window.scrollTo(0,0);
     };
 
     if (loading) {
@@ -598,7 +627,7 @@ const ShortStayReserve = () => {
                     </div>
                 </header>
                 <div className="reserve-container-centered">
-                    <GuestDetailsForm guestCount={rGuests} onSubmit={finalizeReservation} />
+                    <GuestDetailsForm guestCount={rGuests} onSubmit={handlePayment} />
                 </div>
              </div>
         );
@@ -695,7 +724,7 @@ const ShortStayReserve = () => {
                     {/* Desktop Button */}
                     <button 
                         className={`confirm-pay-btn mobile-hidden ${!isTncAccepted ? 'disabled-btn' : ''}`} 
-                        onClick={handlePayment} 
+                        onClick={handleInitialReserve} 
                         disabled={loading || !isTncAccepted}
                         style={!isTncAccepted ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                     >
@@ -709,7 +738,7 @@ const ShortStayReserve = () => {
                         </small>
                         <button 
                             className={`confirm-pay-btn-mobile ${!isTncAccepted ? 'disabled-btn' : ''}`} 
-                            onClick={handlePayment} 
+                            onClick={handleInitialReserve} 
                             disabled={loading || !isTncAccepted}
                             style={!isTncAccepted ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                         >
