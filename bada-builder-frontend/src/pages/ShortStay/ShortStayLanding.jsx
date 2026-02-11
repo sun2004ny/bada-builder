@@ -436,7 +436,7 @@ const ShortStayLanding = () => {
                   <div className="location-group-header">
                      <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
                          <h3>{displayName === 'Other Locations' ? 'Explore more stays' : `Stay in ${displayName}`}</h3>
-                         <button className="see-all-btn" onClick={() => navigate(`/short-stay/search?location=${displayName}`)}>
+                         <button className="see-all-btn" style={{ cursor: 'default' }}>
                             <FaArrowRight size={12} />
                          </button>
                      </div>

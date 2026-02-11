@@ -758,7 +758,7 @@ const ShortStayDetails = () => {
                                                     <th>Type</th>
                                                     <th>Max Guests</th>
                                                     <th>Price / Night</th>
-                                                    <th>Action</th>
+                                                    <th className="hide-on-mobile">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -777,71 +777,45 @@ const ShortStayDetails = () => {
                                                         <tr 
                                                             key={idx} 
                                                             className={`room-inventory-row ${isSoldOut ? 'disabled-row' : ''} ${selectedRoom?.type === room.type ? 'selected-room-row' : ''}`}
-                                                            style={{
-                                                                opacity: isSoldOut ? 0.5 : 1,
-                                                                cursor: isSoldOut ? 'not-allowed' : 'pointer',
-                                                                background: selectedRoom?.type === room.type ? '#f0f9ff' : (isSoldOut ? '#f9f9f9' : 'white'),
-                                                                border: selectedRoom?.type === room.type ? '2px solid #2563eb' : 'none'
-                                                            }}
                                                             onClick={() => {
                                                                 if (isSoldOut) return;
-                                                                                                                            // Store both calculated (display) and original (host) price
                                                                 const roomData = { ...room, price: calculatedPrice, originalPrice: Number(room.price) };
-                                                                
-                                                                // Clamp guests ensuring they don't exceed room capacity
                                                                 const maxGuests = parseInt(room.guestCapacity) || 2;
                                                                 let currentAdults = adults;
                                                                 let currentChildren = children;
                                                                 const currentTotal = currentAdults + currentChildren;
                                                                 
                                                                 if (currentTotal > maxGuests) {
-                                                                    // Reduce children first
                                                                     if (currentChildren > 0) {
                                                                         const excess = currentTotal - maxGuests;
                                                                         const reduceChildrenBy = Math.min(currentChildren, excess);
                                                                         currentChildren -= reduceChildrenBy;
                                                                     }
-                                                                    // Reduce adults if needed
                                                                     if (currentAdults + currentChildren > maxGuests) {
                                                                         currentAdults = Math.max(1, maxGuests - currentChildren);
                                                                     }
-                                                                    
                                                                     setAdults(currentAdults);
                                                                     setChildren(currentChildren);
                                                                 }
-
-                                                                // Always just set as selected room (User wants to select first, then pick dates manually)
                                                                 setSelectedRoom(roomData);
-                                                                
-                                                                // If we wanted to preserve the "auto-open calendar" behavior, we would check !checkIn || !checkOut here.
-                                                                // But the user explicitly requested: "it should set to selected and based on that check availity"
                                                             }}
                                                         >
                                                             <td>
-                                                                <div style={{fontWeight:500}}>
+                                                                <div className="room-type-cell">
                                                                     {room.type}
-                                                                    {selectedRoom?.type === room.type && <span style={{marginLeft:'8px', fontSize:'12px', color:'#2563eb', fontWeight:'600'}}>(Selected)</span>}
+                                                                    {selectedRoom?.type === room.type && <span className="selected-tag">(Selected)</span>}
                                                                 </div>
-                                                                <div style={{fontSize:'12px', color: (checkIn && checkOut && availableCount < 3) ? '#e11d48' : '#16a34a'}}>
+                                                                <div className={`room-left-tag ${ (checkIn && checkOut && availableCount < 3) ? 'warning' : 'success'}`}>
                                                                     {checkIn && checkOut 
                                                                         ? (availableCount > 0 ? `${availableCount} rooms left` : 'Sold Out')
                                                                         : `${totalRooms} rooms total`}
                                                                 </div>
                                                             </td>
-                                                            <td>{room.guestCapacity || '-'}</td>
-                                                            <td>₹{calculatedPrice.toLocaleString()}</td>
-                                                            <td>
+                                                            <td className="center-cell">{room.guestCapacity || '-'}</td>
+                                                            <td className="price-cell">₹{calculatedPrice.toLocaleString()}</td>
+                                                            <td className="hide-on-mobile">
                                                                 <button 
-                                                                    style={{
-                                                                        padding: '6px 12px',
-                                                                        background: selectedRoom?.type === room.type ? '#2563eb' : 'white',
-                                                                        color: selectedRoom?.type === room.type ? 'white' : '#2563eb',
-                                                                        border: '1px solid #2563eb',
-                                                                        borderRadius: '6px',
-                                                                        cursor: isSoldOut ? 'not-allowed' : 'pointer',
-                                                                        fontWeight: '500',
-                                                                        fontSize: '13px'
-                                                                    }}
+                                                                    className={`room-select-btn ${selectedRoom?.type === room.type ? 'selected' : ''}`}
                                                                     disabled={isSoldOut}
                                                                 >
                                                                     {selectedRoom?.type === room.type ? 'Selected' : 'Select'}
