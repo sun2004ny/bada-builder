@@ -313,7 +313,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             layout_columns, layout_rows,
             latitude, longitude, map_address,
             road_width, plot_gap, plot_size_width, plot_size_depth,
-            orientation, parking_type, parking_slots, entry_points
+            orientation, parking_type, parking_slots, entry_points,
+            mixed_use_selected_types
         } = req.body;
 
         // 1. Handle Files (DO THIS BEFORE OPENING DB CONNECTION)
@@ -356,11 +357,12 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     layout_columns, layout_rows,
                     latitude, longitude, map_address,
                     road_width, plot_gap, plot_size_width, plot_size_depth,
-                    orientation, parking_type, parking_slots, entry_points
+                    orientation, parking_type, parking_slots, entry_points,
+                    mixed_use_selected_types
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
                     $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42,
-                    $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57
+                    $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58
                 ) RETURNING *`,
                 [
                     title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
@@ -375,7 +377,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
                     layout_columns, layout_rows,
                     latitude || null, longitude || null, map_address || null,
                     road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null,
-                    orientation || null, parking_type || 'Front', parking_slots || 0, entry_points || null
+                    orientation || null, parking_type || 'Front', parking_slots || 0, entry_points || null,
+                    Array.isArray(mixed_use_selected_types) ? mixed_use_selected_types : (typeof mixed_use_selected_types === 'string' ? JSON.parse(mixed_use_selected_types) : [])
                 ]
             );
 
@@ -390,8 +393,8 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             for (const towerData of hierarchyData) {
                 // Insert Tower
                 const towerResult = await client.query(
-                    'INSERT INTO live_group_towers (project_id, tower_name, total_floors, layout_columns, layout_rows) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-                    [project.id, towerData.tower_name || towerData.name, towerData.total_floors || 0, towerData.layout_columns || null, towerData.layout_rows || null]
+                    'INSERT INTO live_group_towers (project_id, tower_name, total_floors, layout_columns, layout_rows, property_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+                    [project.id, towerData.tower_name || towerData.name, towerData.total_floors || 0, towerData.layout_columns || null, towerData.layout_rows || null, towerData.property_type || null]
                 );
                 const towerId = towerResult.rows[0].id;
                 console.log(`  Tower ${towerId} created.`);

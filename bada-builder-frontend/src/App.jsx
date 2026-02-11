@@ -142,6 +142,27 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, [location.pathname, currentUser]);
 
+  // Define allowed paths for Chatbot visibility
+  const allowedChatbotPaths = [
+    '/',
+    '/exhibition',
+    '/exhibition/individual',
+    '/exhibition/developer',
+    '/exhibition/live-grouping',
+    '/exhibition/badabuilder',
+    '/short-stay',
+    '/services',
+    '/long-live/browse',
+    '/long-live/post',
+    '/investments',
+    '/contact',
+    '/about',
+    '/post-property',
+    '/profile'
+  ];
+
+  const showChatbot = allowedChatbotPaths.includes(location.pathname);
+
   return (
     <>
       <Toaster position="top-right" reverseOrder={false} />
@@ -149,7 +170,7 @@ function AppContent() {
       <Preloader />
       {!isMessagesPage && !isAdminPanel && <Header />}
       <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
-      {!isMessagesPage && !isAdminPanel && <Chatbot />}
+      {showChatbot && <Chatbot />}
       {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
       <main style={{ minHeight: '100vh' }}>
         <AnimatePresence mode="wait">
