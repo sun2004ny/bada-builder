@@ -2223,12 +2223,6 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
                       <span className={`status-indicator text-[8px] font-bold px-1.5 py-0.5 rounded-full ${unit.isCustom ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
                         {unit.isCustom ? 'Custom' : 'Default'}
                       </span>
-                      <button
-                        onClick={() => onRemove(uIdx)}
-                        className="bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
-                      >
-                        <X size={10} />
-                      </button>
                     </div>
 
                     <div className="card-inner-layout p-3">
@@ -2467,26 +2461,21 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
                         <div className="pricing-row-display flex justify-between items-center mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
                           <div className="flex flex-col">
                             <span className="text-[8px] text-slate-400 font-bold uppercase">Total Price</span>
-                            {discSqft !== null && (
-                              <span className="strikethrough-price text-[8px] text-slate-400 font-bold line-through">
-                                {(() => {
-                                  const val = area * regSqft;
-                                  if (val === 0) return '₹0';
-                                  if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
-                                  if (val >= 100000) return `₹${(val / 100000).toFixed(2)} L`;
-                                  return `₹${val.toLocaleString('en-IN')}`;
-                                })()}
-                              </span>
-                            )}
+                            <span className="final-price-tag text-indigo-700 font-bold text-sm">
+                              {(() => {
+                                if (finalPrice <= 0) return '₹0';
+                                if (finalPrice >= 10000000) return `₹${(finalPrice / 10000000).toFixed(2)} Cr`;
+                                if (finalPrice >= 100000) return `₹${(finalPrice / 100000).toFixed(2)} L`;
+                                return `₹${finalPrice.toLocaleString('en-IN')}`;
+                              })()}
+                            </span>
                           </div>
-                          <span className="final-price-tag text-indigo-700 font-bold text-xs">
-                            {(() => {
-                              if (finalPrice <= 0) return '₹0';
-                              if (finalPrice >= 10000000) return `₹${(finalPrice / 10000000).toFixed(2)} Cr`;
-                              if (finalPrice >= 100000) return `₹${(finalPrice / 100000).toFixed(2)} L`;
-                              return `₹${finalPrice.toLocaleString('en-IN')}`;
-                            })()}
-                          </span>
+                          <button
+                            onClick={() => onRemove(uIdx)}
+                            className="text-[9px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1.5 rounded flex items-center gap-1 transition-colors"
+                          >
+                            <Trash2 size={10} /> Remove
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -2557,12 +2546,6 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, onReset, globalDefault
                 <span className={`status-indicator text-[8px] font-bold px-1.5 py-0.5 rounded-full ${unit.isCustom ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
                   {unit.isCustom ? 'Custom' : 'Default'}
                 </span>
-                <button
-                  onClick={() => onRemove(uIdx)}
-                  className="bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
-                >
-                  <X size={10} />
-                </button>
               </div>
 
               <div className="card-inner-layout p-3">
@@ -2878,6 +2861,12 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, onReset, globalDefault
                         ₹{(finalPrice / 100000).toFixed(2)} L
                       </span>
                     </div>
+                    <button
+                      onClick={() => onRemove(uIdx)}
+                      className="text-[9px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1.5 rounded flex items-center gap-1 transition-colors"
+                    >
+                      <Trash2 size={10} /> Remove
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2885,7 +2874,7 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, onReset, globalDefault
           );
         })}
       </div>
-    </div>
+    </div >
   );
 };
 
