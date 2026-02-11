@@ -8,12 +8,13 @@ import {
   Plus, Search, TowerControl as Tower, Building2,
   Trash2, Edit, Eye, Save, X, ChevronRight, ChevronDown,
   ChevronLeft, LayoutGrid, List, CheckCircle2, AlertCircle,
-  ArrowLeft, Lock, DollarSign, Home, Map as MapIcon, Store, Briefcase, ShoppingBag, Box, Car, RefreshCw,
+  ArrowLeft, Lock, DollarSign, Home, Map as MapIcon, Store, Briefcase, ShoppingBag, Box, Car, RefreshCw, RotateCcw,
   Image as ImageIcon
 } from 'lucide-react';
 import { liveGroupDynamicAPI } from '../../services/api';
 import TwoDView from '../../pages/Exhibition/TwoDView'; // Import the 2D View component
 import AdminUnitEditModal from './AdminUnitEditModal';
+import MixedUseHierarchy from '../../components/MixedUseHierarchy/MixedUseHierarchy';
 import './AdminLiveGrouping.css';
 
 const PROPERTY_TYPES = [
@@ -24,6 +25,14 @@ const PROPERTY_TYPES = [
   { id: 'MixedUse', label: 'Mixed Use Complex', icon: LayoutGrid, desc: 'Commercial + Residential projects' },
   { id: 'Commercial', label: 'Commercial', icon: Store, desc: 'Shops, Offices & Showrooms' }
 ];
+
+const UNIT_TYPES_BY_PROJECT_TYPE = {
+  Bungalow: ['Villa', 'Bungalow', 'Row House', 'Twin Villa', 'Plot'],
+  'Twin Villa': ['Twin Villa', 'Villa', 'Bungalow'],
+  Plot: ['Plot'],
+  Commercial: ['Shop', 'Office', 'Showroom', 'Warehouse'],
+  Apartment: ['1 BHK', '2 BHK', '3 BHK', '4 BHK', 'Penthouse', 'Studio']
+};
 
 const AdminLiveGrouping = () => {
 
@@ -101,7 +110,18 @@ const AdminLiveGrouping = () => {
     parking_slots: '',
     entry_points: '',
     total_units: '',
-    commercial_floor_count: 1
+    commercial_floor_count: 1,
+    // Mixed Use specific
+    mixedUseSelectedTypes: []
+  });
+
+  // Mixed Use Virtual Sub-Projects Data
+  const [mixedUseData, setMixedUseData] = useState({
+    Bungalow: { units: [], towers: [] },
+    'Twin Villa': { units: [], towers: [] },
+    Plot: { units: [], towers: [] },
+    Commercial: { units: [], towers: [] },
+    Apartment: { towers: [], towerUnits: {} }
   });
 
 
@@ -244,6 +264,59 @@ const AdminLiveGrouping = () => {
     }
   };
 
+  const sanitizeAndUploadUnit = async (unit, floorNum) => {
+    // UPLOAD UNIT IMAGE IF EXISTS
+    let uploadedImageUrl = unit.unit_image_url || null;
+    if (unit.unit_image_file) {
+      console.log(`📸 Uploading image for unit: ${unit.unit_number}...`);
+      try {
+        const uploadRes = await liveGroupDynamicAPI.uploadUnitImage(unit.unit_image_file);
+        uploadedImageUrl = uploadRes.imageUrl || uploadRes.url || uploadRes.secure_url;
+      } catch (uploadErr) {
+        console.error("Unit image upload failed:", uploadErr);
+      }
+    }
+
+    // UPLOAD UNIT GALLERY IF EXISTS
+    let uploadedGallery = unit.unit_gallery || [];
+    if (unit.unit_gallery_files && unit.unit_gallery_files.length > 0) {
+      console.log(`📸 Uploading gallery for unit: ${unit.unit_number}...`);
+      try {
+        const galleryRes = await liveGroupDynamicAPI.uploadUnitGallery(unit.unit_gallery_files);
+        const newUrls = galleryRes.imageUrls || galleryRes.urls || galleryRes.images || [];
+        if (newUrls.length > 0) {
+          uploadedGallery = [...uploadedGallery, ...newUrls];
+        }
+      } catch (galleryErr) {
+        console.error("Unit gallery upload failed:", galleryErr);
+      }
+    }
+
+    // Sanitize numeric fields before sending
+    const sanitizedUnit = {
+      ...unit,
+      floor_number: parseInt(floorNum),
+      area: parseFloat(unit.area) || 0,
+      carpet_area: parseFloat(unit.carpet_area) || 0,
+      super_built_up_area: parseFloat(unit.super_built_up_area) || 0,
+      price: parseFloat(unit.price) || 0,
+      price_per_sqft: parseFloat(unit.price_per_sqft) || 0,
+      discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null,
+      plot_width: (unit.plot_width) ? parseFloat(unit.plot_width) : null,
+      plot_depth: (unit.plot_depth) ? parseFloat(unit.plot_depth) : null,
+      unit_image_url: uploadedImageUrl,
+      unit_gallery: uploadedGallery
+    };
+
+    // Remove local file objects and previews before sending
+    delete sanitizedUnit.unit_image_file;
+    delete sanitizedUnit.localImagePreview;
+    delete sanitizedUnit.unit_gallery_files;
+    delete sanitizedUnit.galleryImagePreviews;
+
+    return sanitizedUnit;
+  };
+
   const handleCreateProject = async () => {
     try {
       setSaving(true);
@@ -285,7 +358,72 @@ const AdminLiveGrouping = () => {
           layout_rows: Math.ceil(totalUnits / cols),
           units: compiledUnits
         });
+      } else if (projectData.type === 'MixedUse') {
+        const selectedTypes = projectData.mixedUseSelectedTypes || [];
+
+        // 1. Process Apartment Towers if selected
+        if (selectedTypes.includes('Apartment')) {
+          for (let idx = 0; idx < towers.length; idx++) {
+            const tower = towers[idx];
+            const towerConfig = towerUnits[idx] || {};
+            const compiledUnits = [];
+
+            for (const floorNum of Object.keys(towerConfig)) {
+              if (!towerConfig[floorNum]) continue;
+              for (const unit of towerConfig[floorNum]) {
+                const sanitized = await sanitizeAndUploadUnit(unit, floorNum);
+                // Attach property type and metadata for mixed units
+                compiledUnits.push({
+                  ...sanitized,
+                  property_type: 'Apartment',
+                  unit_type: unit.unit_type || 'Apartment',
+                  tower_name: tower.name,
+                  total_floors: parseInt(tower.floors) || 0
+                });
+                console.log("Mixed unit before submit:", compiledUnits[compiledUnits.length - 1]);
+              }
+            }
+
+            hierarchy.push({
+              tower_name: tower.name,
+              total_floors: parseInt(tower.floors) || 0,
+              layout_columns: tower.layout_columns || projectData.layout_columns || null,
+              layout_rows: tower.layout_rows || projectData.layout_rows || null,
+              property_type: 'Apartment',
+              units: compiledUnits
+            });
+          }
+        }
+
+        // 2. Process Land-based units (Bungalow, Plot, etc.)
+        for (const type of selectedTypes) {
+          if (type === 'Apartment') continue;
+
+          const typeUnits = mixedUseData[type]?.units || [];
+          if (typeUnits.length > 0) {
+            const compiledUnits = [];
+            for (const unit of typeUnits) {
+              const sanitized = await sanitizeAndUploadUnit(unit, 0);
+              compiledUnits.push({
+                ...sanitized,
+                unit_type: unit.unit_type || type,
+                property_type: unit.unit_type || type
+              });
+              console.log("Mixed unit before submit:", compiledUnits[compiledUnits.length - 1]);
+            }
+
+            hierarchy.push({
+              tower_name: `${type} Section`,
+              total_floors: 1,
+              layout_columns: projectData.layout_columns || null,
+              layout_rows: projectData.layout_rows || null,
+              property_type: type,
+              units: compiledUnits
+            });
+          }
+        }
       } else {
+        // Standalone flow
         for (let idx = 0; idx < towers.length; idx++) {
           const tower = towers[idx];
           const towerConfig = towerUnits[idx] || {};
@@ -295,58 +433,13 @@ const AdminLiveGrouping = () => {
             if (!towerConfig[floorNum]) continue;
 
             for (const unit of towerConfig[floorNum]) {
-              // UPLOAD UNIT IMAGE IF EXISTS
-              let uploadedImageUrl = unit.unit_image_url || null;
-              if (unit.unit_image_file) {
-                console.log(`📸 Uploading image for unit: ${unit.unit_number}...`);
-                try {
-                  const uploadRes = await liveGroupDynamicAPI.uploadUnitImage(unit.unit_image_file);
-                  uploadedImageUrl = uploadRes.imageUrl || uploadRes.url || uploadRes.secure_url;
-                } catch (uploadErr) {
-                  console.error("Unit image upload failed:", uploadErr);
-                  // Continue without image or fail? Requirement says optional, so we can continue
-                }
-              }
-
-
-              // UPLOAD UNIT GALLERY IF EXISTS
-              let uploadedGallery = unit.unit_gallery || [];
-              if (unit.unit_gallery_files && unit.unit_gallery_files.length > 0) {
-                console.log(`📸 Uploading gallery for unit: ${unit.unit_number}...`);
-                try {
-                  const galleryRes = await liveGroupDynamicAPI.uploadUnitGallery(unit.unit_gallery_files);
-                  const newUrls = galleryRes.imageUrls || galleryRes.urls || galleryRes.images || [];
-                  if (newUrls.length > 0) {
-                    uploadedGallery = [...uploadedGallery, ...newUrls];
-                  }
-                } catch (galleryErr) {
-                  console.error("Unit gallery upload failed:", galleryErr);
-                }
-              }
-
-              // Sanitize numeric fields before sending
-              const sanitizedUnit = {
-                ...unit,
-                floor_number: parseInt(floorNum),
-                area: parseFloat(unit.area) || 0,
-                carpet_area: parseFloat(unit.carpet_area) || 0,
-                super_built_up_area: parseFloat(unit.super_built_up_area) || 0,
-                price: parseFloat(unit.price) || 0,
-                price_per_sqft: parseFloat(unit.price_per_sqft) || 0,
-                discount_price_per_sqft: (unit.discount_price_per_sqft) ? parseFloat(unit.discount_price_per_sqft) : null,
-                plot_width: (unit.plot_width) ? parseFloat(unit.plot_width) : null,
-                plot_depth: (unit.plot_depth) ? parseFloat(unit.plot_depth) : null,
-                unit_image_url: uploadedImageUrl,
-                unit_gallery: uploadedGallery
-              };
-
-              // Remove local file objects and previews before sending
-              delete sanitizedUnit.unit_image_file;
-              delete sanitizedUnit.localImagePreview;
-              delete sanitizedUnit.unit_gallery_files;
-              delete sanitizedUnit.galleryImagePreviews;
-
-              compiledUnits.push(sanitizedUnit);
+              const sanitized = await sanitizeAndUploadUnit(unit, floorNum);
+              // In standalone flow, preserve unit-specific type if available, fallback to projectData.type
+              compiledUnits.push({
+                ...sanitized,
+                unit_type: unit.unit_type || projectData.type,
+                property_type: unit.unit_type || projectData.type
+              });
             }
           }
 
@@ -355,6 +448,7 @@ const AdminLiveGrouping = () => {
             total_floors: parseInt(tower.floors) || (projectData.type === 'Bungalow' ? 1 : 0),
             layout_columns: tower.layout_columns || null,
             layout_rows: tower.layout_rows || null,
+            property_type: projectData.type,
             units: compiledUnits
           });
         }
@@ -539,6 +633,83 @@ const AdminLiveGrouping = () => {
     }
   };
 
+  const toggleMixedUseType = (typeId) => {
+    setProjectData(prev => {
+      const currentTypes = prev.mixedUseSelectedTypes || [];
+      const newTypes = currentTypes.includes(typeId)
+        ? currentTypes.filter(t => t !== typeId)
+        : [...currentTypes, typeId];
+
+      // If Apartment is added, initialize towers if empty
+      if (typeId === 'Apartment' && !currentTypes.includes('Apartment')) {
+        if (towers.length === 0 || (towers.length === 1 && !towers[0].name)) {
+          setTowers([{ name: 'Tower A', floors: 10, unitsPerFloor: 4, layout_columns: '', layout_rows: '' }]);
+        }
+      }
+
+      return { ...prev, mixedUseSelectedTypes: newTypes };
+    });
+  };
+
+  const updateMixedUseUnit = (type, unitIdx, field, value) => {
+    setMixedUseData(prev => {
+      const nextState = structuredClone(prev);
+      const typeData = nextState[type];
+      if (!typeData || !typeData.units[unitIdx]) return prev;
+
+      const unit = typeData.units[unitIdx];
+
+      if (typeof field === 'object') {
+        Object.keys(field).forEach(key => {
+          unit[key] = field[key];
+        });
+      } else {
+        unit[field] = value;
+      }
+
+      // Auto-recalculate price
+      const area = parseFloat(unit.area) || 0;
+      const rate = parseFloat(unit.discount_price_per_sqft || unit.price_per_sqft) || 0;
+      unit.price = area * rate;
+
+      return nextState;
+    });
+  };
+
+  const addMixedUseUnit = (type) => {
+    setMixedUseData(prev => {
+      const nextState = structuredClone(prev);
+      const typeData = nextState[type];
+      if (!typeData) return prev;
+
+      const prefix = type === 'Plot' ? 'P' : (type === 'Commercial' ? 'C' : 'B');
+      const label = `${prefix}-${typeData.units.length + 1}`;
+
+      typeData.units.push({
+        unit_number: label,
+        unit_type: UNIT_TYPES_BY_PROJECT_TYPE[type]?.[0] || type,
+        area: type === 'Plot' ? (projectData.area || 1200) : 2500,
+        price_per_sqft: projectData.regular_price_per_sqft || 0,
+        discount_price_per_sqft: projectData.group_price_per_sqft || null,
+        price: 0,
+        status: 'available',
+        isCustom: true
+      });
+
+      return nextState;
+    });
+  };
+
+  const removeMixedUseUnit = (type, unitIdx) => {
+    setMixedUseData(prev => {
+      const nextState = structuredClone(prev);
+      if (nextState[type]) {
+        nextState[type].units = nextState[type].units.filter((_, i) => i !== unitIdx);
+      }
+      return nextState;
+    });
+  };
+
   const addUnitToConfig = (towerIdx, floorNum) => {
     setTowerUnits(prev => {
       const towerConfig = { ...(prev[towerIdx] || {}) };
@@ -710,6 +881,48 @@ const AdminLiveGrouping = () => {
     }
 
     setTowerUnits(prev => ({ ...prev, [towerIdx]: newConfig }));
+  };
+
+  const prepopulateMixedUseUnits = (type) => {
+    const newUnits = [];
+    if (type === 'Plot') {
+      const rows = 5;
+      const cols = 4;
+      const totalPlots = rows * cols;
+      for (let k = 0; k < totalPlots; k++) {
+        newUnits.push({
+          unit_number: `P-${k + 1}`,
+          unit_type: 'Plot',
+          area: projectData.area || 1200,
+          plot_width: projectData.plot_size_width || 30,
+          plot_depth: projectData.plot_size_depth || 40,
+          price: 0,
+          discount_price: null,
+          price_per_sqft: projectData.regular_price_per_sqft || 0,
+          discount_price_per_sqft: projectData.group_price_per_sqft || null,
+          isCustom: false
+        });
+      }
+    } else {
+      const count = type === 'Commercial' ? (parseInt(projectData.total_units) || 12) : (parseInt(towers[0]?.total_bungalows) || 15);
+      const prefix = type === 'Commercial' ? 'C' : (type === 'Twin Villa' ? 'TV' : 'B');
+      for (let k = 0; k < count; k++) {
+        newUnits.push({
+          unit_number: `${prefix}-${k + 1}`,
+          unit_type: type === 'Twin Villa' ? 'Twin Villa' : (type === 'Commercial' ? 'Commercial' : 'Villa'),
+          area: type === 'Commercial' ? 500 : 2500,
+          price_per_sqft: projectData.regular_price_per_sqft || 0,
+          discount_price_per_sqft: projectData.group_price_per_sqft || null,
+          price: 0,
+          isCustom: false
+        });
+      }
+    }
+
+    setMixedUseData(prev => ({
+      ...prev,
+      [type]: { ...prev[type], units: newUnits }
+    }));
   };
 
   const getLabel = (type, context) => {
@@ -1287,109 +1500,122 @@ const AdminLiveGrouping = () => {
 
                 {wizardStep === 3 && projectData.type !== 'Commercial' && (
                   <div className="step-pane">
-                    <div className="pane-header">
-                      <h3>{getLabel(projectData.type, 'parent')} Configuration</h3>
-                      <button className="add-btn" onClick={addTowerRow}><Plus size={16} /> Add {getLabel(projectData.type, 'parent')}</button>
-                    </div>
-                    <table className="wizard-table">
-                      <thead>
-                        <tr>
-                          <th>{getLabel(projectData.type, 'parent')} Name</th>
-                          {projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot' ? (
-                            <>
-                              <th>{projectData.type === 'Plot' ? 'Total Plots' : 'Total Units'}</th>
-                              <th>{projectData.type === 'Plot' ? '3D Layout' : 'Type'}</th>
-                            </>
-                          ) : (
-                            <>
-                              <th>Floors</th>
-                              <th>Units per Floor</th>
-                              <th>Extra Levels</th>
-                              <th>3D Layout Cols</th>
-                            </>
-                          )}
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {towers.map((t, idx) => (
-                          <Fragment key={idx}>
-                            <tr>
-                              <td><input type="text" value={t.name || ''} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
+                    {projectData.type === 'MixedUse' && (
+                      <MixedUseHierarchy
+                        selectedTypes={projectData.mixedUseSelectedTypes || []}
+                        onToggleType={toggleMixedUseType}
+                      />
+                    )}
 
+                    {(projectData.type !== 'MixedUse' || (projectData.mixedUseSelectedTypes || []).includes('Apartment')) && (
+                      <>
+                        <div className="pane-header">
+                          <h3>{projectData.type === 'MixedUse' ? 'Apartment (Flat) Hierarchy' : `${getLabel(projectData.type, 'parent')} Configuration`}</h3>
+                          <button className="add-btn" onClick={addTowerRow}>
+                            <Plus size={16} /> Add {projectData.type === 'MixedUse' ? 'Tower' : getLabel(projectData.type, 'parent')}
+                          </button>
+                        </div>
+                        <table className="wizard-table">
+                          <thead>
+                            <tr>
+                              <th>{getLabel(projectData.type, 'parent')} Name</th>
                               {projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot' ? (
                                 <>
-                                  <td>
-                                    <input
-                                      type="number"
-                                      value={projectData.type === 'Plot' ? (t.layout_rows * t.layout_columns || '') : (t.total_bungalows || '')}
-                                      onChange={e => updateTowerRow(idx, projectData.type === 'Plot' ? 'total_plots' : 'total_bungalows', e.target.value)}
-                                      placeholder={projectData.type === 'Plot' ? "Auto" : "e.g. 10"}
-                                      readOnly={projectData.type === 'Plot'}
-                                    />
-                                  </td>
-                                  <td>
-                                    {projectData.type === 'Plot' ? (
-                                      <div className="flex gap-1 items-center">
-                                        <input type="number" placeholder="R" className="w-12 text-xs" value={t.layout_rows || ''} onChange={e => updateTowerRow(idx, 'layout_rows', e.target.value)} />
-                                        <span className="text-[10px]">x</span>
-                                        <input type="number" placeholder="C" className="w-12 text-xs" value={t.layout_columns || ''} onChange={e => updateTowerRow(idx, 'layout_columns', e.target.value)} />
-                                      </div>
-                                    ) : (
-                                      <select
-                                        value={t.bungalow_type || (projectData.type === 'Twin Villa' ? 'Twin Villa' : 'Villa')}
-                                        onChange={e => updateTowerRow(idx, 'bungalow_type', e.target.value)}
-                                        className="w-full p-2 border rounded"
-                                      >
-                                        <option value="Villa">Villa</option>
-                                        <option value="Bungalow">Bungalow</option>
-                                        <option value="Row House">Row House</option>
-                                        <option value="Twin Villa">Twin Villa</option>
-                                        <option value="Plot">Plot</option>
-                                      </select>
-                                    )}
-                                  </td>
+                                  <th>{projectData.type === 'Plot' ? 'Total Plots' : 'Total Units'}</th>
+                                  <th>{projectData.type === 'Plot' ? '3D Layout' : 'Type'}</th>
                                 </>
                               ) : (
                                 <>
-                                  <td><input type="number" value={t.floors || ''} onChange={e => updateTowerRow(idx, 'floors', e.target.value)} placeholder="" /></td>
-                                  <td>
-                                    <input
-                                      type="number"
-                                      value={t.unitsPerFloor || ''}
-                                      onChange={e => updateTowerRow(idx, 'unitsPerFloor', e.target.value)}
-                                      placeholder="e.g. 4"
-                                    />
-                                  </td>
-                                  <td>
-                                    <div className="flex flex-col gap-1">
-                                      <label className="text-xs flex items-center gap-1 cursor-pointer">
-                                        <input type="checkbox" checked={t.hasGroundFloor || false} onChange={e => updateTowerRow(idx, 'hasGroundFloor', e.target.checked)} /> GF
-                                      </label>
-                                      <label className="text-xs flex items-center gap-1 cursor-pointer">
-                                        <input type="checkbox" checked={t.hasBasement || false} onChange={e => updateTowerRow(idx, 'hasBasement', e.target.checked)} /> Basement
-                                      </label>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <input
-                                      type="number"
-                                      value={t.layout_columns || ''}
-                                      onChange={e => updateTowerRow(idx, 'layout_columns', e.target.value)}
-                                      placeholder="Auto"
-                                      style={{ width: '60px' }}
-                                    />
-                                  </td>
+                                  <th>Floors</th>
+                                  <th>Units per Floor</th>
+                                  <th>Extra Levels</th>
+                                  <th>3D Layout Cols</th>
                                 </>
                               )}
-                              <td><button className="remove-btn" onClick={() => removeTowerRow(idx)}><Trash2 size={16} /></button></td>
+                              <th>Actions</th>
                             </tr>
-                          </Fragment>
-                        ))}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody>
+                            {towers.map((t, idx) => (
+                              <Fragment key={idx}>
+                                <tr>
+                                  <td><input type="text" value={t.name || ''} onChange={e => updateTowerRow(idx, 'name', e.target.value)} /></td>
 
-                    {(projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot') && (
+                                  {projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot' ? (
+                                    <>
+                                      <td>
+                                        <input
+                                          type="number"
+                                          value={projectData.type === 'Plot' ? (t.layout_rows * t.layout_columns || '') : (t.total_bungalows || '')}
+                                          onChange={e => updateTowerRow(idx, projectData.type === 'Plot' ? 'total_plots' : 'total_bungalows', e.target.value)}
+                                          placeholder={projectData.type === 'Plot' ? "Auto" : "e.g. 10"}
+                                          readOnly={projectData.type === 'Plot'}
+                                        />
+                                      </td>
+                                      <td>
+                                        {projectData.type === 'Plot' ? (
+                                          <div className="flex gap-1 items-center">
+                                            <input type="number" placeholder="R" className="w-12 text-xs" value={t.layout_rows || ''} onChange={e => updateTowerRow(idx, 'layout_rows', e.target.value)} />
+                                            <span className="text-[10px]">x</span>
+                                            <input type="number" placeholder="C" className="w-12 text-xs" value={t.layout_columns || ''} onChange={e => updateTowerRow(idx, 'layout_columns', e.target.value)} />
+                                          </div>
+                                        ) : (
+                                          <select
+                                            value={t.bungalow_type || (projectData.type === 'Twin Villa' ? 'Twin Villa' : 'Villa')}
+                                            onChange={e => updateTowerRow(idx, 'bungalow_type', e.target.value)}
+                                            className="w-full p-2 border rounded"
+                                          >
+                                            <option value="Villa">Villa</option>
+                                            <option value="Bungalow">Bungalow</option>
+                                            <option value="Row House">Row House</option>
+                                            <option value="Twin Villa">Twin Villa</option>
+                                            <option value="Plot">Plot</option>
+                                          </select>
+                                        )}
+                                      </td>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <td><input type="number" value={t.floors || ''} onChange={e => updateTowerRow(idx, 'floors', e.target.value)} placeholder="" /></td>
+                                      <td>
+                                        <input
+                                          type="number"
+                                          value={t.unitsPerFloor || ''}
+                                          onChange={e => updateTowerRow(idx, 'unitsPerFloor', e.target.value)}
+                                          placeholder="e.g. 4"
+                                        />
+                                      </td>
+                                      <td>
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-xs flex items-center gap-1 cursor-pointer">
+                                            <input type="checkbox" checked={t.hasGroundFloor || false} onChange={e => updateTowerRow(idx, 'hasGroundFloor', e.target.checked)} /> GF
+                                          </label>
+                                          <label className="text-xs flex items-center gap-1 cursor-pointer">
+                                            <input type="checkbox" checked={t.hasBasement || false} onChange={e => updateTowerRow(idx, 'hasBasement', e.target.checked)} /> Basement
+                                          </label>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <input
+                                          type="number"
+                                          value={t.layout_columns || ''}
+                                          onChange={e => updateTowerRow(idx, 'layout_columns', e.target.value)}
+                                          placeholder="Auto"
+                                          style={{ width: '60px' }}
+                                        />
+                                      </td>
+                                    </>
+                                  )}
+                                  <td><button className="remove-btn" onClick={() => removeTowerRow(idx)}><Trash2 size={16} /></button></td>
+                                </tr>
+                              </Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </>
+                    )}
+
+                    {projectData.type !== 'MixedUse' && (projectData.type === 'Bungalow' || projectData.type === 'Twin Villa' || projectData.type === 'Plot') && (
                       <div className="form-grid mt-6">
                         <div className="form-divider col-span-2 my-4 border-t pt-4 font-bold text-slate-800">
                           {projectData.type === 'Plot' ? 'Land Layout Configuration' : '3D Layout Configuration (Optional)'}
@@ -1472,211 +1698,265 @@ const AdminLiveGrouping = () => {
                     </div>
 
                     <div className="unit-configurator-container">
-                      {/* GLOBAL DEFAULTS SECTION - Hidden for Bungalows, Plots, Twin Villas (non-apartment types) */}
-                      {projectData.type !== 'Bungalow' &&
-                        projectData.type !== 'Plot' &&
-                        projectData.type !== 'Twin Villa' && (
-                          <div className="global-defaults-wrapper mb-8">
-                            <div className={`global-defaults-panel bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${isGlobalDefaultsCollapsed ? 'max-h-14' : 'max-h-96'}`}>
-                              <div
-                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                                onClick={() => setIsGlobalDefaultsCollapsed(!isGlobalDefaultsCollapsed)}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                    <Tower size={20} />
-                                  </div>
-                                  <div>
-                                    <h4 className="font-bold text-slate-800 text-sm">Default Unit Configuration (Global)</h4>
-                                    {!isGlobalDefaultsCollapsed && <p className="text-[10px] text-slate-500 uppercase font-semibold">Applied to all default units</p>}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {isGlobalDefaultsCollapsed && (
-                                    <div className="hidden md:flex gap-3 mr-4">
-                                      <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.unitType}</span>
-                                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.sbua} SqFt</span>
-                                      <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">₹{globalUnitDefaults.baseRate}</span>
-                                    </div>
-                                  )}
-                                  <button className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
-                                    {isGlobalDefaultsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-                                  </button>
-                                </div>
-                              </div>
+                      {(projectData.type === 'MixedUse' ? (projectData.mixedUseSelectedTypes || []) : [projectData.type]).map((currentType) => {
+                        const isApartment = currentType === 'Apartment';
 
-                              {!isGlobalDefaultsCollapsed && (
-                                <div className="p-6 pt-2 bg-gradient-to-r from-white to-blue-50/30">
-                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                    <div className="input-field-group">
-                                      <label>Default Type</label>
-                                      <select
-                                        className="text-xs border rounded p-2 w-full"
-                                        value={globalUnitDefaults.unitType}
-                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, unitType: e.target.value })}
-                                      >
-                                        <option value="Flat">Flat</option>
-                                        <option value="Shop">Shop</option>
-                                        <option value="Office">Office</option>
-                                        <option value="Showroom">Showroom</option>
-                                      </select>
-                                    </div>
-                                    <div className="input-field-group">
-                                      <label>SBUA (SQFT)</label>
-                                      <input
-                                        type="number"
-                                        className="text-xs border rounded p-2 w-full"
-                                        value={globalUnitDefaults.sbua}
-                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, sbua: parseFloat(e.target.value) || 0 })}
-                                      />
-                                    </div>
-                                    <div className="input-field-group">
-                                      <label>Carpet (SQFT)</label>
-                                      <input
-                                        type="number"
-                                        className="text-xs border rounded p-2 w-full"
-                                        value={globalUnitDefaults.carpetArea}
-                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, carpetArea: parseFloat(e.target.value) || 0 })}
-                                      />
-                                    </div>
-                                    <div className="input-field-group">
-                                      <label>Base Rate (₹)</label>
-                                      <input
-                                        type="number"
-                                        className="text-xs border rounded p-2 w-full"
-                                        value={globalUnitDefaults.baseRate}
-                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, baseRate: parseFloat(e.target.value) || 0 })}
-                                      />
-                                    </div>
-                                    <div className="input-field-group">
-                                      <label>Discount Rate (₹)</label>
-                                      <input
-                                        type="number"
-                                        className="text-xs border rounded p-2 w-full"
-                                        value={globalUnitDefaults.discountRate}
-                                        onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, discountRate: parseFloat(e.target.value) || 0 })}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      {towers.map((tower, towerIdx) => {
-                        const isTowerCollapsed = collapsedTowers.includes(towerIdx);
                         return (
-                          <div key={towerIdx} className="tower-config-block border rounded-xl overflow-hidden mb-6 bg-slate-50">
-                            <div className="tower-name-bar bg-slate-200 px-4 py-2 font-bold flex justify-between items-center text-slate-700">
-                              <div className="flex items-center gap-3">
-                                <button
-                                  onClick={() => toggleTowerCollapse(towerIdx)}
-                                  className="p-1 hover:bg-slate-300 rounded-md transition-colors"
-                                >
-                                  {isTowerCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-                                </button>
+                          <div key={currentType} className="property-type-section mb-12 last:mb-0">
+                            {projectData.type === 'MixedUse' && (
+                              <div className="type-section-header flex items-center gap-3 mb-6 p-4 bg-slate-100/50 rounded-2xl border border-slate-200/50">
+                                <div className="p-2 bg-white rounded-lg shadow-sm text-blue-600">
+                                  {(() => {
+                                    const typeInfo = PROPERTY_TYPES.find(t => t.id === currentType);
+                                    const Icon = typeInfo?.icon || LayoutGrid;
+                                    return <Icon size={20} />;
+                                  })()}
+                                </div>
                                 <div>
-                                  {projectData.type === 'Bungalow' ? (
-                                    <>
-                                      {tower.name} ({tower.total_bungalows || 0} Bungalows)
-                                      <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      {tower.name} ({tower.floors} Floors)
-                                      <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
-                                    </>
+                                  <h4 className="font-bold text-slate-800">{currentType === 'Apartment' ? 'Apartment (Flat)' : currentType} Configuration</h4>
+                                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
+                                    {isApartment ? 'Hierarchy-based Units' : 'Direct Unit Specification'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* GLOBAL DEFAULTS SECTION - Only for Apartment/Commercial or standalone non-land types */}
+                            {isApartment && projectData.type !== 'Bungalow' && projectData.type !== 'Plot' && projectData.type !== 'Twin Villa' && (
+                              <div className="global-defaults-wrapper mb-8">
+                                <div className={`global-defaults-panel bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${isGlobalDefaultsCollapsed ? 'max-h-14' : 'max-h-96'}`}>
+                                  <div
+                                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                                    onClick={() => setIsGlobalDefaultsCollapsed(!isGlobalDefaultsCollapsed)}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                        <Tower size={20} />
+                                      </div>
+                                      <div>
+                                        <h4 className="font-bold text-slate-800 text-sm">Default Unit Configuration (Global)</h4>
+                                        {!isGlobalDefaultsCollapsed && <p className="text-[10px] text-slate-500 uppercase font-semibold">Applied to all default units</p>}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {isGlobalDefaultsCollapsed && (
+                                        <div className="hidden md:flex gap-3 mr-4">
+                                          <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.unitType}</span>
+                                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">{globalUnitDefaults.sbua} SqFt</span>
+                                          <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">₹{globalUnitDefaults.baseRate}</span>
+                                        </div>
+                                      )}
+                                      <button className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
+                                        {isGlobalDefaultsCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {!isGlobalDefaultsCollapsed && (
+                                    <div className="p-6 pt-2 bg-gradient-to-r from-white to-blue-50/30">
+                                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                        <div className="input-field-group">
+                                          <label>Default Type</label>
+                                          <select
+                                            className="text-xs border rounded p-2 w-full"
+                                            value={globalUnitDefaults.unitType}
+                                            onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, unitType: e.target.value })}
+                                          >
+                                            {(UNIT_TYPES_BY_PROJECT_TYPE[currentType] || ['Unit']).map(type => (
+                                              <option key={type} value={type}>{type}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                        <div className="input-field-group">
+                                          <label>SBUA (SQFT)</label>
+                                          <input
+                                            type="number"
+                                            className="text-xs border rounded p-2 w-full"
+                                            value={globalUnitDefaults.sbua}
+                                            onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, sbua: parseFloat(e.target.value) || 0 })}
+                                          />
+                                        </div>
+                                        <div className="input-field-group">
+                                          <label>Carpet (SQFT)</label>
+                                          <input
+                                            type="number"
+                                            className="text-xs border rounded p-2 w-full"
+                                            value={globalUnitDefaults.carpetArea}
+                                            onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, carpetArea: parseFloat(e.target.value) || 0 })}
+                                          />
+                                        </div>
+                                        <div className="input-field-group">
+                                          <label>Base Rate (₹)</label>
+                                          <input
+                                            type="number"
+                                            className="text-xs border rounded p-2 w-full"
+                                            value={globalUnitDefaults.baseRate}
+                                            onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, baseRate: parseFloat(e.target.value) || 0 })}
+                                          />
+                                        </div>
+                                        <div className="input-field-group">
+                                          <label>Discount Rate (₹)</label>
+                                          <input
+                                            type="number"
+                                            className="text-xs border rounded p-2 w-full"
+                                            value={globalUnitDefaults.discountRate}
+                                            onChange={e => setGlobalUnitDefaults({ ...globalUnitDefaults, discountRate: parseFloat(e.target.value) || 0 })}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               </div>
-                              <button
-                                onClick={() => prepopulateTowerUnits(towerIdx)}
-                                className="text-[10px] bg-white text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"
-                              >
-                                {projectData.type === 'Bungalow' ? 'Reset Bungalows' : 'Reset to Defaults (4 per floor)'}
-                              </button>
-                            </div>
+                            )}
 
-                            {!isTowerCollapsed && (
-                              <>
+                            {isApartment ? (
+                              <div className="towers-container space-y-6">
+                                {towers.map((tower, towerIdx) => {
+                                  const isTowerCollapsed = collapsedTowers.includes(towerIdx);
+                                  return (
+                                    <div key={towerIdx} className="tower-config-block border rounded-xl overflow-hidden mb-6 bg-slate-50">
+                                      <div className="tower-name-bar bg-slate-200 px-4 py-2 font-bold flex justify-between items-center text-slate-700">
+                                        <div className="flex items-center gap-3">
+                                          <button
+                                            onClick={() => toggleTowerCollapse(towerIdx)}
+                                            className="p-1 hover:bg-slate-300 rounded-md transition-colors"
+                                          >
+                                            {isTowerCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                                          </button>
+                                          <div>
+                                            {projectData.type === 'Bungalow' ? (
+                                              <>
+                                                {tower.name} ({tower.total_bungalows || 0} Bungalows)
+                                                <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                {tower.name} ({tower.floors} Floors)
+                                                <span className="ml-3 text-xs font-normal">Total Units: {Object.values(towerUnits[towerIdx] || {}).flat().length}</span>
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={() => prepopulateTowerUnits(towerIdx)}
+                                          className="text-[10px] bg-white text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"
+                                        >
+                                          {projectData.type === 'Bungalow' ? 'Reset Bungalows' : 'Reset to Defaults (4 per floor)'}
+                                        </button>
+                                      </div>
 
-
-
-                                {(projectData.type === 'Bungalow' || projectData.type === 'Plot') ? (
-                                  <div className="p-4">
-                                    <BungalowGrid
-                                      units={(towerUnits[towerIdx]?.[0] || [])}
-                                      onUpdate={(uIdx, field, val) => updateUnitConfig(towerIdx, 0, uIdx, field, val)}
-                                      onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
-                                      onAdd={() => addUnitToConfig(towerIdx, 0)}
-                                      globalDefaults={globalUnitDefaults}
-                                      projectType={projectData.type}
-                                    />
-                                  </div>
-                                ) : (
-                                  <div className="tower-floors-list p-4 space-y-4">
-                                    {/* Special Floors */}
-                                    {tower.hasBasement && (
-                                      <FloorRow
-                                        towerIdx={towerIdx}
-                                        floorNum={-1}
-                                        floorName="Basement"
-                                        units={towerUnits[towerIdx]?.[-1] || []}
-                                        onAdd={() => addUnitToConfig(towerIdx, -1)}
-                                        onRemove={(uIdx) => removeUnitFromConfig(towerIdx, -1, uIdx)}
-                                        onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, -1, uIdx, f, v)}
-                                        projectType={projectData.type}
-                                        globalDefaults={globalUnitDefaults}
-                                        generateFlatLabels={generateFlatLabels}
-                                        isCollapsed={collapsedFloors[`${towerIdx}--1`]}
-                                        onToggle={() => toggleFloorCollapse(towerIdx, -1)}
-                                      />
-                                    )}
-                                    {tower.hasGroundFloor && (
-                                      <FloorRow
-                                        towerIdx={towerIdx}
-                                        floorNum={0}
-                                        floorName="Ground Floor"
-                                        units={towerUnits[towerIdx]?.[0] || []}
-                                        onAdd={() => addUnitToConfig(towerIdx, 0)}
-                                        onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
-                                        onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, 0, uIdx, f, v)}
-                                        projectType={projectData.type}
-                                        globalDefaults={globalUnitDefaults}
-                                        generateFlatLabels={generateFlatLabels}
-                                        isCollapsed={collapsedFloors[`${towerIdx}-0`]}
-                                        onToggle={() => toggleFloorCollapse(towerIdx, 0)}
-                                      />
-                                    )}
-                                    {/* Regular Floors */}
-                                    {[...Array(parseInt(tower.floors) || 0)].map((_, i) => {
-                                      const floorNum = i + 1;
-                                      return (
-                                        <FloorRow
-                                          key={floorNum}
-                                          towerIdx={towerIdx}
-                                          floorNum={floorNum}
-                                          floorName={`Floor ${floorNum}`}
-                                          units={towerUnits[towerIdx]?.[floorNum] || []}
-                                          onAdd={() => addUnitToConfig(towerIdx, floorNum)}
-                                          onRemove={(uIdx) => removeUnitFromConfig(towerIdx, floorNum, uIdx)}
-                                          onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, floorNum, uIdx, f, v)}
-                                          onCopy={() => {
-                                            const prevFloor = floorNum - 1;
-                                            if (prevFloor >= 1) copyFloorConfig(towerIdx, prevFloor, floorNum);
-                                            else if (tower.hasGroundFloor) copyFloorConfig(towerIdx, 0, floorNum);
-                                          }}
-                                          projectType={projectData.type}
-                                          globalDefaults={globalUnitDefaults}
-                                          generateFlatLabels={generateFlatLabels}
-                                          isCollapsed={collapsedFloors[`${towerIdx}-${floorNum}`]}
-                                          onToggle={() => toggleFloorCollapse(towerIdx, floorNum)}
-                                        />
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </>
+                                      {!isTowerCollapsed && (
+                                        <>
+                                          {(projectData.type === 'Bungalow' || projectData.type === 'Plot') ? (
+                                            <div className="p-4">
+                                              <BungalowGrid
+                                                units={(towerUnits[towerIdx]?.[0] || [])}
+                                                onUpdate={(uIdx, field, val) => updateUnitConfig(towerIdx, 0, uIdx, field, val)}
+                                                onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
+                                                onAdd={() => addUnitToConfig(towerIdx, 0)}
+                                                onReset={() => prepopulateTowerUnits(towerIdx)}
+                                                globalDefaults={globalUnitDefaults}
+                                                projectType={projectData.type}
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div className="tower-floors-list p-4 space-y-4">
+                                              {/* Special Floors */}
+                                              {tower.hasBasement && (
+                                                <FloorRow
+                                                  towerIdx={towerIdx}
+                                                  floorNum={-1}
+                                                  floorName="Basement"
+                                                  units={towerUnits[towerIdx]?.[-1] || []}
+                                                  onAdd={() => addUnitToConfig(towerIdx, -1)}
+                                                  onRemove={(uIdx) => removeUnitFromConfig(towerIdx, -1, uIdx)}
+                                                  onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, -1, uIdx, f, v)}
+                                                  projectType={projectData.type}
+                                                  globalDefaults={globalUnitDefaults}
+                                                  generateFlatLabels={generateFlatLabels}
+                                                  isCollapsed={collapsedFloors[`${towerIdx}--1`]}
+                                                  onToggle={() => toggleFloorCollapse(towerIdx, -1)}
+                                                />
+                                              )}
+                                              {tower.hasGroundFloor && (
+                                                <FloorRow
+                                                  towerIdx={towerIdx}
+                                                  floorNum={0}
+                                                  floorName="Ground Floor"
+                                                  units={towerUnits[towerIdx]?.[0] || []}
+                                                  onAdd={() => addUnitToConfig(towerIdx, 0)}
+                                                  onRemove={(uIdx) => removeUnitFromConfig(towerIdx, 0, uIdx)}
+                                                  onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, 0, uIdx, f, v)}
+                                                  projectType={projectData.type}
+                                                  globalDefaults={globalUnitDefaults}
+                                                  generateFlatLabels={generateFlatLabels}
+                                                  isCollapsed={collapsedFloors[`${towerIdx}-0`]}
+                                                  onToggle={() => toggleFloorCollapse(towerIdx, 0)}
+                                                />
+                                              )}
+                                              {/* Regular Floors */}
+                                              {[...Array(parseInt(tower.floors) || 0)].map((_, i) => {
+                                                const floorNum = i + 1;
+                                                return (
+                                                  <FloorRow
+                                                    key={floorNum}
+                                                    towerIdx={towerIdx}
+                                                    floorNum={floorNum}
+                                                    floorName={`Floor ${floorNum}`}
+                                                    units={towerUnits[towerIdx]?.[floorNum] || []}
+                                                    onAdd={() => addUnitToConfig(towerIdx, floorNum)}
+                                                    onRemove={(uIdx) => removeUnitFromConfig(towerIdx, floorNum, uIdx)}
+                                                    onUpdate={(uIdx, f, v) => updateUnitConfig(towerIdx, floorNum, uIdx, f, v)}
+                                                    onCopy={() => {
+                                                      const prevFloor = floorNum - 1;
+                                                      if (prevFloor >= 1) copyFloorConfig(towerIdx, prevFloor, floorNum);
+                                                      else if (tower.hasGroundFloor) copyFloorConfig(towerIdx, 0, floorNum);
+                                                    }}
+                                                    projectType={projectData.type}
+                                                    globalDefaults={globalUnitDefaults}
+                                                    generateFlatLabels={generateFlatLabels}
+                                                    isCollapsed={collapsedFloors[`${towerIdx}-${floorNum}`]}
+                                                    onToggle={() => toggleFloorCollapse(towerIdx, floorNum)}
+                                                  />
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="land-units-container">
+                                <BungalowGrid
+                                  units={projectData.type === 'MixedUse' ? (mixedUseData[currentType]?.units || []) : (towerUnits[0]?.[0] || [])}
+                                  onUpdate={(uIdx, field, val) =>
+                                    projectData.type === 'MixedUse'
+                                      ? updateMixedUseUnit(currentType, uIdx, field, val)
+                                      : updateUnitConfig(0, 0, uIdx, field, val)
+                                  }
+                                  onRemove={(uIdx) =>
+                                    projectData.type === 'MixedUse'
+                                      ? removeMixedUseUnit(currentType, uIdx)
+                                      : removeUnitFromConfig(0, 0, uIdx)
+                                  }
+                                  onAdd={() =>
+                                    projectData.type === 'MixedUse'
+                                      ? addMixedUseUnit(currentType)
+                                      : addUnitToConfig(0, 0)
+                                  }
+                                  onReset={() =>
+                                    projectData.type === 'MixedUse'
+                                      ? prepopulateMixedUseUnits(currentType)
+                                      : prepopulateTowerUnits(0)
+                                  }
+                                  globalDefaults={globalUnitDefaults}
+                                  projectType={currentType}
+                                />
+                              </div>
                             )}
                           </div>
                         );
@@ -1889,10 +2169,7 @@ const AdminLiveGrouping = () => {
 // Helper Component for Unit Configurator
 const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, projectType, globalDefaults, generateFlatLabels, isCollapsed, onToggle }) => {
   const getUnitOptions = () => {
-    if (projectType === 'Commercial') {
-      return ['Shop', 'Office', 'Showroom', 'Commercial Unit', 'Parking', 'Storage'];
-    }
-    return ['Flat', 'Shop', 'Showroom', 'Office', 'Penthouse', 'Villa', 'Plot', 'Parking', 'Storage'];
+    return UNIT_TYPES_BY_PROJECT_TYPE[projectType] || ['Flat', 'Shop', 'Showroom', 'Office', 'Penthouse', 'Villa', 'Plot', 'Parking', 'Storage'];
   };
 
   const unitOptions = getUnitOptions();
@@ -2225,21 +2502,28 @@ const FloorRow = ({ floorName, units, onAdd, onRemove, onUpdate, onCopy, project
 };
 
 // Bungalow Grid Component
-const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projectType }) => {
+const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, onReset, globalDefaults, projectType }) => {
 
 
   return (
     <div className="bungalow-grid-container">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Bungalow Units</h4>
+          <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">{projectType} Units</h4>
           <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">
             {units.length} Units
           </span>
         </div>
-        <button onClick={onAdd} className="text-[10px] text-emerald-600 hover:text-emerald-800 flex items-center gap-1 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all">
-          <Plus size={10} /> Add Unit
-        </button>
+        <div className="flex gap-2">
+          {onReset && (
+            <button onClick={onReset} className="text-[10px] font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 flex items-center gap-1 transition-all">
+              <RotateCcw className="w-3 h-3" /> Reset to Defaults
+            </button>
+          )}
+          <button onClick={onAdd} className="text-[10px] text-emerald-600 hover:text-emerald-800 flex items-center gap-1 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all">
+            <Plus size={10} /> Add Unit
+          </button>
+        </div>
       </div>
 
       <div className="units-sub-grid">
@@ -2312,15 +2596,13 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, globalDefaults, projec
                       <label className="text-[9px] font-bold text-slate-400 uppercase">Unit Type</label>
                       <select
                         className="text-[10px] border rounded p-1 w-full disabled:bg-slate-50 disabled:text-slate-400"
-                        value={unit.unit_type || 'Villa'}
+                        value={unit.unit_type || (UNIT_TYPES_BY_PROJECT_TYPE[projectType]?.[0] || 'Unit')}
                         onChange={e => onUpdate(uIdx, 'unit_type', e.target.value)}
                         disabled={!unit.isCustom}
                       >
-                        <option value="Villa">Villa</option>
-                        <option value="Bungalow">Bungalow</option>
-                        <option value="Row House">Row House</option>
-                        <option value="Twin Villa">Twin Villa</option>
-                        <option value="Plot">Plot</option>
+                        {(UNIT_TYPES_BY_PROJECT_TYPE[projectType] || ['Unit']).map(type => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="input-field-group">

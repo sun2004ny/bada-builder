@@ -621,12 +621,14 @@ const UnitPlot = ({ position, unit, onUnitClick }) => {
 };
 
 // --- Commercial Colony Component ---
-const CommercialColony = ({ position, project, onUnitClick }) => {
+const CommercialColony = ({ position, project, onUnitClick, hideBasics = false }) => {
     const rawUnits = project?.towers?.reduce((units, tower) => {
         return [...units, ...(tower.units || [])];
     }, []) || [];
 
-    const columns = parseInt(project?.layout_columns) || parseInt(project?.towers?.[0]?.layout_columns) || 5;
+    const configuredColumns = parseInt(project?.layout_columns) || parseInt(project?.towers?.[0]?.layout_columns) || 5;
+    const columns = hideBasics ? Math.min(configuredColumns, rawUnits.length || 1) : configuredColumns;
+
     const projectRW = parseFloat(project?.road_width || 40);
     const SCALE = 0.4;
 
@@ -645,25 +647,29 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
 
     return (
         <group position={position}>
-            {/* Ground Base */}
-            <mesh position={[0, -0.5, 0]} receiveShadow>
-                <boxGeometry args={[colWidth + 40, 0.3, colDepth + 40]} />
-                <meshStandardMaterial color="#334155" roughness={0.8} />
-            </mesh>
+            {!hideBasics && (
+                <>
+                    {/* Ground Base */}
+                    <mesh position={[0, -0.5, 0]} receiveShadow>
+                        <boxGeometry args={[colWidth + 40, 0.3, colDepth + 40]} />
+                        <meshStandardMaterial color="#334155" roughness={0.8} />
+                    </mesh>
 
-            {/* Perimeter Boundary */}
-            <PerimeterBoundary width={colWidth + 10} depth={colDepth + 10} />
+                    {/* Perimeter Boundary */}
+                    <PerimeterBoundary width={colWidth + 10} depth={colDepth + 10} />
 
-            {/* Project Title Label - Professional Hero Style */}
-            <Text
-                position={[0, 10, -colDepth / 2 - 12]}
-                fontSize={5}
-                color="#0f172a"
-                anchorX="center"
-                fontProps={{ weight: 'bold' }}
-            >
-                {project?.title || ''}
-            </Text>
+                    {/* Project Title Label - Professional Hero Style */}
+                    <Text
+                        position={[0, 10, -colDepth / 2 - 12]}
+                        fontSize={5}
+                        color="#0f172a"
+                        anchorX="center"
+                        fontProps={{ weight: 'bold' }}
+                    >
+                        {project?.title || ''}
+                    </Text>
+                </>
+            )}
 
             {/* Internal Roads */}
             {Array.from({ length: rows + 1 }).map((_, i) => (
@@ -680,7 +686,6 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
                 const xPos = -((columns - 1) * spacingX) / 2 + col * spacingX;
                 const zPos = -((rows - 1) * spacingZ) / 2 + row * spacingZ;
 
-                // Calculate visual number: left to right, top to bottom (1-indexed)
                 const visualNumber = idx + 1;
 
                 return (
@@ -689,7 +694,7 @@ const CommercialColony = ({ position, project, onUnitClick }) => {
                         position={[xPos, 0, zPos]}
                         unit={unit}
                         onUnitClick={onUnitClick}
-                        floorCount={parseInt(project?.commercial_floor_count) || 1}
+                        floorCount={parseInt(project?.towers?.[0]?.total_floors) || parseInt(project?.commercial_floor_count) || 1}
                         visualNumber={visualNumber}
                     />
                 );
@@ -823,7 +828,7 @@ const CommercialUnit = ({ position, unit, onUnitClick, floorCount = 1, visualNum
         </group>
     );
 };
-const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => {
+const ResidentialColony = ({ position, propertyData, project, onUnitClick, hideBasics = false }) => {
     const rawUnits = project?.towers?.reduce((units, tower) => {
         return [...units, ...(tower.units || [])];
     }, []) || [];
@@ -839,7 +844,15 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
     let i = 0;
     while (i < allUnits.length) {
         const unit = allUnits[i];
-        const typeNorm = (unit.unit_type || '').toLowerCase();
+
+        // Robust Type Detection: Prioritize specific unit metadata over project default
+        const typeNorm = (
+            unit.property_type ||
+            unit.unit_type ||
+            propertyData?.type ||
+            ''
+        ).toLowerCase();
+
         const isTV = typeNorm.includes('twin');
         const isPlot = typeNorm.includes('plot') || typeNorm.includes('land');
 
@@ -851,7 +864,14 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
 
         if (isTV && i + 1 < allUnits.length) {
             const nextUnit = allUnits[i + 1];
-            const nextIsTV = (nextUnit.unit_type || '').toLowerCase().includes('twin');
+            const nextTypeNorm = (
+                nextUnit.property_type ||
+                nextUnit.unit_type ||
+                propertyData?.type ||
+                ''
+            ).toLowerCase();
+            const nextIsTV = nextTypeNorm.includes('twin');
+
             if (nextIsTV) {
                 buildings.push({ type: 'TwinVilla', units: [unit, nextUnit] });
                 i += 2;
@@ -879,7 +899,8 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
     const SPACING_Z = plotD + ROAD_WIDTH;
 
     // Strict Grid: Use user-provided columns/rows
-    const columns = parseInt(project?.layout_columns) || parseInt(project?.towers?.[0]?.layout_columns) || 4;
+    const baseColumns = parseInt(project?.layout_columns) || parseInt(project?.towers?.[0]?.layout_columns) || 4;
+    const columns = hideBasics ? Math.min(baseColumns, buildings.length || 1) : baseColumns;
 
     // Dynamically calculate effective rows based on slot occupation (1 for single, 2 for TwinVilla)
     const effectiveRowsNeeded = useMemo(() => {
@@ -937,19 +958,26 @@ const ResidentialColony = ({ position, propertyData, project, onUnitClick }) => 
 
     return (
         <group position={position}>
-            {/* 1. Colony Ground Base (Neutral Grey) - Dynamic Scaling */}
-            <mesh position={[0, -0.5, 0]} receiveShadow>
-                <boxGeometry args={[colWidth + 40, 0.3, colDepth + 40]} />
-                <meshStandardMaterial color={GROUND_COLOR} roughness={0.9} />
-            </mesh>
+            {!hideBasics && (
+                <>
+                    {/* 1. Colony Ground Base (Neutral Grey) - Dynamic Scaling */}
+                    <mesh position={[0, -0.5, 0]} receiveShadow>
+                        <boxGeometry args={[colWidth + 40, 0.3, colDepth + 40]} />
+                        <meshStandardMaterial color={GROUND_COLOR} roughness={0.9} />
+                    </mesh>
 
-            {/* 2. Compound Boundary Fence - Dynamic Scaling */}
-            <lineSegments position={[0, 1, 0]}>
-                <edgesGeometry args={[new THREE.BoxGeometry(colWidth + 10, 2, colDepth + 10)]} />
-                <lineBasicMaterial color="#2d3436" linewidth={4} />
-            </lineSegments>
+                    {/* 2. Compound Boundary Fence - Dynamic Scaling */}
+                    <lineSegments position={[0, 1, 0]}>
+                        <edgesGeometry args={[new THREE.BoxGeometry(colWidth + 10, 2, colDepth + 10)]} />
+                        <lineBasicMaterial color="#2d3436" linewidth={4} />
+                    </lineSegments>
 
-            {/* 3. Instanced Details (Perimeter Trees + Scattered Ground Grass) */}
+                    {/* 3. Perimeter Boundary System */}
+                    <PerimeterBoundary width={colWidth + 11} depth={colDepth + 11} color="#64748b" />
+                </>
+            )}
+
+            {/* 4. Internal Roads - Professional Layout */}
             <InstancedFoliage
                 count={treePositions.length}
                 positions={treePositions}
@@ -1641,6 +1669,108 @@ const Tower = ({ tower, position, onUnitClick, lowestFloor }) => {
         </group>
     );
 };
+
+// --- Mixed Use Colony Component (Unified Layout) ---
+const MixedUseColony = ({ units, onUnitClick }) => {
+    // 1. Slot Configuration
+    const slotSpacingX = 22; // Width of a shop
+    const rowSpacingZ = 45;  // Depth between rows
+    const MAX_SLOTS = 12;    // Limit slots per row (~6 villas or 12 shops)
+    const ROAD_WIDTH = 6;
+    const ROAD_COLOR = "#64748b";
+
+    // 2. Build Slot-Based Grid
+    const layoutDetails = useMemo(() => {
+        const rows = [];
+        let currentRow = { units: [], slotCount: 0 };
+
+        units.forEach(unit => {
+            const cat = (unit.property_type || '').toLowerCase();
+            const slotsNeeded = (cat.includes('commercial') || cat.includes('shop') || cat.includes('showroom')) ? 1 : 2;
+
+            if (currentRow.slotCount + slotsNeeded > MAX_SLOTS) {
+                rows.push(currentRow);
+                currentRow = { units: [], slotCount: 0 };
+            }
+
+            currentRow.units.push({ unit, slotsNeeded });
+            currentRow.slotCount += slotsNeeded;
+        });
+        if (currentRow.units.length > 0) rows.push(currentRow);
+        return rows;
+    }, [units]);
+
+    const rowCount = layoutDetails.length;
+    const maxRowSlots = Math.max(...layoutDetails.map(r => r.slotCount), 1);
+    const totalWidth = maxRowSlots * slotSpacingX;
+    const totalDepth = rowCount * rowSpacingZ;
+
+    return (
+        <group>
+            {/* Unified Ground Base */}
+            <mesh position={[0, -0.5, 0]} receiveShadow>
+                <boxGeometry args={[totalWidth + 60, 0.4, totalDepth + 60]} />
+                <meshStandardMaterial color="#f1f5f9" roughness={0.9} />
+            </mesh>
+
+            <PerimeterBoundary
+                width={totalWidth + 40}
+                depth={totalDepth + 40}
+                color="#64748b"
+            />
+
+            {/* Roads - Uniformly placed in the unified grid */}
+            {/* Horizontal Roads between rows */}
+            {Array.from({ length: rowCount + 1 }).map((_, rIdx) => (
+                <mesh key={`h-road-${rIdx}`} position={[0, 0.05, -(totalDepth / 2) + rIdx * rowSpacingZ - rowSpacingZ / 2]} receiveShadow>
+                    <boxGeometry args={[totalWidth + 20, 0.1, ROAD_WIDTH]} />
+                    <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                </mesh>
+            ))}
+
+            {/* Vertical Roads at slot boundaries (Main lanes) */}
+            {Array.from({ length: Math.ceil(maxRowSlots / 2) + 1 }).map((_, cIdx) => (
+                <mesh key={`v-road-${cIdx}`} position={[-(totalWidth / 2) + cIdx * (slotSpacingX * 2), 0.05, 0]} receiveShadow>
+                    <boxGeometry args={[ROAD_WIDTH, 0.1, totalDepth + 20]} />
+                    <meshStandardMaterial color={ROAD_COLOR} roughness={0.4} />
+                </mesh>
+            ))}
+
+            {/* Render Units in Unified Grid */}
+            <group position={[0, 0, 0]}>
+                {layoutDetails.map((row, rIdx) => {
+                    const z = -(totalDepth / 2) + rIdx * rowSpacingZ;
+                    let currentSlotX = -(row.slotCount * slotSpacingX) / 2;
+
+                    return row.units.map((item, uIdx) => {
+                        const { unit, slotsNeeded } = item;
+                        const x = currentSlotX + (slotsNeeded * slotSpacingX) / 2;
+                        currentSlotX += slotsNeeded * slotSpacingX;
+
+                        const category = (unit.unit_type || unit.property_type || '').toLowerCase();
+                        const key = unit.id || `u-${rIdx}-${uIdx}`;
+
+                        if (category.includes('apartment') || category.includes('flat')) {
+                            const towerData = unit.isGrouped ? unit : { units: unit.towerUnits || [unit], total_floors: unit.floors || 1, tower_name: unit.tower_name };
+                            return <Tower key={key} tower={towerData} position={[x, 0, z]} onUnitClick={onUnitClick} lowestFloor={1} />;
+                        }
+                        if (category.includes('commercial') || category.includes('shop')) {
+                            return <CommercialUnit key={key} position={[x, 0, z]} unit={unit} onUnitClick={onUnitClick} floorCount={unit.floors || 1} />;
+                        }
+                        if (category.includes('plot')) {
+                            return <UnitPlot key={key} position={[x, 0, z]} unit={unit} onUnitClick={onUnitClick} />;
+                        }
+                        if (category.includes('twin villa')) {
+                            return <SharedTwinVilla key={key} position={[x, 0, z]} index={uIdx} units={unit.isGrouped ? unit.units : [unit]} onUnitClick={onUnitClick} />;
+                        }
+                        return <Bungalow key={key} position={[x, 0, z]} index={uIdx} unit={unit} onUnitClick={onUnitClick} />;
+                    });
+                })}
+            </group>
+        </group>
+    );
+};
+
 
 // --- Main Page ---
 
@@ -2692,51 +2822,131 @@ const ThreeDView = () => {
 
                             {/* Visualization Bridge: Directing to specialized colony builders */}
                             {(() => {
-                                const typeNorm = (property?.type || '').toLowerCase().trim();
-                                const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
-                                const isCommercial = typeNorm.includes('commercial');
+                                // 1. Mixed-Project Detection (Safer Version)
+                                const projectType = (project?.type || "").toLowerCase();
+                                const isMixedProject =
+                                    projectType === "mixeduse" ||
+                                    projectType === "mixed" ||
+                                    project?.project_type === "mixed" ||
+                                    (project?.mixedUseSelectedTypes && project.mixedUseSelectedTypes.length > 0) ||
+                                    (project?.mixed_use_selected_types && project.mixed_use_selected_types.length > 0);
 
-                                if (isCommercial) {
+                                // 🟢 RENDER MODE SWITCH (MANDATORY ISOLATION)
+                                if (!isMixedProject) {
+                                    // KEEP ALL EXISTING LOGIC EXACTLY SAME
+                                    const typeNorm = (property?.type || '').toLowerCase().trim();
+                                    const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
+                                    const isCommercial = typeNorm.includes('commercial');
+
+                                    if (isCommercial) {
+                                        return <CommercialColony position={[0, 0, 0]} project={project} onUnitClick={handleUnitClick} />;
+                                    }
+
+                                    if (!isApartment) {
+                                        return <ResidentialColony position={[0, 0, 0]} propertyData={property} project={project} onUnitClick={handleUnitClick} />;
+                                    }
+
                                     return (
-                                        <CommercialColony
-                                            position={[0, 0, 0]}
-                                            project={project}
-                                            onUnitClick={handleUnitClick}
-                                        />
+                                        <group>
+                                            {project.towers.map((tower, idx) => {
+                                                const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                                                const lowestFloor = (tower.units || []).reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 1);
+                                                return (
+                                                    <Tower
+                                                        key={tower.id || idx}
+                                                        tower={tower}
+                                                        position={[posX, 0, 0]}
+                                                        onUnitClick={handleUnitClick}
+                                                        lowestFloor={lowestFloor}
+                                                    />
+                                                );
+                                            })}
+                                        </group>
                                     );
                                 }
 
-                                if (!isApartment) {
-                                    return (
-                                        <ResidentialColony
-                                            position={[0, 0, 0]}
-                                            propertyData={property}
-                                            project={project}
-                                            onUnitClick={handleUnitClick}
-                                        />
-                                    );
-                                }
+                                // 🧩 Only when mixed: Unified Structure
+                                if (isMixedProject) {
+                                    console.log("IS MIXED PROJECT:", true, project?.type);
 
-                                return (
-                                    <group>
-                                        {project.towers.map((tower, idx) => {
-                                            const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
-                                            const towerUnits = tower.units || [];
-                                            const lowestFloor = towerUnits.length > 0
-                                                ? towerUnits.reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 100)
-                                                : 1;
-                                            return (
-                                                <Tower
-                                                    key={tower.id || idx}
-                                                    tower={tower}
-                                                    position={[posX, 0, 0]}
-                                                    onUnitClick={handleUnitClick}
-                                                    lowestFloor={lowestFloor}
-                                                />
-                                            );
-                                        })}
-                                    </group>
-                                );
+                                    // Aggregation Logic: Group Apartments into Towers, keep Land-based as individual units
+                                    // Aggregation Logic: Natural Sort + Grouping
+                                    const naturalSort = (a, b) => {
+                                        return (a.unit_number || "").localeCompare(b.unit_number || "", undefined, { numeric: true, sensitivity: 'base' });
+                                    };
+
+                                    const towers = (project.towers || []);
+                                    const apartmentTowers = towers.filter(t => {
+                                        const type = (t.property_type || t.section_type || "").toLowerCase();
+                                        return type.includes('apartment') || type.includes('flat');
+                                    });
+
+                                    const landTowers = towers.filter(t => {
+                                        const type = (t.property_type || t.section_type || "").toLowerCase();
+                                        return !type.includes('apartment') && !type.includes('flat');
+                                    });
+
+                                    // 1. Process Apartments (Grouped by Tower)
+                                    const apartmentObjects = apartmentTowers.map(tower => ({
+                                        id: tower.tower_id || tower.id,
+                                        isGrouped: true,
+                                        property_type: 'Apartment',
+                                        tower_name: tower.tower_name,
+                                        total_floors: tower.total_floors,
+                                        units: tower.units || []
+                                    }));
+
+                                    // 2. Process Land Units (Sorted Alphanumerically)
+                                    const allLandUnits = landTowers.flatMap(tower => {
+                                        const sectionType = (tower.property_type || tower.section_type || project.default_property_type || "").toLowerCase();
+                                        return (tower.units || []).map(u => ({ ...u, sectionType }));
+                                    }).sort(naturalSort);
+
+                                    const landObjects = [];
+                                    let i = 0;
+                                    while (i < allLandUnits.length) {
+                                        const unit = allLandUnits[i];
+                                        const sectionType = unit.sectionType;
+                                        const unitType = (unit.unit_type || unit.property_type || sectionType || "").toLowerCase();
+
+                                        if (unitType.includes('twin villa')) {
+                                            const nextUnit = allLandUnits[i + 1];
+                                            const nextType = nextUnit ? (nextUnit.unit_type || nextUnit.property_type || nextUnit.sectionType || "").toLowerCase() : "";
+
+                                            if (nextType.includes('twin villa')) {
+                                                landObjects.push({
+                                                    id: `twin-${unit.id}-${i}`,
+                                                    isGrouped: true,
+                                                    property_type: 'Twin Villa',
+                                                    units: [unit, nextUnit]
+                                                });
+                                                i += 2;
+                                            } else {
+                                                landObjects.push({
+                                                    id: `twin-${unit.id}-${i}`,
+                                                    isGrouped: true,
+                                                    property_type: 'Twin Villa',
+                                                    units: [unit]
+                                                });
+                                                i += 1;
+                                            }
+                                        } else {
+                                            landObjects.push({
+                                                ...unit,
+                                                property_type: unit.unit_type || unit.property_type || sectionType || null
+                                            });
+                                            i += 1;
+                                        }
+                                    }
+
+                                    // Combined result: Land units first (for ground access), then Towers?
+                                    // Or follow user preference: land units usually at the front.
+                                    const renderObjects = [...landObjects, ...apartmentObjects];
+
+                                    console.log("GRID DATA →", renderObjects);
+
+                                    return <MixedUseColony units={renderObjects} onUnitClick={handleUnitClick} />;
+                                }
                             })()}
 
                             {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
