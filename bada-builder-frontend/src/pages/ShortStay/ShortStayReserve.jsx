@@ -471,11 +471,17 @@ const ShortStayReserve = () => {
     const [isTncAccepted, setIsTncAccepted] = useState(false);
 
     useEffect(() => {
+        // Safety Check: Redirect if not authenticated
+        if (!currentUser) {
+            navigate('/login', { state: { from: `/short-stay/reserve/${id}`, reservationData: location.state } });
+            return;
+        }
+
         if (!location.state) {
             navigate(`/short-stay/${id}`);
         }
         loadRazorpay();
-    }, [location, navigate, id]);
+    }, [location, navigate, id, currentUser]);
 
     // Dates
     const checkInDate = rCheckIn ? new Date(rCheckIn) : null;

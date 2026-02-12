@@ -1167,6 +1167,13 @@ const ShortStayDetails = () => {
                                     style={isOwner ? { background: '#ccc', cursor: 'not-allowed' } : {}}
                                     onClick={() => {
                                         if (isOwner) return;
+                                        
+                                        // Authentication Check
+                                        if (!user) {
+                                            navigate('/login', { state: { from: window.location.pathname } });
+                                            return;
+                                        }
+
                                         if (!checkIn || !checkOut) {
                                             setShowCalendarModal(true);
                                             return;
