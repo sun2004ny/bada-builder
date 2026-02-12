@@ -55,9 +55,24 @@ const ShortStayCard = ({ listing, index = 0, favorites, onToggleFavorite }) => {
                 </div>
 
                 <p className="short-stay-property-location">
-                    {listing.specific_details?.bhk
-                        ? `${listing.specific_details.bhk} BHK`
-                        : (categories.find(c => c.id === listing.category)?.name || listing.category || 'Stay')}
+                    <span>
+                        {listing.specific_details?.bhk
+                            ? `${listing.specific_details.bhk} BHK`
+                            : (categories.find(c => c.id === listing.category)?.name || listing.category || 'Stay')}
+                    </span>
+                    {(() => {
+                        const sd = listing.specific_details || {};
+                        let maxGuests = sd.maxGuests;
+                        
+                        if (!maxGuests && sd.roomTypes?.length > 0) {
+                            maxGuests = Math.max(...sd.roomTypes.map(r => parseInt(r.guestCapacity) || 0));
+                        }
+                        
+                        if (maxGuests > 0) {
+                            return <span className="guest-capacity-tag"> • {maxGuests} guests</span>;
+                        }
+                        return null;
+                    })()}
                 </p>
 
                 <div className="short-stay-property-footer">

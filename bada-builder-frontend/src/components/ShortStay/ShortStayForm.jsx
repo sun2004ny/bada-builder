@@ -381,6 +381,146 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
             handleSpecificChange({ target: { name, value: val } });
         };
 
+        // Helper to render room inventory section
+        const renderRoomInventory = () => (
+            <div className="room-types-section">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                    <label style={{marginBottom: 0}}>Room Configuration / Inventory</label>
+                    <button type="button" onClick={addRoomType} className="active" style={{
+                        background: 'rgba(255, 56, 92, 0.15)',
+                        color: '#FF385C',
+                        border: '1px solid #FF385C',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                    }}>
+                        + Add Room Type
+                    </button>
+                </div>
+
+                {(props.roomTypes || []).length === 0 && (
+                    <div style={{textAlign: 'center', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', color: '#64748b', fontSize: '14px'}}>
+                        No rooms added yet. Click "+ Add Room Type" to define your inventory.
+                    </div>
+                )}
+
+                {(props.roomTypes || []).map((room, index) => (
+                    <div key={index} className="room-type-card" style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        marginBottom: '12px',
+                        border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '12px'}}>
+                            <span style={{fontSize: '12px', color: '#94a3b8', fontWeight: 600}}>Room Type {index + 1}</span>
+                            <button type="button" onClick={() => removeRoomType(index)} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px'}}>
+                                <FaTrash /> Remove
+                            </button>
+                        </div>
+                        
+                        <div className="form-group" style={{marginBottom: '12px'}}>
+                            <select 
+                                value={room.type} 
+                                onChange={(e) => updateRoomType(index, 'type', e.target.value)}
+                                className="premium-input"
+                                style={{padding: '10px'}}
+                            >
+                                <option value="Standard Non-AC">Standard Non-AC</option>
+                                <option value="Standard AC">Standard AC</option>
+                                <option value="Deluxe">Deluxe</option>
+                                <option value="Super Deluxe">Super Deluxe</option>
+                                <option value="Luxury">Luxury</option>
+                                <option value="Ultra Luxury">Ultra Luxury</option>
+                                <option value="Suite">Suite</option>
+                                <option value="Family Room">Family Room</option>
+                                <option value="Shared Dorm">Shared Dorm</option>
+                                <option value="Private Tent">Private Tent</option>
+                            </select>
+                        </div>
+
+                        <div className="form-row" style={{gap: '12px'}}>
+                            <div className="form-group" style={{marginBottom: 0}}>
+                                <input 
+                                    type="number" 
+                                    placeholder="Max Guests"
+                                    value={room.guestCapacity || ''} 
+                                    onChange={(e) => updateRoomType(index, 'guestCapacity', e.target.value)}
+                                    className="premium-input"
+                                    style={{padding: '10px'}}
+                                />
+                            </div>
+                            <div className="form-group" style={{marginBottom: 0}}>
+                                <input 
+                                    type="number" 
+                                    placeholder="No. of Units"
+                                    title="Total number of rooms/units of this type available"
+                                    value={room.count} 
+                                    onChange={(e) => updateRoomType(index, 'count', e.target.value)}
+                                    className="premium-input"
+                                    style={{padding: '10px'}}
+                                />
+                            </div>
+                            <div className="form-group" style={{marginBottom: 0, position: 'relative'}}>
+                                 <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'#64748b'}}>₹</span>
+                                <input 
+                                    type="number" 
+                                    placeholder="Price/Night"
+                                    value={room.price} 
+                                    onChange={(e) => updateRoomType(index, 'price', e.target.value)}
+                                    className="premium-input"
+                                    style={{padding: '10px', paddingLeft: '24px'}}
+                                />
+                            </div>
+                            <div className="form-group" style={{marginBottom: 0, position: 'relative'}}>
+                                 <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'#64748b'}}>₹</span>
+                                <input 
+                                    type="number" 
+                                    placeholder="Weekly Price"
+                                    value={room.weeklyPrice} 
+                                    onChange={(e) => updateRoomType(index, 'weeklyPrice', e.target.value)}
+                                    className="premium-input"
+                                    style={{padding: '10px', paddingLeft: '24px'}}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+
+        const renderGuestAndInventoryToggles = () => (
+            <>
+                <div className="details-divider" style={{ margin: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }} />
+                
+                {formData.category !== 'hotel' && (
+                    <BinaryToggle 
+                        label="Does this property have multiple room categories/inventories?" 
+                        name="hasMultiInventory" 
+                        value={props.hasMultiInventory === true} 
+                        onChange={handleToggle} 
+                    />
+                )}
+
+                {(formData.category === 'hotel' || props.hasMultiInventory) ? (
+                    renderRoomInventory()
+                ) : (
+                    <div className="form-group">
+                        <label>Max Guests Accommodate</label>
+                        <input 
+                            type="number" 
+                            name="maxGuests" 
+                            value={props.maxGuests || ''} 
+                            onChange={handleSpecificChange} 
+                            placeholder="Total guest capacity"
+                            className="premium-input" 
+                        />
+                    </div>
+                )}
+            </>
+        );
+
         switch(formData.category) {
             case 'apartment': // Flats / Apartments
                 return (
@@ -420,6 +560,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
+                        {renderGuestAndInventoryToggles()}
                     </>
                 );
             case 'house': // Villa / Bungalow
@@ -465,6 +606,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
+                        {renderGuestAndInventoryToggles()}
                     </>
                 );
              case 'dormitory':
@@ -505,6 +647,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
+                        {renderGuestAndInventoryToggles()}
                     </>
                 );
             case 'hotel':
@@ -526,113 +669,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                              <input type="number" name="elevatorCount" value={props.elevatorCount || ''} onChange={handleSpecificChange} className="premium-input" />
                         </div>
 
-                        <div className="details-divider" style={{ margin: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }} />
-                        
-                        <div className="room-types-section">
-                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-                                <label style={{marginBottom: 0}}>Room Configuration</label>
-                                <button type="button" onClick={addRoomType} className="active" style={{
-                                    background: 'rgba(255, 56, 92, 0.15)',
-                                    color: '#FF385C',
-                                    border: '1px solid #FF385C',
-                                    padding: '6px 12px',
-                                    borderRadius: '8px',
-                                    fontSize: '12px',
-                                    cursor: 'pointer'
-                                }}>
-                                    + Add Room Type
-                                </button>
-                            </div>
-
-                            {(props.roomTypes || []).length === 0 && (
-                                <div style={{textAlign: 'center', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', color: '#64748b', fontSize: '14px'}}>
-                                    No rooms added yet. Click "+ Add Room Type" to define your inventory.
-                                </div>
-                            )}
-
-                            {(props.roomTypes || []).map((room, index) => (
-                                <div key={index} className="room-type-card" style={{
-                                    background: 'rgba(255,255,255,0.03)',
-                                    padding: '16px',
-                                    borderRadius: '12px',
-                                    marginBottom: '12px',
-                                    border: '1px solid rgba(255,255,255,0.05)'
-                                }}>
-                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '12px'}}>
-                                        <span style={{fontSize: '12px', color: '#94a3b8', fontWeight: 600}}>Room Type {index + 1}</span>
-                                        <button type="button" onClick={() => removeRoomType(index)} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px'}}>
-                                            <FaTrash /> Remove
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="form-group" style={{marginBottom: '12px'}}>
-                                        <select 
-                                            value={room.type} 
-                                            onChange={(e) => updateRoomType(index, 'type', e.target.value)}
-                                            className="premium-input"
-                                            style={{padding: '10px'}}
-                                        >
-                                            <option value="Standard Non-AC">Standard Non-AC</option>
-                                            <option value="Standard AC">Standard AC</option>
-                                            <option value="Deluxe">Deluxe</option>
-                                            <option value="Super Deluxe">Super Deluxe</option>
-                                            <option value="Luxury">Luxury</option>
-                                            <option value="Ultra Luxury">Ultra Luxury</option>
-                                            <option value="Suite">Suite</option>
-                                            <option value="Family Room">Family Room</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="form-row" style={{gap: '12px'}}>
-                                        <div className="form-group" style={{marginBottom: 0}}>
-                                            <input 
-                                                type="number" 
-                                                placeholder="Max Guests"
-                                                value={room.guestCapacity || ''} 
-                                                onChange={(e) => updateRoomType(index, 'guestCapacity', e.target.value)}
-                                                className="premium-input"
-                                                style={{padding: '10px'}}
-                                            />
-                                        </div>
-                                        <div className="form-group" style={{marginBottom: 0}}>
-                                            <input 
-                                                type="number" 
-                                                placeholder="No. of Rooms"
-                                                title="Total number of rooms of this type available"
-                                                value={room.count} 
-                                                onChange={(e) => updateRoomType(index, 'count', e.target.value)}
-                                                className="premium-input"
-                                                style={{padding: '10px'}}
-                                            />
-                                        </div>
-                                        <div className="form-group" style={{marginBottom: 0, position: 'relative'}}>
-                                             <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'#64748b'}}>₹</span>
-                                            <input 
-                                                type="number" 
-                                                placeholder="Price/Night"
-                                                title="Base price per night"
-                                                value={room.price} 
-                                                onChange={(e) => updateRoomType(index, 'price', e.target.value)}
-                                                className="premium-input"
-                                                style={{padding: '10px', paddingLeft: '24px'}}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group" style={{marginTop: '12px', position: 'relative'}}>
-                                        <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'#64748b'}}>₹</span>
-                                        <input 
-                                            type="number" 
-                                            placeholder="Weekly Price (Optional)"
-                                            title="Price for 7+ days or weekends (as per your policy)"
-                                            value={room.weeklyPrice || ''} 
-                                            onChange={(e) => updateRoomType(index, 'weeklyPrice', e.target.value)}
-                                            className="premium-input"
-                                            style={{padding: '10px', paddingLeft: '24px'}}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        {renderGuestAndInventoryToggles()}
 
                         <div className="details-divider" style={{ margin: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }} />
 
@@ -677,23 +714,26 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
+                        {renderGuestAndInventoryToggles()}
                     </>
                 );
             case 'tree_house':
                 return (
-                     <div className="form-row">
-                         <div className="form-group">
-                            <label>Height (ft)</label>
-                            <input type="number" name="height" value={props.height || ''} onChange={handleSpecificChange} className="premium-input" />
+                    <>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Height (ft)</label>
+                                <input type="number" name="height" value={props.height || ''} onChange={handleSpecificChange} className="premium-input" />
+                            </div>
+                            <div className="form-group">
+                                <label>Access Type</label>
+                                <select name="accessType" value={props.accessType || ''} onChange={handleSpecificChange} className="premium-input">
+                                    <option value="Ladder">Ladder</option>
+                                    <option value="Staircase">Staircase</option>
+                                </select>
+                            </div>
                         </div>
-                         <div className="form-group">
-                            <label>Access Type</label>
-                             <select name="accessType" value={props.accessType || ''} onChange={handleSpecificChange} className="premium-input">
-                                <option value="Ladder">Ladder</option>
-                                <option value="Staircase">Staircase</option>
-                            </select>
-                        </div>
-                         <div className="form-group">
+                        <div className="form-group">
                             <label>Immersion Level</label>
                              <select name="immersion" value={props.immersion || ''} onChange={handleSpecificChange} className="premium-input">
                                 <option value="Low">Low</option>
@@ -711,7 +751,8 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
-                    </div>
+                        {renderGuestAndInventoryToggles()}
+                    </>
                 );
              case 'tent':
                 return (
@@ -734,6 +775,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
+                        {renderGuestAndInventoryToggles()}
                     </>
                 );
              case 'farmhouse':
@@ -743,10 +785,6 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                              <div className="form-group">
                                 <label>Total Land Area</label>
                                 <input type="number" name="landArea" value={props.landArea || ''} onChange={handleSpecificChange} className="premium-input" />
-                            </div>
-                             <div className="form-group">
-                                <label>Max Guests</label>
-                                <input type="number" name="maxGuests" value={props.maxGuests || ''} onChange={handleSpecificChange} className="premium-input" />
                             </div>
                         </div>
                           <div className="form-group">
@@ -763,6 +801,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
+                        {renderGuestAndInventoryToggles()}
                     </>
                 );
              case 'hostel':
@@ -795,6 +834,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 onChange={handleToggle} 
                             />
                         ))}
+                        {renderGuestAndInventoryToggles()}
                     </>
                 );
             default:
@@ -1075,13 +1115,13 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                 );
 
             case 7: { // Pricing
-                const isHotel = formData.category === 'hotel';
+                const isMultiInventory = formData.category === 'hotel' || formData.specific_details.hasMultiInventory;
                 return (
                     <motion.div variants={stepVariants} initial="initial" animate="animate" exit="exit" className="form-step-content">
-                        <h3>{isHotel ? 'Review Room Pricing' : 'Set your pricing'}</h3>
-                        <p className="step-subtitle">{isHotel ? 'Review your configured rooms and add extra charges.' : 'How much do you want to charge?'}</p>
+                        <h3>{isMultiInventory ? 'Review Room Pricing' : 'Set your pricing'}</h3>
+                        <p className="step-subtitle">{isMultiInventory ? 'Review your configured rooms and add extra charges.' : 'How much do you want to charge?'}</p>
                         
-                        {isHotel && formData.specific_details.roomTypes && (
+                        {isMultiInventory && formData.specific_details.roomTypes && (
                             <div className="room-pricing-summary" style={{marginBottom: '24px', border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden'}}>
                                 <div style={{padding: '12px 16px', background: '#f7f7f7', borderBottom: '1px solid #ddd', fontWeight: '600', color: '#222'}}>
                                     Room Configuration
@@ -1113,7 +1153,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                             </div>
                         )}
 
-                        {!isHotel && (
+                        {!isMultiInventory && (
                             <>
                                 <div className="price-input-large">
                                     <span className="currency-symbol">₹</span>
@@ -1311,7 +1351,10 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                     case 'hostel':
                         return !!(p.hostelType && p.sharing);
                     default:
-                        return true;
+                        if (p.hasMultiInventory) {
+                            return (p.roomTypes || []).length > 0 && (p.roomTypes || []).every(r => r.guestCapacity > 0 && r.price > 0);
+                        }
+                        return !!p.maxGuests;
                 }
             }
             case 4: // Amenities
@@ -1323,8 +1366,8 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
             case 6: // Title & Desc
                 return !!(formData.title && formData.description);
             case 7: // Pricing
-                if (formData.category === 'hotel') {
-                    // For hotels, we don't need perNight, but we should ensure at least one room has a price
+                if (formData.category === 'hotel' || formData.specific_details.hasMultiInventory) {
+                    // For multi-inventory properties, we don't need perNight, but we should ensure at least one room has a price
                     return (formData.specific_details.roomTypes || []).length > 0 && 
                            (formData.specific_details.roomTypes || []).some(r => r.price > 0);
                 }

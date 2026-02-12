@@ -21,7 +21,7 @@ import ShortStayLoader from '../../components/ShortStay/ShortStayLoader';
 const CalendarModal = ({ 
     isOpen, onClose, checkIn, checkOut, onSelectDates, bookedDates = [],
     adults, setAdults, children, setChildren, infants, setInfants, pets, setPets,
-    minStay = 1, maxStay
+    minStay = 1, maxStay, maxGuests = 16
 }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedStart, setSelectedStart] = useState(checkIn ? new Date(checkIn) : null);
@@ -29,7 +29,7 @@ const CalendarModal = ({
     const [selecting, setSelecting] = useState('checkIn');
 
     // Guest limits
-    const MAX_GUESTS = 16;
+    const MAX_GUESTS = maxGuests || 16;
     
     // ... guest update logic ... 
     const updateGuests = (type, action) => {
@@ -459,8 +459,8 @@ const ShortStayDetails = () => {
                 setReviews(reviewsData.reviews || []);
 
                 
-                // Default select cheapest room for hotels
-                if (propertyData.category === 'hotel' && propertyData.specific_details?.roomTypes?.length > 0) {
+                // Default select cheapest room for hotels or properties with multi-inventory
+                if ((propertyData.category === 'hotel' || propertyData.specific_details?.hasMultiInventory) && propertyData.specific_details?.roomTypes?.length > 0) {
                     const rooms = propertyData.specific_details.roomTypes;
                     // Find room with minimum price
                     const cheapestRoom = rooms.reduce((prev, curr) => {
@@ -641,7 +641,7 @@ const ShortStayDetails = () => {
                                     {specific_details?.totalBeds && `${specific_details.totalBeds} beds · `}
                                     {specific_details?.washrooms && `${specific_details.washrooms} baths · `}
                                     {specific_details?.sharing && `${specific_details.sharing} sharing · `}
-                                    {specific_details?.roomTypes && `${specific_details.roomTypes.length} room types`}
+                                    {(category === 'hotel' || specific_details?.hasMultiInventory) && specific_details?.roomTypes && `${specific_details.roomTypes.length} room types`}
                                 </p>
                                 <p className="rating-row-main">
                                     <FaStar size={14} /> 
@@ -741,7 +741,7 @@ const ShortStayDetails = () => {
                                         );
                                     })}
                                 </div>
-                                {category === 'hotel' && specific_details.roomTypes && (
+                                {(category === 'hotel' || specific_details?.hasMultiInventory) && specific_details?.roomTypes && (
                                     <div className="hotel-rooms-table">
                                         <div className="inventory-header">
                                             <div style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
@@ -1060,7 +1060,7 @@ const ShortStayDetails = () => {
                                         <h2 className="add-dates-header">Add dates for prices</h2>
                                     ) : (
                                         <div>
-                                            {category === 'hotel' && !selectedRoom ? (
+                                            {(category === 'hotel' || specific_details?.hasMultiInventory) && !selectedRoom ? (
                                                 <div style={{color: '#e11d48', fontWeight: '600', fontSize: '18px'}}>Select a room</div>
                                             ) : (
                                                 <>
@@ -1164,7 +1164,7 @@ const ShortStayDetails = () => {
                                                     </div>
                                                     <div className="guest-footer">
                                                         <p className="max-guests-note">
-                                                            {category === 'hotel' 
+                                                            {(category === 'hotel' || specific_details?.hasMultiInventory) 
                                                                 ? (selectedRoom 
                                                                     ? `Max ${maxPerProperty} guests for ${selectedRoom.type}.` 
                                                                     : "Select a room to see guest limits.")
@@ -1616,23 +1616,30 @@ const ShortStayDetails = () => {
                 </button>
             </div>
 
-            <CalendarModal 
-                isOpen={showCalendarModal} 
-                onClose={() => setShowCalendarModal(false)} 
-                checkIn={checkIn}
-                checkOut={checkOut}
-                onSelectDates={(start, end) => {
-                    setCheckIn(start);
-                    setCheckOut(end);
-                }}
-                bookedDates={category === 'hotel' ? [] : bookedDates}
-                adults={adults} setAdults={setAdults}
-                children={children} setChildren={setChildren}
-                infants={infants} setInfants={setInfants}
-                pets={pets} setPets={setPets}
-                minStay={rules?.minStay}
-                maxStay={rules?.maxStay}
-            />
+                <CalendarModal 
+                    isOpen={showCalendarModal}
+                    onClose={() => setShowCalendarModal(false)}
+                    checkIn={checkIn}
+                    checkOut={checkOut}
+                    onSelectDates={(start, end) => {
+                        setCheckIn(start);
+                        setCheckOut(end);
+                    }}
+                    bookedDates={bookedDates}
+                    adults={adults}
+                    setAdults={setAdults}
+                    children={children}
+                    setChildren={setChildren}
+                    infants={infants}
+                    setInfants={setInfants}
+                    pets={pets}
+                    setPets={setPets}
+                    minStay={rules?.minStay}
+                    maxStay={rules?.maxStay}
+                    maxGuests={(category === 'hotel' && selectedRoom) 
+                        ? (parseInt(selectedRoom.guestCapacity) || 2) 
+                        : (specific_details?.maxGuests || 10)}
+                />
         </div>
     );
 };
