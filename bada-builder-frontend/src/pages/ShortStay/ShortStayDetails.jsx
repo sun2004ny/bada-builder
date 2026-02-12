@@ -1449,7 +1449,7 @@ const ShortStayDetails = () => {
             <div className="sticky-reserve-bar">
                 <div className="sticky-bar-info">
                     <div className="sticky-price">
-                        ₹{displayPricing?.perNight?.toLocaleString()} <span> /night</span>
+                        ₹{(category === 'hotel' && selectedRoom ? selectedRoom.price : displayPricing?.perNight)?.toLocaleString()} <span> /night</span>
                     </div>
                     <div className="sticky-dates">
                         {checkIn && checkOut ? `${new Date(checkIn).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${new Date(checkOut).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'Add dates'}
@@ -1459,32 +1459,69 @@ const ShortStayDetails = () => {
                     className="sticky-reserve-btn"
                     style={isOwner ? { opacity: 0.5, cursor: 'not-allowed', background: '#ccc' } : {}}
                     onClick={() => {
-                         if (isOwner) {
-                             alert("You cannot reserve your own property");
-                             return;
-                         }
-                         if (!checkIn || !checkOut) {
-                             setShowCalendarModal(true);
-                             return;
-                         }
-                         const totalGuests = adults + children;
-                         navigate(`/short-stay/reserve/${id}`, {
-                             state: { 
-                                 checkIn, 
-                                 checkOut, 
-                                 guests: totalGuests, 
-                                 adults, 
-                                 children, 
-                                 infants, 
-                                 pets,
-                                 pricing: displayPricing,
-                                 hostPricing: pricing, 
-                                 propertyTitle: title, 
-                                 propertyImage: images?.[0],
-                                 policies: policies,
-                                 hostId: property.user_id || property.owner_id 
-                             }
-                         });
+                        if (isOwner) return;
+                        
+                        // Authentication Check
+                        if (!user) {
+                            navigate('/login', { state: { from: window.location.pathname } });
+                            return;
+                        }
+
+                        if (!checkIn || !checkOut) {
+                            setShowCalendarModal(true);
+                            return;
+                        }
+
+                        // Enforce room selection for hotels
+                        if (category === 'hotel' && !selectedRoom) {
+                            alert("Please select a room type from the inventory list above.");
+                            // Scroll to inventory
+                            const inventoryEl = document.querySelector('.hotel-rooms-table');
+                            if (inventoryEl) inventoryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            return;
+                        }
+
+                        const totalGuests = adults + children;
+                        
+                        // Pass RAW host pricing to reserve page so it can apply the 5% platform fee correctly
+                        const rawPricing = pricing || property.pricing;
+                        let finalPricing = { ...rawPricing };
+
+                        if (category === 'hotel' && selectedRoom) {
+                            finalPricing = {
+                                ...finalPricing,
+                                perNight: selectedRoom.originalPrice || Math.round(selectedRoom.price / 1.05),
+                                weekly: Number(selectedRoom.weeklyPrice) || 0
+                            };
+                        }
+
+                        navigate(`/short-stay/reserve/${id}`, {
+                            state: { 
+                                checkIn, 
+                                checkOut, 
+                                guests: totalGuests, 
+                                adults, 
+                                children, 
+                                infants, 
+                                pets,
+                                pricing: finalPricing,
+                                hostPricing: pricing, // Pass original host pricing 
+                                propertyTitle: title, 
+                                propertyImage: images?.[0],
+                                policies: policies, // Pass policies for display 
+                                hostId: property.user_id || property.owner_id,
+                                // Host Details
+                                hostName: host_name,
+                                hostBio: property.host_bio,
+                                hostPhoto: host_photo,
+                                hostJoinedAt: host_joined_at,
+                                isSuperhost: property.is_superhost,
+                                roomType: selectedRoom?.type,
+                                maxGuests: (category === 'hotel' && selectedRoom) 
+                                    ? (parseInt(selectedRoom.guestCapacity) || 2) 
+                                    : (specific_details?.maxGuests || 10)
+                            }
+                        });
                     }}
                 >
                     {(!checkIn || !checkOut) ? 'Check availability' : 'Reserve'}
