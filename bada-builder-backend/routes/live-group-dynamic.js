@@ -5,7 +5,16 @@ import { upload } from '../middleware/upload.js';
 import { uploadImage, uploadMultipleImages, uploadFile } from '../services/cloudinary.js';
 import { sendGroupPropertyBookingEmail, sendAdminGroupBookingNotification } from '../services/groupBookingEmailService.js'; // SMTP for group bookings
 
+import fs from 'fs';
+import path from 'path';
+
 const router = express.Router();
+
+const diagLog = (msg) => {
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync('save_diag.log', `[${timestamp}] ${msg}\n`);
+    console.log(msg);
+};
 
 // --- PUBLIC ROUTES ---
 
@@ -291,18 +300,20 @@ router.post('/create-booking-order', authenticate, async (req, res) => {
 
 // --- ADMIN ROUTES ---
 
-// Bulk Create Project (Atomic)
-router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
+// Bulk Update Project (Atomic with Transaction & Booking Protection)
+router.put('/admin/projects/:id/bulk', authenticate, isAdmin, upload.fields([
     { name: 'images', maxCount: 10 },
     { name: 'brochure', maxCount: 1 }
 ]), async (req, res) => {
+    const projectId = req.params.id;
+    const client = await pool.connect();
     try {
-        console.log('🚀 Starting Atomic Bulk Project Creation...');
+        console.log(`🚀 Starting Atomic Bulk Project Update for ID: ${projectId}...`);
 
         const {
             title, developer, location, description, original_price, group_price,
             discount, savings, type, min_buyers, possession, rera_number, area,
-            hierarchy,
+            hierarchy, last_updated_at,
             project_name, builder_name, property_type: pt, unit_configuration, project_level,
             offer_type, discount_percentage, discount_label, offer_expiry_datetime,
             regular_price_per_sqft, regular_price_per_sqft_max, group_price_per_sqft, group_price_per_sqft_max, price_unit, currency,
@@ -317,12 +328,36 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             mixed_use_selected_types
         } = req.body;
 
-        // 1. Handle Files (DO THIS BEFORE OPENING DB CONNECTION)
-        let image = null;
-        let images = [];
-        let brochure_url = null;
+        const parseArray = (val) => {
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string' && val.trim() !== '') {
+                try { return JSON.parse(val); } catch (e) { return []; }
+            }
+            return [];
+        };
 
-        console.log('☁️ Uploading media to Cloudinary...');
+        const parsedBenefitsList = parseArray(benefits);
+        const parsedMixedTypes = parseArray(mixed_use_selected_types);
+
+        await client.query('BEGIN');
+
+        // 1. Optimistic Locking & Existence Check
+        const existingProjectRes = await client.query('SELECT updated_at, image, images, brochure_url FROM live_group_projects WHERE id = $1 FOR UPDATE', [projectId]);
+        if (existingProjectRes.rows.length === 0) {
+            throw new Error('Project not found');
+        }
+        const existingProject = existingProjectRes.rows[0];
+
+        // If client provided last_updated_at, verify it matches
+        if (last_updated_at && new Date(existingProject.updated_at).getTime() !== new Date(last_updated_at).getTime()) {
+            throw new Error('Concurrency Error: This project has been updated by another user. Please refresh and try again.');
+        }
+
+        // 2. Handle Files (Image Preservation Logic)
+        let image = existingProject.image;
+        let images = existingProject.images;
+        let brochure_url = existingProject.brochure_url;
+
         if (req.files && req.files['images']) {
             const imageBuffers = req.files['images'].map(file => file.buffer);
             images = await uploadMultipleImages(imageBuffers, 'live_grouping');
@@ -333,159 +368,190 @@ router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
             const brochureBuffer = req.files['brochure'][0].buffer;
             brochure_url = await uploadFile(brochureBuffer, 'live_grouping_brochures');
         }
-        console.log('✅ Media upload complete.');
 
-        // 2. Open DB Connection and Start Transaction
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
+        // 3. Update Project
+        await client.query(
+            `UPDATE live_group_projects SET 
+                title = $1, developer = $2, location = $3, description = $4, image = $5, images = $6, 
+                original_price = $7, group_price = $8, discount = $9, savings = $10, type = $11, min_buyers = $12,
+                possession = $13, rera_number = $14, area = $15, brochure_url = $16,
+                project_name = $17, builder_name = $18, property_type = $19, unit_configuration = $20, project_level = $21,
+                offer_type = $22, discount_percentage = $23, discount_label = $24, offer_expiry_datetime = $25,
+                regular_price_per_sqft = $26, group_price_per_sqft = $27, price_unit = $28, currency = $29,
+                regular_total_price = $30, discounted_total_price_min = $31, discounted_total_price_max = $32,
+                regular_price_min = $33, regular_price_max = $34,
+                total_savings_min = $35, total_savings_max = $36, benefits = $37,
+                primary_cta_text = $38, secondary_cta_text = $39, details_page_url = $40,
+                regular_price_per_sqft_max = $41, group_price_per_sqft_max = $42,
+                layout_columns = $43, layout_rows = $44,
+                latitude = $45, longitude = $46, map_address = $47,
+                road_width = $48, plot_gap = $49, plot_size_width = $50, plot_size_depth = $51,
+                orientation = $52, parking_type = $53, parking_slots = $54, entry_points = $55,
+                mixed_use_selected_types = $56,
+                updated_at = NOW()
+            WHERE id = $57`,
+            [
+                title, developer, location, description, image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, brochure_url,
+                project_name, builder_name, pt, unit_configuration, project_level,
+                offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+                regular_price_per_sqft, group_price_per_sqft, price_unit, currency || 'INR',
+                regular_total_price, discounted_total_price_min, discounted_total_price_max,
+                regular_price_min, regular_price_max,
+                total_savings_min, total_savings_max, JSON.stringify(parsedBenefitsList),
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max,
+                layout_columns, layout_rows,
+                latitude || null, longitude || null, map_address || null,
+                road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null,
+                orientation || null, parking_type || 'Front', parking_slots || 0, entry_points || null,
+                parsedMixedTypes,
+                projectId
+            ]
+        );
+        console.log(`✅ [DEBUG] Project ${projectId} updated basic info.`);
 
-            // 3. Insert Project
-            const projectResult = await client.query(
-                `INSERT INTO live_group_projects (
-                    title, developer, location, description, status, image, images, 
-                    original_price, group_price, discount, savings, type, min_buyers,
-                    possession, rera_number, area, created_by, brochure_url,
-                    project_name, builder_name, property_type, unit_configuration, project_level,
-                    offer_type, discount_percentage, discount_label, offer_expiry_datetime,
-                    regular_price_per_sqft, group_price_per_sqft, price_unit, currency,
-                    regular_total_price, discounted_total_price_min, discounted_total_price_max,
-                    regular_price_min, regular_price_max,
-                    total_savings_min, total_savings_max, benefits,
-                    primary_cta_text, secondary_cta_text, details_page_url,
-                    regular_price_per_sqft_max, group_price_per_sqft_max,
-                    layout_columns, layout_rows,
-                    latitude, longitude, map_address,
-                    road_width, plot_gap, plot_size_width, plot_size_depth,
-                    orientation, parking_type, parking_slots, entry_points,
-                    mixed_use_selected_types
-                ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-                    $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42,
-                    $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58
-                ) RETURNING *`,
-                [
-                    title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
-                    project_name, builder_name, pt, unit_configuration, project_level,
-                    offer_type, discount_percentage, discount_label, offer_expiry_datetime,
-                    regular_price_per_sqft, group_price_per_sqft, price_unit, currency || 'INR',
-                    regular_total_price, discounted_total_price_min, discounted_total_price_max,
-                    regular_price_min, regular_price_max,
-                    total_savings_min, total_savings_max, Array.isArray(benefits) ? JSON.stringify(benefits) : (benefits || '[]'),
-                    primary_cta_text, secondary_cta_text, details_page_url,
-                    regular_price_per_sqft_max, group_price_per_sqft_max,
-                    layout_columns, layout_rows,
-                    latitude || null, longitude || null, map_address || null,
-                    road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null,
-                    orientation || null, parking_type || 'Front', parking_slots || 0, entry_points || null,
-                    Array.isArray(mixed_use_selected_types) ? mixed_use_selected_types : (typeof mixed_use_selected_types === 'string' ? JSON.parse(mixed_use_selected_types) : [])
-                ]
-            );
+        // 4. Process Hierarchy
+        const hierarchyData = typeof hierarchy === 'string' ? JSON.parse(hierarchy || '[]') : (hierarchy || []);
+        console.log(`📡 [DEBUG] Received ${hierarchyData.length} sections in hierarchy.`);
 
-            const project = projectResult.rows[0];
-            console.log(`✅ Project created: ${project.id}. Building hierarchy...`);
+        const payloadTowerIds = hierarchyData.map(t => t.id).filter(id => id);
+        const payloadUnitIds = [];
+        hierarchyData.forEach(t => {
+            if (t.units) t.units.forEach(u => u.id && payloadUnitIds.push(u.id));
+        });
+        console.log(`📋 [DEBUG] Payload IDs: Towers: [${payloadTowerIds.join(', ')}], Units: ${payloadUnitIds.length} existing.`);
 
-            // 4. Process Hierarchy & Collect Units for Batch Insert
-            const hierarchyData = typeof hierarchy === 'string' ? JSON.parse(hierarchy || '[]') : (hierarchy || []);
-            let totalUnitsGenerated = 0;
-            const allUnitsToInsert = [];
+        // --- BOOKING PROTECTION CHECK ---
+        // Find units currently in DB for this project that are NOT in the payload
+        const missingBookedUnitsRes = await client.query(`
+            SELECT u.unit_number, t.tower_name FROM live_group_units u
+            JOIN live_group_towers t ON u.tower_id = t.id
+            WHERE t.project_id = $1 
+            AND u.id NOT IN (SELECT unnest($2::int[]))
+            AND u.status = 'booked'
+        `, [projectId, payloadUnitIds.length > 0 ? payloadUnitIds : [-1]]);
 
-            for (const towerData of hierarchyData) {
-                // Insert Tower
-                const towerResult = await client.query(
-                    'INSERT INTO live_group_towers (project_id, tower_name, total_floors, layout_columns, layout_rows, property_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-                    [project.id, towerData.tower_name || towerData.name, towerData.total_floors || 0, towerData.layout_columns || null, towerData.layout_rows || null, towerData.property_type || null]
-                );
-                const towerId = towerResult.rows[0].id;
-                console.log(`  Tower ${towerId} created.`);
-
-                if (towerData.units && Array.isArray(towerData.units)) {
-                    for (const unit of towerData.units) {
-                        allUnitsToInsert.push({
-                            tower_id: towerId,
-                            floor_number: unit.floor_number,
-                            unit_number: unit.unit_number,
-                            unit_type: unit.unit_type || 'Unit',
-                            area: unit.area || 0,
-                            carpet_area: unit.carpet_area || null,
-                            super_built_up_area: unit.super_built_up_area || null,
-                            price: unit.price || 0,
-                            price_per_sqft: unit.price_per_sqft || 0,
-                            discount_price_per_sqft: unit.discount_price_per_sqft || null,
-                            plot_width: unit.plot_width || null,
-                            plot_depth: unit.plot_depth || null,
-                            front_side: unit.front_side || null,
-                            back_side: unit.back_side || null,
-                            left_side: unit.left_side || null,
-                            right_side: unit.right_side || null,
-                            status: unit.status || 'available',
-                            facing: unit.facing || null,
-                            is_corner: unit.is_corner || false,
-                            unit_image_url: unit.unit_image_url || null,
-                            unit_gallery: unit.unit_gallery || []
-                        });
-                        totalUnitsGenerated++;
-                    }
-                }
-            }
-
-            // 5. Batch Insert All Units
-            if (allUnitsToInsert.length > 0) {
-                const values = [];
-                const placeholders = [];
-                let counter = 1;
-
-                allUnitsToInsert.forEach((unit) => {
-                    const rowPlaceholders = [];
-                    const cols = [
-                        unit.tower_id, unit.floor_number, unit.unit_number, unit.unit_type,
-                        unit.area, unit.carpet_area, unit.super_built_up_area, unit.price,
-                        unit.price_per_sqft, unit.discount_price_per_sqft, unit.plot_width, unit.plot_depth,
-                        unit.front_side, unit.back_side, unit.left_side, unit.right_side,
-                        unit.status, unit.facing, unit.is_corner, unit.unit_image_url, unit.unit_gallery
-                    ];
-
-                    cols.forEach(val => {
-                        values.push(val);
-                        rowPlaceholders.push(`$${counter++}`);
-                    });
-
-                    placeholders.push(`(${rowPlaceholders.join(', ')})`);
-                });
-
-                const insertQuery = `
-                    INSERT INTO live_group_units (
-                        tower_id, floor_number, unit_number, unit_type, 
-                        area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, 
-                        plot_width, plot_depth, front_side, back_side, left_side, right_side,
-                        status, facing, is_corner, unit_image_url, unit_gallery
-                    ) VALUES ${placeholders.join(', ')}
-                `;
-                await client.query(insertQuery, values);
-            }
-
-            // 6. Update Project Total Slots
-            await client.query(
-                'UPDATE live_group_projects SET total_slots = $1 WHERE id = $2',
-                [totalUnitsGenerated, project.id]
-            );
-
-            await client.query('COMMIT');
-            console.log(`🎉 Bulk creation complete in transaction. ${totalUnitsGenerated} units generated.`);
-            res.status(201).json({ project, message: 'Project hierarchy created successfully' });
-
-        } catch (dbError) {
-            await client.query('ROLLBACK');
-            throw dbError;
-        } finally {
-            client.release();
+        if (missingBookedUnitsRes.rows.length > 0) {
+            const details = missingBookedUnitsRes.rows.map(r => `${r.tower_name} - ${r.unit_number}`).join(', ');
+            throw new Error(`Deletion Blocked: The following units have active bookings and cannot be removed: ${details}`);
         }
 
+        // 5. Final Deletions (Cleanup missing elements) - HAPPENS BEFORE SYNC to avoid purging new ones
+        // First delete units that are not in the payload and belong to any tower of this project
+        await client.query(`
+            DELETE FROM live_group_units 
+            WHERE tower_id IN (SELECT id FROM live_group_towers WHERE project_id = $1)
+            AND id NOT IN (SELECT unnest($2::int[]))
+        `, [projectId, payloadUnitIds.length > 0 ? payloadUnitIds : [-1]]);
+
+        // Then delete towers that are not in the payload
+        await client.query(`
+            DELETE FROM live_group_towers 
+            WHERE project_id = $1 AND id NOT IN (SELECT unnest($2::int[]))
+        `, [projectId, payloadTowerIds.length > 0 ? payloadTowerIds : [-1]]);
+
+        diagLog(`🚀 Starting Atomic Bulk Project Update for ID: ${projectId}...`);
+        diagLog(`📡 Received ${hierarchyData.length} sections in hierarchy.`);
+        for (const towerData of hierarchyData) {
+            diagLog(`🏢 Syncing Tower: ${towerData.tower_name || towerData.name} (ID: ${towerData.id || 'NEW'})`);
+            let towerId = towerData.id;
+            if (towerId) {
+                // Update Tower
+                await client.query(
+                    'UPDATE live_group_towers SET tower_name = $1, total_floors = $2, layout_columns = $3, layout_rows = $4, property_type = $5 WHERE id = $6 AND project_id = $7',
+                    [towerData.tower_name || towerData.name, towerData.total_floors || 0, towerData.layout_columns || null, towerData.layout_rows || null, towerData.property_type || null, towerId, projectId]
+                );
+            } else {
+                // Insert New Tower
+                const tRes = await client.query(
+                    'INSERT INTO live_group_towers (project_id, tower_name, total_floors, layout_columns, layout_rows, property_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+                    [projectId, towerData.tower_name || towerData.name, towerData.total_floors || 0, towerData.layout_columns || null, towerData.layout_rows || null, towerData.property_type || null]
+                );
+                towerId = tRes.rows[0].id;
+            }
+
+            // Sync Units for this tower
+            if (towerData.units && Array.isArray(towerData.units)) {
+                diagLog(`  🔢 Processing ${towerData.units.length} units for tower ${towerId}...`);
+                for (const unit of towerData.units) {
+                    if (unit.id) {
+                        // Update Unit
+                        await client.query(
+                            `UPDATE live_group_units SET 
+                                unit_number = $1, unit_type = $2, floor_number = $3, area = $4, price = $5, 
+                                price_per_sqft = $6, discount_price_per_sqft = $7, status = $8,
+                                carpet_area = $9, super_built_up_area = $10, facing = $11, is_corner = $12,
+                                plot_width = $13, plot_depth = $14, front_side = $15, back_side = $16, left_side = $17, right_side = $18,
+                                unit_image_url = $19, unit_gallery = $20, property_type = $21
+                            WHERE id = $22 AND tower_id = $23`,
+                            [
+                                unit.unit_number, unit.unit_type || 'Unit', unit.floor_number, unit.area || 0, unit.price || 0,
+                                unit.price_per_sqft || 0, unit.discount_price_per_sqft || null, unit.status || 'available',
+                                unit.carpet_area || null, unit.super_built_up_area || null, unit.facing || null, unit.is_corner || false,
+                                unit.plot_width || null, unit.plot_depth || null, unit.front_side || null, unit.back_side || null, unit.left_side || null, unit.right_side || null,
+                                unit.unit_image_url || null, unit.unit_gallery || [],
+                                unit.property_type || unit.unit_type || null,
+                                unit.id, towerId
+                            ]
+                        );
+                    } else {
+                        // Insert New Unit
+                        await client.query(
+                            `INSERT INTO live_group_units (
+                                tower_id, floor_number, unit_number, unit_type, area, price, price_per_sqft, 
+                                discount_price_per_sqft, status, carpet_area, super_built_up_area, facing, is_corner,
+                                plot_width, plot_depth, front_side, back_side, left_side, right_side,
+                                unit_image_url, unit_gallery, property_type
+                            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+                            [
+                                towerId, unit.floor_number, unit.unit_number, unit.unit_type || 'Unit', unit.area || 0, unit.price || 0,
+                                unit.price_per_sqft || 0, unit.discount_price_per_sqft || null, unit.status || 'available',
+                                unit.carpet_area || null, unit.super_built_up_area || null, unit.facing || null, unit.is_corner || false,
+                                unit.plot_width || null, unit.plot_depth || null, unit.front_side || null, unit.back_side || null, unit.left_side || null, unit.right_side || null,
+                                unit.unit_image_url || null, unit.unit_gallery || [],
+                                unit.property_type || unit.unit_type || null
+                            ]
+                        );
+                    }
+                }
+                diagLog(`  ✅ Finished syncing ${towerData.units.length} units for tower ${towerId}`);
+                const countRes = await client.query('SELECT COUNT(*) FROM live_group_units WHERE tower_id = $1', [towerId]);
+                diagLog(`  📊 DB VERIFY: Tower ${towerId} now has ${countRes.rows[0].count} units.`);
+            } else {
+                diagLog(`  ⚠️ No units array found for tower ${towerId}`);
+            }
+        }
+
+        // 7. Update Project Aggregate Stats
+        diagLog(`🔄 Updating aggregate total_slots for Project ${projectId}...`);
+        await client.query(`
+            UPDATE live_group_projects 
+            SET total_slots = (
+                SELECT COUNT(*) FROM live_group_units u 
+                JOIN live_group_towers t ON u.tower_id = t.id 
+                WHERE t.project_id = $1
+            )
+            WHERE id = $1
+        `, [projectId]);
+
+        const finalCountRes = await client.query('SELECT total_slots FROM live_group_projects WHERE id = $1', [projectId]);
+        diagLog(`✅ Project ${projectId} aggregate count updated to ${finalCountRes.rows[0].total_slots}.`);
+
+        console.log(`✅ [DEBUG] Project ${projectId} aggregate count updated.`);
+
+        await client.query('COMMIT');
+        res.json({ message: 'Project hierarchy updated successfully' });
+
     } catch (error) {
-        console.error('❌ Bulk Create Error details:', error);
-        res.status(500).json({ error: 'Failed to create project hierarchy: ' + error.message });
+        await client.query('ROLLBACK');
+        diagLog(`❌ [FATAL ERROR] Bulk Update Failed: ${error.message}\n${error.stack}`);
+        res.status(500).json({ error: error.message || 'Failed to update project' });
+    } finally {
+        client.release();
     }
 });
+
+
 
 // Create Project (Single - Legacy)
 router.post('/admin/projects', authenticate, isAdmin, upload.fields([
@@ -506,6 +572,17 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
             layout_columns, layout_rows,
             latitude, longitude, map_address
         } = req.body;
+
+        const parseArray = (val) => {
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string' && val.trim() !== '') {
+                try { return JSON.parse(val); } catch (e) { return []; }
+            }
+            return [];
+        };
+
+        const parsedBenefitsList = parseArray(benefits);
+        const parsedMixedTypes = parseArray(pt); // property_type in POST is pt
 
         let image = null;
         let images = [];
@@ -536,10 +613,13 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
                 primary_cta_text, secondary_cta_text, details_page_url,
                 regular_price_per_sqft_max, group_price_per_sqft_max,
                 layout_columns, layout_rows,
-                latitude, longitude, map_address
+                latitude, longitude, map_address,
+                road_width, plot_gap, plot_size_width, plot_size_depth,
+                orientation, parking_type, parking_slots, entry_points,
+                mixed_use_selected_types
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-                $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49
+                $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58
             ) RETURNING *`,
             [
                 title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
@@ -548,11 +628,14 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
                 regular_price_per_sqft, group_price_per_sqft, price_unit, currency || 'INR',
                 regular_total_price, discounted_total_price_min, discounted_total_price_max,
                 regular_price_min, regular_price_max,
-                total_savings_min, total_savings_max, Array.isArray(benefits) ? JSON.stringify(benefits) : (benefits || '[]'),
+                total_savings_min, total_savings_max, JSON.stringify(parsedBenefitsList),
                 primary_cta_text, secondary_cta_text, details_page_url,
                 regular_price_per_sqft_max, group_price_per_sqft_max,
                 layout_columns, layout_rows,
-                latitude || null, longitude || null, map_address || null
+                latitude || null, longitude || null, map_address || null,
+                road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null,
+                orientation || null, parking_type || 'Front', parking_slots || 0, entry_points || null,
+                [] // mixed_use_selected_types
             ]
         );
 
@@ -560,6 +643,174 @@ router.post('/admin/projects', authenticate, isAdmin, upload.fields([
     } catch (error) {
         console.error('Admin create project error:', error);
         res.status(500).json({ error: 'Failed to create project' });
+    }
+});
+
+// Bulk Project & Hierarchy Creation (Atomic POST)
+router.post('/admin/projects/bulk', authenticate, isAdmin, upload.fields([
+    { name: 'images', maxCount: 10 },
+    { name: 'brochure', maxCount: 1 }
+]), async (req, res) => {
+    const client = await pool.connect();
+    try {
+        console.log(`🚀 Starting Atomic Bulk Project Creation...`);
+        const {
+            title, developer, location, description, original_price, group_price,
+            discount, savings, type, min_buyers, possession, rera_number, area,
+            hierarchy,
+            project_name, builder_name, property_type: pt, unit_configuration, project_level,
+            offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+            regular_price_per_sqft, regular_price_per_sqft_max, group_price_per_sqft, group_price_per_sqft_max, price_unit, currency,
+            regular_total_price, discounted_total_price_min, discounted_total_price_max,
+            regular_price_min, regular_price_max,
+            total_savings_min, total_savings_max, benefits,
+            primary_cta_text, secondary_cta_text, details_page_url,
+            layout_columns, layout_rows,
+            latitude, longitude, map_address,
+            road_width, plot_gap, plot_size_width, plot_size_depth,
+            orientation, parking_type, parking_slots, entry_points,
+            mixed_use_selected_types
+        } = req.body;
+
+        const parseArray = (val) => {
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string' && val.trim() !== '') {
+                try { return JSON.parse(val); } catch (e) { return []; }
+            }
+            return [];
+        };
+
+        const parsedBenefitsList = parseArray(benefits);
+        const parsedMixedTypes = parseArray(mixed_use_selected_types);
+
+        await client.query('BEGIN');
+
+        // 1. Handle Files
+        let image = null;
+        let images = [];
+        let brochure_url = null;
+        if (req.files && req.files['images']) {
+            const imageBuffers = req.files['images'].map(file => file.buffer);
+            images = await uploadMultipleImages(imageBuffers, 'live_grouping');
+            image = images[0];
+        }
+        if (req.files && req.files['brochure']) {
+            const brochureBuffer = req.files['brochure'][0].buffer;
+            brochure_url = await uploadFile(brochureBuffer, 'live_grouping_brochures');
+        }
+
+        // 2. Insert Project
+        const pRes = await client.query(
+            `INSERT INTO live_group_projects (
+                title, developer, location, description, status, image, images, 
+                original_price, group_price, discount, savings, type, min_buyers,
+                possession, rera_number, area, created_by, brochure_url,
+                project_name, builder_name, property_type, unit_configuration, project_level,
+                offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+                regular_price_per_sqft, group_price_per_sqft, price_unit, currency,
+                regular_total_price, discounted_total_price_min, discounted_total_price_max,
+                regular_price_min, regular_price_max,
+                total_savings_min, total_savings_max, benefits,
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max,
+                layout_columns, layout_rows,
+                latitude, longitude, map_address,
+                road_width, plot_gap, plot_size_width, plot_size_depth,
+                orientation, parking_type, parking_slots, entry_points,
+                mixed_use_selected_types
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+                $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58
+            ) RETURNING id`,
+            [
+                title, developer, location, description, 'live', image, images, original_price, group_price, discount, savings, type, min_buyers, possession, rera_number, area, req.user.id, brochure_url,
+                project_name, builder_name, pt, unit_configuration, project_level,
+                offer_type, discount_percentage, discount_label, offer_expiry_datetime,
+                regular_price_per_sqft, group_price_per_sqft, price_unit, currency || 'INR',
+                regular_total_price, discounted_total_price_min, discounted_total_price_max,
+                regular_price_min, regular_price_max,
+                total_savings_min, total_savings_max, JSON.stringify(parsedBenefitsList),
+                primary_cta_text, secondary_cta_text, details_page_url,
+                regular_price_per_sqft_max, group_price_per_sqft_max,
+                layout_columns, layout_rows,
+                latitude || null, longitude || null, map_address || null,
+                road_width || null, plot_gap || null, plot_size_width || null, plot_size_depth || null,
+                orientation || null, parking_type || 'Front', parking_slots || 0, entry_points || null,
+                parsedMixedTypes
+            ]
+        );
+        const projectId = pRes.rows[0].id;
+
+        // 3. Process Hierarchy
+        const hierarchyData = typeof hierarchy === 'string' ? JSON.parse(hierarchy || '[]') : (hierarchy || []);
+
+        for (const towerData of hierarchyData) {
+            // Insert Tower
+            const tRes = await client.query(
+                'INSERT INTO live_group_towers (project_id, tower_name, total_floors, layout_columns, layout_rows, property_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+                [projectId, towerData.tower_name || towerData.name, towerData.total_floors || 0, towerData.layout_columns || null, towerData.layout_rows || null, towerData.property_type || null]
+            );
+            const towerId = tRes.rows[0].id;
+
+            // Sync Units
+            if (towerData.units && Array.isArray(towerData.units)) {
+                for (const unit of towerData.units) {
+                    await client.query(
+                        `INSERT INTO live_group_units (
+                            tower_id, floor_number, unit_number, unit_type, area, price, price_per_sqft, 
+                            discount_price_per_sqft, status, carpet_area, super_built_up_area, facing, is_corner,
+                            plot_width, plot_depth, front_side, back_side, left_side, right_side,
+                            unit_image_url, unit_gallery, property_type
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+                        [
+                            towerId, unit.floor_number, unit.unit_number, unit.unit_type || 'Unit', unit.area || 0, unit.price || 0,
+                            unit.price_per_sqft || 0, unit.discount_price_per_sqft || null, unit.status || 'available',
+                            unit.carpet_area || null, unit.super_built_up_area || null, unit.facing || null, unit.is_corner || false,
+                            unit.plot_width || null, unit.plot_depth || null, unit.front_side || null, unit.back_side || null, unit.left_side || null, unit.right_side || null,
+                            unit.unit_image_url || null, unit.unit_gallery || [],
+                            unit.property_type || unit.unit_type || null
+                        ]
+                    );
+                }
+            }
+        }
+
+        // 4. Update Project Aggregate Stats
+        await client.query(`UPDATE live_group_projects SET total_slots = (SELECT COUNT(*) FROM live_group_units u JOIN live_group_towers t ON u.tower_id = t.id WHERE t.project_id = $1) WHERE id = $1`, [projectId]);
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Project and hierarchy created successfully', projectId });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('❌ Bulk Create Error:', error);
+        res.status(500).json({ error: error.message || 'Failed to create project' });
+    } finally {
+        client.release();
+    }
+});
+
+// Diagnostic Route
+router.get('/admin/projects/:id/diag', authenticate, isAdmin, async (req, res) => {
+    try {
+        const projectId = req.params.id;
+        const stats = await pool.query(`
+            SELECT p.id, p.title, p.total_slots, 
+                   (SELECT COUNT(*) FROM live_group_towers WHERE project_id = p.id) as tower_count,
+                   (SELECT COUNT(*) FROM live_group_units u JOIN live_group_towers t ON u.tower_id = t.id WHERE t.project_id = p.id) as real_unit_count
+            FROM live_group_projects p
+            WHERE p.id = $1
+        `, [projectId]);
+
+        const towers = await pool.query(`
+            SELECT t.id, t.tower_name, t.property_type, (SELECT COUNT(*) FROM live_group_units WHERE tower_id = t.id) as unit_count
+            FROM live_group_towers t
+            WHERE t.project_id = $1
+        `, [projectId]);
+
+        res.json({ stats: stats.rows[0], towers: towers.rows });
+    } catch (error) {
+        console.error('Diagnostic error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -613,7 +864,8 @@ router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (re
                         towerId, unit.floor_number, unit.unit_number, unit.unit_type || 'Unit',
                         unit.area || 0, unit.carpet_area || null, unit.super_built_up_area || null,
                         unit.price || 0, unit.price_per_sqft || 0, unit.discount_price_per_sqft || null,
-                        unit.status || 'available', unit.unit_image_url || null, unit.unit_gallery || []
+                        unit.status || 'available', unit.unit_image_url || null, unit.unit_gallery || [],
+                        unit.property_type || unit.unit_type || null
                     ];
 
                     cols.forEach(val => {
@@ -628,7 +880,7 @@ router.post('/admin/towers/:id/generate-units', authenticate, isAdmin, async (re
                     INSERT INTO live_group_units (
                         tower_id, floor_number, unit_number, unit_type, 
                         area, carpet_area, super_built_up_area, price, price_per_sqft, discount_price_per_sqft, status,
-                        unit_image_url, unit_gallery
+                        unit_image_url, unit_gallery, property_type
                     ) VALUES ${placeholders.join(', ')}
                 `;
                 await client.query(insertQuery, values);

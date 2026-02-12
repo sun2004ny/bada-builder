@@ -441,25 +441,43 @@ export const liveGroupDynamicAPI = {
 
   // Admin
   createProject: async (projectData, images = [], brochure = null) => {
-    const formData = new FormData();
-    Object.keys(projectData).forEach(key => {
-      if (projectData[key] !== undefined && projectData[key] !== null) {
-        formData.append(key, projectData[key]);
-      }
-    });
-    images.forEach(image => formData.append('images', image));
-    if (brochure) formData.append('brochure', brochure);
-    return uploadFile('/live-grouping-dynamic/admin/projects', formData);
+    // Legacy create - forwards to hierarchy version if possible or kept for compatibility
+    return liveGroupDynamicAPI.createProjectWithHierarchy(projectData, [], images, brochure);
   },
 
-  // NEW: Atomic Bulk Create
   createProjectWithHierarchy: async (projectData, hierarchy, images = [], brochure = null) => {
+    const formData = new FormData();
+    Object.keys(projectData).forEach(key => {
+      const val = projectData[key];
+      if (val !== undefined && val !== null) {
+        if (Array.isArray(val) || (typeof val === 'object' && !(val instanceof File))) {
+          formData.append(key, JSON.stringify(val));
+        } else {
+          formData.append(key, val);
+        }
+      }
+    });
+    formData.append('hierarchy', JSON.stringify(hierarchy));
+    images.forEach(image => {
+      if (image instanceof File) formData.append('images', image);
+    });
+    if (brochure instanceof File) formData.append('brochure', brochure);
+    return uploadFile('/live-grouping-dynamic/admin/projects/bulk', formData, true, 'POST');
+  },
+
+  // NEW: Atomic Bulk Update
+  updateProjectWithHierarchy: async (projectId, projectData, hierarchy, images = [], brochure = null) => {
     const formData = new FormData();
 
     // Append Project Basics
     Object.keys(projectData).forEach(key => {
-      if (projectData[key] !== undefined && projectData[key] !== null) {
-        formData.append(key, projectData[key]);
+      const val = projectData[key];
+      if (val !== undefined && val !== null) {
+        if (Array.isArray(val) || (typeof val === 'object' && !(val instanceof File))) {
+          formData.append(key, JSON.stringify(val));
+        } else {
+          formData.append(key, val);
+        }
       }
     });
 
@@ -467,10 +485,12 @@ export const liveGroupDynamicAPI = {
     formData.append('hierarchy', JSON.stringify(hierarchy));
 
     // Append Files
-    images.forEach(image => formData.append('images', image));
-    if (brochure) formData.append('brochure', brochure);
+    images.forEach(image => {
+      if (image instanceof File) formData.append('images', image);
+    });
+    if (brochure instanceof File) formData.append('brochure', brochure);
 
-    return uploadFile('/live-grouping-dynamic/admin/projects/bulk', formData);
+    return uploadFile(`/live-grouping-dynamic/admin/projects/${projectId}/bulk`, formData, true, 'PUT');
   },
 
   addTower: async (projectId, towerData) => {

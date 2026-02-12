@@ -207,3 +207,33 @@ $$ LANGUAGE plpgsql;
 -- ============================================
 -- END OF SQL SETUP
 -- ============================================
+
+
+Diagnostic Query:
+SELECT p.id, p.title, p.total_slots, 
+       (SELECT COUNT(*) FROM live_group_towers WHERE project_id = p.id) as tower_count,
+       (SELECT COUNT(*) FROM live_group_units u JOIN live_group_towers t ON u.tower_id = t.id WHERE t.project_id = p.id) as real_unit_count
+FROM live_group_projects p
+WHERE p.title ILIKE '%SRW%';
+
+
+-- Fix missing property_type in towers table
+UPDATE live_group_towers t
+SET property_type = 
+    CASE 
+        WHEN t.tower_name ILIKE '%Commercial%' THEN 'Commercial'
+        WHEN t.tower_name ILIKE '%Twin Villa%' THEN 'Twin Villa'
+        WHEN t.tower_name ILIKE '%Bungalow%' THEN 'Bungalow'
+        WHEN t.tower_name ILIKE '%Plot%' THEN 'Plot'
+        ELSE p.type
+    END
+FROM live_group_projects p
+WHERE t.project_id = p.id
+AND (t.property_type IS NULL OR t.property_type = '');
+
+-- Ensure all units also have the correct property_type
+UPDATE live_group_units u
+SET property_type = t.property_type
+FROM live_group_towers t
+WHERE u.tower_id = t.id
+AND (u.property_type IS NULL OR u.property_type = '');

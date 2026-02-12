@@ -54,6 +54,11 @@ const AdminLiveGrouping = () => {
   const [editingUnit, setEditingUnit] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Edit Mode State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+
   // Form State
   const [projectData, setProjectData] = useState({
     title: '',
@@ -179,6 +184,23 @@ const AdminLiveGrouping = () => {
   };
 
   // Validation Logic
+  const formatDateForInput = (isoString) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return '';
+      // Format as YYYY-MM-DDTHH:MM
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (e) {
+      return '';
+    }
+  };
+
   const getWizardSteps = () => {
     if (projectData.type === 'Commercial') {
       return [
@@ -193,7 +215,8 @@ const AdminLiveGrouping = () => {
       { id: 1, label: 'Type' },
       { id: 2, label: 'Basics' },
       { id: 3, label: 'Hierarchy' },
-      { id: 4, label: 'Summary' }
+      { id: 4, label: 'Units' },
+      { id: 5, label: 'Summary' }
     ];
   };
 
@@ -214,9 +237,8 @@ const AdminLiveGrouping = () => {
         return true;
       }
     } else {
-      if (step === 3) {
-        return towers.length > 0;
-      }
+      if (step === 3) return towers.length > 0 || (projectData.type === 'MixedUse' && projectData.mixedUseSelectedTypes.length > 0);
+      if (step === 4) return true; // Units are pre-populated
     }
     return true;
   };
@@ -317,7 +339,8 @@ const AdminLiveGrouping = () => {
     return sanitizedUnit;
   };
 
-  const handleCreateProject = async () => {
+  const handleSaveProject = async () => {
+    console.log("💾 [SAVE] isEditing:", isEditing, "editingProjectId:", editingProjectId);
     try {
       setSaving(true);
 
@@ -328,7 +351,6 @@ const AdminLiveGrouping = () => {
       }
 
       // --- ATOMIC SAVE LOGIC ---
-      // 1. Construct Full Hierarchy Object (Towers + Nested Units)
       const hierarchy = [];
 
       if (projectData.type === 'Commercial') {
@@ -361,7 +383,6 @@ const AdminLiveGrouping = () => {
       } else if (projectData.type === 'MixedUse') {
         const selectedTypes = projectData.mixedUseSelectedTypes || [];
 
-        // 1. Process Apartment Towers if selected
         if (selectedTypes.includes('Apartment')) {
           for (let idx = 0; idx < towers.length; idx++) {
             const tower = towers[idx];
@@ -372,7 +393,6 @@ const AdminLiveGrouping = () => {
               if (!towerConfig[floorNum]) continue;
               for (const unit of towerConfig[floorNum]) {
                 const sanitized = await sanitizeAndUploadUnit(unit, floorNum);
-                // Attach property type and metadata for mixed units
                 compiledUnits.push({
                   ...sanitized,
                   property_type: 'Apartment',
@@ -380,11 +400,11 @@ const AdminLiveGrouping = () => {
                   tower_name: tower.name,
                   total_floors: parseInt(tower.floors) || 0
                 });
-                console.log("Mixed unit before submit:", compiledUnits[compiledUnits.length - 1]);
               }
             }
 
             hierarchy.push({
+              id: tower.id || null,
               tower_name: tower.name,
               total_floors: parseInt(tower.floors) || 0,
               layout_columns: tower.layout_columns || projectData.layout_columns || null,
@@ -395,10 +415,8 @@ const AdminLiveGrouping = () => {
           }
         }
 
-        // 2. Process Land-based units (Bungalow, Plot, etc.)
         for (const type of selectedTypes) {
           if (type === 'Apartment') continue;
-
           const typeUnits = mixedUseData[type]?.units || [];
           if (typeUnits.length > 0) {
             const compiledUnits = [];
@@ -409,10 +427,10 @@ const AdminLiveGrouping = () => {
                 unit_type: unit.unit_type || type,
                 property_type: unit.unit_type || type
               });
-              console.log("Mixed unit before submit:", compiledUnits[compiledUnits.length - 1]);
             }
 
             hierarchy.push({
+              id: mixedUseData[type]?.id || mixedUseData[type]?.towers?.[0]?.id || null, // Preserve ID for updates
               tower_name: `${type} Section`,
               total_floors: 1,
               layout_columns: projectData.layout_columns || null,
@@ -431,10 +449,8 @@ const AdminLiveGrouping = () => {
 
           for (const floorNum of Object.keys(towerConfig)) {
             if (!towerConfig[floorNum]) continue;
-
             for (const unit of towerConfig[floorNum]) {
               const sanitized = await sanitizeAndUploadUnit(unit, floorNum);
-              // In standalone flow, preserve unit-specific type if available, fallback to projectData.type
               compiledUnits.push({
                 ...sanitized,
                 unit_type: unit.unit_type || projectData.type,
@@ -444,6 +460,7 @@ const AdminLiveGrouping = () => {
           }
 
           hierarchy.push({
+            id: tower.id || null,
             tower_name: tower.name,
             total_floors: parseInt(tower.floors) || (projectData.type === 'Bungalow' ? 1 : 0),
             layout_columns: tower.layout_columns || null,
@@ -454,13 +471,11 @@ const AdminLiveGrouping = () => {
         }
       }
 
-      console.log('🚀 Submitting Partial Hierarchy:', hierarchy);
-
-      // Sanitize projectData: convert empty strings to null for numeric fields
       const sanitizeNumeric = (val) => (val === '' || val === null || val === undefined) ? null : val;
 
       const sanitizedProjectData = {
         ...projectData,
+        last_updated_at: lastUpdatedAt, // For optimistic locking
         min_buyers: sanitizeNumeric(projectData.min_buyers),
         original_price: sanitizeNumeric(projectData.original_price),
         group_price: sanitizeNumeric(projectData.group_price),
@@ -468,19 +483,15 @@ const AdminLiveGrouping = () => {
         savings: sanitizeNumeric(projectData.savings),
         area: sanitizeNumeric(projectData.area),
         discount_percentage: sanitizeNumeric(projectData.discount_percentage),
-
         regular_price_per_sqft: sanitizeNumeric(projectData.regular_price_per_sqft),
         regular_price_per_sqft_max: sanitizeNumeric(projectData.regular_price_per_sqft_max),
         group_price_per_sqft: sanitizeNumeric(projectData.group_price_per_sqft),
         group_price_per_sqft_max: sanitizeNumeric(projectData.group_price_per_sqft_max),
-
         regular_total_price: sanitizeNumeric(projectData.regular_total_price),
         discounted_total_price_min: sanitizeNumeric(projectData.discounted_total_price_min),
-        discounted_total_price_max: sanitizeNumeric(projectData.discounted_total_price_max), // Fixed typo in state key if any, assuming standard naming
-
+        discounted_total_price_max: sanitizeNumeric(projectData.discounted_total_price_max),
         regular_price_min: sanitizeNumeric(projectData.regular_price_min),
         regular_price_max: sanitizeNumeric(projectData.regular_price_max),
-
         total_savings_min: sanitizeNumeric(projectData.total_savings_min),
         total_savings_max: sanitizeNumeric(projectData.total_savings_max),
         layout_columns: sanitizeNumeric(projectData.layout_columns),
@@ -490,18 +501,26 @@ const AdminLiveGrouping = () => {
         plot_size_width: sanitizeNumeric(projectData.plot_size_width),
         plot_size_depth: sanitizeNumeric(projectData.plot_size_depth),
         parking_slots: sanitizeNumeric(projectData.parking_slots),
+        // Clear stale mixed use types if no longer mixed use
+        mixed_use_selected_types: projectData.type === 'MixedUse' ? projectData.mixedUseSelectedTypes : [],
       };
 
-      // 2. Send Single Bulk Request
-      await liveGroupDynamicAPI.createProjectWithHierarchy(sanitizedProjectData, hierarchy, imageFiles, brochureFile);
+      if (isEditing) {
+        await liveGroupDynamicAPI.updateProjectWithHierarchy(editingProjectId, sanitizedProjectData, hierarchy, imageFiles, brochureFile);
+        toast.success('Project updated successfully!');
+      } else {
+        await liveGroupDynamicAPI.createProjectWithHierarchy(sanitizedProjectData, hierarchy, imageFiles, brochureFile);
+        toast.success('Project created successfully!');
+      }
 
-      toast.success('Project and complete hierarchy created successfully!');
       setShowWizard(false);
+      setIsEditing(false);
+      setEditingProjectId(null);
       setWizardStep(1);
       fetchProjects();
     } catch (error) {
       console.error('Wizard submission error:', error);
-      alert('Failed to create project: ' + (error.response?.data?.error || error.message));
+      alert('Failed to save project: ' + (error.response?.data?.error || error.message));
     } finally {
       setSaving(false);
     }
@@ -537,6 +556,118 @@ const AdminLiveGrouping = () => {
     } catch (error) {
       console.error("Failed to load project details:", error);
       alert("Could not load project details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- NEW: Edit Project ---
+  const handleEditProject = async (project) => {
+    try {
+      setLoading(true);
+      const data = await liveGroupDynamicAPI.getFullHierarchy(project.id);
+      const p = data.project;
+
+      let selectedTypes = p.mixed_use_selected_types || [];
+
+      // Fallback: derive from towers if empty (for older projects or data inconsistency)
+      if (p.type === 'MixedUse' && selectedTypes.length === 0 && p.towers) {
+        selectedTypes = [...new Set(p.towers.map(t => {
+          if (t.property_type) return t.property_type;
+          const name = (t.tower_name || "").toLowerCase();
+          if (name.includes('commercial')) return 'Commercial';
+          if (name.includes('twin')) return 'Twin Villa';
+          if (name.includes('bungalow')) return 'Bungalow';
+          if (name.includes('plot')) return 'Plot';
+          if (name.includes('apartment') || name.includes('flat') || name.includes('tower')) return 'Apartment';
+          return null;
+        }).filter(Boolean))];
+        console.log("🔍 [DEBUG] Derived selectedTypes from towers:", selectedTypes);
+      }
+
+      // Populate Project Data
+      setProjectData({
+        ...projectData,
+        ...p,
+        mixedUseSelectedTypes: selectedTypes,
+      });
+
+      // Initialize Mixed Use Data containers
+      const newMixedUseData = {
+        Bungalow: { units: [], towers: [] },
+        'Twin Villa': { units: [], towers: [] },
+        Plot: { units: [], towers: [] },
+        Commercial: { units: [], towers: [] },
+        Apartment: { towers: [], towerUnits: {} }
+      };
+
+      const newTowers = [];
+      const newTowerUnits = {};
+
+      if (p.towers) {
+        p.towers.forEach((t, tIdx) => {
+          const towerObj = {
+            id: t.id,
+            name: t.tower_name,
+            floors: t.total_floors,
+            layout_columns: t.layout_columns,
+            layout_rows: t.layout_rows,
+            property_type: t.property_type,
+            hasGroundFloor: t.units ? t.units.some(u => u.floor_number === 0) : false,
+            hasBasement: t.units ? t.units.some(u => u.floor_number === -1) : false,
+            bungalow_type: t.property_type // for sections
+          };
+
+          const unitsMap = {};
+          if (t.units) {
+            t.units.forEach(u => {
+              const floor = u.floor_number;
+              if (!unitsMap[floor]) unitsMap[floor] = [];
+              unitsMap[floor].push({
+                ...u,
+                flat_label: u.unit_number,
+                isCustom: true
+              });
+            });
+          }
+
+          if (p.type === 'MixedUse') {
+            const tType = t.property_type ||
+              (t.tower_name.toLowerCase().includes('commercial') ? 'Commercial' :
+                (t.tower_name.toLowerCase().includes('twin') ? 'Twin Villa' :
+                  (t.tower_name.toLowerCase().includes('bungalow') ? 'Bungalow' : null)));
+
+            if (tType === 'Apartment') {
+              newTowers.push(towerObj);
+              newTowerUnits[newTowers.length - 1] = unitsMap;
+            } else if (tType && newMixedUseData[tType]) {
+              newMixedUseData[tType].units = Object.values(unitsMap).flat();
+              newMixedUseData[tType].towers = [towerObj];
+              newMixedUseData[tType].id = t.id;
+              newMixedUseData[tType].count = (newMixedUseData[tType].units || []).length;
+            }
+          }
+          else {
+            // Standalone (Apartment, Bungalow, Plot, Twin Villa)
+            newTowers.push(towerObj);
+            newTowerUnits[newTowers.length - 1] = unitsMap;
+          }
+        });
+      }
+
+      setTowers(newTowers);
+      setTowerUnits(newTowerUnits);
+      setMixedUseData(newMixedUseData);
+
+      setIsEditing(true);
+      setEditingProjectId(project.id);
+      setLastUpdatedAt(p.updated_at);
+      setShowWizard(true);
+      setWizardStep(1);
+
+    } catch (error) {
+      console.error("Failed to load project for editing:", error);
+      alert("Could not load project data for editing.");
     } finally {
       setLoading(false);
     }
@@ -1015,6 +1146,9 @@ const AdminLiveGrouping = () => {
                       <button className="icon-btn primary" title="Manage Units" onClick={() => handleViewProject(project)}>
                         <LayoutGrid size={20} />
                       </button>
+                      <button className="icon-btn edit" title="Edit Project" onClick={() => handleEditProject(project)}>
+                        <Edit size={18} />
+                      </button>
                       <select
                         className="status-dropdown"
                         value={project.status}
@@ -1076,8 +1210,8 @@ const AdminLiveGrouping = () => {
               exit={{ y: 50, opacity: 0 }}
             >
               <div className="wizard-header">
-                <h2>Create Live Grouping Project</h2>
-                <button className="close-btn" onClick={() => setShowWizard(false)}><X /></button>
+                <h2>{isEditing ? 'Edit' : 'Create'} Live Grouping Project</h2>
+                <button className="close-btn" onClick={() => { setShowWizard(false); setIsEditing(false); setEditingProjectId(null); }}><X /></button>
               </div>
 
               <div className="wizard-stepper">
@@ -1258,7 +1392,11 @@ const AdminLiveGrouping = () => {
                       </div>
                       <div className="input-group">
                         <label>Offer Expiry</label>
-                        <input type="datetime-local" value={projectData.offer_expiry_datetime || ''} onChange={e => setProjectData({ ...projectData, offer_expiry_datetime: e.target.value })} />
+                        <input
+                          type="datetime-local"
+                          value={formatDateForInput(projectData.offer_expiry_datetime)}
+                          onChange={e => setProjectData({ ...projectData, offer_expiry_datetime: e.target.value })}
+                        />
                       </div>
 
                       <div className="input-group">
@@ -1964,6 +2102,118 @@ const AdminLiveGrouping = () => {
                     </div>
                   </div>
                 )}
+
+                {wizardStep === 5 && projectData.type !== 'Commercial' && (
+                  <div className="step-pane">
+                    <div className="pane-header">
+                      <h3>Project Final Summary</h3>
+                      <span className="badge bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Ready to {isEditing ? 'Update' : 'Confirm'}</span>
+                    </div>
+
+                    <div className="summary-cards-grid grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <div className="summary-card bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Project Overview</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between"><span className="text-sm text-slate-500">Title:</span> <span className="text-sm font-bold text-slate-800">{projectData.title}</span></div>
+                          <div className="flex justify-between"><span className="text-sm text-slate-500">Type:</span> <span className="text-sm font-bold text-slate-800">{projectData.type}</span></div>
+                          <div className="flex justify-between"><span className="text-sm text-slate-500">Location:</span> <span className="text-sm font-bold text-slate-800 truncate max-w-[200px]">{projectData.location}</span></div>
+                          <div className="flex justify-between"><span className="text-sm text-slate-500">Min Buyers:</span> <span className="text-sm font-bold text-blue-600">{projectData.min_buyers}</span></div>
+                        </div>
+                      </div>
+
+                      <div className="summary-card bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Hierarchy Stats</h4>
+                        <div className="space-y-2">
+                          {projectData.type === 'MixedUse' ? (
+                            <>
+                              <div className="flex justify-between"><span className="text-sm text-slate-500">Components:</span> <span className="text-sm font-bold text-slate-800">{(projectData.mixedUseSelectedTypes || []).join(', ')}</span></div>
+                              <div className="flex justify-between"><span className="text-sm text-slate-500">Total Units:</span> <span className="text-sm font-bold text-slate-800">
+                                {(() => {
+                                  let total = 0;
+                                  (projectData.mixedUseSelectedTypes || []).forEach(type => {
+                                    if (type === 'Apartment') {
+                                      Object.values(towerUnits).forEach(tu => Object.values(tu).forEach(units => total += units.length));
+                                    } else {
+                                      total += mixedUseData[type]?.units?.length || 0;
+                                    }
+                                  });
+                                  return total;
+                                })()}
+                              </span></div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex justify-between"><span className="text-sm text-slate-500">Total {getLabel(projectData.type, 'parent')}s:</span> <span className="text-sm font-bold text-slate-800">{towers.length}</span></div>
+                              <div className="flex justify-between"><span className="text-sm text-slate-500">Total Units:</span> <span className="text-sm font-bold text-slate-800">
+                                {Object.values(towerUnits).reduce((acc, tu) => acc + Object.values(tu).reduce((a, u) => a + u.length, 0), 0)}
+                              </span></div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="summary-card bg-slate-50 p-5 rounded-2xl border border-slate-200 md:col-span-2">
+                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Unit Breakdown</h4>
+                        <div className="max-h-48 overflow-y-auto pr-2">
+                          <table className="w-full text-xs">
+                            <thead className="text-slate-400 uppercase font-black tracking-widest text-[8px] border-b">
+                              <tr>
+                                <th className="text-left py-2">Tower/Section</th>
+                                <th className="text-left py-2">Unit Type</th>
+                                <th className="text-right py-2">Count</th>
+                                <th className="text-right py-2">Avg Price</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {projectData.type === 'MixedUse' ? (
+                                (projectData.mixedUseSelectedTypes || []).map(type => {
+                                  if (type === 'Apartment') {
+                                    return towers.map((t, idx) => {
+                                      const units = Object.values(towerUnits[idx] || {}).flat();
+                                      const avgPrice = units.length > 0 ? units.reduce((a, b) => a + (b.price || 0), 0) / units.length : 0;
+                                      return (
+                                        <tr key={`sum-${type}-${idx}`} className="border-b border-slate-100 last:border-0">
+                                          <td className="py-2 font-bold">{t.name}</td>
+                                          <td className="py-2 text-slate-500">Flat/Apartment</td>
+                                          <td className="py-2 text-right font-bold">{units.length}</td>
+                                          <td className="py-2 text-right">₹{(avgPrice / 100000).toFixed(2)} L</td>
+                                        </tr>
+                                      );
+                                    });
+                                  } else {
+                                    const units = mixedUseData[type]?.units || [];
+                                    const avgPrice = units.length > 0 ? units.reduce((a, b) => a + (b.price || 0), 0) / units.length : 0;
+                                    return (
+                                      <tr key={`sum-${type}`} className="border-b border-slate-100 last:border-0">
+                                        <td className="py-2 font-bold">{type} Section</td>
+                                        <td className="py-2 text-slate-500">{type}</td>
+                                        <td className="py-2 text-right font-bold">{units.length}</td>
+                                        <td className="py-2 text-right">₹{(avgPrice / 100000).toFixed(2)} L</td>
+                                      </tr>
+                                    );
+                                  }
+                                })
+                              ) : (
+                                towers.map((t, idx) => {
+                                  const units = Object.values(towerUnits[idx] || {}).flat();
+                                  const avgPrice = units.length > 0 ? units.reduce((a, b) => a + (b.price || 0), 0) / units.length : 0;
+                                  return (
+                                    <tr key={`sum-${idx}`} className="border-b border-slate-100 last:border-0">
+                                      <td className="py-2 font-bold">{t.name}</td>
+                                      <td className="py-2 text-slate-500">{projectData.type}</td>
+                                      <td className="py-2 text-right font-bold">{units.length}</td>
+                                      <td className="py-2 text-right">₹{(avgPrice / 100000).toFixed(2)} L</td>
+                                    </tr>
+                                  );
+                                })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="wizard-footer">
@@ -1980,8 +2230,8 @@ const AdminLiveGrouping = () => {
                     Next <ChevronRight size={18} />
                   </button>
                 ) : (
-                  <button className="primary-btn finish" onClick={handleCreateProject} disabled={saving || !validateWizardStep(wizardStep)}>
-                    {saving ? 'Creating...' : 'Confirm & Generate'} <CheckCircle2 size={18} />
+                  <button className="primary-btn finish" onClick={handleSaveProject} disabled={saving || !validateWizardStep(wizardStep)}>
+                    {saving ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Project' : 'Confirm & Generate')} <CheckCircle2 size={18} />
                   </button>
                 )}
               </div>
