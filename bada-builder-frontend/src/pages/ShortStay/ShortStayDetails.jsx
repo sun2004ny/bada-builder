@@ -8,6 +8,7 @@ import {
     FaChevronLeft, FaChevronRight, FaKeyboard, FaChevronUp, FaChevronDown, FaTh
 } from 'react-icons/fa';
 import { FiPlus, FiMinus, FiX } from 'react-icons/fi';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { shortStayAPI } from '../../services/shortStayApi';
 import { createOrGetChat } from '../../services/chatService';
 import { useAuth } from '../../context/AuthContext';
@@ -351,6 +352,8 @@ const ShortStayDetails = () => {
     
     // Booking state
     const [checkIn, setCheckIn] = useState('');
+    const [reviews, setReviews] = useState([]);
+    const [selectedFullReview, setSelectedFullReview] = useState(null);
     const [checkOut, setCheckOut] = useState('');
     const [showGuestDropdown, setShowGuestDropdown] = useState(false);
     const [adults, setAdults] = useState(1);
@@ -362,7 +365,6 @@ const ShortStayDetails = () => {
     const [pendingRoomType, setPendingRoomType] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState(null); // Explicit selection for widget
     const [roomAvailability, setRoomAvailability] = useState({});
-    const [reviews, setReviews] = useState([]);
 
 
     // Fetch availability when dates change
@@ -936,28 +938,45 @@ const ShortStayDetails = () => {
                                     </div>
 
                                     <div className="reviews-grid-main">
-                                        {reviews.slice(0, 6).map((review, i) => (
-                                            <div key={i} className="review-card-main">
-                                                <div className="reviewer-info">
-                                                    <div className="reviewer-avatar">
-                                                        {review.user_photo ? (
-                                                            <img src={review.user_photo} alt={review.user_name} />
-                                                        ) : (
-                                                            <FaUser />
-                                                        )}
-                                                    </div>
-                                                    <div className="reviewer-text">
-                                                        <div className="reviewer-name">{review.user_name}</div>
-                                                        <div className="review-date">
-                                                            {new Date(review.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                        {reviews.slice(0, 6).map((review, i) => {
+                                            const isLong = review.public_comment.length > 180;
+                                            const displayComment = isLong 
+                                                ? review.public_comment.substring(0, 180) + '...' 
+                                                : review.public_comment;
+
+                                            return (
+                                                <div key={i} className="review-card-main">
+                                                    <div className="reviewer-info">
+                                                        <div className="reviewer-avatar">
+                                                            {review.user_photo ? (
+                                                                <img src={review.user_photo} alt={review.user_name} />
+                                                            ) : (
+                                                                <FaUser />
+                                                            )}
+                                                        </div>
+                                                        <div className="reviewer-text">
+                                                            <div className="reviewer-name">{review.user_name}</div>
+                                                            <div className="review-date">
+                                                                {new Date(review.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <div className="review-content">
+                                                        <p>
+                                                            {displayComment}
+                                                            {isLong && (
+                                                                <button 
+                                                                    className="show-more-review-btn"
+                                                                    onClick={() => setSelectedFullReview(review)}
+                                                                >
+                                                                    Show more
+                                                                </button>
+                                                            )}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="review-content">
-                                                    <p>{review.public_comment}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </>
                             )}
@@ -1056,7 +1075,7 @@ const ShortStayDetails = () => {
                                 </div>
                                 {(() => {
                                     const totalGuests = adults + children;
-                                    const guestLabel = `${totalGuests} guest${totalGuests !== 1 ? 's' : ''}${infants > 0 ? `, ${infants} infant${infants > 1 ? 's' : ''}` : ''}${pets > 0 ? `, ${pets} pet${pets > 1 ? 's' : ''}` : ''}`;
+                                    const guestLabel = `${totalGuests} guest${totalGuests !== 1 ? 's' : ''}${infants > 0 ? `, ${infants} infant${infants !== 1 ? 's' : ''}` : ''}${pets > 0 ? `, ${pets} pet${pets !== 1 ? 's' : ''}` : ''}`;
                                     
                                     // Use selected room's capacity if available, otherwise fallback
                                     const maxPerProperty = selectedRoom?.guestCapacity 
@@ -1444,6 +1463,75 @@ const ShortStayDetails = () => {
                     </div>
                 </div>
             )}
+
+            {/* Review Details Modal */}
+            <AnimatePresence>
+                {selectedFullReview && (
+                    <div className="full-review-modal-overlay" onClick={() => setSelectedFullReview(null)}>
+                        <Motion.div 
+                            className="full-review-modal" 
+                            onClick={e => e.stopPropagation()}
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        >
+                            <button className="close-review-modal" onClick={() => setSelectedFullReview(null)}>
+                                <FaTimes />
+                            </button>
+                            
+                            <div className="full-review-header">
+                                <div className="reviewer-info large">
+                                    <div className="reviewer-avatar large">
+                                        {selectedFullReview.user_photo ? (
+                                            <img src={selectedFullReview.user_photo} alt={selectedFullReview.user_name} />
+                                        ) : (
+                                            <FaUser />
+                                        )}
+                                    </div>
+                                    <div className="reviewer-text">
+                                        <div className="reviewer-name">{selectedFullReview.user_name}</div>
+                                        <div className="review-date">
+                                            {new Date(selectedFullReview.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="review-overall-rating">
+                                    <FaStar />
+                                    <span>{Number(selectedFullReview.overall_rating).toFixed(1)}</span>
+                                </div>
+                            </div>
+
+                            <div className="full-review-body">
+                                <div className="full-review-scrollable">
+                                    <p className="full-comment-text">{selectedFullReview.public_comment}</p>
+                                    
+                                    <div className="review-detailed-breakdown">
+                                        <h4>Rating details</h4>
+                                        <div className="detail-breakdown-grid">
+                                            {[
+                                                { label: 'Cleanliness', key: 'cleanliness' },
+                                                { label: 'Accuracy', key: 'accuracy' },
+                                                { label: 'Check-in', key: 'check_in' },
+                                                { label: 'Communication', key: 'communication' },
+                                                { label: 'Location', key: 'location' },
+                                                { label: 'Value', key: 'value' }
+                                            ].map(cat => (
+                                                <div key={cat.key} className="detail-breakdown-item">
+                                                    <span className="detail-label">{cat.label}</span>
+                                                    <div className="detail-rating-pill">
+                                                        <FaStar size={10} />
+                                                        <span>{Number(selectedFullReview[cat.key]).toFixed(1)}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Sticky Reserve Bar for Mobile */}
             <div className="sticky-reserve-bar">
