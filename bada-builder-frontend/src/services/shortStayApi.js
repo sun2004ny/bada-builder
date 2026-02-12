@@ -174,4 +174,22 @@ export const shortStayAPI = {
   checkReviewStatus: async (bookingId) => {
     return apiRequest(`/short-stay-reviews/check/${bookingId}`);
   },
+
+  // --- Drafts (Cross-Device Resume) ---
+  getDraft: async () => {
+    return apiRequest('/short-stay/draft');
+  },
+
+  saveDraft: async (data, currentStep) => {
+    return apiRequest('/short-stay/draft', {
+      method: 'POST',
+      body: JSON.stringify({ data, currentStep })
+    });
+  },
+
+  clearDraft: async () => {
+    return apiRequest('/short-stay/draft', {
+      method: 'DELETE'
+    });
+  }
 };

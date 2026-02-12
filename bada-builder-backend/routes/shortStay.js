@@ -405,7 +405,62 @@ router.get('/availability/:id', optionalAuth, async (req, res) => {
     }
 });
 
-// --- 3. Get Single Property Details ---
+// --- 3. Property Listing Drafts (Cross-Device Resume) ---
+
+// Save or Update Draft
+router.post('/draft', authenticate, async (req, res) => {
+    try {
+        const { data, currentStep } = req.body;
+        
+        await pool.query(
+            `INSERT INTO short_stay_drafts (user_id, data, current_step, updated_at)
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+             ON CONFLICT (user_id) 
+             DO UPDATE SET data = EXCLUDED.data, current_step = EXCLUDED.current_step, updated_at = CURRENT_TIMESTAMP`,
+            [req.user.id, data, currentStep]
+        );
+        
+        res.json({ message: 'Draft saved successfully' });
+    } catch (error) {
+        console.error('Save Draft Error:', error);
+        res.status(500).json({ error: 'Failed to save draft' });
+    }
+});
+
+// Fetch Current Draft
+router.get('/draft', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT data, current_step FROM short_stay_drafts WHERE user_id = $1`,
+            [req.user.id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.json({ draft: null });
+        }
+        
+        res.json({ draft: result.rows[0] });
+    } catch (error) {
+        console.error('Fetch Draft Error:', error);
+        res.status(500).json({ error: 'Failed to fetch draft' });
+    }
+});
+
+// Clear Draft
+router.delete('/draft', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            `DELETE FROM short_stay_drafts WHERE user_id = $1`,
+            [req.user.id]
+        );
+        res.json({ message: 'Draft cleared successfully' });
+    } catch (error) {
+        console.error('Clear Draft Error:', error);
+        res.status(500).json({ error: 'Failed to clear draft' });
+    }
+});
+
+// --- 4. Get Single Property Details ---
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const result = await pool.query(

@@ -19,6 +19,7 @@ const HostingDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [calendarLoading, setCalendarLoading] = useState(false);
+  const [draft, setDraft] = useState(null);
 
   const [properties, setProperties] = useState([]);
 
@@ -26,6 +27,7 @@ const HostingDashboard = () => {
     if (isAuthenticated) {
         fetchReservations();
         fetchProperties();
+        fetchDraft();
     }
   }, [isAuthenticated]);
 
@@ -46,6 +48,18 @@ const HostingDashboard = () => {
         console.error("Failed to fetch host reservations", error);
     } finally {
         setLoading(false);
+    }
+  };
+
+  const fetchDraft = async () => {
+    try {
+        const response = await shortStayAPI.getDraft();
+        console.log('--- Dashboard Draft Check ---', response);
+        if (response.draft && response.draft.data && response.draft.data.category) {
+            setDraft(response.draft);
+        }
+    } catch (error) {
+        console.error("Failed to fetch draft", error);
     }
   };
 
@@ -166,6 +180,28 @@ const HostingDashboard = () => {
                 </div>
 
                 <div className="reservations-list">
+                    {/* Finish your listing section (Airbnb style) */}
+                    {activeTab === 'today' && draft && (
+                        <div className="finish-listing-section">
+                            <div className="finish-listing-card">
+                                <div className="finish-listing-content">
+                                    <div className="finish-listing-info">
+                                        <h3>Finish your listing</h3>
+                                        <p>You’re almost there! Resume where you left off and get your place booked.</p>
+                                        <div className="draft-preview-badge">
+                                             {draft.data.category?.replaceAll('_', ' ')} • Step {draft.current_step + 1}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        className="continue-listing-btn"
+                                        onClick={() => navigate('/short-stay/list-property', { state: { resume: true } })}
+                                    >
+                                        Continue
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {loading ? (
                         <p style={{padding: '24px', textAlign: 'center'}}>Loading reservations...</p>
                     ) : displayList.length === 0 ? (
@@ -188,7 +224,7 @@ const HostingDashboard = () => {
                                             : "You don’t have any upcoming reservations"}
                                     </h2>
                                     <p>To get booked, you’ll need to complete and publish your listing.</p>
-                                    <button className="complete-listing-btn-subtle" onClick={() => navigate('/short-stay/list-property')}>
+                                    <button className="complete-listing-btn-subtle" onClick={() => navigate('/short-stay/list-property', { state: { resume: !!draft } })}>
                                         Complete your listing
                                     </button>
                                 </Motion.div>

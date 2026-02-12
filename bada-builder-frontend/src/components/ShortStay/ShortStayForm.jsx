@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { 
     FaTimes, FaUpload, FaTrash, FaCheck, FaArrowLeft, FaArrowRight,
@@ -11,6 +11,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './ShortStayForm.css';
 import { shortStayAPI } from '../../services/shortStayApi';
+import { toast } from 'react-hot-toast';
 
 
 // Fix for default marker icon in Leaflet
@@ -89,9 +90,14 @@ const BinaryToggle = ({ label, name, value, onChange }) => (
 
 const ShortStayForm = ({ onClose, initialData = null }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
-    
+    const [showResumePrompt, setShowResumePrompt] = useState(false);
+    const [checkingDraft, setCheckingDraft] = useState(true);
+    const [draftData, setDraftData] = useState(null);
+    const hasShownResumeToast = useRef(false);
+
     // Form State
     const [formData, setFormData] = useState({
         category: null, // New Field for selecting property category
@@ -157,6 +163,14 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
         specific_details: {}
     });
 
+    console.log('--- Render ShortStayForm ---', { 
+        currentStep, 
+        category: formData.category, 
+        checkingDraft, 
+        showResumePrompt,
+        resumeState: location.state?.resume
+    });
+
     // Load Initial Data for Edit Mode
     useEffect(() => {
         if (initialData) {
@@ -195,7 +209,121 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
             }));
         }
     }, [initialData]);
+    
+    // Check for existing backend draft on mount
+    useEffect(() => {
+        const checkDraft = async () => {
+            if (initialData) {
+                setCheckingDraft(false);
+                return;
+            }
+            
+            try {
+                const response = await shortStayAPI.getDraft();
+                console.log('--- Draft API Response ---', response);
+                // Only show resume prompt if there's actually a category selected in the draft
+                if (response.draft && response.draft.data && response.draft.data.category) {
+                    console.log('--- Draft Detected ---', { 
+                        step: response.draft.current_step, 
+                        resumeFlag: location.state?.resume 
+                    });
+                    
+                    if (location.state?.resume) {
+                        console.log('--- Triggering AUTO-RESUME ---');
+                        if (!hasShownResumeToast.current) {
+                            toast.success('Resuming your listing...');
+                            hasShownResumeToast.current = true;
+                        }
+                        // AUTO-RESUME (Airbnb style)
+                        setFormData(prev => ({
+                            ...prev,
+                            ...response.draft.data,
+                            images: [],
+                            imagePreviews: [],
+                            video: null
+                        }));
+                        setCurrentStep(response.draft.current_step || 0);
+                        setShowResumePrompt(false);
+                    } else {
+                        console.log('--- Showing Resume Prompt ---');
+                        setDraftData(response.draft);
+                        setShowResumePrompt(true);
+                    }
+                } else {
+                    console.log('--- No valid draft found or category missing ---');
+                }
+            } catch (error) {
+                console.error('Check Draft Error:', error);
+            } finally {
+                setCheckingDraft(false);
+            }
+        };
+        checkDraft();
+    }, [initialData, location.state]);
 
+    // Unified auto-save logic
+    useEffect(() => {
+        // CRITICAL: Only save if a category is selected. 
+        // This prevents overwriting valid drafts with blank ones on component mount.
+        if (initialData || !formData.category || showResumePrompt || checkingDraft) return;
+
+        const timer = setTimeout(async () => {
+            try {
+                const syncableData = { ...formData };
+                delete syncableData.images;
+                delete syncableData.imagePreviews;
+                delete syncableData.video;
+                
+                await shortStayAPI.saveDraft(syncableData, currentStep);
+            } catch (error) {
+                console.error('Auto-save Draft Error:', error);
+            }
+        }, 1000); // 1 second debounce
+
+        return () => clearTimeout(timer);
+    }, [formData, currentStep, initialData, showResumePrompt, checkingDraft]);
+
+    // Explicit save function (bypasses debounce)
+    const saveCurrentProgress = async (data = formData, step = currentStep) => {
+        if (initialData || !data.category || showResumePrompt || checkingDraft) return;
+        
+        try {
+            const syncableData = { ...data };
+            delete syncableData.images;
+            delete syncableData.imagePreviews;
+            delete syncableData.video;
+            
+            await shortStayAPI.saveDraft(syncableData, step);
+        } catch (error) {
+            console.error('Manual save progress error:', error);
+        }
+    };
+
+    const handleResumeDraft = () => {
+        if (draftData) {
+            setFormData(prev => ({
+                ...prev,
+                ...draftData.data,
+                // Ensure media stays empty as we don't sync files
+                images: [],
+                imagePreviews: [],
+                video: null
+            }));
+            setCurrentStep(draftData.current_step || 0);
+            setShowResumePrompt(false);
+            toast.success('Listing resumed!');
+        }
+    };
+
+    const handleStartFresh = async () => {
+        try {
+            await shortStayAPI.clearDraft();
+        } catch (error) {
+            console.error('Clear Draft Error:', error);
+        }
+        setShowResumePrompt(false);
+        // formData is already at default state
+    };
     // Handlers
     const handleBasicChange = (e) => {
         const { name, value } = e.target;
@@ -319,6 +447,15 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                     category: formData.category
                 }, formData.images);
                 alert('Property listed successfully!');
+            }
+            
+            // Clear backend draft on successful submission
+            if (!initialData) {
+                try {
+                    await shortStayAPI.clearDraft();
+                } catch (e) {
+                    console.error('Failed to clear draft:', e);
+                }
             }
             
             navigate('/short-stay/my-listings'); // Redirect to my listings
@@ -864,7 +1001,11 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                                 <div
                                     key={cat.id}
                                     className={`category-option-card ${formData.category === cat.id ? 'selected' : ''}`}
-                                    onClick={() => setFormData(prev => ({ ...prev, category: cat.id, propertyType: cat.id }))}
+                                    onClick={() => {
+                                        const newData = { ...formData, category: cat.id, propertyType: cat.id };
+                                        setFormData(newData);
+                                        saveCurrentProgress(newData, currentStep);
+                                    }}
                                 >
                                     <div className="category-icon">{cat.icon}</div>
                                     <div className="category-label">{cat.name}</div>
@@ -1394,11 +1535,71 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                 </div>
 
                 <div className="modal-body-premium">
-                    <AnimatePresence mode="wait">
-                        {renderStepContent()}
-                    </AnimatePresence>
+                <div className="short-stay-form-body">
+                    {checkingDraft ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px' }}>
+                            <div className="loading-spinner-small" />
+                        </div>
+                    ) : (
+                        <AnimatePresence mode="wait">
+                            {showResumePrompt ? (
+                                <motion.div 
+                                    key="resume-prompt"
+                                    variants={stepVariants}
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                    className="resume-prompt-container"
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        textAlign: 'center',
+                                        padding: '40px 20px',
+                                        height: '100%'
+                                    }}
+                                >
+                                    <div className="welcome-icon" style={{ fontSize: '48px', marginBottom: '20px' }}>👋</div>
+                                    <h2 style={{ fontSize: '28px', marginBottom: '12px', color: '#222' }}>Welcome back</h2>
+                                    <p style={{ color: '#717171', marginBottom: '32px', maxWidth: '400px' }}>
+                                        It looks like you were in the middle of creating a listing. 
+                                        {draftData?.data?.title && <span> for <strong>{draftData.data.title}</strong></span>}
+                                    </p>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '300px' }}>
+                                        <button 
+                                            onClick={handleResumeDraft}
+                                            className="next-btn-premium"
+                                            style={{ width: '100%', padding: '14px', borderRadius: '12px' }}
+                                        >
+                                            Resume listing
+                                        </button>
+                                        <button 
+                                            onClick={handleStartFresh}
+                                            style={{ 
+                                                background: 'none', 
+                                                border: '1px solid #ddd', 
+                                                color: '#222', 
+                                                padding: '12px', 
+                                                borderRadius: '12px',
+                                                cursor: 'pointer',
+                                                fontSize: '14px'
+                                            }}
+                                        >
+                                            Start a new listing
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                renderStepContent()
+                            )}
+                        </AnimatePresence>
+                    )}
+                </div>
                 </div>
 
+                {!showResumePrompt && (
                 <div 
                     className="modal-footer-premium"
                     style={{ '--progress-width': `${((currentStep + 1) / STEPS.length) * 100}%` }}
@@ -1406,10 +1607,11 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                     <button 
                         onClick={() => {
                             if (currentStep === 0) {
-                                // If at Category Selection, going back might mean going to Dashboard
-                                window.history.back(); // Or onClose() if provided
+                                window.history.back();
                             } else {
-                                setCurrentStep(prev => prev - 1);
+                                const prevStep = currentStep - 1;
+                                setCurrentStep(prevStep);
+                                saveCurrentProgress(formData, prevStep);
                             }
                         }}
                         className="back-btn-premium"
@@ -1419,7 +1621,11 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                     
                     {currentStep < STEPS.length - 1 ? (
                         <button 
-                            onClick={() => setCurrentStep(prev => prev + 1)}
+                            onClick={() => {
+                                const nextStep = currentStep + 1;
+                                setCurrentStep(nextStep);
+                                saveCurrentProgress(formData, nextStep);
+                            }}
                             className="next-btn-premium"
                             disabled={!validateStep(currentStep)} 
                         >
@@ -1439,6 +1645,7 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                         </button>
                     )}
                 </div>
+                )}
             </div>
         );
     }
@@ -1472,42 +1679,109 @@ const ShortStayForm = ({ onClose, initialData = null }) => {
                 </div>
 
                 <div className="modal-body-premium">
-                    <AnimatePresence mode="wait">
-                        {renderStepContent()}
-                    </AnimatePresence>
-                </div>
-
-                <div className="modal-footer-premium">
-                    <button 
-                        disabled={currentStep === 0} 
-                        onClick={() => setCurrentStep(prev => prev - 1)}
-                        className="back-btn-premium"
-                    >
-                        <FaArrowLeft /> Back
-                    </button>
-                    
-                    {currentStep < STEPS.length - 1 ? (
-                        <button 
-                            onClick={() => setCurrentStep(prev => prev + 1)}
-                            className="next-btn-premium"
-                            disabled={!validateStep(currentStep)}
-                        >
-                            Next <FaArrowRight />
-                        </button>
+                    {checkingDraft ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px' }}>
+                            <div className="loading-spinner-small" />
+                        </div>
                     ) : (
-                        <button 
-                            onClick={handleSubmit} 
-                            disabled={loading || !validateStep(currentStep)}
-                            className="submit-btn-premium"
-                        >
-                            {loading ? (
-                                <span className="loading-spinner-small" />
-                            ) : (
-                                <>List Property <FaCheck /></>
-                            )}
-                        </button>
+                    <AnimatePresence mode="wait">
+                        {showResumePrompt ? (
+                            <motion.div 
+                                key="resume-prompt"
+                                variants={stepVariants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="resume-prompt-container"
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center',
+                                    padding: '40px 20px',
+                                    height: '100%'
+                                }}
+                            >
+                                <div className="welcome-icon" style={{ fontSize: '48px', marginBottom: '20px' }}>👋</div>
+                                <h2 style={{ fontSize: '28px', marginBottom: '12px', color: '#fff' }}>Welcome back</h2>
+                                <p style={{ color: '#94a3b8', marginBottom: '32px', maxWidth: '400px' }}>
+                                    It looks like you were in the middle of creating a listing. 
+                                    {draftData?.data?.title && <span> for <strong>{draftData.data.title}</strong></span>}
+                                </p>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '300px' }}>
+                                    <button 
+                                        onClick={handleResumeDraft}
+                                        className="next-btn-premium"
+                                        style={{ width: '100%', padding: '14px', borderRadius: '12px' }}
+                                    >
+                                        Resume listing
+                                    </button>
+                                    <button 
+                                        onClick={handleStartFresh}
+                                        style={{ 
+                                            background: 'none', 
+                                            border: '1px solid rgba(255,255,255,0.1)', 
+                                            color: '#fff', 
+                                            padding: '12px', 
+                                            borderRadius: '12px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        Start a new listing
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            renderStepContent()
+                        )}
+                    </AnimatePresence>
                     )}
                 </div>
+
+                {!showResumePrompt && (
+                    <div className="modal-footer-premium">
+                        <button 
+                            disabled={currentStep === 0} 
+                            onClick={() => {
+                                const prevStep = currentStep - 1;
+                                setCurrentStep(prevStep);
+                                saveCurrentProgress(formData, prevStep);
+                            }}
+                            className="back-btn-premium"
+                        >
+                            <FaArrowLeft /> Back
+                        </button>
+                        
+                        {currentStep < STEPS.length - 1 ? (
+                            <button 
+                                onClick={() => {
+                                    const nextStep = currentStep + 1;
+                                    setCurrentStep(nextStep);
+                                    saveCurrentProgress(formData, nextStep);
+                                }}
+                                className="next-btn-premium"
+                                disabled={!validateStep(currentStep)}
+                            >
+                                Next <FaArrowRight />
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={handleSubmit} 
+                                disabled={loading || !validateStep(currentStep)}
+                                className="submit-btn-premium"
+                            >
+                                {loading ? (
+                                    <span className="loading-spinner-small" />
+                                ) : (
+                                    <>List Property <FaCheck /></>
+                                )}
+                            </button>
+                        )}
+                    </div>
+                )}
             </motion.div>
         </div>
     );
