@@ -620,7 +620,12 @@ const AdminLiveGrouping = () => {
 
           const unitsMap = {};
           if (t.units) {
-            t.units.forEach(u => {
+            // Natural sort units by unit_number to ensure sequence (B-1, B-2... B-10)
+            const sortedUnits = [...t.units].sort((a, b) =>
+              (a.unit_number || "").localeCompare(b.unit_number || "", undefined, { numeric: true, sensitivity: 'base' })
+            );
+
+            sortedUnits.forEach(u => {
               const floor = u.floor_number;
               if (!unitsMap[floor]) unitsMap[floor] = [];
               unitsMap[floor].push({
@@ -1096,7 +1101,7 @@ const AdminLiveGrouping = () => {
 
       <div className="admin-header-v2">
         <div className="header-content">
-          <h1>Live Grouping <span className="badge">Data Driven</span></h1>
+          <h1>Live Grouping</h1>
           <p>Create and manage projects with dynamic tower and unit hierarchies.</p>
         </div>
         {viewMode === 'list' && (
