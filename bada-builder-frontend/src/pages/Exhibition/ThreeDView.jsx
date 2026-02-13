@@ -300,14 +300,14 @@ const SharedTwinVilla = ({ position, index, units, onUnitClick }) => {
                         </group>
                     </group>
                     <group position={[-WALL_W / 2 + 2.5, 0, WALL_D / 2 + 0.05]}>
-                        <mesh castShadow><boxGeometry args={[2.5, 1.8, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                        <mesh castShadow><boxGeometry args={[2.5, 1.8, 0.2]} /><meshStandardMaterial color="#87CEEB" /></mesh>
                         <mesh position={[0, -0.9, 0.1]}><boxGeometry args={[2.7, 0.1, 0.3]} /><meshStandardMaterial color={v.accent} /></mesh>
-                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[2.2, 1.5, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.6} /></mesh>
+                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[2.2, 1.5, 0.05]} /><meshStandardMaterial color="#87CEEB" transparent opacity={0.6} /></mesh>
                     </group>
                     {/* Side Windows */}
                     <group position={[-WALL_W / 2 - 0.05, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
-                        <mesh castShadow><boxGeometry args={[2.0, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
-                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.7, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                        <mesh castShadow><boxGeometry args={[2.0, 1.5, 0.2]} /><meshStandardMaterial color="#87CEEB" /></mesh>
+                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.7, 1.2, 0.05]} /><meshStandardMaterial color="#87CEEB" transparent opacity={0.5} /></mesh>
                     </group>
                 </group>
 
@@ -359,14 +359,14 @@ const SharedTwinVilla = ({ position, index, units, onUnitClick }) => {
                             </group>
                         </group>
                         <group position={[WALL_W / 2 - 2.5, 0, WALL_D / 2 + 0.05]}>
-                            <mesh castShadow><boxGeometry args={[2.5, 1.8, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                            <mesh castShadow><boxGeometry args={[2.5, 1.8, 0.2]} /><meshStandardMaterial color="#87CEEB" /></mesh>
                             <mesh position={[0, -0.9, 0.1]}><boxGeometry args={[2.7, 0.1, 0.3]} /><meshStandardMaterial color={v.accent} /></mesh>
-                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[2.2, 1.5, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.6} /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[2.2, 1.5, 0.05]} /><meshStandardMaterial color="#87CEEB" transparent opacity={0.6} /></mesh>
                         </group>
                         {/* Side Windows */}
                         <group position={[WALL_W / 2 + 0.05, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-                            <mesh castShadow><boxGeometry args={[2.0, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
-                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.7, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                            <mesh castShadow><boxGeometry args={[2.0, 1.5, 0.2]} /><meshStandardMaterial color="#87CEEB" /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.7, 1.2, 0.05]} /><meshStandardMaterial color="#87CEEB" transparent opacity={0.5} /></mesh>
                         </group>
                         <group position={[0, WALL_H / 2 + 3, 0]}>
                             <Text fontSize={1} color={hoveredRight ? "#3b82f6" : "#1e293b"} outlineWidth={0.05} outlineColor="white">
@@ -1210,10 +1210,10 @@ const Bungalow = ({ position, index, unit, onUnitClick }) => {
                 {/* 5. Window Assemblies */}
                 {[-3.2, 3.2].map((x, i) => (
                     <group key={`win-f-${i}`} position={[x, PLINTH_HEIGHT + WALL_H * 0.55, WALL_D / 2 + 0.05]}>
-                        <mesh castShadow><boxGeometry args={[1.5, 1.8, 0.2]} /><meshStandardMaterial color="white" /></mesh>
+                        <mesh castShadow><boxGeometry args={[1.5, 1.8, 0.2]} /><meshStandardMaterial color="#87CEEB" /></mesh>
                         <mesh position={[0, -0.9, 0.1]}><boxGeometry args={[1.7, 0.1, 0.3]} /><meshStandardMaterial color={v.accent} /></mesh>
                         <mesh position={[0, 0.9, 0.1]}><boxGeometry args={[1.6, 0.15, 0.25]} /><meshStandardMaterial color={v.accent} /></mesh>
-                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.5, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.6} metalness={0.6} /></mesh>
+                        <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.5, 0.05]} /><meshStandardMaterial color="#87CEEB" transparent opacity={0.6} metalness={0.6} /></mesh>
                     </group>
                 ))}
 
@@ -1221,12 +1221,12 @@ const Bungalow = ({ position, index, unit, onUnitClick }) => {
                 {[-2.5, 2.5].map((z, i) => (
                     <group key={`win-side-${i}`}>
                         <group position={[WALL_W / 2 + 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, Math.PI / 2, 0]}>
-                            <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
-                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                            <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="#87CEEB" /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87CEEB" transparent opacity={0.5} /></mesh>
                         </group>
                         <group position={[-WALL_W / 2 - 0.05, PLINTH_HEIGHT + WALL_H * 0.55, z]} rotation={[0, -Math.PI / 2, 0]}>
-                            <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="white" /></mesh>
-                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.5} /></mesh>
+                            <mesh castShadow><boxGeometry args={[1.5, 1.5, 0.2]} /><meshStandardMaterial color="#87CEEB" /></mesh>
+                            <mesh position={[0, 0, 0.06]}><boxGeometry args={[1.2, 1.2, 0.05]} /><meshStandardMaterial color="#87CEEB" transparent opacity={0.5} /></mesh>
                         </group>
                     </group>
                 ))}
