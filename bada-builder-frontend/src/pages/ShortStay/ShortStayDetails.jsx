@@ -460,7 +460,7 @@ const ShortStayDetails = () => {
 
                 
                 // Default select cheapest room for hotels or properties with multi-inventory
-                if ((propertyData.category === 'hotel' || propertyData.specific_details?.hasMultiInventory) && propertyData.specific_details?.roomTypes?.length > 0) {
+                if (!selectedRoom && (propertyData.category === 'hotel' || propertyData.specific_details?.hasMultiInventory) && propertyData.specific_details?.roomTypes?.length > 0) {
                     const rooms = propertyData.specific_details.roomTypes;
                     // Find room with minimum price
                     const cheapestRoom = rooms.reduce((prev, curr) => {
@@ -487,6 +487,10 @@ const ShortStayDetails = () => {
         };
         if (id) fetchData();
 
+    }, [id, user]);
+    
+    // Guest dropdown click-outside listener
+    useEffect(() => {
         const handleClickOutside = (event) => {
             if (showGuestDropdown && !event.target.closest('.booking-form-container')) {
                 setShowGuestDropdown(false);
@@ -494,7 +498,7 @@ const ShortStayDetails = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [id, user, showGuestDropdown]);
+    }, [showGuestDropdown]);
 
     const handleToggleFavorite = async () => {
         if (!user) {
