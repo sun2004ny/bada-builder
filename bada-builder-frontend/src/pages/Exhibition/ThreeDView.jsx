@@ -1997,6 +1997,95 @@ const ThreeDView = () => {
         setMovement(prev => ({ ...prev, [dir]: active }));
     };
 
+    // State for Draggable Inventory (Desktop)
+    const [inventoryPosition, setInventoryPosition] = useState({ x: 24, y: window.innerHeight - 180 }); // Initial approx position (bottom-left)
+    const [isDraggingInventory, setIsDraggingInventory] = useState(false);
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const inventoryRef = useRef(null);
+
+    // Initial positioning effect
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setInventoryPosition(prev => {
+                    // Check if current position is off-screen (e.g. window shrunk)
+                    // If Y is > window.innerHeight - 100, clamp it
+                    if (prev.y > window.innerHeight - 100) {
+                        return { ...prev, y: Math.max(100, window.innerHeight - 250) };
+                    }
+                    return prev;
+                });
+            }
+        };
+
+        // Set initial position more accurately after mount
+        const setInitialSafePosition = () => {
+            if (window.innerWidth >= 1024) {
+                // Estimate card height (approx 220px inc legend)
+                // Safe zone: Bottom 120px to prevent being hidden/cut-off
+                const safeBottomMargin = 70;
+                const estimatedCardHeight = 220;
+
+                const safeY = window.innerHeight - estimatedCardHeight - safeBottomMargin;
+
+                // Ensure it's not too high up either (min 100px from top)
+                setInventoryPosition({ x: 24, y: Math.max(100, safeY) });
+            }
+        };
+
+        setInitialSafePosition();
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Global Mouse Event Handlers for Dragging
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDraggingInventory) return;
+
+            const newX = e.clientX - dragOffset.x;
+            const newY = e.clientY - dragOffset.y;
+
+            // Simple boundary constraints
+            const maxX = window.innerWidth - 50;
+            const maxY = window.innerHeight - 50;
+
+            setInventoryPosition({
+                x: Math.min(Math.max(0, newX), maxX),
+                y: Math.min(Math.max(0, newY), maxY)
+            });
+        };
+
+        const handleMouseUp = () => {
+            setIsDraggingInventory(false);
+        };
+
+        if (isDraggingInventory) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDraggingInventory, dragOffset]);
+
+    const handleInventoryMouseDown = (e) => {
+        if (window.innerWidth < 1024) return; // Desktop only
+
+        // Prevent drag if clicking buttons inside
+        if (e.target.closest('button') || e.target.closest('.no-drag')) return;
+
+        setIsDraggingInventory(true);
+
+        setDragOffset({
+            x: e.clientX - inventoryPosition.x,
+            y: e.clientY - inventoryPosition.y
+        });
+    };
+
     const fetchHierarchy = useCallback(async () => {
         try {
             console.log('📡 Fetching Hierarchy for Property ID:', property?.id);
@@ -2212,10 +2301,10 @@ const ThreeDView = () => {
     if (!project) return <div className="error-container"><h3>Project not found</h3><button onClick={() => navigate(-1)}>Go Back</button></div>;
 
     return (
-        <div className="relative w-full h-screen bg-[#0f172a] overflow-hidden p-4 md:p-12 lg:p-16">
-            <div className="relative w-full h-full rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.6)] bg-slate-900">
+        <div className="mobile-3d-wrapper viewer-wrapper main-page-wrapper relative w-full h-screen bg-[#0f172a] overflow-hidden p-4 md:p-12 lg:p-16">
+            <div className="mobile-inner-frame three-container relative w-full h-full rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.6)] bg-slate-900">
                 {/* Header Overlay */}
-                <div className="absolute top-0 left-0 w-full z-50 p-4 md:p-6 bg-gradient-to-b from-slate-900/90 via-slate-900/40 to-transparent pointer-events-none text-shadow-sm flex flex-col gap-4">
+                <div className="mobile-top-controls absolute top-0 left-0 w-full z-50 p-4 md:p-6 bg-gradient-to-b from-slate-900/90 via-slate-900/40 to-transparent pointer-events-none text-shadow-sm flex flex-col gap-4">
                     {/* Top Row: Back Button & View Toggle */}
                     <div className="flex items-center justify-between w-full pointer-events-auto">
                         <div className="flex items-center gap-3">
@@ -2235,8 +2324,8 @@ const ThreeDView = () => {
                             {/* Project Info (Desktop only, next to back button) */}
                             {viewMode === '3d' && (
                                 <div className="hidden md:block !text-white">
-                                    <h1 className="text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
-                                    <p className="text-sm !text-slate-200 font-medium flex items-center gap-2">
+                                    <h1 className="project-title text-2xl font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
+                                    <p className="units-count text-sm !text-slate-200 font-medium flex items-center gap-2">
                                         {project.location} • {project.total_slots} Units
                                     </p>
                                 </div>
@@ -2279,8 +2368,8 @@ const ThreeDView = () => {
                     {/* Mobile Only Title (Beneath controls to avoid row crowding) */}
                     {viewMode === '3d' && (
                         <div className="md:hidden !text-white pointer-events-none px-1">
-                            <h1 className="text-lg font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
-                            <p className="text-[10px] !text-slate-200 font-medium flex items-center gap-2">
+                            <h1 className="project-title text-lg font-bold tracking-tight drop-shadow-md leading-tight !text-white">{project.title}</h1>
+                            <p className="units-count text-[10px] !text-slate-200 font-medium flex items-center gap-2">
                                 {project.location} • {project.total_slots} Units
                             </p>
                         </div>
@@ -2368,9 +2457,22 @@ const ThreeDView = () => {
                 )}
 
                 {/* UI Component Container (Live Inventory) */}
-                <div className="absolute bottom-6 left-6 z-[60] flex flex-col gap-4 items-start pointer-events-none">
+                <div
+                    ref={inventoryRef}
+                    className={`absolute z-[60] flex flex-col gap-4 items-start ${isDraggingInventory ? 'cursor-grabbing' : 'cursor-grab'} ${window.innerWidth < 1024 ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                    style={{
+                        left: window.innerWidth >= 1024 ? `${inventoryPosition.x}px` : undefined,
+                        top: window.innerWidth >= 1024 ? `${inventoryPosition.y}px` : undefined,
+                        bottom: window.innerWidth < 1024 ? '1.5rem' : undefined,
+                        // If on mobile, use original positioning constraints
+                        ...(window.innerWidth < 1024 ? { left: '1.5rem' } : {}),
+                        transform: window.innerWidth >= 1024 && !inventoryPosition.x && !inventoryPosition.y ? 'none' : undefined, // Initial render check
+                        zIndex: isDraggingInventory ? 100 : 60
+                    }}
+                    onMouseDown={handleInventoryMouseDown}
+                >
                     {/* Legend Overlay */}
-                    <div className="bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-white/40 pointer-events-auto transform transition-transform hover:scale-[1.02] hidden sm:block w-fit">
+                    <div className="bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-white/40 pointer-events-auto transform transition-transform hover:scale-[1.02] hidden sm:block w-fit select-none">
                         <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-1.5 px-0.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500/80 animate-pulse"></div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">Live Inventory</p>
@@ -2789,173 +2891,175 @@ const ThreeDView = () => {
                 {/* 3D Canvas */}
                 {
                     viewMode === '3d' && (
-                        <Canvas
-                            shadows={property?.type !== 'Plot'}
-                            className="w-full h-full"
-                            style={{ background: property?.type === 'Plot' ? '#4d7c32' : '#0f172a' }}
-                            frameloop="always"
-                        >
-                            <PerspectiveCamera
-                                makeDefault
-                                position={project?.type === 'Plot' ? [40, 30, 40] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [40, 20, 50] : [50, 50, 100]}
-                                fov={40}
-                            />
-                            <Sky sunPosition={[100, 20, 50]} />
-                            <ambientLight intensity={0.7} />
-                            <directionalLight
-                                position={[50, 100, 50]}
-                                intensity={1.5}
-                                castShadow
-                                shadow-mapSize={[2048, 2048]}
-                            />
-                            <OrbitControls
-                                ref={controlsRef}
-                                target={project?.type === 'Plot' ? [0, 0, 0] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
-                                maxPolarAngle={Math.PI / 2.1}
-                                enableDamping={true}
-                                dampingFactor={0.12} // Increased for snappier stops
-                                rotateSpeed={0.5}   // Reduced sensitivity
-                                panSpeed={0.5}      // Reduced sensitivity
-                                zoomSpeed={0.7}     // Reduced sensitivity
-                            />
-                            <CameraController movement={movement} controlsRef={controlsRef} />
+                        <div className="three-canvas-container w-full h-full">
+                            <Canvas
+                                shadows={property?.type !== 'Plot'}
+                                className="w-full h-full"
+                                style={{ background: property?.type === 'Plot' ? '#4d7c32' : '#0f172a' }}
+                                frameloop="always"
+                            >
+                                <PerspectiveCamera
+                                    makeDefault
+                                    position={project?.type === 'Plot' ? [40, 30, 40] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [40, 20, 50] : [50, 50, 100]}
+                                    fov={40}
+                                />
+                                <Sky sunPosition={[100, 20, 50]} />
+                                <ambientLight intensity={0.7} />
+                                <directionalLight
+                                    position={[50, 100, 50]}
+                                    intensity={1.5}
+                                    castShadow
+                                    shadow-mapSize={[2048, 2048]}
+                                />
+                                <OrbitControls
+                                    ref={controlsRef}
+                                    target={project?.type === 'Plot' ? [0, 0, 0] : (property?.type === 'Bungalow' || property?.type === 'Twin Villa') ? [0, 3, 0] : [0, (project.towers[0]?.total_floors || 5) * 1.25, 0]}
+                                    maxPolarAngle={Math.PI / 2.1}
+                                    enableDamping={true}
+                                    dampingFactor={0.12} // Increased for snappier stops
+                                    rotateSpeed={0.5}   // Reduced sensitivity
+                                    panSpeed={0.5}      // Reduced sensitivity
+                                    zoomSpeed={0.7}     // Reduced sensitivity
+                                />
+                                <CameraController movement={movement} controlsRef={controlsRef} />
 
-                            {/* Visualization Bridge: Directing to specialized colony builders */}
-                            {(() => {
-                                // 1. Mixed-Project Detection (Safer Version)
-                                const projectType = (project?.type || "").toLowerCase();
-                                const isMixedProject =
-                                    projectType === "mixeduse" ||
-                                    projectType === "mixed" ||
-                                    project?.project_type === "mixed" ||
-                                    (project?.mixedUseSelectedTypes && project.mixedUseSelectedTypes.length > 0) ||
-                                    (project?.mixed_use_selected_types && project.mixed_use_selected_types.length > 0);
+                                {/* Visualization Bridge: Directing to specialized colony builders */}
+                                {(() => {
+                                    // 1. Mixed-Project Detection (Safer Version)
+                                    const projectType = (project?.type || "").toLowerCase();
+                                    const isMixedProject =
+                                        projectType === "mixeduse" ||
+                                        projectType === "mixed" ||
+                                        project?.project_type === "mixed" ||
+                                        (project?.mixedUseSelectedTypes && project.mixedUseSelectedTypes.length > 0) ||
+                                        (project?.mixed_use_selected_types && project.mixed_use_selected_types.length > 0);
 
-                                // 🟢 RENDER MODE SWITCH (MANDATORY ISOLATION)
-                                if (!isMixedProject) {
-                                    // KEEP ALL EXISTING LOGIC EXACTLY SAME
-                                    const typeNorm = (property?.type || '').toLowerCase().trim();
-                                    const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
-                                    const isCommercial = typeNorm.includes('commercial');
+                                    // 🟢 RENDER MODE SWITCH (MANDATORY ISOLATION)
+                                    if (!isMixedProject) {
+                                        // KEEP ALL EXISTING LOGIC EXACTLY SAME
+                                        const typeNorm = (property?.type || '').toLowerCase().trim();
+                                        const isApartment = typeNorm.includes('apartment') || typeNorm.includes('flat') || typeNorm.includes('tower');
+                                        const isCommercial = typeNorm.includes('commercial');
 
-                                    if (isCommercial) {
-                                        return <CommercialColony position={[0, 0, 0]} project={project} onUnitClick={handleUnitClick} />;
+                                        if (isCommercial) {
+                                            return <CommercialColony position={[0, 0, 0]} project={project} onUnitClick={handleUnitClick} />;
+                                        }
+
+                                        if (!isApartment) {
+                                            return <ResidentialColony position={[0, 0, 0]} propertyData={property} project={project} onUnitClick={handleUnitClick} />;
+                                        }
+
+                                        return (
+                                            <group>
+                                                {project.towers.map((tower, idx) => {
+                                                    const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
+                                                    const lowestFloor = (tower.units || []).reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 1);
+                                                    return (
+                                                        <Tower
+                                                            key={tower.id || idx}
+                                                            tower={tower}
+                                                            position={[posX, 0, 0]}
+                                                            onUnitClick={handleUnitClick}
+                                                            lowestFloor={lowestFloor}
+                                                        />
+                                                    );
+                                                })}
+                                            </group>
+                                        );
                                     }
 
-                                    if (!isApartment) {
-                                        return <ResidentialColony position={[0, 0, 0]} propertyData={property} project={project} onUnitClick={handleUnitClick} />;
-                                    }
+                                    // 🧩 Only when mixed: Unified Structure
+                                    if (isMixedProject) {
+                                        console.log("IS MIXED PROJECT:", true, project?.type);
 
-                                    return (
-                                        <group>
-                                            {project.towers.map((tower, idx) => {
-                                                const posX = (idx - (project.towers.length - 1) / 2) * TOWER_SPACING;
-                                                const lowestFloor = (tower.units || []).reduce((min, u) => Math.min(min, parseInt(u.floor_number)), 1);
-                                                return (
-                                                    <Tower
-                                                        key={tower.id || idx}
-                                                        tower={tower}
-                                                        position={[posX, 0, 0]}
-                                                        onUnitClick={handleUnitClick}
-                                                        lowestFloor={lowestFloor}
-                                                    />
-                                                );
-                                            })}
-                                        </group>
-                                    );
-                                }
+                                        // Aggregation Logic: Group Apartments into Towers, keep Land-based as individual units
+                                        // Aggregation Logic: Natural Sort + Grouping
+                                        const naturalSort = (a, b) => {
+                                            return (a.unit_number || "").localeCompare(b.unit_number || "", undefined, { numeric: true, sensitivity: 'base' });
+                                        };
 
-                                // 🧩 Only when mixed: Unified Structure
-                                if (isMixedProject) {
-                                    console.log("IS MIXED PROJECT:", true, project?.type);
+                                        const towers = (project.towers || []);
+                                        const apartmentTowers = towers.filter(t => {
+                                            const type = (t.property_type || t.section_type || "").toLowerCase();
+                                            return type.includes('apartment') || type.includes('flat');
+                                        });
 
-                                    // Aggregation Logic: Group Apartments into Towers, keep Land-based as individual units
-                                    // Aggregation Logic: Natural Sort + Grouping
-                                    const naturalSort = (a, b) => {
-                                        return (a.unit_number || "").localeCompare(b.unit_number || "", undefined, { numeric: true, sensitivity: 'base' });
-                                    };
+                                        const landTowers = towers.filter(t => {
+                                            const type = (t.property_type || t.section_type || "").toLowerCase();
+                                            return !type.includes('apartment') && !type.includes('flat');
+                                        });
 
-                                    const towers = (project.towers || []);
-                                    const apartmentTowers = towers.filter(t => {
-                                        const type = (t.property_type || t.section_type || "").toLowerCase();
-                                        return type.includes('apartment') || type.includes('flat');
-                                    });
+                                        // 1. Process Apartments (Grouped by Tower)
+                                        const apartmentObjects = apartmentTowers.map(tower => ({
+                                            id: tower.tower_id || tower.id,
+                                            isGrouped: true,
+                                            property_type: 'Apartment',
+                                            tower_name: tower.tower_name,
+                                            total_floors: tower.total_floors,
+                                            units: tower.units || []
+                                        }));
 
-                                    const landTowers = towers.filter(t => {
-                                        const type = (t.property_type || t.section_type || "").toLowerCase();
-                                        return !type.includes('apartment') && !type.includes('flat');
-                                    });
+                                        // 2. Process Land Units (Sorted Alphanumerically)
+                                        const allLandUnits = landTowers.flatMap(tower => {
+                                            const sectionType = (tower.property_type || tower.section_type || project.default_property_type || "").toLowerCase();
+                                            return (tower.units || []).map(u => ({ ...u, sectionType }));
+                                        }).sort(naturalSort);
 
-                                    // 1. Process Apartments (Grouped by Tower)
-                                    const apartmentObjects = apartmentTowers.map(tower => ({
-                                        id: tower.tower_id || tower.id,
-                                        isGrouped: true,
-                                        property_type: 'Apartment',
-                                        tower_name: tower.tower_name,
-                                        total_floors: tower.total_floors,
-                                        units: tower.units || []
-                                    }));
+                                        const landObjects = [];
+                                        let i = 0;
+                                        while (i < allLandUnits.length) {
+                                            const unit = allLandUnits[i];
+                                            const sectionType = unit.sectionType;
+                                            const unitType = (unit.unit_type || unit.property_type || sectionType || "").toLowerCase();
 
-                                    // 2. Process Land Units (Sorted Alphanumerically)
-                                    const allLandUnits = landTowers.flatMap(tower => {
-                                        const sectionType = (tower.property_type || tower.section_type || project.default_property_type || "").toLowerCase();
-                                        return (tower.units || []).map(u => ({ ...u, sectionType }));
-                                    }).sort(naturalSort);
+                                            if (unitType.includes('twin villa')) {
+                                                const nextUnit = allLandUnits[i + 1];
+                                                const nextType = nextUnit ? (nextUnit.unit_type || nextUnit.property_type || nextUnit.sectionType || "").toLowerCase() : "";
 
-                                    const landObjects = [];
-                                    let i = 0;
-                                    while (i < allLandUnits.length) {
-                                        const unit = allLandUnits[i];
-                                        const sectionType = unit.sectionType;
-                                        const unitType = (unit.unit_type || unit.property_type || sectionType || "").toLowerCase();
-
-                                        if (unitType.includes('twin villa')) {
-                                            const nextUnit = allLandUnits[i + 1];
-                                            const nextType = nextUnit ? (nextUnit.unit_type || nextUnit.property_type || nextUnit.sectionType || "").toLowerCase() : "";
-
-                                            if (nextType.includes('twin villa')) {
-                                                landObjects.push({
-                                                    id: `twin-${unit.id}-${i}`,
-                                                    isGrouped: true,
-                                                    property_type: 'Twin Villa',
-                                                    units: [unit, nextUnit]
-                                                });
-                                                i += 2;
+                                                if (nextType.includes('twin villa')) {
+                                                    landObjects.push({
+                                                        id: `twin-${unit.id}-${i}`,
+                                                        isGrouped: true,
+                                                        property_type: 'Twin Villa',
+                                                        units: [unit, nextUnit]
+                                                    });
+                                                    i += 2;
+                                                } else {
+                                                    landObjects.push({
+                                                        id: `twin-${unit.id}-${i}`,
+                                                        isGrouped: true,
+                                                        property_type: 'Twin Villa',
+                                                        units: [unit]
+                                                    });
+                                                    i += 1;
+                                                }
                                             } else {
                                                 landObjects.push({
-                                                    id: `twin-${unit.id}-${i}`,
-                                                    isGrouped: true,
-                                                    property_type: 'Twin Villa',
-                                                    units: [unit]
+                                                    ...unit,
+                                                    property_type: unit.unit_type || unit.property_type || sectionType || null
                                                 });
                                                 i += 1;
                                             }
-                                        } else {
-                                            landObjects.push({
-                                                ...unit,
-                                                property_type: unit.unit_type || unit.property_type || sectionType || null
-                                            });
-                                            i += 1;
                                         }
+
+                                        // Combined result: Land units first (for ground access), then Towers?
+                                        // Or follow user preference: land units usually at the front.
+                                        const renderObjects = [...landObjects, ...apartmentObjects];
+
+                                        console.log("GRID DATA →", renderObjects);
+
+                                        return <MixedUseColony units={renderObjects} onUnitClick={handleUnitClick} />;
                                     }
+                                })()}
 
-                                    // Combined result: Land units first (for ground access), then Towers?
-                                    // Or follow user preference: land units usually at the front.
-                                    const renderObjects = [...landObjects, ...apartmentObjects];
-
-                                    console.log("GRID DATA →", renderObjects);
-
-                                    return <MixedUseColony units={renderObjects} onUnitClick={handleUnitClick} />;
-                                }
-                            })()}
-
-                            {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
-                            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-                                <planeGeometry args={[1000, 1000]} />
-                                <meshStandardMaterial color="#e2e8f0" />
-                            </mesh>
-                            <gridHelper args={[200, 40]} position={[0, -0.4, 0]} colorCenterLine="#94a3b8" />
-                        </Canvas>
+                                {/* Ground Grid - Reset to 0 as Pillars now touch 0 */}
+                                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+                                    <planeGeometry args={[1000, 1000]} />
+                                    <meshStandardMaterial color="#e2e8f0" />
+                                </mesh>
+                                <gridHelper args={[200, 40]} position={[0, -0.4, 0]} colorCenterLine="#94a3b8" />
+                            </Canvas>
+                        </div>
                     )
                 }
 
