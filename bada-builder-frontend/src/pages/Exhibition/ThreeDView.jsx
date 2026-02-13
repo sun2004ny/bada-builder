@@ -2301,7 +2301,7 @@ const ThreeDView = () => {
     if (!project) return <div className="error-container"><h3>Project not found</h3><button onClick={() => navigate(-1)}>Go Back</button></div>;
 
     return (
-        <div className="mobile-3d-wrapper viewer-wrapper main-page-wrapper relative w-full h-screen bg-[#0f172a] overflow-hidden p-4 md:p-12 lg:p-16">
+        <div className="mobile-3d-wrapper viewer-wrapper main-page-wrapper relative w-full h-screen bg-[#0f172a] overflow-y-auto lg:overflow-hidden p-4 md:p-12 lg:p-16">
             <div className="mobile-inner-frame three-container relative w-full h-full rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.6)] bg-slate-900">
                 {/* Header Overlay */}
                 <div className="mobile-top-controls absolute top-0 left-0 w-full z-50 p-4 md:p-6 bg-gradient-to-b from-slate-900/90 via-slate-900/40 to-transparent pointer-events-none text-shadow-sm flex flex-col gap-4">
@@ -2456,23 +2456,20 @@ const ThreeDView = () => {
                     </div>
                 )}
 
-                {/* UI Component Container (Live Inventory) */}
+                {/* UI Component Container (Live Inventory) - Desktop Only */}
                 <div
                     ref={inventoryRef}
-                    className={`absolute z-[60] flex flex-col gap-4 items-start ${isDraggingInventory ? 'cursor-grabbing' : 'cursor-grab'} ${window.innerWidth < 1024 ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                    className={`absolute z-[60] flex-col gap-4 items-start hidden lg:flex ${isDraggingInventory ? 'cursor-grabbing' : 'cursor-grab'}`}
                     style={{
-                        left: window.innerWidth >= 1024 ? `${inventoryPosition.x}px` : undefined,
-                        top: window.innerWidth >= 1024 ? `${inventoryPosition.y}px` : undefined,
-                        bottom: window.innerWidth < 1024 ? '1.5rem' : undefined,
-                        // If on mobile, use original positioning constraints
-                        ...(window.innerWidth < 1024 ? { left: '1.5rem' } : {}),
-                        transform: window.innerWidth >= 1024 && !inventoryPosition.x && !inventoryPosition.y ? 'none' : undefined, // Initial render check
+                        left: `${inventoryPosition.x}px`,
+                        top: `${inventoryPosition.y}px`,
+                        transform: !inventoryPosition.x && !inventoryPosition.y ? 'none' : undefined,
                         zIndex: isDraggingInventory ? 100 : 60
                     }}
                     onMouseDown={handleInventoryMouseDown}
                 >
                     {/* Legend Overlay */}
-                    <div className="bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-white/40 pointer-events-auto transform transition-transform hover:scale-[1.02] hidden sm:block w-fit select-none">
+                    <div className="bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-white/40 pointer-events-auto transform transition-transform hover:scale-[1.02] w-fit select-none">
                         <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-1.5 px-0.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500/80 animate-pulse"></div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">Live Inventory</p>
@@ -2494,6 +2491,7 @@ const ThreeDView = () => {
                         </div>
                     </div>
                 </div>
+
 
                 {/* Selection Modal */}
                 {selectedUnit && (
@@ -3074,6 +3072,30 @@ const ThreeDView = () => {
                         </div>
                     )
                 }
+            </div>
+
+            {/* Mobile Only Live Inventory (Static) - OUTSIDE 3D Frame */}
+            <div className="lg:hidden mt-6 w-full max-w-sm mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-8">
+                <div className="flex flex-col items-center gap-3">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Live Inventory</h3>
+                    <div className="flex items-center justify-center gap-4">
+                        {/* Available */}
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            <span className="text-xs font-semibold text-slate-600">Available</span>
+                        </div>
+                        {/* On Hold */}
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                            <span className="text-xs font-semibold text-slate-600">On Hold</span>
+                        </div>
+                        {/* Booked */}
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                            <span className="text-xs font-semibold text-slate-600">Booked</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Full Screen Image Viewer Overlay */}
