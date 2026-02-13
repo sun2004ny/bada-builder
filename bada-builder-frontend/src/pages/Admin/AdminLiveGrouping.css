@@ -984,3 +984,53 @@ select.text-xs {
   background-size: 0.75rem;
   padding-right: 1.5rem !important;
 }
+/* Scoped Unit Card Gallery Styles */
+.unit-gallery-scroller {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.unit-gallery-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.unit-photo-wrapper {
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.unit-photo-wrapper:hover {
+  transform: translateY(-1px);
+}
+
+.unit-photo {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.remove-photo-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 20;
+  opacity: 0.9;
+}
+
+.remove-photo-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.unit-card-image {
+  background-color: #f8fafc;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.unit-card-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}

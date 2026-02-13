@@ -3121,26 +3121,27 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, onReset, globalDefault
                           </span>
                         </div>
                         {((unit.galleryImagePreviews && unit.galleryImagePreviews.length > 0) || (unit.unit_gallery && unit.unit_gallery.length > 0)) && (
-                          <div className="flex gap-1 overflow-x-auto mt-2 pb-1 scrollbar-hide">
+                          <div className="unit-gallery-scroller flex gap-2 overflow-x-auto mt-2 pb-2 scrollbar-hide">
                             {/* Existing Images */}
                             {(unit.unit_gallery || []).map((img, idx) => (
-                              <div key={`exist-${idx}`} className="relative min-w-[40px] h-10 rounded border border-slate-100 bg-slate-50 shrink-0">
-                                <img src={img} alt="Unit" className="w-full h-full object-cover rounded" />
+                              <div key={`exist-${idx}`} className="unit-photo-wrapper relative min-w-[50px] h-12 rounded-lg border border-slate-200 bg-slate-50 shrink-0 shadow-sm overflow-hidden">
+                                <img src={img} alt="Unit" className="unit-photo w-full h-full object-cover" />
                                 <button
                                   onClick={() => {
                                     const newGallery = unit.unit_gallery.filter((_, i) => i !== idx);
                                     onUpdate(uIdx, 'unit_gallery', newGallery);
                                   }}
-                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                                  className="remove-photo-btn absolute top-0.5 right-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-0.5 shadow-md transition-colors"
+                                  title="Remove Photo"
                                 >
-                                  <X size={8} />
+                                  <X size={8} className="stroke-[3px]" />
                                 </button>
                               </div>
                             ))}
                             {/* New Previews */}
                             {(unit.galleryImagePreviews || []).map((prev, idx) => (
-                              <div key={`new-${idx}`} className="relative min-w-[40px] h-10 rounded border border-blue-200 bg-blue-50 shrink-0">
-                                <img src={prev} alt="Unit" className="w-full h-full object-cover rounded" />
+                              <div key={`new-${idx}`} className="unit-photo-wrapper relative min-w-[50px] h-12 rounded-lg border border-blue-200 bg-blue-50 shrink-0 shadow-sm overflow-hidden">
+                                <img src={prev} alt="Unit" className="unit-photo w-full h-full object-cover" />
                                 <button
                                   onClick={() => {
                                     const newFiles = unit.unit_gallery_files.filter((_, i) => i !== idx);
@@ -3150,9 +3151,10 @@ const BungalowGrid = ({ units, onUpdate, onRemove, onAdd, onReset, globalDefault
                                       galleryImagePreviews: newPreviews
                                     });
                                   }}
-                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                                  className="remove-photo-btn absolute top-0.5 right-0.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-full p-0.5 shadow-md transition-colors border border-red-200"
+                                  title="Remove Photo"
                                 >
-                                  <X size={8} />
+                                  <X size={8} className="stroke-[3px]" />
                                 </button>
                               </div>
                             ))}
