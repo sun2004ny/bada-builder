@@ -437,6 +437,11 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.wizard-table th.text-center,
+.wizard-table td.text-center {
+  text-align: center;
+}
+
 .wizard-table td label {
   color: #334155;
   font-size: 0.8rem;
