@@ -1134,6 +1134,41 @@ body.mobile-menu-open {
   }
 }
 
+@media (min-width: 1024px) {
+  .desktop-profile-wrapper {
+    width: 52px;
+    /* Increased size */
+    height: 52px;
+    /* Increased size */
+    padding: 0;
+    /* No padding needed for square wrapper */
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 14px;
+    /* Slightly more rounded for larger size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    margin-left: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    outline: none !important;
+  }
+
+  .desktop-profile-wrapper:hover {
+    background: rgba(88, 51, 94, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .desktop-profile-wrapper:focus,
+  .desktop-profile-wrapper:focus-visible {
+    outline: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  }
+}
+
 /* Password Field Styles (matching Login.css) */
 .password-wrapper {
   position: relative;
@@ -1241,7 +1276,7 @@ body.modal-open {
   border: none !important;
   box-shadow: none !important;
   margin: 0 !important;
-  margin-left: -6px !important;
+  margin-left: 0 !important;
   outline: none !important;
   cursor: pointer;
   display: flex !important;
@@ -1265,7 +1300,8 @@ body.modal-open {
   border-radius: 9999px;
   font-weight: 600;
   font-size: 14px;
-  border: none;
+  border: none !important;
+  outline: none !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -1276,6 +1312,13 @@ body.modal-open {
   background-color: #4a2b4f !important;
   transform: translateY(-1px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.header-login-btn:focus,
+.header-login-btn:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
 
 .header-login-btn:active {
@@ -1320,4 +1363,13 @@ body.modal-open {
 .modal-logout-confirm-btn:disabled {
   background-color: #9ca3af !important;
   cursor: not-allowed;
+}
+
+/* Desktop Navigation Typography Overrides */
+@media (min-width: 1024px) {
+  .nav-link {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+  }
 }

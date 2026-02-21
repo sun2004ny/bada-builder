@@ -7,7 +7,7 @@ const createShortStayReviewsTable = async () => {
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS short_stay_reviews (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         property_id UUID REFERENCES short_stay_properties(id) ON DELETE CASCADE,
         booking_id INTEGER REFERENCES short_stay_reservations(id) ON DELETE CASCADE,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,

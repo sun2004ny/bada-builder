@@ -8,6 +8,7 @@ export const usePreloader = () => useContext(PreloaderContext);
 
 export const PreloaderProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [activeIcon, setActiveIcon] = useState(null);
     const [activeText, setActiveText] = useState('');
     const navigate = useNavigate();
@@ -36,10 +37,10 @@ export const PreloaderProvider = ({ children }) => {
                     setTimeout(() => {
                         setActiveIcon(null);
                         setActiveText('');
-                    }, 300);
-                }, 300); // Main delay before hiding
+                    }, 200);
+                }, 200); // Main delay before hiding
             }
-        }, 400); // 400ms delay for the preloader to show up and stabilize
+        }, 150); // Reduced delay for the preloader to show up and stabilize
     };
 
     // Global Search Detection
@@ -103,8 +104,8 @@ export const PreloaderProvider = ({ children }) => {
                     setTimeout(() => {
                         setActiveText('');
                         setActiveIcon(null);
-                    }, 300);
-                }, 800);
+                    }, 200);
+                }, 400);
             }
         };
 
@@ -115,7 +116,7 @@ export const PreloaderProvider = ({ children }) => {
     }, []);
 
     return (
-        <PreloaderContext.Provider value={{ loading, activeIcon, activeText, triggerPreloader }}>
+        <PreloaderContext.Provider value={{ loading, initialLoading, setInitialLoading, activeIcon, activeText, triggerPreloader }}>
             {children}
         </PreloaderContext.Provider>
     );

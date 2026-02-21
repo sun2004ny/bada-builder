@@ -660,6 +660,48 @@ export const reviewsAPI = {
   },
 };
 
+// ==================== REFER & EARN API ====================
+export const referEarnAPI = {
+  getSettings: async () => {
+    return apiRequest('/refer-earn/settings', { includeAuth: false });
+  },
+
+  updateSettings: async (settings) => {
+    return apiRequest('/refer-earn/settings', {
+      method: 'POST',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  getReferralProperty: async () => {
+    return apiRequest('/refer-earn/referral-property', { includeAuth: false });
+  },
+
+  getPostedProperties: async (publicOnly = false) => {
+    return apiRequest(`/refer-earn/posted-properties${publicOnly ? '?public_only=true' : ''}`, {
+      includeAuth: !publicOnly
+    });
+  },
+
+  postProperty: async (propertyData, imageFile) => {
+    const formData = new FormData();
+    Object.keys(propertyData).forEach(key => {
+      formData.append(key, propertyData[key]);
+    });
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    return uploadFile('/refer-earn/posted-properties', formData);
+  },
+
+  updateVisibility: async (id, isVisible) => {
+    return apiRequest(`/refer-earn/posted-properties/${id}/visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_visible_to_users: isVisible })
+    });
+  },
+};
+
 
 export default {
   authAPI,
@@ -674,5 +716,6 @@ export default {
   favoritesAPI,
   chatAPI,
   reviewsAPI,
+  referEarnAPI,
 };
 

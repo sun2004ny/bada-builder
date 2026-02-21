@@ -83,7 +83,7 @@ export const packages = [
         title: "Sole Selling + Marketing Agent",
         target: "Developers Only",
         icon: <FaHandshake size={24} />,
-        videos: "Unlimited Video Content",
+        videos: "On Progression or Every 10 days",
         price: "4%",
         priceSub: "of project price",
         features: [
@@ -110,7 +110,7 @@ export const packages = [
         title: "Sole Selling + RISG ",
         target: "Developers Only",
         icon: <FaCheckCircle size={24} />,
-        videos: "Unlimited Video Content",
+        videos: "On Progression or Every 10 days",
         price: "8%",
         priceSub: "of project price",
         features: [

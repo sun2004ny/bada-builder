@@ -7,7 +7,7 @@ const createShortStayCalendarTable = async () => {
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS short_stay_calendar (
-                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 property_id UUID REFERENCES short_stay_properties(id) ON DELETE CASCADE,
                 date DATE NOT NULL,
                 price NUMERIC(15, 2),

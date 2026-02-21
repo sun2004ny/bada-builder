@@ -9,6 +9,7 @@ import LeadModal from './components/LeadModal/LeadModal';
 import Chatbot from './components/Chatbot/Chatbot';
 import ScrollToTop from './components/ScrollToTop';
 import { useAuth } from './context/AuthContext';
+import { PreloaderProvider, usePreloader } from './context/PreloaderContext';
 
 import HeroSection from './components/HeroSection/HeroSection';
 import RecommendedProjects from './components/RecommendedProjects/RecommendedProjects';
@@ -94,6 +95,9 @@ import EBITDAreCalculator from './pages/calculator/EBITDAreCalculator';
 import PFFOCalculator from './pages/calculator/PFFOCalculator';
 import DCFCalculator from './pages/calculator/DCFCalculator';
 import NPVCalculator from './pages/calculator/NPVCalculator';
+import ReferEarn from './components/Refer & Earn/ReferEarn';
+import ReferEarnResult from './components/Refer & Earn/ReferEarnResult';
+import PropertyShowcase from './components/Refer & Earn/PropertyShowcase';
 
 
 
@@ -111,10 +115,11 @@ import AdminRedirect from './pages/AdminRedirect';
 import AdminDebug from './pages/AdminDebug';
 import AdminReviews from './pages/Admin/AdminReviews';
 import SiteVisitBookings from './pages/Admin/SiteVisitBookings';
+import ReferEarnManagement from './pages/Admin/ReferEarnManagement';
 
-// Preloader Imports
-import { PreloaderProvider } from './context/PreloaderContext';
+// Preloader Components
 import Preloader from './components/Preloader/Preloader';
+import InitialPreloader from './components/Preloader/InitialPreloader';
 import PageTransition from './components/Motion/PageTransition';
 
 import BookmarkedProperties from './pages/BookmarkedProperties';
@@ -123,6 +128,7 @@ import { FavoritesProvider } from './context/FavoritesContext';
 function AppContent() {
   const [showLeadModal, setShowLeadModal] = useState(false);
   const { currentUser } = useAuth();
+  const { initialLoading } = usePreloader();
   const location = useLocation();
   const isMessagesPage = location.pathname === '/messages';
   const isAdminPanel = location.pathname.startsWith('/admin-panel') || location.pathname.startsWith('/admin');
@@ -167,130 +173,143 @@ function AppContent() {
     <>
       <Toaster position="top-right" reverseOrder={false} />
       <ScrollToTop />
+      <InitialPreloader />
       <Preloader />
-      {!isMessagesPage && !isAdminPanel && <Header />}
-      <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
-      {showChatbot && <Chatbot />}
-      {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
-      <main style={{ minHeight: '100vh' }}>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            {/* Admin Panel Login Route */}
-            <Route path="/admin-panel" element={<AdminLogin />} />
 
-            {/* Admin Panel Routes */}
-            <Route path="/admin" element={<NewAdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="properties" element={<PropertiesManagement />} />
-              <Route path="live-grouping" element={<LiveGroupingManagement />} />
-              <Route path="bada-builder" element={<BadaBuilderManagement />} />
-              <Route path="users" element={<UserManagement />} />
-              <Route path="reviews" element={<AdminReviews />} />
-              <Route path="bookings" element={<SiteVisitBookings />} />
-              <Route path="analytics" element={<AuditLogs />} />
-              <Route path="settings" element={<AuditLogs />} />
-              <Route path="live-grouping-management" element={<AdminLiveGrouping />} />
-            </Route>
+      <div style={{
+        opacity: initialLoading ? 0 : 1,
+        transition: 'opacity 0.8s ease',
+        visibility: initialLoading ? 'hidden' : 'visible'
+      }}>
+        {!isMessagesPage && !isAdminPanel && <Header />}
+        <LeadModal isOpen={showLeadModal} onClose={() => setShowLeadModal(false)} />
+        {showChatbot && <Chatbot />}
+        {(location.pathname === '/' || location.pathname === '/search') && <HeroSection />}
+        <main style={{ minHeight: '100vh' }}>
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              {/* Admin Panel Login Route */}
+              <Route path="/admin-panel" element={<AdminLogin />} />
 
-            <Route path="/" element={<RecommendedProjects />} />
-            {/* <Route path="/projects" element={<Projects />} /> */}
-            <Route path="/services" element={<Services />} />
-            <Route path="/services/marketing" element={<Marketing />} />
-            <Route path="/services/marketing/package/:id" element={<MarketingPackageDetails />} />
-            <Route path="/services/marketing/terms-conditions" element={<MarketingTerms />} />
-            <Route path="/services/marketing/rules-regulations" element={<MarketingRules />} />
-            <Route path="/investments" element={<Investments />} />
-            <Route path="/exhibition" element={<Exhibition />} />
-            <Route path="/exhibition/individual" element={<ByIndividual />} />
-            <Route path="/exhibition/developer" element={<ByDeveloper />} />
-            <Route path="/exhibition/live-grouping" element={<LiveGrouping />} />
-            <Route path="/exhibition/live-grouping/:id" element={<LiveGroupingDetails />} />
-            <Route path="/exhibition/3d-view" element={<ThreeDView />} />
-            <Route path="/short-stay" element={<ShortStayLanding />} />
-            <Route path="/short-stay/trips" element={<ShortStayTrips />} />
-            <Route path="/short-stay/list-property" element={<ListShortStay />} />
-            <Route path="/short-stay/:id" element={<ShortStayDetails />} />
-            <Route path="/short-stay/reserve/:id" element={<ShortStayReserve />} />
-            <Route path="/short-stay/terms-conditions" element={<ShortStayTerms />} />
-            <Route path="/hosting" element={<HostingDashboard />} />
+              {/* Admin Panel Routes */}
+              <Route path="/admin" element={<NewAdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="properties" element={<PropertiesManagement />} />
+                <Route path="live-grouping" element={<LiveGroupingManagement />} />
+                <Route path="bada-builder" element={<BadaBuilderManagement />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="reviews" element={<AdminReviews />} />
+                <Route path="bookings" element={<SiteVisitBookings />} />
+                <Route path="refer-earn" element={<ReferEarnManagement />} />
+                <Route path="analytics" element={<AuditLogs />} />
+                <Route path="settings" element={<AuditLogs />} />
+                <Route path="live-grouping-management" element={<AdminLiveGrouping />} />
+              </Route>
 
-            <Route path="/home-loans" element={<HomeLoans />} />
-            <Route path="/long-live/browse" element={<LongLiveBrowse />} />
-            <Route path="/long-live/post" element={<LongLivePost />} />
-            <Route path="/100-months" element={<HundredMonths />} />
-            <Route path="/go-global" element={<GoGlobal />} />
-            <Route path="/investments/data-centres" element={<DataCentres />} />
-            <Route path="/investments/data-centres/:id" element={<DataCentreDetails />} />
-            <Route path="/register-complaint" element={<RegisterComplaint />} />
-            <Route path="/exhibition/badabuilder" element={<ByBadaBuilder />} />
-            <Route path="/report" element={<Working />} />
-            <Route path="/subscription-plans" element={<SubscriptionPlans />} />
-            <Route path="/developer-plan" element={<DeveloperPlan />} />
-            <Route path="/individual-plan" element={<IndividualPlan />} />
-            <Route path="/post-property" element={<PostProperty />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/profile/joined-live-groups" element={<JoinedLiveGroups />} />
-            <Route path="/my-complaints" element={<MyComplaints />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/profile/favorites" element={<BookmarkedProperties />} />
-            <Route path="/profile/investments" element={<MyInvestments />} />
-            <Route path="/my-properties" element={<MyProperties />} />
-            <Route path="/my-bookings" element={<MyBookings />} />
-            <Route path="/investments/:type" element={<InvestmentListing />} />
-            <Route path="/investment-details/:id" element={<InvestmentDetails />} />
-            <Route path="/about" element={<About />} />
+              <Route path="/" element={<RecommendedProjects />} />
+              {/* <Route path="/projects" element={<Projects />} /> */}
+              <Route path="/services" element={<Services />} />
+              <Route path="/services/marketing" element={<Marketing />} />
+              <Route path="/services/marketing/package/:id" element={<MarketingPackageDetails />} />
+              <Route path="/services/marketing/terms-conditions" element={<MarketingTerms />} />
+              <Route path="/services/marketing/rules-regulations" element={<MarketingRules />} />
+              <Route path="/investments" element={<Investments />} />
+              <Route path="/exhibition" element={<Exhibition />} />
+              <Route path="/exhibition/individual" element={<ByIndividual />} />
+              <Route path="/exhibition/developer" element={<ByDeveloper />} />
+              <Route path="/exhibition/live-grouping" element={<LiveGrouping />} />
+              <Route path="/exhibition/live-grouping/:id" element={<LiveGroupingDetails />} />
+              <Route path="/exhibition/3d-view" element={<ThreeDView />} />
+              <Route path="/short-stay" element={<ShortStayLanding />} />
+              <Route path="/short-stay/trips" element={<ShortStayTrips />} />
+              <Route path="/short-stay/list-property" element={<ListShortStay />} />
+              <Route path="/short-stay/:id" element={<ShortStayDetails />} />
+              <Route path="/short-stay/reserve/:id" element={<ShortStayReserve />} />
+              <Route path="/short-stay/terms-conditions" element={<ShortStayTerms />} />
+              <Route path="/hosting" element={<HostingDashboard />} />
 
-            {/* Legacy admin routes redirect */}
-            <Route path="/admin-panel/*" element={<AdminRedirect />} />
+              <Route path="/home-loans" element={<HomeLoans />} />
+              <Route path="/long-live/browse" element={<LongLiveBrowse />} />
+              <Route path="/long-live/post" element={<LongLivePost />} />
+              <Route path="/100-months" element={<HundredMonths />} />
+              <Route path="/go-global" element={<GoGlobal />} />
+              <Route path="/investments/data-centres" element={<DataCentres />} />
+              <Route path="/investments/data-centres/:id" element={<DataCentreDetails />} />
+              <Route path="/register-complaint" element={<RegisterComplaint />} />
+              <Route path="/exhibition/badabuilder" element={<ByBadaBuilder />} />
+              <Route path="/report" element={<Working />} />
+              <Route path="/subscription-plans" element={<SubscriptionPlans />} />
+              <Route path="/developer-plan" element={<DeveloperPlan />} />
+              <Route path="/individual-plan" element={<IndividualPlan />} />
+              <Route path="/post-property" element={<PostProperty />} />
+              <Route path="/properties" element={<Projects />} />
+              <Route path="/refer-earn" element={<ReferEarn />} />
+              <Route path="/refer-earn/eligibility-result" element={<ReferEarnResult />} />
+              <Route path="/refer-and-earn/property-showcase" element={<PropertyShowcase />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/joined-live-groups" element={<JoinedLiveGroups />} />
+              <Route path="/my-complaints" element={<MyComplaints />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/profile/favorites" element={<BookmarkedProperties />} />
+              <Route path="/profile/investments" element={<MyInvestments />} />
+              <Route path="/my-properties" element={<MyProperties />} />
+              <Route path="/my-bookings" element={<MyBookings />} />
+              <Route path="/investments/:type" element={<InvestmentListing />} />
+              <Route path="/investment-details/:id" element={<InvestmentDetails />} />
+              <Route path="/about" element={<About />} />
 
-            {/* Debug route */}
-            <Route path="/admin-debug" element={<AdminDebug />} />
+              {/* Legacy admin routes redirect */}
+              <Route path="/admin-panel/*" element={<AdminRedirect />} />
 
-            {/* Learn */}
-            <Route path="/learn/lease-and-asset-management" element={<LAM />}></Route>
-            <Route path="/learn/market-and-investment-analysis" element={<MarketInvestmentAnalysis />} />
-            <Route path="/learn/real-estate-financial-modelling" element={<RealEstateFinancialModelling />} />
-            <Route path="/learn/risk-assessment-due-diligence" element={<RADD />} />
-            <Route path="/learn/real-estate-market-research" element={<RealEstateReport />} />
-            <Route path="/learn/reit-valuation-and-compliance" element={<REITValuationCompliance />} />
-            <Route path="/learn/stakeholder-communication" element={<REITStakeholderCommunication />} />
-            <Route path="/learn/taxation-in-reits" element={<REITTaxation />} />
-            <Route path="/learn/job-profiles-in-reits" element={<REITJobProfiles />} />
-            <Route path="/learn/types-of-reits-india" element={<TypesOfREITs />} />
-            <Route path="/learn/work-of-job-profiles" element={<JobProfilesWork />} />
+              {/* Debug route */}
+              <Route path="/admin-debug" element={<AdminDebug />} />
 
-            {/* Calculator  */}
-            <Route path="/calculator/FFO" element={<FFOCalculator />} />
-            <Route path="/calculator/AFFO" element={<AFFOCalculator />} />
-            <Route path="/calculator/NOI" element={<NOICalculator />} />
-            <Route path="/calculator/CapRate" element={<CapRateCalculator />} />
-            <Route path="/calculator/NAV" element={<NAVCalculator />} />
-            <Route path="/calculator/LTV" element={<LTVCalculator />} />
-            <Route path="/calculator/DividendYield" element={<DividendYieldCalculator />} />
-            <Route path="/calculator/PayoutRatio" element={<PayoutRatioCalculator />} />
-            <Route path="/calculator/DSCR" element={<DSCRCalculator />} />
-            <Route path="/calculator/IRR" element={<IRRCalculator />} />
-            <Route path="/calculator/TotalReturn" element={<TotalReturnCalculator />} />
-            <Route path="/calculator/OccupancyRate" element={<OccupancyRateCalculator />} />
-            <Route path="/calculator/EBITDAre" element={<EBITDAreCalculator />} />
-            <Route path="/calculator/PFFO" element={<PFFOCalculator />} />
-            <Route path="/calculator/DCF" element={<DCFCalculator />} />
-            <Route path="/calculator/NPV" element={<NPVCalculator />} />
+              {/* Learn */}
+              <Route path="/learn/lease-and-asset-management" element={<LAM />}></Route>
+              <Route path="/learn/market-and-investment-analysis" element={<MarketInvestmentAnalysis />} />
+              <Route path="/learn/real-estate-financial-modelling" element={<RealEstateFinancialModelling />} />
+              <Route path="/learn/risk-assessment-due-diligence" element={<RADD />} />
+              <Route path="/learn/real-estate-market-research" element={<RealEstateReport />} />
+              <Route path="/learn/reit-valuation-and-compliance" element={<REITValuationCompliance />} />
+              <Route path="/learn/stakeholder-communication" element={<REITStakeholderCommunication />} />
+              <Route path="/learn/taxation-in-reits" element={<REITTaxation />} />
+              <Route path="/learn/job-profiles-in-reits" element={<REITJobProfiles />} />
+              <Route path="/learn/types-of-reits-india" element={<TypesOfREITs />} />
+              <Route path="/learn/work-of-job-profiles" element={<JobProfilesWork />} />
 
-            <Route path="/contact" element={<Connect />} />
-            {/* <Route path="/calculator" element={<Calculator />} /> */}
+              {/* Calculator  */}
+              <Route path="/calculator/FFO" element={<FFOCalculator />} />
+              <Route path="/calculator/AFFO" element={<AFFOCalculator />} />
+              <Route path="/calculator/NOI" element={<NOICalculator />} />
+              <Route path="/calculator/CapRate" element={<CapRateCalculator />} />
+              <Route path="/calculator/NAV" element={<NAVCalculator />} />
+              <Route path="/calculator/LTV" element={<LTVCalculator />} />
+              <Route path="/calculator/DividendYield" element={<DividendYieldCalculator />} />
+              <Route path="/calculator/PayoutRatio" element={<PayoutRatioCalculator />} />
+              <Route path="/calculator/DSCR" element={<DSCRCalculator />} />
+              <Route path="/calculator/IRR" element={<IRRCalculator />} />
+              <Route path="/calculator/TotalReturn" element={<TotalReturnCalculator />} />
+              <Route path="/calculator/OccupancyRate" element={<OccupancyRateCalculator />} />
+              <Route path="/calculator/EBITDAre" element={<EBITDAreCalculator />} />
+              <Route path="/calculator/PFFO" element={<PFFOCalculator />} />
+              <Route path="/calculator/DCF" element={<DCFCalculator />} />
+              <Route path="/calculator/NPV" element={<NPVCalculator />} />
 
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<RegisterWithOTP />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/search" element={<SearchResults />} />
-            <Route path="/book-visit" element={<BookSiteVisit />} />
-            <Route path="/property-details/:id" element={<PropertyDetails />} />
-            <Route path="/projects/:id" element={<ProjectDetails />} />
-          </Routes>
-        </AnimatePresence>
-      </main>
-      {!isMessagesPage && !isAdminPanel && <Footer />}
+              <Route path="/contact" element={<Connect />} />
+              {/* <Route path="/calculator" element={<Calculator />} /> */}
+
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<RegisterWithOTP />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route path="/book-visit" element={<BookSiteVisit />} />
+              <Route path="/property-details/:id" element={<PropertyDetails />} />
+              <Route path="/projects/:id" element={<ProjectDetails />} />
+            </Routes>
+          </AnimatePresence>
+        </main>
+        {!isMessagesPage && !isAdminPanel && <Footer />}
+      </div>
     </>
   );
 }

@@ -51,7 +51,7 @@
 /* Search bar positioner - handles the overlap */
 .home-hero-search-positioner {
   position: absolute;
-  bottom: 17%;
+  bottom: 12%;
   left: 50%;
   transform: translateX(-50%) translateY(50%);
   max-width: 1100px;
@@ -106,9 +106,9 @@
 @media (max-width: 768px) {
   .home-hero-section {
     width: 100%;
-    aspect-ratio: 16 / 9;
-    height: auto !important;
-    min-height: 0 !important;
+    /* aspect-ratio: 16 / 9; */
+    height: 60vh !important;
+    min-height: 450px !important;
     max-height: none !important;
   }
 
@@ -135,13 +135,20 @@
         rgba(0, 0, 0, 0.05) 50%,
         rgba(0, 0, 0, 0.2) 100%);
   }
+
+  /* Adjust search bar position for mobile */
+  .home-hero-search-positioner {
+    bottom: 5%;
+    width: 95%;
+    /* Slightly wider on mobile for better fit */
+  }
 }
 
 /* Small Mobile */
 @media (max-width: 480px) {
   .home-hero-section {
-    height: auto !important;
-    min-height: 0 !important;
+    height: 55vh !important;
+    min-height: 400px !important;
   }
 
   .home-hero-content h1 {
@@ -198,4 +205,18 @@
   .home-hero-search-container::before {
     animation: none;
   }
+}
+
+
+.hero-animated-border {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  width: calc(100% - 48px);
+  /* Matches spacing */
+  height: calc(100% - 48px);
+  z-index: 5;
+  pointer-events: none;
+  overflow: visible;
+  /* Allows stroke to align nicely */
 }

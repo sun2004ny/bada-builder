@@ -117,6 +117,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_live_group_projects_modtime ON live_group_projects;
 CREATE TRIGGER update_live_group_projects_modtime
     BEFORE UPDATE ON live_group_projects
     FOR EACH ROW

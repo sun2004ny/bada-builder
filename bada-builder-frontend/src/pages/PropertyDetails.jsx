@@ -131,6 +131,51 @@ const PropertyDetails = () => {
     setIsFullScreen(false);
   };
 
+  // Dynamic SEO & Open Graph Meta Tags for Rich Social Sharing (WhatsApp, etc.)
+  useEffect(() => {
+    if (!property) return;
+
+    // Helper to update or create meta tags
+    const updateMetaTag = (property, content, attr = "property") => {
+      let element = document.querySelector(`meta[${attr}="${property}"]`);
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute(attr, property);
+        document.head.appendChild(element);
+      }
+      element.setAttribute("content", content);
+    };
+
+    // Format the shareable URL and Image URL
+    // Ensure we use production domain if possible, fallback to current origin
+    const currentUrl = window.location.href;
+    const shareImage = propertyImages[0] || (typeof property.image === 'string' ? property.image : '');
+    const absoluteImageUrl = shareImage && !shareImage.startsWith('http')
+      ? `${window.location.origin}${shareImage}`
+      : shareImage;
+
+    const shareDescription = `${displayPrice} • ${property?.project_location || property?.location || 'Location Not Specified'} • ${property?.type || 'Property'}`;
+
+    // Update Head Tags
+    document.title = `${propertyTitle} | Bada Builder`;
+    updateMetaTag("og:title", propertyTitle);
+    updateMetaTag("og:description", shareDescription);
+    updateMetaTag("og:image", absoluteImageUrl);
+    updateMetaTag("og:url", currentUrl);
+    updateMetaTag("og:type", "website");
+
+    // Twitter Specific (Optional but recommended)
+    updateMetaTag("twitter:card", "summary_large_image", "name");
+    updateMetaTag("twitter:title", propertyTitle, "name");
+    updateMetaTag("twitter:description", shareDescription, "name");
+    updateMetaTag("twitter:image", absoluteImageUrl, "name");
+
+    return () => {
+      // Optional: Cleanup if navigating away
+      document.title = "Bada Builder";
+    };
+  }, [property, propertyTitle, propertyImages, displayPrice]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isFullScreen) return;

@@ -76,6 +76,13 @@ ON live_group_units(project_id);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_live_group_units_status 
 ON live_group_units(status);
 
+-- Marketing Registrations (Duplicate Protection)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_marketing_agent_email
+ON marketing_real_estate_agents(email);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_marketing_influencer_email
+ON marketing_influencers(email);
+
 -- ============================================
 -- VERIFICATION QUERIES
 -- Run these to check index creation

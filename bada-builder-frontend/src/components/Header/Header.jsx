@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import logo from '../../assets/logo.png';
 import SearchBar from '../SearchBar/SearchBar';
 import './Header.css';
 // Firebase removed - using JWT auth via AuthContext
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePreloader } from '../../context/PreloaderContext';
 import PreloaderLink from '../Preloader/PreloaderLink';
 import {
   FiGrid,
@@ -21,6 +23,60 @@ import {
   FiSearch,
   FiX
 } from 'react-icons/fi';
+
+const TextRoll = ({ children, className = "" }) => {
+  if (typeof children !== 'string') return <span className={className}>{children}</span>;
+
+  const letters = children.split("");
+
+  return (
+    <motion.div
+      className={`relative inline-flex overflow-hidden whitespace-nowrap ${className}`}
+      initial="initial"
+      whileHover="hover"
+      style={{ lineHeight: '1.2' }}
+    >
+      <div className="flex">
+        {letters.map((letter, i) => (
+          <motion.span
+            key={i}
+            variants={{
+              initial: { y: 0 },
+              hover: { y: '-100%' },
+            }}
+            transition={{
+              duration: 0.4,
+              ease: [0.33, 1, 0.68, 1],
+              delay: i * 0.03,
+            }}
+            className="inline-block"
+          >
+            {letter === " " ? "\u00A0" : letter}
+          </motion.span>
+        ))}
+      </div>
+      <div className="absolute top-0 left-0 flex">
+        {letters.map((letter, i) => (
+          <motion.span
+            key={i}
+            variants={{
+              initial: { y: '100%' },
+              hover: { y: 0 },
+            }}
+            transition={{
+              duration: 0.4,
+              ease: [0.33, 1, 0.68, 1],
+              delay: i * 0.03,
+            }}
+            className="inline-block"
+          >
+            {letter === " " ? "\u00A0" : letter}
+          </motion.span>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
 
 // Long Live dropdown items for long-term rentals
 const longLiveItems = [
@@ -87,6 +143,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, userProfile, loading: authLoading, logout } = useAuth();
+  const { initialLoading } = usePreloader();
 
   // Use AuthContext instead of direct Firebase listener
   useEffect(() => {
@@ -300,20 +357,25 @@ const Header = () => {
         <div className="header-content-wrapper flex justify-between items-center">
           {/* Logo */}
           <div className="logo-container flex-shrink-0">
-            <Link to="/" className="logo-link inline-block transition-transform duration-200 hover:scale-105">
+            <Link
+              to="/"
+              id="header-logo-link"
+              className="logo-link inline-block transition-transform duration-200 hover:scale-105"
+              style={{ opacity: initialLoading ? 0 : 1 }}
+            >
               <img src={logo} alt="Logo" className="logo-image h-9 md:h-11 w-auto" />
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="items-center space-x-4 hidden lg:flex font-semibold text-gray-900">
+          <nav className="items-center lg:space-x-7 hidden lg:flex lg:ml-10 lg:mr-8 font-semibold text-gray-900">
             <PreloaderLink
               to="/exhibition"
               icon={<FiGrid />}
               text="Exhibition"
               className="nav-link relative py-2 px-3 text-gray-900 hover:text-[#58335e] transition-all duration-200 after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
             >
-              Exhibition
+              <TextRoll>Exhibition</TextRoll>
             </PreloaderLink>
 
             <PreloaderLink
@@ -322,7 +384,7 @@ const Header = () => {
               text="Services"
               className="nav-link relative py-2 px-3 text-gray-900 hover:text-[#58335e] transition-all duration-200 after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
             >
-              Services
+              <TextRoll>Services</TextRoll>
             </PreloaderLink>
 
             <PreloaderLink
@@ -331,7 +393,7 @@ const Header = () => {
               text="Short Stay"
               className="nav-link relative py-2 px-3 text-gray-900 hover:text-[#58335e] transition-all duration-200 after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
             >
-              Short Stay
+              <TextRoll>Short Stay</TextRoll>
             </PreloaderLink>
 
             {/* Long Live Dropdown */}
@@ -341,7 +403,7 @@ const Header = () => {
               onMouseLeave={handleMouseLeave}
             >
               <div className={`nav-link cursor-pointer py-2 px-3 text-gray-900 transition-all duration-200 flex items-center gap-1 relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 whitespace-nowrap ${showDropdown ? 'text-[#58335e] after:w-full' : 'hover:text-[#58335e] hover:after:w-full'}`}>
-                Long Live
+                <TextRoll>Long Live</TextRoll>
                 <span className={`inline-block transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`}>
                   ▾
                 </span>
@@ -370,7 +432,7 @@ const Header = () => {
               text="Investment"
               className="nav-link relative py-2 px-3 text-gray-900 hover:text-[#58335e] transition-all duration-200 cursor-pointer after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
             >
-              Investment
+              <TextRoll>Investment</TextRoll>
             </PreloaderLink>
 
             {/* <PreloaderLink
@@ -388,7 +450,7 @@ const Header = () => {
               text="Contact Us"
               className="nav-link relative py-2 px-3 text-gray-900 hover:text-[#58335e] transition-all duration-200 after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
             >
-              Contact Us
+              <TextRoll>Contact Us</TextRoll>
             </PreloaderLink>
 
             <PreloaderLink
@@ -397,7 +459,7 @@ const Header = () => {
               text="Who are we"
               className="nav-link relative py-2 px-3 text-gray-900 hover:text-[#58335e] transition-all duration-200 after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-[#58335e] after:left-0 after:bottom-0 after:transition-all after:duration-300 hover:after:w-full"
             >
-              Who are we
+              <TextRoll>Who are we</TextRoll>
             </PreloaderLink>
 
             {/* Desktop Search Toggle */}
@@ -419,89 +481,91 @@ const Header = () => {
           </nav>
 
           {/* Desktop Buttons */}
-          <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
+          <div className="hidden lg:flex items-center gap-4 lg:flex-1 lg:justify-end flex-shrink-0">
             <button
               onClick={() => navigate('/post-property')}
-              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-2.5 rounded-full shadow-md hover:shadow-lg hover:from-green-700 hover:to-green-800 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-50 font-medium text-sm tracking-wide transform hover:scale-105 active:scale-95 whitespace-nowrap"
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-2.5 rounded-full shadow-md hover:shadow-lg hover:from-green-700 hover:to-green-800 transition-all duration-300 focus:outline-none font-medium text-sm tracking-wide transform hover:scale-105 active:scale-95 whitespace-nowrap"
             >
               Post Property
             </button>
             {isLoggedIn ? (
-              <div
-                className="relative"
-                onMouseEnter={handleProfileMouseEnter}
-                onMouseLeave={handleProfileMouseLeave}
-              >
-                <button className="clean-avatar-btn" style={{ background: 'transparent', padding: 0, border: 'none', boxShadow: 'none' }}>
-                  <ProfileAvatar
-                    photo={userProfile?.profilePhoto}
-                    initials={getUserInitials()}
-                    sizeClass="w-10 h-10"
-                  />
-                </button>
+              <div className="desktop-profile-wrapper">
+                <div
+                  className="relative w-full h-full flex items-center justify-center"
+                  onMouseEnter={handleProfileMouseEnter}
+                  onMouseLeave={handleProfileMouseLeave}
+                >
+                  <button className="clean-avatar-btn" style={{ background: 'transparent', padding: 0, border: 'none', boxShadow: 'none' }}>
+                    <ProfileAvatar
+                      photo={userProfile?.profilePhoto}
+                      initials={getUserInitials()}
+                      sizeClass="w-11 h-11"
+                    />
+                  </button>
 
-                {showProfileDropdown && (
-                  <div className="profile-dropdown">
-                    <div className="profile-dropdown-header">
-                      <ProfileAvatar
-                        photo={userProfile?.profilePhoto}
-                        initials={getUserInitials()}
-                        sizeClass="w-12 h-12"
-                        fontSizeClass="text-base"
-                      />
-                      <div className="profile-dropdown-info">
-                        <div className="profile-dropdown-name">
-                          {getUserDisplayName()}
+                  {showProfileDropdown && (
+                    <div className="profile-dropdown">
+                      <div className="profile-dropdown-header">
+                        <ProfileAvatar
+                          photo={userProfile?.profilePhoto}
+                          initials={getUserInitials()}
+                          sizeClass="w-12 h-12"
+                          fontSizeClass="text-base"
+                        />
+                        <div className="profile-dropdown-info">
+                          <div className="profile-dropdown-name">
+                            {getUserDisplayName()}
+                          </div>
+                          <div className="profile-dropdown-email">
+                            {getUserEmail()}
+                          </div>
                         </div>
-                        <div className="profile-dropdown-email">
-                          {getUserEmail()}
+                      </div>
+
+                      <div className="profile-dropdown-divider"></div>
+
+                      <div className="profile-dropdown-details">
+                        <div className="profile-detail-item">
+                          <span className="profile-detail-label">Name:</span>
+                          <span className="profile-detail-value">{getUserDisplayName()}</span>
+                        </div>
+                        <div className="profile-detail-item">
+                          <span className="profile-detail-label">Email:</span>
+                          <span className="profile-detail-value">{getUserEmail()}</span>
+                        </div>
+                        <div className="profile-detail-item">
+                          <span className="profile-detail-label">Phone:</span>
+                          <span className="profile-detail-value">{getUserPhone()}</span>
                         </div>
                       </div>
+
+                      <div className="profile-dropdown-divider"></div>
+
+                      <button
+                        onClick={() => {
+                          navigate('/profile');
+                          setShowProfileDropdown(false);
+                        }}
+                        className="profile-dropdown-link"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        View Profile
+                      </button>
+
+                      <button
+                        onClick={handleLogout}
+                        className="profile-dropdown-logout"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                      </button>
                     </div>
-
-                    <div className="profile-dropdown-divider"></div>
-
-                    <div className="profile-dropdown-details">
-                      <div className="profile-detail-item">
-                        <span className="profile-detail-label">Name:</span>
-                        <span className="profile-detail-value">{getUserDisplayName()}</span>
-                      </div>
-                      <div className="profile-detail-item">
-                        <span className="profile-detail-label">Email:</span>
-                        <span className="profile-detail-value">{getUserEmail()}</span>
-                      </div>
-                      <div className="profile-detail-item">
-                        <span className="profile-detail-label">Phone:</span>
-                        <span className="profile-detail-value">{getUserPhone()}</span>
-                      </div>
-                    </div>
-
-                    <div className="profile-dropdown-divider"></div>
-
-                    <button
-                      onClick={() => {
-                        navigate('/profile');
-                        setShowProfileDropdown(false);
-                      }}
-                      className="profile-dropdown-link"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      View Profile
-                    </button>
-
-                    <button
-                      onClick={handleLogout}
-                      className="profile-dropdown-logout"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Logout
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ) : (
               <Link to="/login" onClick={handleLoginClick}>

@@ -23,21 +23,22 @@ const migrate = async () => {
         // 3. Migrate existing credit data from user_subscriptions / users.posts_left
         console.log('Migrating existing credits...');
 
-        // This is a bit complex as we need to figure out which user has what credits currently.
-        // For now, let's assume we can map existing active subscriptions to these new columns.
+        try {
+            const activeSubs = await pool.query(`
+                SELECT user_id, plan_id, (properties_allowed - properties_used) as remaining
+                FROM user_subscriptions
+                WHERE status = 'active' AND expiry_date > NOW()
+            `);
 
-        const activeSubs = await pool.query(`
-            SELECT user_id, plan_id, (properties_allowed - properties_used) as remaining
-            FROM user_subscriptions
-            WHERE status = 'active' AND expiry_date > NOW()
-        `);
-
-        for (const sub of activeSubs.rows) {
-            if (sub.plan_id.startsWith('ind_')) {
-                await pool.query('UPDATE users SET individual_credits = individual_credits + $1 WHERE id = $2', [sub.remaining, sub.user_id]);
-            } else if (sub.plan_id.startsWith('dev_')) {
-                await pool.query('UPDATE users SET developer_credits = developer_credits + $1 WHERE id = $2', [sub.remaining, sub.user_id]);
+            for (const sub of activeSubs.rows) {
+                if (sub.plan_id.startsWith('ind_')) {
+                    await pool.query('UPDATE users SET individual_credits = individual_credits + $1 WHERE id = $2', [sub.remaining, sub.user_id]);
+                } else if (sub.plan_id.startsWith('dev_')) {
+                    await pool.query('UPDATE users SET developer_credits = developer_credits + $1 WHERE id = $2', [sub.remaining, sub.user_id]);
+                }
             }
+        } catch (subErr) {
+            console.log('ℹ️ Skipping legacy credit migration (user_subscriptions table not found)');
         }
 
         // 4. Backfill existing properties

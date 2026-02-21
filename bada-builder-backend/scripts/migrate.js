@@ -9,6 +9,10 @@ const createTables = async () => {
   try {
     await client.query('BEGIN');
 
+    // 0. Enable extensions
+    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+    await client.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+
     // Drop tables in reverse order of dependencies if they exist
     await client.query('DROP TABLE IF EXISTS property_payments CASCADE');
     await client.query('DROP TABLE IF EXISTS installments CASCADE');
@@ -28,13 +32,15 @@ const createTables = async () => {
         password VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL,
         phone VARCHAR(20),
-        user_type VARCHAR(20) DEFAULT 'individual' CHECK (user_type IN ('individual', 'developer')),
+        user_type VARCHAR(20) DEFAULT 'individual' CHECK (user_type IN ('individual', 'developer', 'admin')),
         profile_photo TEXT,
         is_subscribed BOOLEAN DEFAULT FALSE,
         subscription_expiry TIMESTAMP,
         subscription_plan VARCHAR(50),
         subscription_price DECIMAL(10, 2),
         subscribed_at TIMESTAMP,
+        bio TEXT,
+        is_deleted BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

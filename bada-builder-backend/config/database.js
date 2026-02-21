@@ -5,16 +5,16 @@ dotenv.config();
 
 const { Pool } = pg;
 
-/**
- * DATABASE SINGLETON REFACTOR
- * Refactored to address "Connection terminated" and timeout errors.
- */
+// Production detection (RDS or explicitly set)
+const isProduction = process.env.NODE_ENV === 'production' || 
+                     process.env.DATABASE_URL?.includes('rds.amazonaws.com');
 
 const poolConfig = {
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false // Match Neon/AWS requirements
-    },
+    // Explicitly handle SSL to work with AWS RDS
+    ssl: isProduction ? {
+        rejectUnauthorized: false
+    } : false,
     // Optimized for stability and performance with Neon Pooler
     max: 20,                       // Maintain up to 20 connections
     idleTimeoutMillis: 10000,      // Keep connections alive for 10s to avoid frequent handshakes

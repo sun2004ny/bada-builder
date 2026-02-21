@@ -15,6 +15,7 @@ import {
   Building,
   TrendingUp,
   MessageSquare,
+  Gift,
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -113,6 +114,12 @@ const AdminLayout = () => {
       href: '/admin/bookings',
       icon: FileCheck,
       current: location.pathname === '/admin/bookings'
+    },
+    {
+      name: 'Refer & Earn',
+      href: '/admin/refer-earn',
+      icon: Gift,
+      current: location.pathname === '/admin/refer-earn'
     },
     {
       name: 'Analytics',

@@ -43,17 +43,17 @@ export const adminAPI = {
             properties_count: 15,
             bookings_count: 0
           },
-          {
-            id: 4,
-            name: 'Admin User',
-            email: 'sunny260604@gmail.com',
-            user_type: 'admin',
-            status: 'active',
-            created_at: '2024-01-01T00:00:00Z',
-            last_login: '2024-01-21T15:00:00Z',
-            properties_count: 0,
-            bookings_count: 0
-          }
+          // {
+          //   id: 4,
+          //   name: 'Admin User',
+          //   email: 'sunny260604@gmail.com',
+          //   user_type: 'admin',
+          //   status: 'active',
+          //   created_at: '2024-01-01T00:00:00Z',
+          //   last_login: '2024-01-21T15:00:00Z',
+          //   properties_count: 0,
+          //   bookings_count: 0
+          // }
         ]
       };
     } catch (error) {

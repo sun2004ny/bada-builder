@@ -487,9 +487,8 @@ const MarketingPackageDetails = () => {
                         </div>
                         <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#38bdf84d] rounded-3xl p-8 md:p-10 text-center shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)]">
                             <div className="mb-6 flex items-baseline justify-center gap-[6px]">
-                                <span className="text-[28px] font-bold text-[#38BDF8]">₹</span>
                                 <span className="text-[56px] font-black tracking-[-1.5px] text-white">
-                                    {packageData.price.replace('₹', '')}
+                                    {packageData.price}
                                 </span>
                                 <span className="text-base text-[#94A3B8] font-semibold">{packageData.priceSub}</span>
                             </div>

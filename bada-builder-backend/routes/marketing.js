@@ -38,7 +38,7 @@ router.post(
 
             // Insert into Database
             const insertQuery = `
-                INSERT INTO marketing_inquiries (
+                INSERT INTO marketing_photographers (
                     form_type, name, phone, email, shoot_date, time_slot, 
                     building_landmark, city, state, pincode, address, 
                     property_price, payment_preference, package_title, 

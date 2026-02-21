@@ -32,6 +32,9 @@ import proxyRoutes from './routes/proxy.js';
 import deleteAccountRoutes from './routes/deleteAccount.js';
 import favoritesRoutes from './routes/favorites.js';
 import shortStayReviewRoutes from './routes/shortStayReviews.js';
+import photographerRoutes from './routes/photographer.js';
+import referEarnRoutes from './routes/referEarn.js';
+import marketingSignupRoutes from './routes/marketingSignups.js';
 
 
 // Import database
@@ -138,6 +141,9 @@ app.use('/api/marketing', mutationLimiter, marketingRoutes);
 app.use('/api/joined-live-groups', readLimiter, joinedLiveGroupsRoutes);
 app.use('/api/users/delete-account', mutationLimiter, deleteAccountRoutes);
 app.use('/api/short-stay-reviews', mutationLimiter, shortStayReviewRoutes); // Register new route
+app.use('/api/photographer', mutationLimiter, photographerRoutes);
+app.use('/api/refer-earn', otpLimiter, referEarnRoutes);
+app.use('/api/marketing-signup', mutationLimiter, marketingSignupRoutes);
 
 
 // 404 handler

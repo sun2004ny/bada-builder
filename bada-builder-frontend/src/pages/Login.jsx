@@ -17,6 +17,7 @@ const Login = () => {
   const returnTo = location.state?.returnTo;
   const property = location.state?.property;
   const message = location.state?.message;
+  const openPhotographerModal = location.state?.openPhotographerModal;
 
   // Form State
   const [showPassword, setShowPassword] = useState(false);
@@ -29,17 +30,33 @@ const Login = () => {
 
   // ------------------ REDIRECT LOGIC ------------------
   const getRedirectPath = (isRegistration = false) => {
-    if (isRegistration) {
-      return "/";
-    }
-    // If coming from BookSiteVisit, redirect back with property data
+    if (isRegistration) return "/";
+
+    const redirectState = {
+      openPhotographerModal: location.state?.openPhotographerModal,
+      scrollToPhotographer: location.state?.scrollToPhotographer,
+      property: property // Preserving property for site visits
+    };
+
+    // Handle Book Site Visit specifically
     if (returnTo && returnTo.includes('/book-visit')) {
       return {
         path: '/book-visit',
         state: { property }
       };
     }
-    return from === "/login" ? "/" : from;
+
+    // Handle Photographer flow specifically
+    if (location.state?.openPhotographerModal || location.state?.scrollToPhotographer) {
+      return {
+        path: "/services/marketing",
+        state: redirectState
+      };
+    }
+
+    // Default fallback logic
+    const path = from === "/login" ? "/" : from;
+    return { path, state: location.state };
   };
 
   // ------------------ RESET FORM ------------------

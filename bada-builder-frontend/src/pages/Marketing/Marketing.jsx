@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronDown, FaChevronUp, FaChevronRight, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { packages } from './packages';
+import JoinPhotographer from './JoinPhotographer';
 import './Marketing.css';
 
 const TermsAccordion = ({ title, children, isOpen, onClick }) => {
@@ -123,6 +124,8 @@ const Marketing = () => {
                     ))}
                 </div>
             </div>
+
+            <JoinPhotographer />
 
             <div className="info-section">
                 <h2>Legal Information</h2>

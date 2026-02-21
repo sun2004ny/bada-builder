@@ -16,8 +16,8 @@ async function verifyTable() {
                 CREATE TABLE IF NOT EXISTS chats (
                     chat_id TEXT PRIMARY KEY,
                     property_id INTEGER NOT NULL,
-                    buyer_id UUID NOT NULL REFERENCES users(id),
-                    owner_id UUID NOT NULL REFERENCES users(id),
+                    buyer_id INTEGER NOT NULL REFERENCES users(id),
+                    owner_id INTEGER NOT NULL REFERENCES users(id),
                     last_message TEXT,
                     last_message_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     buyer_unread_count INTEGER DEFAULT 0,

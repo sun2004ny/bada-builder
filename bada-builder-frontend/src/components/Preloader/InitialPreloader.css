@@ -1,0 +1,66 @@
+.initial-preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background-color: #0c080d;
+    /* Very dark purple/black for luxury feel */
+}
+
+.preloader-overlay-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(88, 51, 94, 0.15) 0%, rgba(12, 8, 13, 1) 70%);
+    pointer-events: none;
+}
+
+.preloader-logo-wrapper {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.preloader-logo {
+    height: 60px;
+    /* Base height for center animation */
+    width: auto;
+    object-fit: contain;
+    will-change: transform, opacity, filter;
+}
+
+@media (min-width: 768px) {
+    .preloader-logo {
+        height: 80px;
+    }
+}
+
+.glow-effect {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(88, 51, 94, 0.8) 0%, rgba(88, 51, 94, 0) 70%);
+    border-radius: 50%;
+    filter: blur(40px);
+    z-index: 1;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+/* Hide header elements initially for reveal animation */
+.nav-link,
+.header-login-btn,
+.mobile-header-tools {
+    opacity: 0;
+    transform: translateY(10px);
+}
